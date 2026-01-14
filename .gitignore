@@ -1,5 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+
+# Environments / secrets
 venv/
 .env
-__pycache__/
-outputs/
+
+# Logs / runtime artifacts
 logs/
+
+# Generated outputs (adjust to your actual output folder/files)
+prd_output.json
+prd_output.md
+*.generated
+
+# OS/editor junk (optional)
+.DS_Store
