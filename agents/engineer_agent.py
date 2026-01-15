@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import re
 from pathlib import Path
 from google import genai
 
@@ -12,16 +14,15 @@ class EngineerAgent:
         self.client = client
 
     def run(self, task: Task) -> EngineeringResult:
-        # Safety gates (WHY: prevent accidental or unsupported execution)
+        # Safety gates
         if task.execution_hint != "engineer":
-            raise ValueError("EngineerAgent.run called with a task not marked execution_hint='engineer'.")
+            raise ValueError("EngineerAgent called with non-executable task")
 
         if task.task_type != "scaffold":
-            raise ValueError(f"EngineerAgent currently supports only task_type='scaffold' (got {task.task_type}).")
+            raise ValueError(f"Unsupported task_type: {task.task_type}")
 
         prompt = Path("prompts/engineer.txt").read_text(encoding="utf-8")
 
-        # We include the task in a structured way (WHY: reduces model ambiguity)
         contents = (
             f"{prompt}\n\n"
             f"--- TASK START ---\n"
@@ -43,11 +44,41 @@ class EngineerAgent:
             },
         )
 
-        if response.parsed is None:
-            raw = getattr(response, "text", None)
+        # Primary path: schema parsed correctly
+        if response.parsed is not None:
+            return response.parsed
+
+        # -------- FALLBACK REPAIR PATH --------
+
+        raw = getattr(response, "text", "") or ""
+        text = raw.strip()
+
+        # Strip markdown fences
+        text = re.sub(r"^```json\s*", "", text, flags=re.IGNORECASE)
+        text = re.sub(r"^```\s*", "", text)
+        text = re.sub(r"\s*```$", "", text)
+
+        # Extract JSON object
+        start = text.find("{")
+        end = text.rfind("}")
+        if start == -1 or end == -1 or end <= start:
             raise RuntimeError(
-                "EngineerAgent: schema parse failed (response.parsed is None).\n\n"
-                f"Raw model output:\n{raw}"
+                "EngineerAgent: no JSON object found in model output.\n\n"
+                f"Raw output:\n{raw}"
             )
 
-        return response.parsed
+        candidate = text[start : end + 1]
+
+        # Fix missing commas between objects
+        candidate = re.sub(r"}\s*\n\s*{", "},\n{", candidate)
+
+        try:
+            data = json.loads(candidate)
+        except Exception as e:
+            raise RuntimeError(
+                "EngineerAgent: JSON repair failed.\n\n"
+                f"Raw output:\n{raw}\n\n"
+                f"Candidate JSON:\n{candidate}"
+            ) from e
+
+        return EngineeringResult.model_validate(data)

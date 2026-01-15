@@ -26,5 +26,6 @@ STRICT RULES (MUST FOLLOW):
   - requirements.txt
   - pyproject.toml
 - If output_files is provided in the task, generate ONLY files listed there (subset allowed if you can’t fill all, but do not invent new filenames).
+- Base scaffolding on the PRD domain. If the PRD does not mention Unity, do not assume Unity.
 
 Task is below. Produce only scaffolding files.

@@ -10,7 +10,7 @@ def main():
         return
 
     orch = Orchestrator()
-    prd_text, plan = orch.run(idea)
+    prd_text, plan, eng_result, written = orch.run(idea)
 
     print("\n==================== PRD (from PM stub) ====================\n")
     print(prd_text)
@@ -21,6 +21,19 @@ def main():
         print(plan.model_dump_json(indent=2))
     else:
         print(plan.json(indent=2))
+
+    print("\n==================== ENGINEER (execution output) ====================\n")
+    if eng_result is None:
+        print("No executable engineer task found (or unsupported task_type).")
+    else:
+        if hasattr(eng_result, "model_dump_json"):
+            print(eng_result.model_dump_json(indent=2))
+        else:
+            print(eng_result.json(indent=2))
+
+        print("\nFiles written:")
+        for p in written:
+            print(" -", p)
 
 
 if __name__ == "__main__":

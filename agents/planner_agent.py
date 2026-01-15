@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 from google import genai
+
 from schemas.plan_schema import Plan
+from utils.genai_retry import call_with_retry
 
 
 class PlannerAgent:
@@ -13,14 +15,17 @@ class PlannerAgent:
         prompt = Path("prompts/planner.txt").read_text(encoding="utf-8")
         contents = f"{prompt}\n\n--- PRD START ---\n{prd_text}\n--- PRD END ---"
 
-        response = self.client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=contents,
-            config={
-                "response_schema": Plan,
-                "temperature": 0.2,
-            },
-        )
+        def _call():
+            return self.client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=contents,
+                config={
+                    "response_schema": Plan,
+                    "temperature": 0.2,
+                },
+            )
+
+        response = call_with_retry(_call, max_retries=2)
 
         if response.parsed is None:
             raw = getattr(response, "text", None)
