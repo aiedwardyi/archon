@@ -20,7 +20,10 @@ Schema (informal):
           "id": "string",
           "description": "string",
           "depends_on": ["string", "..."],
-          "outputs": ["string", "..."]
+          "outputs": ["string", "..."],
+          "execution_hint": "engineer | defer",
+          "task_type": "scaffold | single_file | doc | null",
+          "output_files": ["string", "..."] | null
         }
       ]
     }
@@ -35,4 +38,21 @@ Rules:
 - Task ids like PLAN-1, BE-1, FE-1, GAME-1, QA-1
 - depends_on can be empty []
 - outputs must be non-empty
-- No commentary, no prose: output JSON only.
+
+Execution rules (CRITICAL):
+- EXACTLY ONE task in the entire plan may have:
+    "execution_hint": "engineer"
+- That task MUST have:
+    "task_type": "scaffold"
+- All other tasks MUST have:
+    "execution_hint": "defer"
+    "task_type": null
+    "output_files": null
+- The scaffold task should produce basic project structure and documentation only
+  (e.g. README, folder structure, config stubs)
+- Do NOT mark feature implementation tasks as executable
+
+Formatting rules:
+- Every task MUST include execution_hint, task_type, and output_files
+- Use null explicitly where fields do not apply
+- Output JSON only, no commentary

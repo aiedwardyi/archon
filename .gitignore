@@ -16,3 +16,5 @@ prd_output.md
 
 # OS/editor junk (optional)
 .DS_Store
+
+.vscode/
