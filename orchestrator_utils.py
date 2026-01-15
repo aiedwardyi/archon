@@ -7,7 +7,20 @@ from schemas.plan_schema import Plan, Task
 from schemas.engineering_schema import EngineeringResult
 
 
-ALLOWED_PREFIXES = ("README.md", "docs/", "src/", "requirements.txt", "pyproject.toml")
+ALLOWED_PREFIXES = (
+    "README.md",
+    "LICENSE",
+    ".gitignore",
+    "package.json",
+    "tsconfig.json",
+    "webpack.config.js",
+    "docs/",
+    "src/",
+    "public/",
+    "requirements.txt",
+    "pyproject.toml",
+)
+
 OUTPUT_SUFFIX_IF_EXISTS = ".generated"
 
 
@@ -25,6 +38,15 @@ def write_engineering_result(result: EngineeringResult, repo_root: Path, force: 
 
     for f in result.files:
         rel = f.path.strip()
+	# Block absolute paths
+	if Path(rel).is_absolute():
+    	    raise ValueError(f"Absolute paths are not allowed: {rel}")
+
+	# Block path traversal like ../
+	norm = rel.replace("\\", "/")
+	if ".." in norm.split("/"):
+    	    raise ValueError(f"Path traversal is not allowed: {rel}")
+
         if not rel:
             raise ValueError("Empty file path in engineering result")
 
@@ -50,8 +72,9 @@ def select_executable_task(plan: Plan) -> Task | None:
     executable: List[Task] = []
     for ms in plan.milestones:
         for t in ms.tasks:
-            if t.execution_hint == "engineer":
+            if getattr(t, "execution_hint", "defer") == "engineer":
                 executable.append(t)
+
 
     if not executable:
         return None

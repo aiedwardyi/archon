@@ -25,5 +25,6 @@ STRICT RULES (MUST FOLLOW):
   - src/...
   - requirements.txt
   - pyproject.toml
+- If output_files is provided in the task, generate ONLY files listed there (subset allowed if you can’t fill all, but do not invent new filenames).
 
 Task is below. Produce only scaffolding files.
