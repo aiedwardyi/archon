@@ -4,17 +4,18 @@ __pycache__/
 
 # Environments / secrets
 venv/
+.venv/
 .env
+.env.*
 
 # Logs / runtime artifacts
 logs/
+cache/
 
-# Generated outputs (adjust to your actual output folder/files)
-prd_output.json
-prd_output.md
-*.generated
+# Generated files
+README.md.generated
 
-# OS/editor junk (optional)
+# OS / editor junk
 .DS_Store
-
+Thumbs.db
 .vscode/
