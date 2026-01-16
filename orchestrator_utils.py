@@ -22,6 +22,8 @@ ALLOWED_PREFIXES = (
 
     # OFFLINE engineer scaffold output (boxed to one app folder)
     "apps/offline-vite-react/",
+    "apps/offline-vite-react/public/",
+
 )
 
 

@@ -1,0 +1,28 @@
+# PRD (OFFLINE STUB)
+
+## Idea
+Create me a Pokemon RPG game
+
+## Goal
+Create a simple, presentable MVP that matches the idea and can be deployed.
+
+## Users
+- Visitors
+- Potential customers
+
+## Key pages
+- Home / Landing
+- Product/Services
+- About
+- Contact
+
+## MVP features
+- Responsive layout
+- Clear CTA
+- Basic content sections
+- Simple contact form (frontend-only or placeholder)
+
+## Non-goals (for MVP)
+- Payments
+- Auth
+- Admin dashboards

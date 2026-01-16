@@ -60,6 +60,21 @@ class Orchestrator:
         self.cached_prd_path.write_text(prd_text, encoding="utf-8")
         save_plan(plan, self.cached_plan_path)
 
+    def _export_frontend_inputs(self, prd_text: str, plan) -> None:
+        """
+        Export PRD + Plan into the frontend's public/ folder so Vite can serve them.
+        """
+        public_dir = self.repo_root / "apps" / "offline-vite-react" / "public"
+        public_dir.mkdir(parents=True, exist_ok=True)
+
+        (public_dir / "last_prd.txt").write_text(prd_text, encoding="utf-8")
+
+        # Pydantic v2: model_dump_json
+        (public_dir / "last_plan.json").write_text(
+            plan.model_dump_json(indent=2),
+            encoding="utf-8",
+        )
+
     def run(self, user_input: str, force_write: bool = False):
         """
         Returns:
@@ -94,9 +109,17 @@ class Orchestrator:
                 cached_idea, prd_text, plan = cached
 
             if cached_idea != user_input_clean:
-                print("\n⚠️ OFFLINE_MODE is using cached PRD/Plan from a different idea:")
-                print(f"   Cached idea: {cached_idea}")
-                print(f"   Current idea: {user_input_clean}\n")
+                print("\nℹ️ OFFLINE_MODE: idea changed — regenerating OFFLINE PRD/Plan and overwriting cache.\n")
+                from utils.offline_seed import (
+                    offline_prd_from_idea,
+                    offline_plan_dict_for_idea,
+                )
+                from schemas.plan_schema import Plan
+
+                prd_text = offline_prd_from_idea(user_input_clean)
+                plan = Plan.model_validate(offline_plan_dict_for_idea(user_input_clean))
+                self._save_cached(user_input_clean, prd_text, plan)
+                cached_idea = user_input_clean
 
         # ------------------------
         # ONLINE MODE
@@ -148,6 +171,8 @@ class Orchestrator:
                 else:
                     raise
 
+        self._export_frontend_inputs(prd_text, plan)
+
         # ------------------------
         # TASK SELECTION
         # ------------------------
@@ -159,6 +184,11 @@ class Orchestrator:
         # ENGINEER
         # ------------------------
         if self.offline:
+            app_marker = self.repo_root / "apps" / "offline-vite-react" / "package.json"
+            if app_marker.exists():
+                print("\nℹ️ OFFLINE_MODE: scaffold already exists — skipping scaffold rewrite.\n")
+                return prd_text, plan, None, []
+
             print("\nℹ️ OFFLINE_MODE active — running OFFLINE engineer scaffold.\n")
 
         try:
@@ -174,7 +204,7 @@ class Orchestrator:
         written_paths = write_engineering_result(
             engineering_result,
             repo_root=self.repo_root,
-            force=force_write,
+            force=(force_write or self.offline),
         )
 
         return prd_text, plan, engineering_result, written_paths

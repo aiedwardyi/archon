@@ -1,0 +1,32 @@
+{
+  "milestones": [
+    {
+      "name": "Milestone 1: Scaffold MVP",
+      "tasks": [
+        {
+          "id": "OFFLINE-1",
+          "description": "Scaffold a minimal project for: Create me a Pokemon RPG game",
+          "depends_on": [],
+          "outputs": [
+            "Project scaffold",
+            "Basic README",
+            "Basic config files"
+          ],
+          "execution_hint": "engineer",
+          "task_type": "scaffold",
+          "output_files": [
+            "README.md",
+            ".gitignore"
+          ]
+        }
+      ]
+    }
+  ],
+  "assumptions": [
+    "Offline stub used (no API calls).",
+    "We will refine requirements when quota is available."
+  ],
+  "risks": [
+    "Stub plan may not match final product direction until online planning runs."
+  ]
+}
