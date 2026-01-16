@@ -19,7 +19,11 @@ ALLOWED_PREFIXES = (
     "public/",
     "requirements.txt",
     "pyproject.toml",
+
+    # OFFLINE engineer scaffold output (boxed to one app folder)
+    "apps/offline-vite-react/",
 )
+
 
 OUTPUT_SUFFIX_IF_EXISTS = ".generated"
 

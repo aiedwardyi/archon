@@ -11,10 +11,29 @@ from agents.engineer_agent import EngineerAgent
 from orchestrator_utils import select_executable_task, write_engineering_result
 from utils.plan_cache import load_plan_with_repair, save_plan
 
-
 class Orchestrator:
     def __init__(self):
-        api_key = os.getenv("GENAI_API_KEY")
+        self.repo_root = Path(__file__).parent
+
+        # Free-tier friendly controls (read OFFLINE first)
+        self.offline = os.getenv("OFFLINE_MODE", "0").strip() == "1"
+        self.cache_dir = self.repo_root / "cache"
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+
+        self.cached_prd_path = self.cache_dir / "last_prd.txt"
+        self.cached_plan_path = self.cache_dir / "last_plan.json"
+        self.cached_idea_path = self.cache_dir / "last_idea.txt"
+
+        # OFFLINE: no API key required, no client needed
+        if self.offline:
+            self.client = None
+            self.pm = None
+            self.planner = None
+            self.engineer = EngineerAgent(None)
+            return
+
+        # ONLINE: require API key + create client
+        api_key = os.getenv("GENAI_API_KEY", "").strip()
         if not api_key:
             raise RuntimeError("GENAI_API_KEY not found in environment variables.")
 
@@ -23,17 +42,6 @@ class Orchestrator:
         self.pm = PMAgent(self.client)
         self.planner = PlannerAgent(self.client)
         self.engineer = EngineerAgent(self.client)
-
-        self.repo_root = Path(__file__).parent
-
-        # Free-tier friendly controls
-        self.offline = os.getenv("OFFLINE_MODE", "0") == "1"
-        self.cache_dir = self.repo_root / "cache"
-        self.cache_dir.mkdir(exist_ok=True)
-
-        self.cached_prd_path = self.cache_dir / "last_prd.txt"
-        self.cached_plan_path = self.cache_dir / "last_plan.json"
-        self.cached_idea_path = self.cache_dir / "last_idea.txt"
 
     def _load_cached(self):
         if (
@@ -95,7 +103,7 @@ class Orchestrator:
         # ------------------------
         else:
             try:
-                prd_text = self.pm.run(user_input)
+                prd_text = self.pm.run(user_input_clean)
                 plan = self.planner.run(prd_text)
                 self._save_cached(user_input_clean, prd_text, plan)
 
@@ -107,10 +115,9 @@ class Orchestrator:
                     if cached:
                         cached_idea, prd_text, plan = cached
 
-                        # ✅ If cached idea differs, generate a fresh offline stub for the new idea
                         if cached_idea != user_input_clean:
                             print(
-                                "\n⚠️ Quota exhausted. Cached idea differs — generating a fresh OFFLINE stub for the new idea.\n"
+                                "\n⚠️ Quota exhausted. Cached idea differs — generating a fresh OFFLINE stub.\n"
                             )
                             from utils.offline_seed import (
                                 offline_prd_from_idea,
@@ -123,7 +130,6 @@ class Orchestrator:
                                 offline_plan_dict_for_idea(user_input_clean)
                             )
                             self._save_cached(user_input_clean, prd_text, plan)
-
                     else:
                         print(
                             "\n⚠️ Quota exhausted and no cache available — switching to OFFLINE stub.\n"
@@ -153,8 +159,7 @@ class Orchestrator:
         # ENGINEER
         # ------------------------
         if self.offline:
-            print("\nℹ️ OFFLINE_MODE active — skipping engineer execution.\n")
-            return prd_text, plan, None, []
+            print("\nℹ️ OFFLINE_MODE active — running OFFLINE engineer scaffold.\n")
 
         try:
             engineering_result = self.engineer.run(task)

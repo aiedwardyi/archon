@@ -1,16 +1,45 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
+
 from google import genai
 
 from schemas.plan_schema import Task
-from schemas.engineering_schema import EngineeringResult
+from schemas.engineering_schema import EngineeringResult, FileArtifact
+from utils.offline_engineer_scaffold import build_vite_react_ts_scaffold
+
+
+def _is_offline_mode() -> bool:
+    """
+    OFFLINE_MODE triggers deterministic behavior with zero model calls.
+    Accepts: 1, true, yes, y, on (case-insensitive)
+    """
+    return os.getenv("OFFLINE_MODE", "").strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def _build_offline_engineering_result(task_id: str) -> EngineeringResult:
+    """
+    Convert deterministic offline scaffold into EngineeringResult.
+    """
+    scaffold = build_vite_react_ts_scaffold(app_dir="apps/offline-vite-react")
+
+    files = [
+        FileArtifact(path=path, content=content)
+        for path, content in sorted(scaffold.files.items())
+    ]
+
+    return EngineeringResult(
+        task_id=task_id,
+        summary="OFFLINE: Generated deterministic Vite + React + TypeScript scaffold in apps/offline-vite-react/",
+        files=files,
+    )
 
 
 class EngineerAgent:
-    def __init__(self, client: genai.Client):
+    def __init__(self, client: genai.Client | None):
         self.client = client
 
     def run(self, task: Task) -> EngineeringResult:
@@ -21,6 +50,14 @@ class EngineerAgent:
         if task.task_type != "scaffold":
             raise ValueError(f"Unsupported task_type: {task.task_type}")
 
+        # OFFLINE branch
+        if _is_offline_mode() or str(task.id).startswith("OFFLINE-"):
+            return _build_offline_engineering_result(task_id=str(task.id))
+
+        if self.client is None:
+            raise RuntimeError("EngineerAgent: client is None in ONLINE mode")
+
+        # ONLINE branch
         prompt = Path("prompts/engineer.txt").read_text(encoding="utf-8")
 
         contents = (
@@ -44,7 +81,7 @@ class EngineerAgent:
             },
         )
 
-        # Primary path: schema parsed correctly
+        # Primary path
         if response.parsed is not None:
             return response.parsed
 
