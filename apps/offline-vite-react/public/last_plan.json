@@ -5,7 +5,7 @@
       "tasks": [
         {
           "id": "OFFLINE-1",
-          "description": "Scaffold a minimal project for: Create me a Pokemon RPG game",
+          "description": "Scaffold a minimal project for: Create me a final fantasy rpg game",
           "depends_on": [],
           "outputs": [
             "Project scaffold",
@@ -17,6 +17,21 @@
           "output_files": [
             "README.md",
             ".gitignore"
+          ]
+        },
+        {
+          "id": "OFFLINE-2",
+          "description": "Create a basic project README explaining the MVP scope and setup",
+          "depends_on": [
+            "OFFLINE-1"
+          ],
+          "outputs": [
+            "README with setup instructions"
+          ],
+          "execution_hint": "engineer",
+          "task_type": "docs",
+          "output_files": [
+            "README.md"
           ]
         }
       ]

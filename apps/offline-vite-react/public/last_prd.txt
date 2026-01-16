@@ -1,7 +1,7 @@
 # PRD (OFFLINE STUB)
 
 ## Idea
-Create me a Pokemon RPG game
+Create me a final fantasy rpg game
 
 ## Goal
 Create a simple, presentable MVP that matches the idea and can be deployed.
