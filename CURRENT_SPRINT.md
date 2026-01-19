@@ -15,6 +15,7 @@ Complete the UI → backend → file artifact loop so that user-triggered tasks 
 - Execution request emitted from UI
 - Local backend endpoint persists execution artifacts to disk
 - Fallback to localStorage when backend unavailable
+- Orchestrator consumer reads request artifacts and writes deterministic result artifacts
 
 ---
 
@@ -31,24 +32,23 @@ Complete the UI → backend → file artifact loop so that user-triggered tasks 
 
 ---
 
-### 2. Execution Artifact Consumption (Next)
-**Status:** Not started
+### 2. Execution Artifact Consumption
+**Status:** Completed
 
-Planned:
-- Orchestrator polls or watches `last_execution_request.json`
-- Validates against schema
-- Executes task deterministically
-- Writes `last_execution_result.json`
-- Appends execution results to NDJSON log
+Implemented:
+- Orchestrator consumer reads `public/last_execution_request.json`
+- Validates minimum required fields
+- Writes `public/last_execution_result.json` (overwrite)
+- Appends `public/execution_results.ndjson` (append-only)
 
 ---
 
 ### 3. Determinism Tests
-**Status:** Planned
+**Status:** Next
 
 Planned:
 - Re-run identical execution requests
-- Assert identical outputs
+- Assert identical outputs (excluding permitted non-deterministic fields)
 - Detect schema drift regressions
 - Snapshot-based verification
 
@@ -56,9 +56,9 @@ Planned:
 
 ## Immediate Next Steps
 
-1. Implement orchestrator consumer for execution requests
-2. Define execution result schema
-3. Write first end-to-end execution test
+1. Define execution result schema (explicit contract)
+2. Add first determinism regression test (same request → same result)
+3. Wire an optional backend endpoint to trigger the consumer (nice-to-have)
 4. Add README architecture diagram
 
 ---

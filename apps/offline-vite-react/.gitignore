@@ -4,3 +4,5 @@ dist
 .DS_Store
 .env
 .env.local
+/public/last_execution_result.json
+/public/execution_results.ndjson
