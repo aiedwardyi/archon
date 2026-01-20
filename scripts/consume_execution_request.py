@@ -3,12 +3,38 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
+
+from schemas.execution_schema import ExecutionRequest, ExecutionResult
+
+
+CONSUMER_VERSION = "v1"
+
+# Fields we treat as allowed non-determinism for semantic identity.
+# These should NOT affect request_hash.
+_REQUEST_NONDTERMINISTIC_KEYS = {"created_at", "_meta"}
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 def canonical_json(obj: Any) -> str:
     return json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
+def canonicalize_request(req: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Remove allowed non-deterministic fields so that "same semantic request"
+    yields the same hash even if timestamps or transport metadata differs.
+    """
+    out = dict(req)
+    for k in list(out.keys()):
+        if k in _REQUEST_NONDTERMINISTIC_KEYS:
+            out.pop(k, None)
+    return out
 
 
 def sha256_of(obj: Any) -> str:
@@ -34,24 +60,51 @@ def append_ndjson(path: Path, obj: Dict[str, Any]) -> None:
         f.write(json.dumps(obj, ensure_ascii=False) + "\n")
 
 
-def build_execution_result(req: Dict[str, Any]) -> Dict[str, Any]:
-    if not req.get("task_id"):
-        return {
-            "kind": "execution_result",
-            "status": "error",
-            "error": "Missing task_id",
-            "request": req,
-        }
+def build_execution_result(req_raw: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Schema-validates the incoming request and produces a schema-valid result artifact.
+    """
+    # Validate request contract
+    req = ExecutionRequest.model_validate(req_raw)
 
-    return {
-        "kind": "execution_result",
-        "status": "success",
-        "request_hash": sha256_of(req),
-        "request": req,
-        "outputs": {
-            "note": "Stub executor: task execution not implemented yet."
-        },
-    }
+    # Deterministic semantic hash
+    request_hash = sha256_of(canonicalize_request(req_raw))
+
+    # Deterministic outputs stub (replace later with real task execution)
+    outputs: Dict[str, Any] = {"note": "Stub executor: task execution not implemented yet."}
+
+    result_model = ExecutionResult(
+        status="success",
+        request_hash=request_hash,
+        request=req,
+        outputs=outputs,
+        _meta={"produced_at": _utc_now_iso(), "consumer_version": CONSUMER_VERSION},
+    )
+
+    # model_dump() produces JSON-ready dict while preserving our field names like "_meta"
+    return result_model.model_dump()
+
+
+def consume(public_dir: Path) -> Dict[str, Any]:
+    """
+    Pure file-based consumer entrypoint for tests and future backend triggers.
+    Reads:
+      - last_execution_request.json
+    Writes:
+      - last_execution_result.json (overwrite, atomic)
+      - execution_results.ndjson (append)
+    """
+    request_path = public_dir / "last_execution_request.json"
+    result_path = public_dir / "last_execution_result.json"
+    log_path = public_dir / "execution_results.ndjson"
+
+    req_raw = read_json(request_path)
+    result = build_execution_result(req_raw)
+
+    atomic_write(result_path, json.dumps(result, indent=2, ensure_ascii=False) + "\n")
+    append_ndjson(log_path, result)
+
+    return result
 
 
 def main() -> int:
@@ -66,15 +119,10 @@ def main() -> int:
     repo_root = Path(__file__).resolve().parent.parent
     public_dir = (repo_root / args.public).resolve()
 
-    request_path = public_dir / "last_execution_request.json"
     result_path = public_dir / "last_execution_result.json"
     log_path = public_dir / "execution_results.ndjson"
 
-    req = read_json(request_path)
-    result = build_execution_result(req)
-
-    atomic_write(result_path, json.dumps(result, indent=2) + "\n")
-    append_ndjson(log_path, result)
+    consume(public_dir)
 
     print(f"Wrote: {result_path}")
     print(f"Appended: {log_path}")

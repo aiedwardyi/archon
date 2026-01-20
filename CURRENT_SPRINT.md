@@ -44,9 +44,10 @@ Implemented:
 ---
 
 ### 3. Determinism Tests
-**Status:** Next
+**Status:** In Progress
 
 Planned:
+- Define a canonicalization rule for execution results (strip allowed non-deterministic fields)
 - Re-run identical execution requests
 - Assert identical outputs (excluding permitted non-deterministic fields)
 - Detect schema drift regressions

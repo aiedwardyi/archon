@@ -19,3 +19,9 @@ README.md.generated
 .DS_Store
 Thumbs.db
 .vscode/
+
+# Runtime execution artifacts (generated)
+apps/offline-vite-react/public/last_execution_request.json
+apps/offline-vite-react/public/last_execution_result.json
+apps/offline-vite-react/public/execution_requests.ndjson
+apps/offline-vite-react/public/execution_results.ndjson
