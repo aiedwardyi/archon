@@ -285,3 +285,44 @@ a { color: inherit; }
   color: rgba(255,255,255,0.45);
   cursor: not-allowed;
 }
+
+/* ---- Artifacts panel ---- */
+.artifactsLayout {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 12px;
+}
+
+.artifactsButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.artifactBtn {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(0,0,0,0.10);
+  padding: 10px 10px;
+  cursor: pointer;
+}
+
+.artifactBtn:hover {
+  border-color: rgba(255,255,255,0.18);
+}
+
+.artifactBtn.active {
+  border-color: rgba(96,165,250,0.55);
+  background: rgba(96,165,250,0.10);
+}
+
+.artifactBtnTitle {
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+@media (max-width: 980px) {
+  .artifactsLayout { grid-template-columns: 1fr; }
+}

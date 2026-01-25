@@ -3,8 +3,9 @@ import "./App.css";
 import { Plan, PlanMilestone, PlanTask, safeArray } from "./types/plan";
 import { PlanSidebar } from "./components/PlanSidebar";
 import { TaskPanel } from "./components/TaskPanel";
+import { ArtifactsPanel } from "./components/ArtifactsPanel";
 
-type Tab = "board" | "raw";
+type Tab = "board" | "raw" | "artifacts";
 
 async function fetchText(path: string): Promise<string> {
   const res = await fetch(path, { cache: "no-store" });
@@ -116,6 +117,14 @@ export default function App() {
             >
               PRD / Raw JSON
             </button>
+
+            <button
+              className={`tabBtn ${tab === "artifacts" ? "active" : ""}`}
+              onClick={() => setTab("artifacts")}
+              type="button"
+            >
+              Artifacts
+            </button>
           </div>
 
           <div className="small mono">
@@ -130,8 +139,10 @@ export default function App() {
             selectedMilestoneIndex={selectedMilestoneIndex}
             selectedTaskIndex={selectedTaskIndex}
           />
-        ) : (
+        ) : tab === "raw" ? (
           <RawView prdText={prdText} prdError={prdError} plan={plan} planError={planError} />
+        ) : (
+          <ArtifactsPanel />
         )}
       </main>
     </div>
