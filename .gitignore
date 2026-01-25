@@ -29,3 +29,14 @@ apps/offline-vite-react/public/execution_results.ndjson
 # Runtime-generated execution outputs
 apps/offline-vite-react/public/generated/
 
+# Runtime evaluation artifacts (generated)
+apps/offline-vite-react/public/last_evaluation_result.json
+apps/offline-vite-react/public/evaluation_results.ndjson
+
+# Python tooling
+.pytest_cache/
+.mypy_cache/
+ruff_cache/
+
+# Transport / archive artifacts
+*.zip

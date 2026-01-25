@@ -9,12 +9,10 @@ from typing import Any, Dict
 
 from schemas.execution_schema import ExecutionRequest, ExecutionResult
 from scripts.deterministic_executor import execute
+from scripts.evaluate_execution_result import consume as evaluate_consume
 
 
-CONSUMER_VERSION = "v2"
-
-# Fields we treat as allowed non-determinism for semantic identity.
-# These should NOT affect request_hash.
+CONSUMER_VERSION = "v3"
 _REQUEST_NONDTERMINISTIC_KEYS = {"created_at", "_meta"}
 
 
@@ -27,14 +25,9 @@ def canonical_json(obj: Any) -> str:
 
 
 def canonicalize_request(req: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Remove allowed non-deterministic fields so that "same semantic request"
-    yields the same hash even if timestamps or transport metadata differs.
-    """
     out = dict(req)
-    for k in list(out.keys()):
-        if k in _REQUEST_NONDTERMINISTIC_KEYS:
-            out.pop(k, None)
+    for k in _REQUEST_NONDTERMINISTIC_KEYS:
+        out.pop(k, None)
     return out
 
 
@@ -44,33 +37,26 @@ def sha256_of(obj: Any) -> str:
 
 def read_json(path: Path) -> Dict[str, Any]:
     if not path.exists():
-        raise FileNotFoundError(f"Missing required file: {path}")
-    # Be tolerant of UTF-8 BOM (common on Windows)
+        raise FileNotFoundError(f"Missing file: {path}")
+    # Windows editors may introduce UTF-8 BOM; utf-8-sig handles both BOM and non-BOM.
     return json.loads(path.read_text(encoding="utf-8-sig"))
 
 
 def atomic_write(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(content, encoding="utf-8", newline="\n")
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(content, encoding="utf-8")
     tmp.replace(path)
 
 
 def append_ndjson(path: Path, obj: Dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "a", encoding="utf-8", newline="\n") as f:
-        f.write(json.dumps(obj, ensure_ascii=False) + "\n")
+    with path.open("a", encoding="utf-8") as f:
+        f.write(canonical_json(obj) + "\n")
 
 
 def build_execution_result(public_dir: Path, req_raw: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Schema-validates the incoming request and produces a schema-valid result artifact.
-    Also performs deterministic task execution (allow-listed writes under public/generated).
-    """
-    # Validate request contract
     req = ExecutionRequest.model_validate(req_raw)
-
-    # Deterministic semantic hash
     request_hash = sha256_of(canonicalize_request(req_raw))
 
     try:
@@ -81,39 +67,27 @@ def build_execution_result(public_dir: Path, req_raw: Dict[str, Any]) -> Dict[st
             payload=req.payload or {},
         )
 
-        result_model = ExecutionResult(
+        result = ExecutionResult(
             status="success",
             request_hash=request_hash,
             request=req,
             outputs=outputs,
             error=None,
-            _meta={"produced_at": _utc_now_iso(), "consumer_version": CONSUMER_VERSION},
         )
-        return result_model.model_dump()
+        return result.model_dump()
 
     except Exception as e:
-        # Visible failure as artifact
-        result_model = ExecutionResult(
+        result = ExecutionResult(
             status="error",
             request_hash=request_hash,
             request=req,
             outputs={},
             error={"message": str(e), "type": e.__class__.__name__},
-            _meta={"produced_at": _utc_now_iso(), "consumer_version": CONSUMER_VERSION},
         )
-        return result_model.model_dump()
+        return result.model_dump()
 
 
 def consume(public_dir: Path) -> Dict[str, Any]:
-    """
-    Pure file-based consumer entrypoint for tests and future backend triggers.
-    Reads:
-      - last_execution_request.json
-    Writes:
-      - last_execution_result.json (overwrite, atomic)
-      - execution_results.ndjson (append)
-      - public/generated/* (allow-listed deterministic outputs)
-    """
     request_path = public_dir / "last_execution_request.json"
     result_path = public_dir / "last_execution_result.json"
     log_path = public_dir / "execution_results.ndjson"
@@ -124,6 +98,9 @@ def consume(public_dir: Path) -> Dict[str, Any]:
     atomic_write(result_path, json.dumps(result, indent=2, ensure_ascii=False) + "\n")
     append_ndjson(log_path, result)
 
+    if result.get("status") == "success":
+        evaluate_consume(public_dir)
+
     return result
 
 
@@ -132,21 +109,17 @@ def main() -> int:
     parser.add_argument(
         "--public",
         default="apps/offline-vite-react/public",
-        help="Path to Vite public directory",
+        help="Path to public directory",
     )
     args = parser.parse_args()
 
     repo_root = Path(__file__).resolve().parent.parent
     public_dir = (repo_root / args.public).resolve()
 
-    result_path = public_dir / "last_execution_result.json"
-    log_path = public_dir / "execution_results.ndjson"
-
     consume(public_dir)
 
-    print(f"Wrote: {result_path}")
-    print(f"Appended: {log_path}")
-    print(f"Generated dir: {public_dir / 'generated'}")
+    print(f"Wrote: {public_dir / 'last_execution_result.json'}")
+    print(f"Appended: {public_dir / 'execution_results.ndjson'}")
     return 0
 
 

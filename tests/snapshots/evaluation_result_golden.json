@@ -1,0 +1,16 @@
+{
+  "kind": "evaluation_result",
+  "status": "pass",
+  "request_hash": "19c02771c7072a8d575b8dcc760710d1328d185a606962a5ff4fe59231413dec",
+  "reasons": [],
+  "checks": {
+    "execution_result_schema_valid": true,
+    "required_keys_present": true,
+    "no_error_field": true,
+    "outputs_shape_valid": true,
+    "write_records_valid": true,
+    "writes_present": true,
+    "writes_checked": 1,
+    "writes_ok": 1
+  }
+}
