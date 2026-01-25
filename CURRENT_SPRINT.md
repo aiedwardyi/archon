@@ -23,7 +23,7 @@ Make the system **operationally observable** and **contract-enforced** by adding
 ## Phase 4 Work Items (Executable)
 
 ### 1. Read-only “Artifacts” UI Panel
-**Status:** Next
+**Status:** Done
 
 - Add a UI section that renders:
   - `last_execution_request.json`
@@ -35,7 +35,7 @@ Make the system **operationally observable** and **contract-enforced** by adding
 ---
 
 ### 2. Read-only “History” UI Panel (NDJSON)
-**Status:** Planned
+**Status:** Next
 
 - Render append-only histories:
   - `execution_requests.ndjson`
