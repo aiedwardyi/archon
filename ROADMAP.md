@@ -19,34 +19,34 @@ This is not a demo generator. It is designed to behave like a real internal AI-a
 
 **Flow**
 
-User idea
-→ Product Manager (PRD)
-→ Planner (Plan schema: milestones + tasks)
-→ Deterministic Orchestrator
-→ Engineer agent
-→ Safe file writes
-→ Observable artifacts
+User idea  
+→ Product Manager (PRD)  
+→ Planner (Plan schema: milestones + tasks)  
+→ Deterministic Orchestrator  
+→ Engineer agent  
+→ Safe file writes  
+→ Observable artifacts  
 
-**Key principle:**
+**Key principle:**  
 Every step emits structured artifacts that can be inspected, validated, and replayed.
 
 ---
 
 ## Design Principles
 
-- **Determinism first**
+- **Determinism first**  
   Identical inputs produce identical artifacts.
 
-- **Explicit contracts**
+- **Explicit contracts**  
   JSON schemas define all agent boundaries.
 
-- **Offline-first**
+- **Offline-first**  
   The system operates without network calls when required.
 
-- **Observable state**
+- **Observable state**  
   Execution requests, plans, and results are written as files.
 
-- **Failure visibility**
+- **Failure visibility**  
   Errors are surfaced as artifacts, not hidden in logs.
 
 ---
@@ -67,12 +67,16 @@ Every step emits structured artifacts that can be inspected, validated, and repl
 - Append-only execution logs
 - Offline fallback behavior
 
-### Phase 3 — Orchestration & Evaluation (In Progress)
-- Orchestrator consumes execution request artifacts (Completed)
-- Execution result artifacts (Completed; currently stub executor)
-- Regression tests for determinism (Completed; includes golden snapshot guard)
-- Deterministic task execution (Next)
-- Evaluation harness for output quality (Planned)
+### Phase 3 — Orchestration & Evaluation (Completed)
+- Orchestrator consumes execution request artifacts
+- Execution result artifacts (schema-validated)
+- Deterministic task execution with allow-listed writes
+- Regression tests for determinism (golden snapshot guard)
+- **Deterministic evaluation harness for output quality**
+  - Pass/fail signals only
+  - Machine-checkable rules
+  - No LLM judgment
+  - File-based, offline-safe evaluation artifacts
 
 ### Phase 4 — Production Hardening (Planned)
 - Strict schema enforcement

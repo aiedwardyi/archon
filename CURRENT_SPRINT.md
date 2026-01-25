@@ -16,6 +16,7 @@ Complete the UI → backend → file artifact loop so that user-triggered tasks 
 - Determinism enforced by canonical hashing + tests
 - Golden snapshot regression guard in place
 - Deterministic task execution with safe allow-listed writes
+- Deterministic evaluation harness producing pass/fail artifacts
 
 ---
 
@@ -57,8 +58,22 @@ Complete the UI → backend → file artifact loop so that user-triggered tasks 
 
 - Deterministic executor implemented (offline-first)
 - Allow-listed file writes only (no path traversal, restricted extensions)
-- Outputs include observable write records (path/hash/bytes)
+- Outputs include observable write records (path / sha256 / bytes)
 - Runtime-generated outputs ignored by git
+
+---
+
+### 5. Evaluation Harness
+**Status:** Completed
+
+- Deterministic, machine-checkable evaluation (no LLM judgment)
+- Runs automatically after every successful execution
+- File-based and decoupled from execution
+- Writes `public/last_evaluation_result.json`
+- Appends `public/evaluation_results.ndjson`
+- Pass/fail status with structured failure reasons
+- Windows-safe JSON handling (`utf-8` / `utf-8-sig`)
+- Covered by golden snapshot regression tests
 
 ---
 
@@ -67,6 +82,7 @@ Complete the UI → backend → file artifact loop so that user-triggered tasks 
 - Execution request → deterministic execution → result artifacts
 - Deterministic hashing for semantic identity
 - Snapshot-based regression protection
+- Deterministic evaluation with machine-checkable rules
 - No hidden state between UI and orchestrator
 - Safe, allow-listed file writes
 - All artifacts human-readable and replayable
