@@ -25,7 +25,7 @@ User idea
 → Deterministic Orchestrator  
 → Engineer agent  
 → Safe file writes  
-→ Observable artifacts  
+→ Observable artifacts
 
 **Key principle:**  
 Every step emits structured artifacts that can be inspected, validated, and replayed.
@@ -41,13 +41,13 @@ Every step emits structured artifacts that can be inspected, validated, and repl
   JSON schemas define all agent boundaries.
 
 - **Offline-first**  
-  The system operates without network calls when required.
+  The system operates without network calls.
 
 - **Observable state**  
-  Execution requests, plans, and results are written as files.
+  Execution requests, plans, results, and evaluations are written as files.
 
 - **Failure visibility**  
-  Errors are surfaced as artifacts, not hidden in logs.
+  Errors surface as artifacts, not hidden logs.
 
 ---
 
@@ -57,8 +57,10 @@ Every step emits structured artifacts that can be inspected, validated, and repl
 - Schema-validated PRD generation
 - Planner producing milestone/task plans
 - Deterministic offline regeneration
-- Safe file write allowlists (foundation)
+- Safe file write allowlists
 - Frontend rendering PRD + Plan artifacts
+
+---
 
 ### Phase 2 — Interactive Execution (Completed)
 - Lovable-style milestone/task UI
@@ -67,41 +69,31 @@ Every step emits structured artifacts that can be inspected, validated, and repl
 - Append-only execution logs
 - Offline fallback behavior
 
+---
+
 ### Phase 3 — Orchestration & Evaluation (Completed)
-- Orchestrator consumes execution request artifacts (Completed)
-- Execution result artifacts (Completed)
-- Regression tests for determinism (Completed; includes golden snapshot guard)
-- Deterministic task execution (Completed)
-- Evaluation harness for output quality (Completed)
+- Orchestrator consumes execution request artifacts
+- Deterministic execution result artifacts
+- Evaluation harness producing pass/fail artifacts
+- Canonical hashing for semantic identity
+- Golden snapshot regression tests
+- All tests passing
 
-### Phase 4 — Production Hardening (Planned; executable scope defined)
-**Goal:** Make the system operationally observable and enforce contracts strictly without introducing hidden state.
+---
 
-**Deliverables**
-1. **Observable UI for Execution + Evaluation (read-only)**
-   - UI displays:
-     - `public/last_execution_request.json`
-     - `public/last_execution_result.json`
-     - `public/last_evaluation_result.json`
-     - Append-only NDJSON histories:
-       - `public/execution_requests.ndjson`
-       - `public/execution_results.ndjson`
-       - `public/evaluation_results.ndjson`
-   - No mutation of artifacts from UI (read-only)
-   - Offline-first behavior preserved
+### Phase 4 — Production Hardening (In Progress)
+- Read-only UI for last execution/evaluation artifacts (**Completed**)
+- Read-only UI for NDJSON execution/evaluation histories (**Completed**)
+- Strict schema enforcement at system boundaries (**Planned**)
+- Deterministic replay runner for past executions (**Planned**)
 
-2. **Strict schema enforcement in consumer pipeline**
-   - Requests/results/evaluation artifacts are schema-validated at boundaries
-   - Failures surfaced as artifacts (no silent failure)
+---
 
-3. **Replayable execution history (deterministic)**
-   - Script to replay a chosen request from history into deterministic execution
-   - No network calls
-   - Produces deterministic artifacts identical to original given same inputs
-
-4. **Regression coverage extension**
-   - Tests cover observable UI parsing logic (pure functions) and replay runner determinism
-   - Golden snapshots expanded only when required
+### Phase 5 — Expansion & Multi-Agent Coordination (Planned)
+- Replayable execution history across agents
+- Multi-agent task coordination
+- Extended agent roles (PM / Planner / Engineer)
+- SaaS-ready architectural decisions
 
 ---
 

@@ -2,7 +2,7 @@
 
 ## Sprint Goal
 
-Make the system **operationally observable** and **contract-enforced** by adding a read-only UI for execution/evaluation artifacts and hardening schema boundaries—without introducing hidden state or network dependency.
+Make the system **operationally observable** and **contract-enforced** by adding read-only UI surfaces for execution and evaluation artifacts, and by hardening schema boundaries — without introducing hidden state or network dependency.
 
 ---
 
@@ -12,11 +12,12 @@ Make the system **operationally observable** and **contract-enforced** by adding
 - Lovable-style milestone/task board
 - Deterministic task selection + execution request emission
 - Local backend persistence with offline fallback
-- Orchestrator consumer produces result artifacts
-- Determinism enforced by canonical hashing + tests
+- Orchestrator consumer produces deterministic execution result artifacts
+- Determinism enforced via canonical hashing + regression tests
 - Golden snapshot regression guard in place
 - Deterministic task execution with safe allow-listed writes
 - Deterministic evaluation harness producing pass/fail artifacts
+- **Observable UI for runtime artifacts and histories (Phase 4)**
 
 ---
 
@@ -25,55 +26,64 @@ Make the system **operationally observable** and **contract-enforced** by adding
 ### 1. Read-only “Artifacts” UI Panel
 **Status:** Done
 
-- Add a UI section that renders:
+- UI renders:
   - `last_execution_request.json`
   - `last_execution_result.json`
   - `last_evaluation_result.json`
-- Add empty-state handling if files do not exist
-- No writes or mutations from the UI
+- Files are loaded directly from `public/`
+- Missing files and parse errors are surfaced as visible UI state
+- UI performs **no writes or mutations**
 
 ---
 
 ### 2. Read-only “History” UI Panel (NDJSON)
-**Status:** Next
+**Status:** Done
 
-- Render append-only histories:
+- UI renders append-only histories:
   - `execution_requests.ndjson`
   - `execution_results.ndjson`
   - `evaluation_results.ndjson`
-- Provide basic filtering by request_hash / task_id (client-side only)
-- Robust parsing: ignore malformed lines and surface count of skipped lines
+- Robust line-by-line NDJSON parsing
+- Malformed lines are ignored and counted (visible in UI)
+- Client-side filtering by:
+  - `task_id`
+  - `request_hash`
+- UI is strictly read-only and offline-safe
 
 ---
 
 ### 3. Strict Schema Enforcement at Boundaries
 **Status:** Planned
 
-- Ensure consumer validates:
+- Enforce schema validation for:
   - ExecutionRequest input
   - ExecutionResult output
   - EvaluationResult output
-- Failures become visible artifacts (no silent exceptions)
+- Validation failures must produce visible artifacts
+- No silent exceptions or hidden failure paths
 
 ---
 
 ### 4. Deterministic Replay Runner
 **Status:** Planned
 
-- Script that replays a request selected from `execution_requests.ndjson`
-- Runs offline only (no network calls)
-- Produces execution/evaluation artifacts deterministically
+- Script to replay a selected request from `execution_requests.ndjson`
+- Offline-only execution (no network calls)
+- Deterministic reproduction of:
+  - execution result
+  - evaluation result
+- Covered by regression tests
 
 ---
 
 ## Definition of Done (Sprint)
 
-- Read-only UI shows last artifacts reliably (offline-safe)
-- Read-only UI shows NDJSON histories with safe parsing and filtering
-- Schema boundary enforcement prevents invalid artifacts from silently passing
-- Deterministic replay runner exists and is covered by regression tests
+- Observable UI surfaces for last artifacts and full histories
+- Robust handling of missing or malformed runtime data
+- Strict schema enforcement at all system boundaries
+- Deterministic replay capability for past executions
 - No hidden state introduced
 - All tests passing
-- ROADMAP.md updated if scope/status changes
+- `ROADMAP.md` reflects accurate phase status
 
 ---
