@@ -4,8 +4,9 @@ import { Plan, PlanMilestone, PlanTask, safeArray } from "./types/plan";
 import { PlanSidebar } from "./components/PlanSidebar";
 import { TaskPanel } from "./components/TaskPanel";
 import { ArtifactsPanel } from "./components/ArtifactsPanel";
+import { HistoryPanel } from "./components/HistoryPanel";
 
-type Tab = "board" | "raw" | "artifacts";
+type Tab = "board" | "raw" | "artifacts" | "history";
 
 async function fetchText(path: string): Promise<string> {
   const res = await fetch(path, { cache: "no-store" });
@@ -125,6 +126,14 @@ export default function App() {
             >
               Artifacts
             </button>
+
+            <button
+              className={`tabBtn ${tab === "history" ? "active" : ""}`}
+              onClick={() => setTab("history")}
+              type="button"
+            >
+              History
+            </button>
           </div>
 
           <div className="small mono">
@@ -141,8 +150,10 @@ export default function App() {
           />
         ) : tab === "raw" ? (
           <RawView prdText={prdText} prdError={prdError} plan={plan} planError={planError} />
-        ) : (
+        ) : tab === "artifacts" ? (
           <ArtifactsPanel />
+        ) : (
+          <HistoryPanel />
         )}
       </main>
     </div>

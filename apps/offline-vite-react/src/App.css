@@ -326,3 +326,6 @@ a { color: inherit; }
 @media (max-width: 980px) {
   .artifactsLayout { grid-template-columns: 1fr; }
 }
+
+/* allow tab row to wrap if too many buttons */
+.tabs { flex-wrap: wrap; }
