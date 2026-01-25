@@ -1,0 +1,19 @@
+{
+  "kind": "execution_result",
+  "status": "success",
+  "request_hash": "3612dd8132a9691b08d70a0cdc43f38a612b0555d535f2900c91715158c32e29",
+  "request": {
+    "kind": "execution_request",
+    "task_id": "task-snapshot-001",
+    "milestone_id": "ms-snapshot-001",
+    "title": "Snapshot determinism seed request",
+    "created_at": null,
+    "payload": {
+      "intent": "Create a golden execution_result snapshot for determinism tests"
+    }
+  },
+  "outputs": {
+    "note": "Stub executor: task execution not implemented yet."
+  },
+  "error": null
+}

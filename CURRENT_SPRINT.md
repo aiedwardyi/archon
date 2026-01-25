@@ -1,8 +1,8 @@
-# Current Sprint — Interactive Execution Loop
+﻿# Current Sprint — Interactive Execution Loop
 
 ## Sprint Goal
 
-Complete the UI → backend → file artifact loop so that user-triggered tasks become deterministic, observable execution requests that the orchestrator can later consume.
+Complete the UI → backend → file artifact loop so that user-triggered tasks become deterministic, observable execution requests that the orchestrator can consume and regress safely.
 
 ---
 
@@ -10,72 +10,60 @@ Complete the UI → backend → file artifact loop so that user-triggered tasks 
 
 - Offline-first frontend (Vite + React + TypeScript)
 - Lovable-style milestone/task board
-- Task selection updates detail panel deterministically
-- PRD + Plan rendered from static artifacts in `public/`
-- Execution request emitted from UI
-- Local backend endpoint persists execution artifacts to disk
-- Fallback to localStorage when backend unavailable
-- Orchestrator consumer reads request artifacts and writes deterministic result artifacts
+- Deterministic task selection + execution request emission
+- Local backend persistence with offline fallback
+- Orchestrator consumer produces result artifacts
+- Determinism enforced by hashing + tests
+- Golden snapshot regression guard in place
 
 ---
 
-## Active Work
+## Completed Work
 
 ### 1. UI → Backend Execution Request Handoff
 **Status:** Completed
 
-- POST `/execution-request` endpoint
-- Overwrites `public/last_execution_request.json`
-- Appends to `public/execution_requests.ndjson`
-- CORS configured for local dev
-- Timeout + offline fallback in frontend
+- POST `/execution-request`
+- Overwrite `public/last_execution_request.json`
+- Append `public/execution_requests.ndjson`
+- Offline-first fallback
 
 ---
 
 ### 2. Execution Artifact Consumption
 **Status:** Completed
 
-Implemented:
-- Orchestrator consumer reads `public/last_execution_request.json`
-- Validates minimum required fields
-- Writes `public/last_execution_result.json` (overwrite)
-- Appends `public/execution_results.ndjson` (append-only)
+- Consumer reads last request
+- Schema-validated processing
+- Writes `public/last_execution_result.json`
+- Appends `public/execution_results.ndjson`
 
 ---
 
 ### 3. Determinism Tests
-**Status:** In Progress
+**Status:** Completed
 
-Planned:
-- Define a canonicalization rule for execution results (strip allowed non-deterministic fields)
-- Re-run identical execution requests
-- Assert identical outputs (excluding permitted non-deterministic fields)
-- Detect schema drift regressions
-- Snapshot-based verification
-
----
-
-## Immediate Next Steps
-
-1. Define execution result schema (explicit contract)
-2. Add first determinism regression test (same request → same result)
-3. Wire an optional backend endpoint to trigger the consumer (nice-to-have)
-4. Add README architecture diagram
+- Canonical request hashing
+- Consumer determinism regression tests
+- Golden snapshot stored under `tests/snapshots/`
+- Snapshot-based regression test compares canonicalized results
+- All tests passing
 
 ---
 
 ## Definition of Done (Sprint)
 
 - Execution request → result loop fully file-based
+- Deterministic hashing for semantic identity
+- Snapshot-based regression protection
 - No hidden state between UI and orchestrator
 - All artifacts human-readable and replayable
-- Failures produce explicit error artifacts
 
 ---
 
 ## Notes
 
-This sprint intentionally prioritizes:
-- correctness over speed
-- observability over autonomy
-- determinism over novelty
+This sprint prioritized:
+- Determinism over novelty
+- Observability over autonomy
+- Reproducibility across machines
