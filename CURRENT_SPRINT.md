@@ -2,7 +2,7 @@
 
 ## Sprint Goal
 
-Complete the UI → backend → file artifact loop so that user-triggered tasks become deterministic, observable execution requests that the orchestrator can consume and regress safely.
+Complete the UI → backend → file artifact loop so that user-triggered tasks become deterministic, observable execution requests that the orchestrator can consume, execute deterministically, and regress safely.
 
 ---
 
@@ -13,8 +13,9 @@ Complete the UI → backend → file artifact loop so that user-triggered tasks 
 - Deterministic task selection + execution request emission
 - Local backend persistence with offline fallback
 - Orchestrator consumer produces result artifacts
-- Determinism enforced by hashing + tests
+- Determinism enforced by canonical hashing + tests
 - Golden snapshot regression guard in place
+- Deterministic task execution with safe allow-listed writes
 
 ---
 
@@ -43,7 +44,7 @@ Complete the UI → backend → file artifact loop so that user-triggered tasks 
 ### 3. Determinism Tests
 **Status:** Completed
 
-- Canonical request hashing
+- Canonical request hashing (semantic identity)
 - Consumer determinism regression tests
 - Golden snapshot stored under `tests/snapshots/`
 - Snapshot-based regression test compares canonicalized results
@@ -51,12 +52,23 @@ Complete the UI → backend → file artifact loop so that user-triggered tasks 
 
 ---
 
+### 4. Deterministic Task Execution
+**Status:** Completed
+
+- Deterministic executor implemented (offline-first)
+- Allow-listed file writes only (no path traversal, restricted extensions)
+- Outputs include observable write records (path/hash/bytes)
+- Runtime-generated outputs ignored by git
+
+---
+
 ## Definition of Done (Sprint)
 
-- Execution request → result loop fully file-based
+- Execution request → deterministic execution → result artifacts
 - Deterministic hashing for semantic identity
 - Snapshot-based regression protection
 - No hidden state between UI and orchestrator
+- Safe, allow-listed file writes
 - All artifacts human-readable and replayable
 
 ---
@@ -67,3 +79,4 @@ This sprint prioritized:
 - Determinism over novelty
 - Observability over autonomy
 - Reproducibility across machines
+- Safety over convenience
