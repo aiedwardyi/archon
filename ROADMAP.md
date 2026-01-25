@@ -68,21 +68,40 @@ Every step emits structured artifacts that can be inspected, validated, and repl
 - Offline fallback behavior
 
 ### Phase 3 — Orchestration & Evaluation (Completed)
-- Orchestrator consumes execution request artifacts
-- Execution result artifacts (schema-validated)
-- Deterministic task execution with allow-listed writes
-- Regression tests for determinism (golden snapshot guard)
-- **Deterministic evaluation harness for output quality**
-  - Pass/fail signals only
-  - Machine-checkable rules
-  - No LLM judgment
-  - File-based, offline-safe evaluation artifacts
+- Orchestrator consumes execution request artifacts (Completed)
+- Execution result artifacts (Completed)
+- Regression tests for determinism (Completed; includes golden snapshot guard)
+- Deterministic task execution (Completed)
+- Evaluation harness for output quality (Completed)
 
-### Phase 4 — Production Hardening (Planned)
-- Strict schema enforcement
-- Replayable execution history
-- Multi-agent coordination
-- SaaS-ready architecture decisions
+### Phase 4 — Production Hardening (Planned; executable scope defined)
+**Goal:** Make the system operationally observable and enforce contracts strictly without introducing hidden state.
+
+**Deliverables**
+1. **Observable UI for Execution + Evaluation (read-only)**
+   - UI displays:
+     - `public/last_execution_request.json`
+     - `public/last_execution_result.json`
+     - `public/last_evaluation_result.json`
+     - Append-only NDJSON histories:
+       - `public/execution_requests.ndjson`
+       - `public/execution_results.ndjson`
+       - `public/evaluation_results.ndjson`
+   - No mutation of artifacts from UI (read-only)
+   - Offline-first behavior preserved
+
+2. **Strict schema enforcement in consumer pipeline**
+   - Requests/results/evaluation artifacts are schema-validated at boundaries
+   - Failures surfaced as artifacts (no silent failure)
+
+3. **Replayable execution history (deterministic)**
+   - Script to replay a chosen request from history into deterministic execution
+   - No network calls
+   - Produces deterministic artifacts identical to original given same inputs
+
+4. **Regression coverage extension**
+   - Tests cover observable UI parsing logic (pure functions) and replay runner determinism
+   - Golden snapshots expanded only when required
 
 ---
 

@@ -1,8 +1,8 @@
-﻿# Current Sprint — Interactive Execution Loop
+﻿# Current Sprint — Phase 4: Observable UI + Hardening
 
 ## Sprint Goal
 
-Complete the UI → backend → file artifact loop so that user-triggered tasks become deterministic, observable execution requests that the orchestrator can consume, execute deterministically, and regress safely.
+Make the system **operationally observable** and **contract-enforced** by adding a read-only UI for execution/evaluation artifacts and hardening schema boundaries—without introducing hidden state or network dependency.
 
 ---
 
@@ -20,79 +20,60 @@ Complete the UI → backend → file artifact loop so that user-triggered tasks 
 
 ---
 
-## Completed Work
+## Phase 4 Work Items (Executable)
 
-### 1. UI → Backend Execution Request Handoff
-**Status:** Completed
+### 1. Read-only “Artifacts” UI Panel
+**Status:** Next
 
-- POST `/execution-request`
-- Overwrite `public/last_execution_request.json`
-- Append `public/execution_requests.ndjson`
-- Offline-first fallback
-
----
-
-### 2. Execution Artifact Consumption
-**Status:** Completed
-
-- Consumer reads last request
-- Schema-validated processing
-- Writes `public/last_execution_result.json`
-- Appends `public/execution_results.ndjson`
+- Add a UI section that renders:
+  - `last_execution_request.json`
+  - `last_execution_result.json`
+  - `last_evaluation_result.json`
+- Add empty-state handling if files do not exist
+- No writes or mutations from the UI
 
 ---
 
-### 3. Determinism Tests
-**Status:** Completed
+### 2. Read-only “History” UI Panel (NDJSON)
+**Status:** Planned
 
-- Canonical request hashing (semantic identity)
-- Consumer determinism regression tests
-- Golden snapshot stored under `tests/snapshots/`
-- Snapshot-based regression test compares canonicalized results
-- All tests passing
-
----
-
-### 4. Deterministic Task Execution
-**Status:** Completed
-
-- Deterministic executor implemented (offline-first)
-- Allow-listed file writes only (no path traversal, restricted extensions)
-- Outputs include observable write records (path / sha256 / bytes)
-- Runtime-generated outputs ignored by git
+- Render append-only histories:
+  - `execution_requests.ndjson`
+  - `execution_results.ndjson`
+  - `evaluation_results.ndjson`
+- Provide basic filtering by request_hash / task_id (client-side only)
+- Robust parsing: ignore malformed lines and surface count of skipped lines
 
 ---
 
-### 5. Evaluation Harness
-**Status:** Completed
+### 3. Strict Schema Enforcement at Boundaries
+**Status:** Planned
 
-- Deterministic, machine-checkable evaluation (no LLM judgment)
-- Runs automatically after every successful execution
-- File-based and decoupled from execution
-- Writes `public/last_evaluation_result.json`
-- Appends `public/evaluation_results.ndjson`
-- Pass/fail status with structured failure reasons
-- Windows-safe JSON handling (`utf-8` / `utf-8-sig`)
-- Covered by golden snapshot regression tests
+- Ensure consumer validates:
+  - ExecutionRequest input
+  - ExecutionResult output
+  - EvaluationResult output
+- Failures become visible artifacts (no silent exceptions)
+
+---
+
+### 4. Deterministic Replay Runner
+**Status:** Planned
+
+- Script that replays a request selected from `execution_requests.ndjson`
+- Runs offline only (no network calls)
+- Produces execution/evaluation artifacts deterministically
 
 ---
 
 ## Definition of Done (Sprint)
 
-- Execution request → deterministic execution → result artifacts
-- Deterministic hashing for semantic identity
-- Snapshot-based regression protection
-- Deterministic evaluation with machine-checkable rules
-- No hidden state between UI and orchestrator
-- Safe, allow-listed file writes
-- All artifacts human-readable and replayable
+- Read-only UI shows last artifacts reliably (offline-safe)
+- Read-only UI shows NDJSON histories with safe parsing and filtering
+- Schema boundary enforcement prevents invalid artifacts from silently passing
+- Deterministic replay runner exists and is covered by regression tests
+- No hidden state introduced
+- All tests passing
+- ROADMAP.md updated if scope/status changes
 
 ---
-
-## Notes
-
-This sprint prioritized:
-- Determinism over novelty
-- Observability over autonomy
-- Reproducibility across machines
-- Safety over convenience
