@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import hashlib
@@ -8,9 +8,10 @@ from pathlib import Path
 from typing import Any, Dict
 
 from schemas.execution_schema import ExecutionRequest, ExecutionResult
+from scripts.deterministic_executor import execute
 
 
-CONSUMER_VERSION = "v1"
+CONSUMER_VERSION = "v2"
 
 # Fields we treat as allowed non-determinism for semantic identity.
 # These should NOT affect request_hash.
@@ -44,7 +45,8 @@ def sha256_of(obj: Any) -> str:
 def read_json(path: Path) -> Dict[str, Any]:
     if not path.exists():
         raise FileNotFoundError(f"Missing required file: {path}")
-    return json.loads(path.read_text(encoding="utf-8"))
+    # Be tolerant of UTF-8 BOM (common on Windows)
+    return json.loads(path.read_text(encoding="utf-8-sig"))
 
 
 def atomic_write(path: Path, content: str) -> None:
@@ -60,9 +62,10 @@ def append_ndjson(path: Path, obj: Dict[str, Any]) -> None:
         f.write(json.dumps(obj, ensure_ascii=False) + "\n")
 
 
-def build_execution_result(req_raw: Dict[str, Any]) -> Dict[str, Any]:
+def build_execution_result(public_dir: Path, req_raw: Dict[str, Any]) -> Dict[str, Any]:
     """
     Schema-validates the incoming request and produces a schema-valid result artifact.
+    Also performs deterministic task execution (allow-listed writes under public/generated).
     """
     # Validate request contract
     req = ExecutionRequest.model_validate(req_raw)
@@ -70,19 +73,35 @@ def build_execution_result(req_raw: Dict[str, Any]) -> Dict[str, Any]:
     # Deterministic semantic hash
     request_hash = sha256_of(canonicalize_request(req_raw))
 
-    # Deterministic outputs stub (replace later with real task execution)
-    outputs: Dict[str, Any] = {"note": "Stub executor: task execution not implemented yet."}
+    try:
+        outputs, _writes = execute(
+            public_dir=public_dir,
+            request_hash=request_hash,
+            task_id=req.task_id,
+            payload=req.payload or {},
+        )
 
-    result_model = ExecutionResult(
-        status="success",
-        request_hash=request_hash,
-        request=req,
-        outputs=outputs,
-        _meta={"produced_at": _utc_now_iso(), "consumer_version": CONSUMER_VERSION},
-    )
+        result_model = ExecutionResult(
+            status="success",
+            request_hash=request_hash,
+            request=req,
+            outputs=outputs,
+            error=None,
+            _meta={"produced_at": _utc_now_iso(), "consumer_version": CONSUMER_VERSION},
+        )
+        return result_model.model_dump()
 
-    # model_dump() produces JSON-ready dict while preserving our field names like "_meta"
-    return result_model.model_dump()
+    except Exception as e:
+        # Visible failure as artifact
+        result_model = ExecutionResult(
+            status="error",
+            request_hash=request_hash,
+            request=req,
+            outputs={},
+            error={"message": str(e), "type": e.__class__.__name__},
+            _meta={"produced_at": _utc_now_iso(), "consumer_version": CONSUMER_VERSION},
+        )
+        return result_model.model_dump()
 
 
 def consume(public_dir: Path) -> Dict[str, Any]:
@@ -93,13 +112,14 @@ def consume(public_dir: Path) -> Dict[str, Any]:
     Writes:
       - last_execution_result.json (overwrite, atomic)
       - execution_results.ndjson (append)
+      - public/generated/* (allow-listed deterministic outputs)
     """
     request_path = public_dir / "last_execution_request.json"
     result_path = public_dir / "last_execution_result.json"
     log_path = public_dir / "execution_results.ndjson"
 
     req_raw = read_json(request_path)
-    result = build_execution_result(req_raw)
+    result = build_execution_result(public_dir, req_raw)
 
     atomic_write(result_path, json.dumps(result, indent=2, ensure_ascii=False) + "\n")
     append_ndjson(log_path, result)
@@ -126,6 +146,7 @@ def main() -> int:
 
     print(f"Wrote: {result_path}")
     print(f"Appended: {log_path}")
+    print(f"Generated dir: {public_dir / 'generated'}")
     return 0
 
 

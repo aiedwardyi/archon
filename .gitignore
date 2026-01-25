@@ -25,3 +25,7 @@ apps/offline-vite-react/public/last_execution_request.json
 apps/offline-vite-react/public/last_execution_result.json
 apps/offline-vite-react/public/execution_requests.ndjson
 apps/offline-vite-react/public/execution_results.ndjson
+
+# Runtime-generated execution outputs
+apps/offline-vite-react/public/generated/
+

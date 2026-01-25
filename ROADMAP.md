@@ -1,4 +1,4 @@
-# AI Dev Team — Execution Roadmap
+﻿# AI Dev Team — Execution Roadmap
 
 ## Purpose
 
@@ -19,34 +19,34 @@ This is not a demo generator. It is designed to behave like a real internal AI-a
 
 **Flow**
 
-User idea  
-→ Product Manager (PRD)  
-→ Planner (Plan schema: milestones + tasks)  
-→ Deterministic Orchestrator  
-→ Engineer agent  
-→ Safe file writes  
+User idea
+→ Product Manager (PRD)
+→ Planner (Plan schema: milestones + tasks)
+→ Deterministic Orchestrator
+→ Engineer agent
+→ Safe file writes
 → Observable artifacts
 
-**Key principle:**  
+**Key principle:**
 Every step emits structured artifacts that can be inspected, validated, and replayed.
 
 ---
 
 ## Design Principles
 
-- **Determinism first**  
+- **Determinism first**
   Identical inputs produce identical artifacts.
 
-- **Explicit contracts**  
+- **Explicit contracts**
   JSON schemas define all agent boundaries.
 
-- **Offline-first**  
+- **Offline-first**
   The system operates without network calls when required.
 
-- **Observable state**  
+- **Observable state**
   Execution requests, plans, and results are written as files.
 
-- **Failure visibility**  
+- **Failure visibility**
   Errors are surfaced as artifacts, not hidden in logs.
 
 ---
@@ -57,22 +57,22 @@ Every step emits structured artifacts that can be inspected, validated, and repl
 - Schema-validated PRD generation
 - Planner producing milestone/task plans
 - Deterministic offline regeneration
-- Safe file write allowlists
+- Safe file write allowlists (foundation)
 - Frontend rendering PRD + Plan artifacts
 
-### Phase 2 — Interactive Execution (In Progress)
+### Phase 2 — Interactive Execution (Completed)
 - Lovable-style milestone/task UI
 - Deterministic execution request emission
 - UI → backend artifact handoff
 - Append-only execution logs
 - Offline fallback behavior
 
-### Phase 3 — Orchestration & Evaluation (Planned)
-- Orchestrator consumes execution request artifacts
-- Deterministic task execution
-- Execution result artifacts
-- Regression tests for determinism
-- Evaluation harness for output quality
+### Phase 3 — Orchestration & Evaluation (In Progress)
+- Orchestrator consumes execution request artifacts (Completed)
+- Execution result artifacts (Completed; currently stub executor)
+- Regression tests for determinism (Completed; includes golden snapshot guard)
+- Deterministic task execution (Next)
+- Evaluation harness for output quality (Planned)
 
 ### Phase 4 — Production Hardening (Planned)
 - Strict schema enforcement

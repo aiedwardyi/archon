@@ -1,19 +1,31 @@
 {
   "kind": "execution_result",
   "status": "success",
-  "request_hash": "3612dd8132a9691b08d70a0cdc43f38a612b0555d535f2900c91715158c32e29",
+  "request_hash": "19c02771c7072a8d575b8dcc760710d1328d185a606962a5ff4fe59231413dec",
   "request": {
     "kind": "execution_request",
-    "task_id": "task-snapshot-001",
-    "milestone_id": "ms-snapshot-001",
-    "title": "Snapshot determinism seed request",
-    "created_at": null,
+    "task_id": "OFFLINE-SNAPSHOT-1",
+    "milestone_id": "MS-SNAPSHOT",
+    "title": "Golden snapshot seed request",
+    "created_at": "2099-01-01T00:00:00+00:00",
     "payload": {
-      "intent": "Create a golden execution_result snapshot for determinism tests"
+      "action": "write_public_note",
+      "content": "Golden snapshot seed note.\n",
+      "filename": "golden-note.md"
     }
   },
   "outputs": {
-    "note": "Stub executor: task execution not implemented yet."
+    "action": "write_public_note",
+    "note_path": "C:\\Users\\mredw\\Desktop\\ai-dev-team\\apps\\offline-vite-react\\public\\generated\\golden-note.md",
+    "note_sha256": "3859ceb142eadcb677ab83c2613acf6d634548f1d62938d6bc7a4081f9f08734",
+    "note_bytes": 27,
+    "writes": [
+      {
+        "path": "C:\\Users\\mredw\\Desktop\\ai-dev-team\\apps\\offline-vite-react\\public\\generated\\golden-note.md",
+        "sha256": "3859ceb142eadcb677ab83c2613acf6d634548f1d62938d6bc7a4081f9f08734",
+        "bytes": 27
+      }
+    ]
   },
   "error": null
 }
