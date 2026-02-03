@@ -75,6 +75,31 @@ def atomic_write_json(path: Path, obj: Dict[str, Any]) -> None:
     tmp.replace(path)
 
 
+def _read_json_if_exists(path: Path) -> Optional[Dict[str, Any]]:
+    if not path.exists():
+        return None
+    return json.loads(path.read_text(encoding="utf-8-sig"))
+
+
+def _inject_replay_metadata(public_dir: Path, replay_meta: Dict[str, Any]) -> None:
+    """
+    Replay is an orchestration action, not consumer logic.
+    We inject deterministic replay metadata into the *latest* on-disk artifacts so the UI can surface it.
+    """
+    exec_path = public_dir / "last_execution_result.json"
+    eval_path = public_dir / "last_evaluation_result.json"
+
+    exec_obj = _read_json_if_exists(exec_path)
+    if isinstance(exec_obj, dict):
+        exec_obj["_replay"] = replay_meta
+        atomic_write_json(exec_path, exec_obj)
+
+    eval_obj = _read_json_if_exists(eval_path)
+    if isinstance(eval_obj, dict):
+        eval_obj["_replay"] = replay_meta
+        atomic_write_json(eval_path, eval_obj)
+
+
 def replay(
     *,
     public_dir: Path,
@@ -89,6 +114,7 @@ def replay(
     - Run consumer, which writes:
         - last_execution_result.json (+ execution_results.ndjson)
         - last_evaluation_result.json (+ evaluation_results.ndjson) on success
+    - Inject replay metadata into the latest artifacts for UI visibility
     """
     public_dir = public_dir.resolve()
     ndjson_path = public_dir / "execution_requests.ndjson"
@@ -101,13 +127,18 @@ def replay(
 
     result = consume(public_dir)
 
-    # Helpful console info, but the function remains deterministic.
-    computed = _compute_request_hash(chosen)
-    result["_replay"] = {
-        "selected_request_hash": computed,
+    replay_meta: Dict[str, Any] = {
+        "selected_request_hash": _compute_request_hash(chosen),
         "malformed_ndjson_lines_ignored": malformed,
         "selected_index": index,
     }
+
+    _inject_replay_metadata(public_dir, replay_meta)
+
+    # Also return it to the caller (CLI output / tests)
+    if isinstance(result, dict):
+        result["_replay"] = replay_meta
+
     return result
 
 

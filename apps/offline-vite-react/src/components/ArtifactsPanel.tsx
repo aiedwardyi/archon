@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 type ArtifactKind = "json" | "text";
 
@@ -15,7 +15,13 @@ type LoadState =
   | { status: "loading" }
   | { status: "missing"; message: string }
   | { status: "error"; message: string }
-  | { status: "loaded"; rawText: string; prettyText?: string };
+  | { status: "loaded"; rawText: string; prettyText?: string; json?: unknown };
+
+type ReplayInfo = {
+  selected_request_hash?: string;
+  malformed_ndjson_lines_ignored?: number;
+  selected_index?: number | null;
+};
 
 async function fetchTextStrict(path: string): Promise<{ ok: boolean; status: number; text: string }> {
   const res = await fetch(path, { cache: "no-store" });
@@ -23,13 +29,40 @@ async function fetchTextStrict(path: string): Promise<{ ok: boolean; status: num
   return { ok: res.ok, status: res.status, text };
 }
 
-function tryPrettyJson(raw: string): { ok: true; pretty: string } | { ok: false; error: string } {
+function tryParseJson(raw: string): { ok: true; json: unknown; pretty: string } | { ok: false; error: string } {
   try {
     const parsed = JSON.parse(raw);
-    return { ok: true, pretty: JSON.stringify(parsed, null, 2) };
+    return { ok: true, json: parsed, pretty: JSON.stringify(parsed, null, 2) };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
+}
+
+function extractReplayInfo(jsonValue: unknown): ReplayInfo | null {
+  if (!jsonValue || typeof jsonValue !== "object") return null;
+
+  const obj = jsonValue as Record<string, unknown>;
+  const replay = obj["_replay"];
+
+  if (!replay || typeof replay !== "object") return null;
+
+  const r = replay as Record<string, unknown>;
+  const info: ReplayInfo = {};
+
+  if (typeof r["selected_request_hash"] === "string") info.selected_request_hash = r["selected_request_hash"];
+  if (typeof r["malformed_ndjson_lines_ignored"] === "number")
+    info.malformed_ndjson_lines_ignored = r["malformed_ndjson_lines_ignored"];
+  if (typeof r["selected_index"] === "number" || r["selected_index"] === null) info.selected_index = r["selected_index"] as
+    | number
+    | null;
+
+  const hasAny =
+    typeof info.selected_request_hash === "string" ||
+    typeof info.malformed_ndjson_lines_ignored === "number" ||
+    typeof info.selected_index === "number" ||
+    info.selected_index === null;
+
+  return hasAny ? info : null;
 }
 
 export function ArtifactsPanel() {
@@ -68,6 +101,13 @@ export function ArtifactsPanel() {
 
   const [state, setState] = useState<LoadState>({ status: "idle" });
 
+  const replayInfo = useMemo(() => {
+    if (!selected) return null;
+    if (selected.id !== "last_execution_result") return null;
+    if (state.status !== "loaded") return null;
+    return extractReplayInfo(state.json);
+  }, [selected, state]);
+
   useEffect(() => {
     let cancelled = false;
     if (!selected) return;
@@ -91,16 +131,16 @@ export function ArtifactsPanel() {
       const rawText = res.text;
 
       if (selected.kind === "json") {
-        const pretty = tryPrettyJson(rawText);
-        if (!pretty.ok) {
+        const parsed = tryParseJson(rawText);
+        if (!parsed.ok) {
           setState({
             status: "error",
-            message: `JSON parse error in ${selected.title}: ${pretty.error}`,
+            message: `JSON parse error in ${selected.title}: ${parsed.error}`,
           });
           return;
         }
 
-        setState({ status: "loaded", rawText, prettyText: pretty.pretty });
+        setState({ status: "loaded", rawText, prettyText: parsed.pretty, json: parsed.json });
         return;
       }
 
@@ -120,8 +160,8 @@ export function ArtifactsPanel() {
       <div className="panelHeader">
         <h2>Artifacts</h2>
         <p className="muted">
-          Read-only runtime artifacts loaded directly from <span className="mono">/public</span>. Missing files and
-          parse errors are treated as visible UI state.
+          Read-only runtime artifacts loaded directly from <span className="mono">/public</span>. Missing files and parse
+          errors are treated as visible UI state.
         </p>
       </div>
 
@@ -170,9 +210,45 @@ export function ArtifactsPanel() {
               {state.message}
             </div>
           ) : state.status === "loaded" ? (
-            <pre className="codeBlock" style={{ marginTop: 10 }}>
-              {state.prettyText ?? state.rawText ?? "(empty)"}
-            </pre>
+            <>
+              {replayInfo ? (
+                <div className="card" style={{ marginTop: 10, padding: 12 }}>
+                  <div className="cardTitle">Replay</div>
+                  <div className="small muted" style={{ marginTop: 6 }}>
+                    This execution result was produced by <span className="mono">scripts/replay_execution_request.py</span>.
+                  </div>
+
+                  <div className="small" style={{ marginTop: 10 }}>
+                    <div>
+                      <span className="muted">selected_request_hash:</span>{" "}
+                      <span className="mono">{replayInfo.selected_request_hash ?? "(missing)"}</span>
+                    </div>
+
+                    <div style={{ marginTop: 6 }}>
+                      <span className="muted">selected_index:</span>{" "}
+                      <span className="mono">
+                        {replayInfo.selected_index === null || typeof replayInfo.selected_index === "number"
+                          ? String(replayInfo.selected_index)
+                          : "(missing)"}
+                      </span>
+                    </div>
+
+                    <div style={{ marginTop: 6 }}>
+                      <span className="muted">malformed_ndjson_lines_ignored:</span>{" "}
+                      <span className="mono">
+                        {typeof replayInfo.malformed_ndjson_lines_ignored === "number"
+                          ? String(replayInfo.malformed_ndjson_lines_ignored)
+                          : "(missing)"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              <pre className="codeBlock" style={{ marginTop: 10 }}>
+                {state.prettyText ?? state.rawText ?? "(empty)"}
+              </pre>
+            </>
           ) : (
             <div className="muted small" style={{ marginTop: 10 }}>
               Select an artifact.

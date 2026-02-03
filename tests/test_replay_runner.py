@@ -24,7 +24,6 @@ class ReplayRunnerTests(unittest.TestCase):
             public_dir = Path(td) / "public"
             public_dir.mkdir(parents=True, exist_ok=True)
 
-            # Create an NDJSON history with a single valid request
             req = {
                 "kind": "execution_request",
                 "task_id": "REPLAY-TEST-1",
@@ -52,6 +51,14 @@ class ReplayRunnerTests(unittest.TestCase):
 
             written_req = _read_json(public_dir / "last_execution_request.json")
             self.assertEqual(written_req.get("task_id"), "REPLAY-TEST-1")
+
+            exec_written = _read_json(public_dir / "last_execution_result.json")
+            self.assertIn("_replay", exec_written)
+            self.assertIn("selected_request_hash", exec_written["_replay"])
+
+            eval_written = _read_json(public_dir / "last_evaluation_result.json")
+            self.assertIn("_replay", eval_written)
+            self.assertIn("selected_request_hash", eval_written["_replay"])
 
     def test_replay_by_index(self):
         with tempfile.TemporaryDirectory() as td:
@@ -86,12 +93,15 @@ class ReplayRunnerTests(unittest.TestCase):
             _append_ndjson(public_dir / "execution_requests.ndjson", req1)
             _append_ndjson(public_dir / "execution_requests.ndjson", req2)
 
-            # index=0 should replay req1
             result = replay(public_dir=public_dir, index=0)
             self.assertEqual(result.get("status"), "success")
 
             written_req = _read_json(public_dir / "last_execution_request.json")
             self.assertEqual(written_req.get("task_id"), "REPLAY-TEST-A")
+
+            exec_written = _read_json(public_dir / "last_execution_result.json")
+            self.assertIn("_replay", exec_written)
+            self.assertEqual(exec_written["_replay"].get("selected_index"), 0)
 
 
 if __name__ == "__main__":
