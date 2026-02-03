@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import argparse
 import hashlib
@@ -6,6 +6,8 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
+
+from pydantic import ValidationError
 
 from schemas.evaluation_schema import EvaluationResult
 from schemas.execution_schema import ExecutionResult
@@ -148,17 +150,42 @@ def _check_write_records_exist(
     return True, [], checks
 
 
+def _build_fail_result(request_hash: str, reasons: List[str], checks: Dict[str, Any]) -> Dict[str, Any]:
+    result = EvaluationResult(
+        status="fail",
+        request_hash=request_hash,
+        reasons=reasons,
+        checks=checks,
+        _meta={
+            "produced_at": _utc_now_iso(),
+            "evaluator_version": EVALUATOR_VERSION,
+        },
+    )
+    # Strictly validate our own output before writing.
+    EvaluationResult.model_validate(result.model_dump())
+    return result.model_dump()
+
+
 def evaluate(public_dir: Path, execution_result_raw: Dict[str, Any]) -> Dict[str, Any]:
-    reasons: List[str] = []
+    """
+    STRICT BOUNDARY:
+    - Validate ExecutionResult immediately.
+    - If invalid, produce a fail EvaluationResult artifact and do NOT run deeper checks.
+    """
     checks: Dict[str, Any] = {}
+    reasons: List[str] = []
 
     try:
         ExecutionResult.model_validate(execution_result_raw)
         checks["execution_result_schema_valid"] = True
-    except Exception:
+    except ValidationError:
         checks["execution_result_schema_valid"] = False
         reasons.append("execution_result_schema_invalid")
 
+        request_hash = str(execution_result_raw.get("request_hash") or "")
+        return _build_fail_result(request_hash=request_hash, reasons=reasons, checks=checks)
+
+    # From here down, it's safe to assume schema shape is correct.
     ok, r = _check_required_keys(execution_result_raw)
     checks["required_keys_present"] = ok
     reasons.extend(r)
@@ -188,16 +215,35 @@ def evaluate(public_dir: Path, execution_result_raw: Dict[str, Any]) -> Dict[str
             "evaluator_version": EVALUATOR_VERSION,
         },
     )
+
+    # Strictly validate our own output before writing.
+    EvaluationResult.model_validate(result.model_dump())
     return result.model_dump()
 
 
 def consume(public_dir: Path) -> Dict[str, Any]:
+    """
+    STRICT BOUNDARY:
+    - Never crash on missing/invalid execution result.
+    - Always write a visible EvaluationResult artifact and append to NDJSON history.
+    """
     execution_result_path = public_dir / "last_execution_result.json"
     eval_result_path = public_dir / "last_evaluation_result.json"
     eval_log_path = public_dir / "evaluation_results.ndjson"
 
-    execution_result = read_json(execution_result_path)
-    evaluation_result = evaluate(public_dir, execution_result)
+    try:
+        execution_result = read_json(execution_result_path)
+    except Exception as e:
+        evaluation_result = _build_fail_result(
+            request_hash="",
+            reasons=["missing_or_invalid_execution_result"],
+            checks={
+                "execution_result_schema_valid": False,
+                "error_type": e.__class__.__name__,
+            },
+        )
+    else:
+        evaluation_result = evaluate(public_dir, execution_result)
 
     atomic_write(
         eval_result_path,
