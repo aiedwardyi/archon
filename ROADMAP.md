@@ -1,4 +1,4 @@
-﻿# AI Dev Team — Execution Roadmap
+# AI Dev Team — Execution Roadmap
 
 ## Purpose
 
@@ -19,34 +19,34 @@ This is not a demo generator. It is designed to behave like a real internal AI-a
 
 **Flow**
 
-User idea  
-→ Product Manager (PRD)  
-→ Planner (Plan schema: milestones + tasks)  
-→ Deterministic Orchestrator  
-→ Engineer agent  
-→ Safe file writes  
+User idea
+→ Product Manager (PRD)
+→ Planner (Plan schema: milestones + tasks)
+→ Deterministic Orchestrator
+→ Engineer agent
+→ Safe file writes
 → Observable artifacts
 
-**Key principle:**  
+**Key principle:**
 Every step emits structured artifacts that can be inspected, validated, and replayed.
 
 ---
 
 ## Design Principles
 
-- **Determinism first**  
+- **Determinism first**
   Identical inputs produce identical artifacts.
 
-- **Explicit contracts**  
+- **Explicit contracts**
   JSON schemas define all agent boundaries.
 
-- **Offline-first**  
+- **Offline-first**
   The system operates without network calls.
 
-- **Observable state**  
+- **Observable state**
   Execution requests, plans, results, and evaluations are written as files.
 
-- **Failure visibility**  
+- **Failure visibility**
   Errors surface as artifacts, not hidden logs.
 
 ---
@@ -81,11 +81,12 @@ Every step emits structured artifacts that can be inspected, validated, and repl
 
 ---
 
-### Phase 4 — Production Hardening (In Progress)
+### Phase 4 — Production Hardening (Completed)
 - Read-only UI for last execution/evaluation artifacts (**Completed**)
 - Read-only UI for NDJSON execution/evaluation histories (**Completed**)
-- Strict schema enforcement at system boundaries (**Planned**)
-- Deterministic replay runner for past executions (**Planned**)
+- Strict schema enforcement at system boundaries (**Completed**)
+- Deterministic replay runner for past executions (**Completed**)
+- Replay metadata surfaced in UI artifacts (**Completed**)
 
 ---
 
