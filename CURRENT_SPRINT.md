@@ -1,4 +1,4 @@
-﻿# Current Sprint — Phase 4: Observable UI + Hardening
+# Current Sprint — Phase 4: Observable UI + Hardening
 
 ## Sprint Goal
 
@@ -17,7 +17,7 @@ Make the system **operationally observable** and **contract-enforced** by adding
 - Golden snapshot regression guard in place
 - Deterministic task execution with safe allow-listed writes
 - Deterministic evaluation harness producing pass/fail artifacts
-- **Observable UI for runtime artifacts and histories (Phase 4)**
+- Observable UI for runtime artifacts and histories (Phase 4)
 
 ---
 
@@ -53,7 +53,7 @@ Make the system **operationally observable** and **contract-enforced** by adding
 ---
 
 ### 3. Strict Schema Enforcement at Boundaries
-**Status:** Planned
+**Status:** Done
 
 - Enforce schema validation for:
   - ExecutionRequest input
@@ -65,7 +65,7 @@ Make the system **operationally observable** and **contract-enforced** by adding
 ---
 
 ### 4. Deterministic Replay Runner
-**Status:** Planned
+**Status:** Done
 
 - Script to replay a selected request from `execution_requests.ndjson`
 - Offline-only execution (no network calls)
@@ -85,5 +85,3 @@ Make the system **operationally observable** and **contract-enforced** by adding
 - No hidden state introduced
 - All tests passing
 - `ROADMAP.md` reflects accurate phase status
-
----
