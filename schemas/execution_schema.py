@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Literal
 from pydantic import BaseModel, Field
 
 
@@ -26,6 +26,11 @@ class ExecutionResultMeta(BaseModel):
 
 class ExecutionResult(BaseModel):
     kind: str = Field(default="execution_result")
+
+    # Phase 5 (metadata-only): identify which agent produced this result.
+    # Keep this explicit + schema-validated so multi-agent handoffs can be replayed deterministically.
+    agent_role: Literal["planner", "engineer"]
+
     status: str  # "success" | "error"
     request_hash: str
 

@@ -17,6 +17,9 @@ from scripts.evaluate_execution_result import consume as evaluate_consume
 CONSUMER_VERSION = "v3"
 _REQUEST_NONDTERMINISTIC_KEYS = {"created_at", "_meta"}
 
+# Phase 5 (metadata-only): this consumer produces engineer execution results.
+_AGENT_ROLE = "engineer"
+
 
 def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -86,6 +89,7 @@ def _build_error_result(
     req_obj = _safe_request_placeholder(req_raw)
 
     result = ExecutionResult(
+        agent_role=_AGENT_ROLE,
         status="error",
         request_hash=request_hash,
         request=req_obj,
@@ -130,6 +134,7 @@ def build_execution_result(public_dir: Path, req_raw: Dict[str, Any]) -> Dict[st
         )
 
         result = ExecutionResult(
+            agent_role=_AGENT_ROLE,
             status="success",
             request_hash=request_hash,
             request=req,
@@ -147,6 +152,7 @@ def build_execution_result(public_dir: Path, req_raw: Dict[str, Any]) -> Dict[st
 
     except Exception as e:
         result = ExecutionResult(
+            agent_role=_AGENT_ROLE,
             status="error",
             request_hash=request_hash,
             request=req,
