@@ -1,87 +1,76 @@
-# Current Sprint — Phase 4: Observable UI + Hardening
+# Current Sprint — Phase 5: Multi-Agent Coordination (Foundations)
 
 ## Sprint Goal
 
-Make the system **operationally observable** and **contract-enforced** by adding read-only UI surfaces for execution and evaluation artifacts, and by hardening schema boundaries — without introducing hidden state or network dependency.
+Introduce **explicit multi-agent coordination** into the system by adding
+role attribution and deterministic handoffs between agents — without
+introducing autonomy, hidden state, or new subsystems.
+
+This phase proves that multiple agents can collaborate through
+**structured, replayable artifacts**.
 
 ---
 
 ## Current State (Verified)
 
 - Offline-first frontend (Vite + React + TypeScript)
-- Lovable-style milestone/task board
-- Deterministic task selection + execution request emission
-- Local backend persistence with offline fallback
-- Orchestrator consumer produces deterministic execution result artifacts
-- Determinism enforced via canonical hashing + regression tests
-- Golden snapshot regression guard in place
-- Deterministic task execution with safe allow-listed writes
-- Deterministic evaluation harness producing pass/fail artifacts
-- Observable UI for runtime artifacts and histories (Phase 4)
+- Deterministic execution request emission
+- Deterministic consumer producing execution results
+- Deterministic evaluator producing pass/fail artifacts
+- Strict schema enforcement at all boundaries
+- Golden snapshot regression tests
+- Deterministic replay runner with UI visibility
+- All Phase 4 work completed and tagged
 
 ---
 
-## Phase 4 Work Items (Executable)
+## Phase 5 Work Items (Executable)
 
-### 1. Read-only “Artifacts” UI Panel
-**Status:** Done
+### 1. Agent Role Attribution in Execution Results
+**Status:** Planned
 
-- UI renders:
-  - `last_execution_request.json`
-  - `last_execution_result.json`
-  - `last_evaluation_result.json`
-- Files are loaded directly from `public/`
-- Missing files and parse errors are surfaced as visible UI state
-- UI performs **no writes or mutations**
-
----
-
-### 2. Read-only “History” UI Panel (NDJSON)
-**Status:** Done
-
-- UI renders append-only histories:
-  - `execution_requests.ndjson`
-  - `execution_results.ndjson`
-  - `evaluation_results.ndjson`
-- Robust line-by-line NDJSON parsing
-- Malformed lines are ignored and counted (visible in UI)
-- Client-side filtering by:
-  - `task_id`
-  - `request_hash`
-- UI is strictly read-only and offline-safe
+- Extend `ExecutionResult` to include:
+  - `agent_role` (e.g. `"planner"`, `"engineer"`)
+- Agent role must be:
+  - explicitly written into artifacts
+  - validated by schema
+  - visible in UI artifacts panel
+- No behavior change yet — metadata only
 
 ---
 
-### 3. Strict Schema Enforcement at Boundaries
-**Status:** Done
+### 2. Deterministic Agent Handoff Contract
+**Status:** Planned
 
-- Enforce schema validation for:
-  - ExecutionRequest input
-  - ExecutionResult output
-  - EvaluationResult output
-- Validation failures must produce visible artifacts
-- No silent exceptions or hidden failure paths
+- Define a rule:
+  - one agent consumes the **previous agent’s artifact**
+- Example:
+  - Planner produces a Plan artifact
+  - Engineer consumes that Plan via an ExecutionRequest
+- Handoff must be:
+  - file-based
+  - deterministic
+  - replayable
 
 ---
 
-### 4. Deterministic Replay Runner
-**Status:** Done
+### 3. Multi-Agent Replay Support
+**Status:** Planned
 
-- Script to replay a selected request from `execution_requests.ndjson`
-- Offline-only execution (no network calls)
-- Deterministic reproduction of:
-  - execution result
-  - evaluation result
-- Covered by regression tests
+- Replay runner must:
+  - preserve agent role metadata
+  - replay agent handoffs deterministically
+- UI must show:
+  - agent role per execution
+  - sequence of agent actions
 
 ---
 
 ## Definition of Done (Sprint)
 
-- Observable UI surfaces for last artifacts and full histories
-- Robust handling of missing or malformed runtime data
-- Strict schema enforcement at all system boundaries
-- Deterministic replay capability for past executions
-- No hidden state introduced
+- Execution and evaluation artifacts clearly identify the producing agent
+- Agent-to-agent handoffs are explicit and file-based
+- Multi-agent executions are replayable
+- No hidden state or implicit memory
 - All tests passing
-- `ROADMAP.md` reflects accurate phase status
+- ROADMAP.md remains accurate
