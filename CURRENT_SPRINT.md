@@ -27,30 +27,42 @@ This phase proves that multiple agents can collaborate through
 ## Phase 5 Work Items (Executable)
 
 ### 1. Agent Role Attribution in Execution Results
-**Status:** Planned
+**Status:** ✅ COMPLETED
 
-- Extend `ExecutionResult` to include:
-  - `agent_role` (e.g. `"planner"`, `"engineer"`)
-- Agent role must be:
-  - explicitly written into artifacts
-  - validated by schema
-  - visible in UI artifacts panel
-- No behavior change yet — metadata only
+- Extended `ExecutionResult` schema with `agent_role` field
+- Consumer writes `agent_role: "engineer"` into all execution artifacts
+- Schema validation enforces agent role presence
+- Visible in UI artifacts panel
+- Metadata-only change (no behavior modification)
 
 ---
 
 ### 2. Deterministic Agent Handoff Contract
-**Status:** Planned
+**Status:** 🔄 IN PROGRESS
 
-- Define a rule:
-  - one agent consumes the **previous agent’s artifact**
-- Example:
-  - Planner produces a Plan artifact
-  - Engineer consumes that Plan via an ExecutionRequest
-- Handoff must be:
-  - file-based
-  - deterministic
-  - replayable
+**Completed:**
+- ✅ Created PRD schema with 14 validated sections
+- ✅ Implemented PM agent using OpenAI structured outputs
+- ✅ PM agent generates PRD artifacts with `agent_role: "pm"`
+- ✅ PRD artifacts written to `artifacts/last_prd.json`
+- ✅ Validation example: Todo List PRD generated
+
+**Remaining:**
+- [ ] Planner agent consumes PRD artifact (currently reads from old location)
+- [ ] Update planner to read from `artifacts/last_prd.json`
+- [ ] Engineer consumes Plan artifact (verify existing flow)
+- [ ] End-to-end test: PM → Planner → Engineer handoff
+- [ ] UI displays PRD artifacts
+
+**Handoff definition:**
+- PM produces PRD artifact → `artifacts/last_prd.json`
+- Planner consumes PRD → produces Plan artifact
+- Engineer consumes Plan → produces code artifacts
+
+All handoffs must be:
+- File-based (no in-memory passing)
+- Deterministic (same input = same output)
+- Replayable (can re-run from any artifact)
 
 ---
 
@@ -68,9 +80,11 @@ This phase proves that multiple agents can collaborate through
 
 ## Definition of Done (Sprint)
 
-- Execution and evaluation artifacts clearly identify the producing agent
-- Agent-to-agent handoffs are explicit and file-based
-- Multi-agent executions are replayable
-- No hidden state or implicit memory
-- All tests passing
-- ROADMAP.md remains accurate
+- ✅ Execution and evaluation artifacts clearly identify the producing agent
+- 🔄 Agent-to-agent handoffs are explicit and file-based (in progress)
+- ⏳ Multi-agent executions are replayable
+- ✅ No hidden state or implicit memory
+- ✅ All tests passing
+- 🔄 ROADMAP.md remains accurate
+
+---
