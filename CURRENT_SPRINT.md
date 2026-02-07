@@ -49,7 +49,7 @@ This phase proves that multiple agents can collaborate through
 - ✅ Updated PlannerAgent to consume PRD artifacts
 - ✅ Planner reads PRD, generates Plan with milestones/tasks
 - ✅ Engineer consumes Plan, generates code (verified working)
-- ✅ End-to-end test: Calculator app → PRD → Plan (5 milestones, 19 tasks) → Code (11 files)
+- ✅ End-to-end test: Calculator app → PRD → Plan (5 milestones, 21 tasks) → Code (3 files)
 - ✅ Full chain validated: PM (OpenAI) → Planner (Gemini) → Engineer (Gemini)
 
 **Handoff implementation:**
@@ -66,16 +66,35 @@ All handoffs are:
 
 ---
 
-### 3. Multi-Agent Replay Support
-**Status:** Planned
+### 3. Multi-Agent Orchestration & Execution
+**Status:** 🔄 IN PROGRESS
 
-- Replay runner must:
-  - preserve agent role metadata
-  - replay agent handoffs deterministically
-- UI must show:
-  - agent role per execution
-  - sequence of agent actions
-  - PRD artifacts in artifacts panel
+**Completed:**
+- ✅ Created `scripts/orchestrate_multi_agent.py` - Production orchestrator
+  - Runs PM → Planner chain
+  - Saves PRD and Plan artifacts with agent sequence metadata
+  - CLI interface with `@file.txt` syntax support
+- ✅ Updated `App.tsx` to unwrap `plan_artifact` format (backward compatible)
+- ✅ Added `last_plan.json` to ArtifactsPanel UI
+- ✅ Agent sequence visualization in UI (`pm → planner`)
+- ✅ Integrated Engineer agent into `deterministic_executor.py`
+  - Consumes task_snapshot from execution requests
+  - Generates code files via EngineerAgent
+  - Writes to `public/generated/` directory
+- ✅ Extended `safe_write.py` to support web development file types
+  - Added .html, .css, .js, .jsx, .ts, .tsx, .py, etc.
+  - Allows files without extensions (e.g., .gitignore)
+- ✅ End-to-end verification: orchestrator → plan → task execution → code generation
+
+**Remaining:**
+- ⏳ UI workflow improvements:
+  - Auto-save execution requests to file (currently uses localStorage)
+  - Add visual feedback when "Execute task" is clicked
+  - Consider backend endpoint or sync script for request persistence
+- ⏳ Multi-agent replay support:
+  - Replay runner must preserve agent role metadata
+  - Replay agent handoffs deterministically
+  - UI must show agent role per execution and sequence of agent actions
 
 ---
 
@@ -83,7 +102,7 @@ All handoffs are:
 
 - ✅ Execution and evaluation artifacts clearly identify the producing agent
 - ✅ Agent-to-agent handoffs are explicit and file-based
-- ⏳ Multi-agent executions are replayable (Item 3 remaining)
+- 🔄 Multi-agent executions are replayable (UI workflow improvements needed)
 - ✅ No hidden state or implicit memory
 - ✅ All tests passing
 - 🔄 ROADMAP.md needs update to reflect Phase 5 progress
@@ -92,7 +111,8 @@ All handoffs are:
 
 ## Next Steps
 
-1. Complete Phase 5, Item 3: Multi-agent replay support
-2. Add UI for PRD artifact display
-3. Update ROADMAP.md to mark Phase 5 progress
-4. Tag Phase 5 completion when all items done
+1. Fix UI execution request persistence (localStorage → file)
+2. Add user feedback for task execution
+3. Complete multi-agent replay runner
+4. Update ROADMAP.md to mark Phase 5 progress
+5. Tag Phase 5 completion when all items done
