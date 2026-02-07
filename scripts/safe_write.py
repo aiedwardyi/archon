@@ -1,13 +1,17 @@
 ﻿from __future__ import annotations
-
 import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Optional
 
-
-ALLOWED_EXTENSIONS = {".txt", ".md", ".json"}
-
+ALLOWED_EXTENSIONS = {
+    "", ".txt", ".md", ".json",  # Added "" for files without extension
+    ".html", ".css", ".js", ".jsx", ".ts", ".tsx",
+    ".py", ".java", ".c", ".cpp", ".h", ".hpp",
+    ".xml", ".yaml", ".yml", ".toml", ".ini", ".cfg",
+    ".sh", ".bash", ".bat", ".ps1",
+    ".svg", ".gitignore", ".env.example",
+}
 
 @dataclass(frozen=True)
 class WriteRecord:
@@ -42,31 +46,30 @@ def safe_write_text(
     - Atomic write
     """
     allowlist_dir.mkdir(parents=True, exist_ok=True)
-
     rel = Path(relative_path)
-
+    
     # Disallow absolute paths and drive-rooted paths
     if rel.is_absolute() or str(rel).startswith(("\\\\", "/")):
         raise ValueError(f"Unsafe path (absolute): {relative_path}")
-
+    
     # Build final target
     target = (allowlist_dir / rel)
-
+    
     # Enforce extension allowlist
     exts = set(allowed_extensions) if allowed_extensions is not None else ALLOWED_EXTENSIONS
     if target.suffix.lower() not in exts:
         raise ValueError(f"Disallowed extension: {target.suffix} (allowed: {sorted(exts)})")
-
+    
     # Ensure no traversal outside allowlist_dir
     _ensure_within_dir(allowlist_dir, target)
-
+    
     data = content.encode("utf-8")
     digest = _sha256_bytes(data)
-
+    
     # Atomic write
     target.parent.mkdir(parents=True, exist_ok=True)
     tmp = target.with_suffix(target.suffix + ".tmp")
     tmp.write_bytes(data)
     tmp.replace(target)
-
+    
     return WriteRecord(path=str(target), sha256=digest, bytes=len(data))

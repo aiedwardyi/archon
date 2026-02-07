@@ -8,6 +8,14 @@ import { HistoryPanel } from "./components/HistoryPanel";
 
 type Tab = "board" | "raw" | "artifacts" | "history";
 
+type PlanArtifact = {
+  kind: string;
+  agent_role: string;
+  plan: Plan;
+  created_at: string;
+  _agent_sequence?: string[];
+};
+
 async function fetchText(path: string): Promise<string> {
   const res = await fetch(path, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch ${path}: ${res.status}`);
@@ -39,9 +47,23 @@ export default function App() {
 
     (async () => {
       try {
-        const p = await fetchJson<Plan>("/last_plan.json");
+        const data = await fetchJson<any>("/last_plan.json");
         if (cancelled) return;
-        setPlan(p);
+        
+        // Handle both old format (Plan directly) and new format (PlanArtifact wrapper)
+        let planData: Plan;
+        
+        if (data.kind === "plan_artifact" && data.plan) {
+          // New wrapped format
+          planData = data.plan as Plan;
+        } else if (data.milestones) {
+          // Old direct format (backward compatible)
+          planData = data as Plan;
+        } else {
+          throw new Error("Invalid plan format: missing 'milestones' or 'plan' field");
+        }
+        
+        setPlan(planData);
         setPlanError("");
       } catch (e) {
         if (cancelled) return;
