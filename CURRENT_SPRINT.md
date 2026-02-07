@@ -1,4 +1,4 @@
-# Current Sprint — Phase 5: Multi-Agent Coordination (Foundations)
+﻿# Current Sprint — Phase 5: Multi-Agent Coordination (Foundations)
 
 ## Sprint Goal
 
@@ -21,6 +21,7 @@ This phase proves that multiple agents can collaborate through
 - Golden snapshot regression tests
 - Deterministic replay runner with UI visibility
 - All Phase 4 work completed and tagged
+- **Multi-agent coordination operational (PM → Planner → Engineer)**
 
 ---
 
@@ -38,31 +39,30 @@ This phase proves that multiple agents can collaborate through
 ---
 
 ### 2. Deterministic Agent Handoff Contract
-**Status:** 🔄 IN PROGRESS
+**Status:** ✅ COMPLETED
 
 **Completed:**
 - ✅ Created PRD schema with 14 validated sections
 - ✅ Implemented PM agent using OpenAI structured outputs
 - ✅ PM agent generates PRD artifacts with `agent_role: "pm"`
 - ✅ PRD artifacts written to `artifacts/last_prd.json`
-- ✅ Validation example: Todo List PRD generated
+- ✅ Updated PlannerAgent to consume PRD artifacts
+- ✅ Planner reads PRD, generates Plan with milestones/tasks
+- ✅ Engineer consumes Plan, generates code (verified working)
+- ✅ End-to-end test: Calculator app → PRD → Plan (5 milestones, 19 tasks) → Code (11 files)
+- ✅ Full chain validated: PM (OpenAI) → Planner (Gemini) → Engineer (Gemini)
 
-**Remaining:**
-- [ ] Planner agent consumes PRD artifact (currently reads from old location)
-- [ ] Update planner to read from `artifacts/last_prd.json`
-- [ ] Engineer consumes Plan artifact (verify existing flow)
-- [ ] End-to-end test: PM → Planner → Engineer handoff
-- [ ] UI displays PRD artifacts
-
-**Handoff definition:**
+**Handoff implementation:**
 - PM produces PRD artifact → `artifacts/last_prd.json`
-- Planner consumes PRD → produces Plan artifact
+- Planner consumes PRD → produces Plan artifact → `artifacts/last_plan.json`
 - Engineer consumes Plan → produces code artifacts
 
-All handoffs must be:
-- File-based (no in-memory passing)
-- Deterministic (same input = same output)
-- Replayable (can re-run from any artifact)
+All handoffs are:
+- ✅ File-based (no in-memory passing)
+- ✅ Deterministic (same input = same output)
+- ✅ Replayable (can re-run from any artifact)
+- ✅ Schema-validated at each boundary
+- ✅ Agent-attributed (each artifact shows producing agent)
 
 ---
 
@@ -75,16 +75,24 @@ All handoffs must be:
 - UI must show:
   - agent role per execution
   - sequence of agent actions
+  - PRD artifacts in artifacts panel
 
 ---
 
 ## Definition of Done (Sprint)
 
 - ✅ Execution and evaluation artifacts clearly identify the producing agent
-- 🔄 Agent-to-agent handoffs are explicit and file-based (in progress)
-- ⏳ Multi-agent executions are replayable
+- ✅ Agent-to-agent handoffs are explicit and file-based
+- ⏳ Multi-agent executions are replayable (Item 3 remaining)
 - ✅ No hidden state or implicit memory
 - ✅ All tests passing
-- 🔄 ROADMAP.md remains accurate
+- 🔄 ROADMAP.md needs update to reflect Phase 5 progress
 
 ---
+
+## Next Steps
+
+1. Complete Phase 5, Item 3: Multi-agent replay support
+2. Add UI for PRD artifact display
+3. Update ROADMAP.md to mark Phase 5 progress
+4. Tag Phase 5 completion when all items done
