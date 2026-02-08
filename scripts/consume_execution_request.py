@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import hashlib
@@ -133,40 +133,64 @@ def build_execution_result(public_dir: Path, req_raw: Dict[str, Any]) -> Dict[st
             payload=req.payload or {},
         )
 
-        result = ExecutionResult(
-            agent_role=_AGENT_ROLE,
-            status="success",
-            request_hash=request_hash,
-            request=req,
-            outputs=outputs,
-            error=None,
-            _meta={
+        # Phase 5: Extract and extend agent sequence
+        agent_sequence = []
+        if req.payload and isinstance(req.payload, dict):
+            existing_sequence = req.payload.get("_agent_sequence")
+            if isinstance(existing_sequence, list):
+                agent_sequence = existing_sequence.copy()
+        
+        # Append engineer to the chain
+        agent_sequence.append(_AGENT_ROLE)
+
+        result_dict = {
+            "kind": "execution_result",
+            "agent_role": _AGENT_ROLE,
+            "status": "success",
+            "request_hash": request_hash,
+            "request": req.model_dump(),
+            "outputs": outputs,
+            "error": None,
+            "_agent_sequence": agent_sequence,
+            "_meta": {
                 "produced_at": _utc_now_iso(),
                 "consumer_version": CONSUMER_VERSION,
             },
-        )
+        }
 
         # Strictly validate our own output before writing.
-        ExecutionResult.model_validate(result.model_dump())
-        return result.model_dump()
+        ExecutionResult.model_validate(result_dict)
+        return result_dict
 
     except Exception as e:
-        result = ExecutionResult(
-            agent_role=_AGENT_ROLE,
-            status="error",
-            request_hash=request_hash,
-            request=req,
-            outputs={},
-            error={"message": str(e), "type": e.__class__.__name__},
-            _meta={
+        # Phase 5: Extract and extend agent sequence even on error
+        agent_sequence = []
+        if req.payload and isinstance(req.payload, dict):
+            existing_sequence = req.payload.get("_agent_sequence")
+            if isinstance(existing_sequence, list):
+                agent_sequence = existing_sequence.copy()
+        
+        # Append engineer to the chain
+        agent_sequence.append(_AGENT_ROLE)
+
+        result_dict = {
+            "kind": "execution_result",
+            "agent_role": _AGENT_ROLE,
+            "status": "error",
+            "request_hash": request_hash,
+            "request": req.model_dump(),
+            "outputs": {},
+            "error": {"message": str(e), "type": e.__class__.__name__},
+            "_agent_sequence": agent_sequence,
+            "_meta": {
                 "produced_at": _utc_now_iso(),
                 "consumer_version": CONSUMER_VERSION,
             },
-        )
+        }
 
         # Strictly validate our own output before writing.
-        ExecutionResult.model_validate(result.model_dump())
-        return result.model_dump()
+        ExecutionResult.model_validate(result_dict)
+        return result_dict
 
 
 def consume(public_dir: Path) -> Dict[str, Any]:
