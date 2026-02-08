@@ -1,4 +1,4 @@
-# AI Dev Team — Execution Roadmap
+﻿# AI Dev Team — Execution Roadmap
 
 ## Purpose
 
@@ -53,7 +53,7 @@ Every step emits structured artifacts that can be inspected, validated, and repl
 
 ## Phased Execution Plan
 
-### Phase 1 — Foundations (Completed)
+### Phase 1 — Foundations (✅ Completed)
 - Schema-validated PRD generation
 - Planner producing milestone/task plans
 - Deterministic offline regeneration
@@ -62,7 +62,7 @@ Every step emits structured artifacts that can be inspected, validated, and repl
 
 ---
 
-### Phase 2 — Interactive Execution (Completed)
+### Phase 2 — Interactive Execution (✅ Completed)
 - Lovable-style milestone/task UI
 - Deterministic execution request emission
 - UI → backend artifact handoff
@@ -71,7 +71,7 @@ Every step emits structured artifacts that can be inspected, validated, and repl
 
 ---
 
-### Phase 3 — Orchestration & Evaluation (Completed)
+### Phase 3 — Orchestration & Evaluation (✅ Completed)
 - Orchestrator consumes execution request artifacts
 - Deterministic execution result artifacts
 - Evaluation harness producing pass/fail artifacts
@@ -81,27 +81,75 @@ Every step emits structured artifacts that can be inspected, validated, and repl
 
 ---
 
-### Phase 4 — Production Hardening (Completed)
-- Read-only UI for last execution/evaluation artifacts (**Completed**)
-- Read-only UI for NDJSON execution/evaluation histories (**Completed**)
-- Strict schema enforcement at system boundaries (**Completed**)
-- Deterministic replay runner for past executions (**Completed**)
-- Replay metadata surfaced in UI artifacts (**Completed**)
+### Phase 4 — Production Hardening (✅ Completed)
+- Read-only UI for last execution/evaluation artifacts
+- Read-only UI for NDJSON execution/evaluation histories
+- Strict schema enforcement at system boundaries
+- Deterministic replay runner for past executions
+- Replay metadata surfaced in UI artifacts
 
 ---
 
-### Phase 5 — Expansion & Multi-Agent Coordination (Planned)
-- Replayable execution history across agents
-- Multi-agent task coordination
-- Extended agent roles (PM / Planner / Engineer)
-- SaaS-ready architectural decisions
+### Phase 5 — Multi-Agent Coordination (✅ Completed)
+
+**Accomplished:**
+- **Multi-agent workflow:** PM (OpenAI) → Planner (Gemini) → Engineer (Gemini)
+- **Flask API backend:** Async execution with threading, state tracking
+- **React UI integration:** Task execution with polling and toast notifications
+- **Agent sequence tracking:** Metadata preserved throughout entire chain (`_agent_sequence`)
+- **File-based handoffs:** PRD → Plan → Execution Request → Execution Result
+- **Automated workflow:** No manual script execution required
+- **Production-ready patterns:** Async processing, proper error handling, user feedback
+
+**Technical Implementation:**
+- PM agent generates structured PRDs using OpenAI structured outputs
+- Planner consumes PRDs, generates plans with milestones and tasks
+- Engineer executes tasks, generates code files deterministically
+- Flask backend manages async execution with background threading
+- React frontend polls for completion, shows toast notifications
+- All artifacts schema-validated at boundaries
+- Agent metadata tracked end-to-end for observability
+
+**UI Features:**
+- Click "Execute task" → automated PM → Planner → Engineer flow
+- Real-time status polling (every 2 seconds)
+- Visual feedback with toast notifications (blue start, green success, red error)
+- Artifacts panel shows agent sequence for each execution
+- No page refreshes interrupt workflow
+
+---
+
+## Current State
+
+**Production-ready multi-agent system with:**
+- ✅ Three-agent coordination (PM, Planner, Engineer)
+- ✅ Flask API backend with async execution
+- ✅ React UI with automated task execution
+- ✅ Complete observability (all artifacts visible)
+- ✅ Deterministic, replayable workflows
+- ✅ Schema validation at all boundaries
+
+**Architecture:**
+```
+User Input (UI)
+    ↓
+PM Agent (OpenAI) → PRD artifact
+    ↓
+Planner Agent (Gemini) → Plan artifact
+    ↓
+Flask API → Execution Request
+    ↓
+Engineer Agent (Gemini) → Code files
+    ↓
+Execution Result → UI notification
+```
 
 ---
 
 ## Non-Goals
 
 - Fully autonomous unsupervised code deployment
-- “Magic” generation without traceability
+- "Magic" generation without traceability
 - Hidden state or implicit agent behavior
 
 ---
@@ -123,3 +171,5 @@ This repository is intended for:
 - Platform engineers
 - Founders building AI-assisted developer tooling
 - Teams evaluating deterministic agent orchestration patterns
+
+---
