@@ -10,6 +10,7 @@ import {
   isDone,
 } from "../types/plan";
 import { buildExecutionRequest } from "../utils/executionRequest";
+import { showToast } from "./ToastContainer";
 
 type Props = {
   plan: Plan | null;
@@ -39,20 +40,12 @@ function pickTask(m: PlanMilestone | null, idx: number): PlanTask | null {
   return tasks[idx] ?? null;
 }
 
-function persistExecutionRequest(req: unknown) {
-  localStorage.setItem("last_execution_request", JSON.stringify(req, null, 2));
-
-  const logKey = "execution_requests_log";
-  const line = JSON.stringify(req);
-  const prev = localStorage.getItem(logKey) ?? "";
-  localStorage.setItem(logKey, prev ? `${prev}\n${line}` : line);
-}
-
 export function TaskPanel(props: Props) {
   const milestone = pickMilestone(props.plan, props.selectedMilestoneIndex);
   const task = pickTask(milestone, props.selectedTaskIndex);
 
   const [lastRequestJson, setLastRequestJson] = useState<string>("");
+  const [isExecuting, setIsExecuting] = useState<boolean>(false);
 
   useEffect(() => {
     const v = localStorage.getItem("last_execution_request");
@@ -85,6 +78,110 @@ export function TaskPanel(props: Props) {
 
   const raw = normalizeText(task);
 
+  const handleExecute = async () => {
+    console.log("🚀 BUTTON CLICKED!");
+    alert("Button clicked! Check console for logs.");
+    
+    setIsExecuting(true);
+    showToast("Task execution started...", "info");
+
+    try {
+      console.log("📡 Fetching plan artifact...");
+      
+      // Fetch plan artifact to get agent sequence
+      const planRes = await fetch("http://localhost:5000/api/plan", { cache: "no-store" });
+      const planArtifact = await planRes.json();
+      const agentSequence = planArtifact?._agent_sequence || [];
+      
+      console.log("📋 Agent sequence:", agentSequence);
+
+      // Build execution request
+      const req = buildExecutionRequest({
+        milestoneIndex: props.selectedMilestoneIndex,
+        taskIndex: props.selectedTaskIndex,
+        milestoneTitle,
+        taskId,
+        taskTitle,
+        taskSnapshot: task,
+        agentSequence,
+      });
+
+      console.log("📤 Execution request:", req);
+
+      // Save to localStorage for debugging
+      localStorage.setItem("last_execution_request", JSON.stringify(req, null, 2));
+      setLastRequestJson(JSON.stringify(req, null, 2));
+
+      // POST to Flask API
+      console.log("🌐 Sending to Flask...");
+      const executeRes = await fetch("http://localhost:5000/api/execute-task", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req),
+      });
+
+      if (!executeRes.ok) {
+        const error = await executeRes.json();
+        throw new Error(error.error || "Failed to execute task");
+      }
+
+      console.log("✅ Task execution request sent to Flask");
+
+      // Poll for result
+      let attempts = 0;
+      const maxAttempts = 15;
+      
+      const pollInterval = setInterval(async () => {
+        attempts++;
+        console.log(`🔄 Polling attempt ${attempts}/${maxAttempts}`);
+
+        try {
+          const statusRes = await fetch("http://localhost:5000/api/execution-status", {
+            cache: "no-store",
+          });
+
+          if (statusRes.ok) {
+            const result = await statusRes.json();
+            console.log("📥 Poll result:", {
+              status: result.status,
+              taskId: result.request?.task_id,
+              hasError: !!result.error
+            });
+            
+            if (result.status === "success") {
+              clearInterval(pollInterval);
+              setIsExecuting(false);
+              console.log("✅ Execution succeeded!");
+              showToast("Task execution completed!", "success");
+            } else if (result.status === "error") {
+              clearInterval(pollInterval);
+              setIsExecuting(false);
+              console.log("❌ Execution failed:", result.error);
+              showToast(`Execution failed: ${result.error?.message || "Unknown error"}`, "error");
+            }
+          } else {
+            console.warn("⚠️ Poll response not OK:", statusRes.status);
+          }
+
+          if (attempts >= maxAttempts) {
+            clearInterval(pollInterval);
+            setIsExecuting(false);
+            console.warn("⏱️ Polling timeout");
+            showToast("Execution timeout - check artifacts panel", "error");
+          }
+        } catch (e) {
+          console.error("❌ Poll error:", e);
+        }
+      }, 2000);
+
+    } catch (e) {
+      setIsExecuting(false);
+      const message = e instanceof Error ? e.message : "Unknown error";
+      console.error("❌ Execution error:", e);
+      showToast(`Failed to start execution: ${message}`, "error");
+    }
+  };
+
   return (
     <section className="panel">
       <div className="panelHeader">
@@ -97,22 +194,11 @@ export function TaskPanel(props: Props) {
           <button
             className="primaryBtn"
             type="button"
-            onClick={() => {
-              const req = buildExecutionRequest({
-                milestoneIndex: props.selectedMilestoneIndex,
-                taskIndex: props.selectedTaskIndex,
-                milestoneTitle,
-                taskId,
-                taskTitle,
-                taskSnapshot: task,
-              });
-              persistExecutionRequest(req);
-              setLastRequestJson(JSON.stringify(req, null, 2));
-              console.log("Execution request emitted:", req);
-            }}
-            title="Emit deterministic execution request (no execution yet)"
+            onClick={handleExecute}
+            disabled={isExecuting}
+            title="Execute task via Flask API"
           >
-            Execute task
+            {isExecuting ? "Executing..." : "Execute task"}
           </button>
         </div>
 

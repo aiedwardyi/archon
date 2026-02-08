@@ -5,6 +5,7 @@ import { PlanSidebar } from "./components/PlanSidebar";
 import { TaskPanel } from "./components/TaskPanel";
 import { ArtifactsPanel } from "./components/ArtifactsPanel";
 import { HistoryPanel } from "./components/HistoryPanel";
+import { ToastContainer } from "./components/ToastContainer";
 
 type Tab = "board" | "raw" | "artifacts" | "history";
 
@@ -49,10 +50,10 @@ export default function App() {
       try {
         const data = await fetchJson<any>("/last_plan.json");
         if (cancelled) return;
-        
+
         // Handle both old format (Plan directly) and new format (PlanArtifact wrapper)
         let planData: Plan;
-        
+
         if (data.kind === "plan_artifact" && data.plan) {
           // New wrapped format
           planData = data.plan as Plan;
@@ -62,7 +63,7 @@ export default function App() {
         } else {
           throw new Error("Invalid plan format: missing 'milestones' or 'plan' field");
         }
-        
+
         setPlan(planData);
         setPlanError("");
       } catch (e) {
@@ -112,6 +113,7 @@ export default function App() {
 
   return (
     <div className="appShell">
+      <ToastContainer />
       <PlanSidebar
         plan={plan}
         selectedMilestoneIndex={selectedMilestoneIndex}
