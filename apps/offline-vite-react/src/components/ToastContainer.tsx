@@ -21,13 +21,14 @@ export function ToastContainer() {
     const listener = (toast: Toast) => {
       setToasts((prev) => [...prev, toast]);
       
-      // Auto-dismiss after 3 seconds
+      // Auto-dismiss after 5 seconds
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== toast.id));
-      }, 3000);
+      }, 5000);
     };
 
     toastListeners.push(listener);
+    
     return () => {
       const idx = toastListeners.indexOf(listener);
       if (idx > -1) toastListeners.splice(idx, 1);
@@ -41,7 +42,7 @@ export function ToastContainer() {
       position: "fixed",
       top: 20,
       right: 20,
-      zIndex: 9999,
+      zIndex: 99999,
       display: "flex",
       flexDirection: "column",
       gap: 10,
@@ -50,15 +51,17 @@ export function ToastContainer() {
         <div
           key={toast.id}
           style={{
-            padding: "12px 20px",
-            borderRadius: 6,
+            padding: "16px 24px",
+            borderRadius: 8,
             background: toast.type === "error" ? "#dc2626" : toast.type === "success" ? "#16a34a" : "#2563eb",
             color: "white",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-            fontSize: 14,
-            fontWeight: 500,
-            maxWidth: 300,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+            fontSize: 16,
+            fontWeight: 600,
+            maxWidth: 400,
+            minWidth: 250,
             animation: "slideIn 0.3s ease-out",
+            border: "2px solid white",
           }}
         >
           {toast.message}

@@ -5,6 +5,8 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Dict
+import threading
+import time
 
 app = Flask(__name__)
 
@@ -15,6 +17,12 @@ CORS(app, origins=["http://localhost:5173"])
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PUBLIC_DIR = REPO_ROOT / "apps" / "offline-vite-react" / "public"
 CONSUMER_SCRIPT = REPO_ROOT / "scripts" / "consume_execution_request.py"
+
+# Track running execution
+execution_state = {
+    "running": False,
+    "started_at": None
+}
 
 
 def read_json_file(filepath: Path) -> Dict[str, Any] | None:
@@ -41,13 +49,47 @@ def write_json_file(filepath: Path, data: Dict[str, Any]) -> bool:
         return False
 
 
+def run_consumer_async():
+    """Run consumer script in background thread."""
+    global execution_state
+    
+    try:
+        print(f"🚀 Starting consumer script (async)...")
+        result = subprocess.run(
+            [sys.executable, "-m", "scripts.consume_execution_request"],
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        
+        print(f"📤 Consumer stdout: {result.stdout}")
+        if result.stderr:
+            print(f"⚠️ Consumer stderr: {result.stderr}")
+        
+        if result.returncode != 0:
+            print(f"❌ Consumer failed with exit code {result.returncode}")
+        else:
+            print(f"✅ Consumer completed successfully")
+            
+    except subprocess.TimeoutExpired:
+        print(f"⏱️ Consumer script timed out")
+    except Exception as e:
+        print(f"❌ Error running consumer: {e}")
+    finally:
+        execution_state["running"] = False
+        print(f"🏁 Execution state set to: running=False")
+
+
 @app.route("/api/execute-task", methods=["POST"])
 def execute_task():
     """
-    Receives execution request from UI, saves to file, triggers consumer script.
+    Receives execution request from UI, saves to file, triggers consumer script ASYNCHRONOUSLY.
     
     Expected payload includes _agent_sequence from Plan artifact.
     """
+    global execution_state
+    
     try:
         req_data = request.get_json()
         
@@ -63,56 +105,62 @@ def execute_task():
         
         print(f"✅ Saved execution request to: {request_file}")
         
-        # Trigger consumer script
-        # Run synchronously for now so we can see errors
-        try:
-            print(f"🚀 Starting consumer script...")
-            result = subprocess.run(
-                [sys.executable, "-m", "scripts.consume_execution_request"],
-                cwd=str(REPO_ROOT),
-                capture_output=True,
-                text=True,
-                timeout=30,
-            )
-            
-            print(f"📤 Consumer stdout: {result.stdout}")
-            if result.stderr:
-                print(f"⚠️ Consumer stderr: {result.stderr}")
-            
-            if result.returncode != 0:
-                return jsonify({
-                    "error": f"Consumer script failed with exit code {result.returncode}",
-                    "stdout": result.stdout,
-                    "stderr": result.stderr
-                }), 500
-                
-        except subprocess.TimeoutExpired:
-            return jsonify({"error": "Consumer script timed out"}), 500
-        except Exception as e:
-            print(f"❌ Error starting consumer: {e}")
-            return jsonify({"error": f"Failed to start consumer: {str(e)}"}), 500
+        # Clear previous result to avoid showing stale data
+        result_file = PUBLIC_DIR / "last_execution_result.json"
+        if result_file.exists():
+            result_file.unlink()
+            print(f"🗑️ Cleared previous execution result")
         
+        # Mark execution as running
+        execution_state["running"] = True
+        execution_state["started_at"] = time.time()
+        print(f"🏁 Execution state set to: running=True")
+        
+        # Trigger consumer script in background thread
+        thread = threading.Thread(target=run_consumer_async, daemon=True)
+        thread.start()
+        print(f"🔄 Consumer thread started")
+        
+        # Return immediately - UI will poll for completion
         return jsonify({
-            "status": "completed",
-            "message": "Task execution completed",
+            "status": "started",
+            "message": "Task execution started in background",
             "request_file": str(request_file.relative_to(REPO_ROOT))
         }), 200
         
     except Exception as e:
+        execution_state["running"] = False
         print(f"❌ Error in execute_task: {e}")
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/execution-status", methods=["GET"])
 def execution_status():
-    """Returns latest execution result."""
+    """Returns latest execution result, with proper handling of pending state."""
     result_file = PUBLIC_DIR / "last_execution_result.json"
     data = read_json_file(result_file)
     
-    if data is None:
-        return jsonify({"status": "not_found"}), 404
+    # If result exists, return it
+    if data is not None:
+        print(f"📥 Returning execution result with status: {data.get('status')}")
+        return jsonify(data), 200
     
-    return jsonify(data), 200
+    # If no result but execution is running, return pending
+    if execution_state["running"]:
+        elapsed = time.time() - (execution_state["started_at"] or 0)
+        print(f"⏳ Execution still running (elapsed: {elapsed:.1f}s)")
+        return jsonify({
+            "status": "pending",
+            "message": "Execution in progress",
+            "elapsed_seconds": int(elapsed)
+        }), 200
+    
+    # No result and not running - this shouldn't happen normally
+    print(f"❓ No result found and execution not running")
+    return jsonify({
+        "status": "unknown",
+        "message": "No execution result available"
+    }), 200
 
 
 @app.route("/api/plan", methods=["GET"])

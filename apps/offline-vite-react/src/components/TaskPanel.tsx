@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useState, useRef } from "react";
 import {
   Plan,
   PlanMilestone,
@@ -46,10 +46,19 @@ export function TaskPanel(props: Props) {
 
   const [lastRequestJson, setLastRequestJson] = useState<string>("");
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const v = localStorage.getItem("last_execution_request");
     if (v) setLastRequestJson(v);
+    
+    // Cleanup interval on unmount
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
   }, []);
 
   if (!props.plan || !milestone || !task) {
@@ -79,9 +88,12 @@ export function TaskPanel(props: Props) {
   const raw = normalizeText(task);
 
   const handleExecute = async () => {
-    console.log("🚀 BUTTON CLICKED!");
-    alert("Button clicked! Check console for logs.");
-    
+    // Clear any existing poll interval
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+
     setIsExecuting(true);
     showToast("Task execution started...", "info");
 
@@ -125,56 +137,96 @@ export function TaskPanel(props: Props) {
         throw new Error(error.error || "Failed to execute task");
       }
 
-      console.log("✅ Task execution request sent to Flask");
+      const executeData = await executeRes.json();
+      console.log("✅ Flask response:", executeData);
 
       // Poll for result
       let attempts = 0;
-      const maxAttempts = 15;
+      const maxAttempts = 30;
       
-      const pollInterval = setInterval(async () => {
+      const checkStatus = async () => {
         attempts++;
-        console.log(`🔄 Polling attempt ${attempts}/${maxAttempts}`);
+        console.log(`🔄 Poll attempt ${attempts}/${maxAttempts}`);
 
         try {
           const statusRes = await fetch("http://localhost:5000/api/execution-status", {
+            method: "GET",
             cache: "no-store",
+            headers: {
+              "Cache-Control": "no-cache",
+              "Pragma": "no-cache"
+            }
           });
+
+          console.log(`📡 Poll response status: ${statusRes.status}`);
 
           if (statusRes.ok) {
             const result = await statusRes.json();
-            console.log("📥 Poll result:", {
-              status: result.status,
-              taskId: result.request?.task_id,
-              hasError: !!result.error
-            });
+            console.log("📥 Poll result:", result);
+            console.log(`   ➜ status field: "${result.status}"`);
             
             if (result.status === "success") {
-              clearInterval(pollInterval);
+              if (pollIntervalRef.current) {
+                clearInterval(pollIntervalRef.current);
+                pollIntervalRef.current = null;
+              }
               setIsExecuting(false);
-              console.log("✅ Execution succeeded!");
+              console.log("✅ SUCCESS DETECTED! Showing green toast...");
               showToast("Task execution completed!", "success");
+              return true;
             } else if (result.status === "error") {
-              clearInterval(pollInterval);
+              if (pollIntervalRef.current) {
+                clearInterval(pollIntervalRef.current);
+                pollIntervalRef.current = null;
+              }
               setIsExecuting(false);
-              console.log("❌ Execution failed:", result.error);
+              console.log("❌ ERROR DETECTED! Showing error toast...");
               showToast(`Execution failed: ${result.error?.message || "Unknown error"}`, "error");
+              return true;
+            } else {
+              console.log(`⏳ Status: "${result.status}", continuing to poll...`);
             }
           } else {
-            console.warn("⚠️ Poll response not OK:", statusRes.status);
+            console.warn(`⚠️ Poll response not OK: ${statusRes.status}, continuing...`);
           }
-
-          if (attempts >= maxAttempts) {
-            clearInterval(pollInterval);
-            setIsExecuting(false);
-            console.warn("⏱️ Polling timeout");
-            showToast("Execution timeout - check artifacts panel", "error");
-          }
-        } catch (e) {
-          console.error("❌ Poll error:", e);
+        } catch (pollError) {
+          console.error("❌ Poll fetch error (will retry):", pollError);
+          // Don't stop polling on network errors - just log and continue
         }
+
+        if (attempts >= maxAttempts) {
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+          }
+          setIsExecuting(false);
+          console.warn("⏱️ Polling timeout after", maxAttempts, "attempts");
+          showToast("Execution timeout - check artifacts panel", "error");
+          return true;
+        }
+        
+        return false;
+      };
+
+      // Start polling every 2 seconds
+      pollIntervalRef.current = setInterval(() => {
+        checkStatus().catch(err => {
+          console.error("❌ Unexpected error in checkStatus:", err);
+        });
       }, 2000);
 
+      // Also check immediately after 1 second
+      setTimeout(() => {
+        checkStatus().catch(err => {
+          console.error("❌ Unexpected error in initial checkStatus:", err);
+        });
+      }, 1000);
+
     } catch (e) {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
       setIsExecuting(false);
       const message = e instanceof Error ? e.message : "Unknown error";
       console.error("❌ Execution error:", e);
