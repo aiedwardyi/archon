@@ -119,12 +119,45 @@ Every step emits structured artifacts that can be inspected, validated, and repl
 
 ---
 
+### Phase 6.1 — Project History & Persistence (✅ Completed)
+
+**Accomplished:**
+- **Database persistence:** SQLite with SQLAlchemy ORM
+- **Project management:** Create, view, organize projects
+- **Execution tracking:** Link executions to projects with full history
+- **React Router:** Multi-page navigation (Board, Projects, Project Detail)
+- **Project selection:** Choose project before task execution
+
+**Technical Implementation:**
+- Database models: Project and Execution tables with relationships
+- Flask API endpoints: CRUD operations for projects
+- Project-linked executions: Each execution record tied to a project
+- React UI: Projects list view, project detail view with execution history
+- Project selection modal: Dropdown + quick project creation during execution
+
+**Database Schema:**
+- `projects` table: id, name, description, status, timestamps
+- `executions` table: id, project_id, status, artifact paths, timestamps
+- One-to-many relationship: project → executions
+
+**UI Features:**
+- Projects page with grid view of all projects
+- Click project → view execution history
+- Create projects with name and description
+- Select project before executing tasks
+- Status indicators (pending, in_progress, completed, failed)
+- Execution count per project
+
+---
+
 ## Current State
 
-**Production-ready multi-agent system with:**
+**Production-ready multi-agent system with project management:**
 - ✅ Three-agent coordination (PM, Planner, Engineer)
 - ✅ Flask API backend with async execution
-- ✅ React UI with automated task execution
+- ✅ SQLite database with full persistence
+- ✅ Project management and execution history
+- ✅ React UI with multi-page navigation
 - ✅ Complete observability (all artifacts visible)
 - ✅ Deterministic, replayable workflows
 - ✅ Schema validation at all boundaries
@@ -133,15 +166,17 @@ Every step emits structured artifacts that can be inspected, validated, and repl
 ```
 User Input (UI)
     ↓
+Project Selection
+    ↓
 PM Agent (OpenAI) → PRD artifact
     ↓
 Planner Agent (Gemini) → Plan artifact
     ↓
-Flask API → Execution Request
+Flask API → Execution Record (Database)
     ↓
 Engineer Agent (Gemini) → Code files
     ↓
-Execution Result → UI notification
+Execution Result → Database + UI notification
 ```
 
 ---
@@ -171,5 +206,3 @@ This repository is intended for:
 - Platform engineers
 - Founders building AI-assisted developer tooling
 - Teams evaluating deterministic agent orchestration patterns
-
----

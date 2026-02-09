@@ -1,162 +1,163 @@
-﻿# Current Sprint — Phase 5: Multi-Agent Coordination
+﻿# Current Sprint — Phase 6.1: Project History & Persistence
 
 ## Sprint Goal
 
-Introduce **explicit multi-agent coordination** into the system by adding
-role attribution and deterministic handoffs between agents — without
-introducing autonomy, hidden state, or new subsystems.
+Add **database persistence and project management** to organize executions
+into named projects with full history tracking.
 
-This phase proves that multiple agents can collaborate through
-**structured, replayable artifacts**.
+This phase transforms the system from single-execution to multi-project
+with complete execution history.
 
 ---
 
 ## Current State (Verified ✅)
 
-- Offline-first frontend (Vite + React + TypeScript)
-- Deterministic execution request emission
-- Deterministic consumer producing execution results
-- Deterministic evaluator producing pass/fail artifacts
-- Strict schema enforcement at all boundaries
-- Golden snapshot regression tests
-- Deterministic replay runner with UI visibility
-- All Phase 4 work completed and tagged
-- **Multi-agent coordination COMPLETE (PM → Planner → Engineer)**
-- **Flask API backend with async execution**
-- **React UI with automated task execution and notifications**
+- Phase 5 complete: Multi-agent coordination (PM → Planner → Engineer)
+- Flask API backend with async execution
+- React UI with automated task execution
+- **Phase 6.1 COMPLETE: Project management with database persistence**
 
 ---
 
-## Phase 5 Work Items (✅ ALL COMPLETED)
+## Phase 6.1 Work Items (✅ ALL COMPLETED)
 
-### 1. Agent Role Attribution in Execution Results
-**Status:** ✅ COMPLETED
-
-- Extended `ExecutionResult` schema with `agent_role` field
-- Consumer writes `agent_role: "engineer"` into all execution artifacts
-- Schema validation enforces agent role presence
-- Visible in UI artifacts panel
-- Metadata-only change (no behavior modification)
-
----
-
-### 2. Deterministic Agent Handoff Contract
+### 1. Database Foundation
 **Status:** ✅ COMPLETED
 
 **Completed:**
-- ✅ Created PRD schema with 14 validated sections
-- ✅ Implemented PM agent using OpenAI structured outputs
-- ✅ PM agent generates PRD artifacts with `agent_role: "pm"`
-- ✅ PRD artifacts written to `artifacts/last_prd.json`
-- ✅ Updated PlannerAgent to consume PRD artifacts
-- ✅ Planner reads PRD, generates Plan with milestones/tasks
-- ✅ Engineer consumes Plan, generates code (verified working)
-- ✅ End-to-end test: Calculator app → PRD → Plan (5 milestones, 21 tasks) → Code (3 files)
-- ✅ Full chain validated: PM (OpenAI) → Planner (Gemini) → Engineer (Gemini)
+- ✅ SQLAlchemy 2.0.36 installed (Python 3.14 compatible)
+- ✅ Database models created (`backend/models.py`)
+  - Project model: name, description, status, timestamps
+  - Execution model: project_id, status, artifact paths, error messages
+  - One-to-many relationship: project → executions
+- ✅ Database initialization script (`scripts/init_db.py`)
+- ✅ SQLite database created (`ai-dev-team.db`)
+- ✅ `.gitignore` updated to exclude database files
 
-**Handoff implementation:**
-- PM produces PRD artifact → `artifacts/last_prd.json`
-- Planner consumes PRD → produces Plan artifact → `artifacts/last_plan.json`
-- Engineer consumes Plan → produces code artifacts
+**Database Schema:**
+```python
+projects:
+  - id (primary key)
+  - name (string, required)
+  - description (text, optional)
+  - status (pending/in_progress/completed/failed)
+  - created_at, updated_at (timestamps)
 
-All handoffs are:
-- ✅ File-based (no in-memory passing)
-- ✅ Deterministic (same input = same output)
-- ✅ Replayable (can re-run from any artifact)
-- ✅ Schema-validated at each boundary
-- ✅ Agent-attributed (each artifact shows producing agent)
+executions:
+  - id (primary key)
+  - project_id (foreign key → projects.id)
+  - status (pending/running/success/error)
+  - created_at (timestamp)
+  - prd_path, plan_path, request_path, result_path
+  - error_message (text, optional)
+```
 
 ---
 
-### 3. Multi-Agent Orchestration & Execution
+### 2. Flask API with Project Endpoints
 **Status:** ✅ COMPLETED
 
 **Completed:**
-- ✅ Created `scripts/orchestrate_multi_agent.py` - Production orchestrator
-  - Runs PM → Planner chain
-  - Saves PRD and Plan artifacts with agent sequence metadata
-  - CLI interface with `@file.txt` syntax support
-- ✅ Updated `App.tsx` to unwrap `plan_artifact` format (backward compatible)
-- ✅ Added `last_plan.json` to ArtifactsPanel UI
-- ✅ Agent sequence visualization in UI (`pm → planner`)
-- ✅ Integrated Engineer agent into `deterministic_executor.py`
-  - Consumes task_snapshot from execution requests
-  - Generates code files via EngineerAgent
-  - Writes to `public/generated/` directory
-- ✅ Extended `safe_write.py` to support web development file types
-  - Added .html, .css, .js, .jsx, .ts, .tsx, .py, etc.
-  - Allows files without extensions (e.g., .gitignore)
-- ✅ End-to-end verification: orchestrator → plan → task execution → code generation
+- ✅ Project CRUD endpoints
+  - GET `/api/projects` - List all projects
+  - POST `/api/projects` - Create new project
+  - GET `/api/projects/<id>` - Get project with executions
+  - DELETE `/api/projects/<id>` - Delete project
+- ✅ Updated execution workflow
+  - POST `/api/execute-task` - Now accepts `project_id`
+  - Creates execution records in database
+  - Links executions to projects
+  - Updates project status automatically
+- ✅ Database integration
+  - Session management with SQLAlchemy
+  - Execution status tracking (pending → running → success/error)
+  - Artifact paths stored in execution records
+  - Error messages captured for debugging
 
-**Flask API Integration (NEW):**
-- ✅ Built Flask backend (`backend/app.py`) with async execution
-  - `/api/execute-task` - Receives execution requests, starts consumer in background
-  - `/api/execution-status` - Returns execution state (pending/success/error)
-  - `/api/plan` - Returns current plan artifact
-  - `/api/prd` - Returns current PRD artifact
-- ✅ Async background processing with threading
-  - Consumer runs in separate thread (non-blocking)
-  - Execution state tracking (`running=True/False`)
-  - Smart status endpoint distinguishes pending vs unknown states
-- ✅ React UI integration (`TaskPanel.tsx`)
-  - "Execute task" button triggers Flask API
-  - Polling mechanism (every 2 seconds) with useRef cleanup
-  - Network error resilience (continues polling on errors)
-  - Proper interval management prevents memory leaks
-- ✅ Toast notification system (`ToastContainer.tsx`)
-  - Blue toast on execution start
-  - Green toast on success (5-second duration)
-  - Red toast on error
-  - Bold styling with white border for visibility
-  - High z-index (99999) ensures always visible
-- ✅ Vite configuration (`vite.config.ts`)
-  - Ignores `/public/**` directory for HMR
-  - Prevents page reloads when artifacts update
-  - Allows toast notifications to display full duration
-- ✅ Agent sequence metadata preserved throughout chain
-  - PM adds `_agent_sequence: ["pm"]`
-  - Planner extends to `["pm", "planner"]`
-  - Engineer extends to `["pm", "planner", "engineer"]`
-  - UI displays full sequence in Artifacts panel
+**Execution Flow:**
+1. User selects project
+2. Flask creates execution record (status: pending)
+3. Consumer runs in background thread
+4. Execution status updated (running → success/error)
+5. Project status updated based on execution result
+6. Artifact paths saved to database
 
-**UI Workflow (Complete):**
-1. User clicks "Execute task" in React UI
-2. Frontend sends POST to `/api/execute-task`
-3. Flask starts consumer in background thread
-4. Frontend polls `/api/execution-status` every 2 seconds
-5. Consumer generates files using deterministic executor
-6. Flask detects completion, returns success status
-7. Frontend shows green toast notification (5 seconds)
-8. Artifacts panel auto-updates with new files
+---
+
+### 3. React UI - Projects Management
+**Status:** ✅ COMPLETED
+
+**Completed:**
+- ✅ React Router installed (`react-router-dom`)
+- ✅ Multi-page navigation setup
+  - `/` - Board view (existing task panel)
+  - `/projects` - Projects list view
+  - `/projects/:id` - Project detail view
+- ✅ Projects page (`ProjectsPage.tsx`)
+  - Grid view of all projects
+  - Project cards show: name, status, execution count, updated date
+  - Click card → navigate to project detail
+  - "+ New Project" button with modal
+  - "Back to Board" navigation link
+- ✅ Project detail page (`ProjectDetailPage.tsx`)
+  - Show project name, description, status
+  - List all executions for project
+  - Each execution shows: timestamp, status, artifacts
+  - Error messages displayed for failed executions
+  - "Back to Projects" navigation link
+- ✅ Navigation integration
+  - "Projects" tab in main navigation
+  - Seamless routing between views
+
+---
+
+### 4. Project Selection for Executions
+**Status:** ✅ COMPLETED
+
+**Completed:**
+- ✅ Project selection modal in TaskPanel
+  - Appears when user clicks "Execute task"
+  - Dropdown showing all existing projects
+  - "+ Create New Project" inline option
+  - Quick project creation without leaving workflow
+- ✅ Execution linking
+  - Selected project_id sent to Flask API
+  - Execution record created with project link
+  - No more auto-created "Untitled Project"
+- ✅ User workflow
+  1. User clicks "Execute task"
+  2. Modal shows: "Select Project"
+  3. User selects existing project OR creates new one
+  4. Execution runs and links to selected project
+  5. Project status updates automatically
 
 ---
 
 ## Definition of Done (Sprint) ✅
 
-- ✅ Execution and evaluation artifacts clearly identify the producing agent
-- ✅ Agent-to-agent handoffs are explicit and file-based
-- ✅ Multi-agent executions are replayable
-- ✅ No hidden state or implicit memory
-- ✅ All tests passing
-- ✅ ROADMAP.md updated to reflect Phase 5 completion
-- ✅ Flask API integration complete with async execution
-- ✅ React UI automation complete with toast notifications
-- ✅ End-to-end workflow tested and verified
+- ✅ Database tables created and initialized
+- ✅ Flask API endpoints working and tested
+- ✅ Projects page displays all projects
+- ✅ Project detail page shows execution history
+- ✅ Project selection modal functional
+- ✅ Executions successfully linked to projects
+- ✅ No more "Untitled Project" auto-creation
+- ✅ Navigation between views working
+- ✅ ROADMAP.md updated
+- ✅ All changes committed and pushed
 
 ---
 
-## Phase 5 Complete! 🎉
+## Phase 6.1 Complete! 🎉
 
 **Delivered:**
-- Complete multi-agent coordination system
-- Production-ready Flask API backend
-- Automated React UI workflow
-- Real-time status updates and notifications
-- Full observability with agent sequence tracking
+- Full project management system
+- Database persistence with SQLAlchemy
+- Execution history tracking per project
+- Multi-page React UI with routing
+- Professional project organization
 
-**Ready for:**
-- Phase 6 planning (features, improvements, scaling)
-- Production deployment considerations
-- Advanced features (real-time progress, WebSockets, etc.)
-
----
+**Next Phases (Future Work):**
+- Phase 6.2: Enhanced UI/UX (better visuals, loading states, error handling)
+- Phase 6.3: Advanced features (project editing, search/filter, export)
+- Phase 6.4: Deployment (Docker, cloud hosting, production setup)
