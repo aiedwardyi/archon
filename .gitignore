@@ -1,42 +1,27 @@
-# Python
+﻿# Python
 __pycache__/
-*.pyc
-
-# Environments / secrets
+*.py[cod]
+*$py.class
+*.so
+.Python
 venv/
-.venv/
-.env
-.env.*
+env/
+*.egg-info/
 
-# Logs / runtime artifacts
-logs/
-cache/
+# Database
+ai-dev-team.db
+ai-dev-team.db-journal
+*.db
+*.db-journal
 
-# Generated files
-README.md.generated
+# IDEs
+.vscode/
+.idea/
 
-# OS / editor junk
+# OS
 .DS_Store
 Thumbs.db
-.vscode/
 
-# Runtime execution artifacts (generated)
-apps/offline-vite-react/public/last_execution_request.json
-apps/offline-vite-react/public/last_execution_result.json
-apps/offline-vite-react/public/execution_requests.ndjson
-apps/offline-vite-react/public/execution_results.ndjson
-
-# Runtime-generated execution outputs
+# Artifacts
 apps/offline-vite-react/public/generated/
-
-# Runtime evaluation artifacts (generated)
-apps/offline-vite-react/public/last_evaluation_result.json
-apps/offline-vite-react/public/evaluation_results.ndjson
-
-# Python tooling
-.pytest_cache/
-.mypy_cache/
-ruff_cache/
-
-# Transport / archive artifacts
-*.zip
+apps/offline-vite-react/public/last_*.json
