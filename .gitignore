@@ -25,3 +25,4 @@ Thumbs.db
 # Artifacts
 apps/offline-vite-react/public/generated/
 apps/offline-vite-react/public/last_*.json
+apps/offline-vite-react/public/*.ndjson
