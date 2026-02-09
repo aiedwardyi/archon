@@ -18,6 +18,13 @@ type Props = {
   selectedTaskIndex: number;
 };
 
+type Project = {
+  id: number;
+  name: string;
+  description: string;
+  status: string;
+};
+
 function getMilestoneTitle(m: PlanMilestone): string {
   const anyM = m as any;
   return m.title ?? anyM.name ?? "Milestone";
@@ -48,11 +55,18 @@ export function TaskPanel(props: Props) {
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Project selection state
+  const [showProjectModal, setShowProjectModal] = useState<boolean>(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [showCreateProject, setShowCreateProject] = useState<boolean>(false);
+  const [newProjectName, setNewProjectName] = useState<string>("");
+  const [newProjectDescription, setNewProjectDescription] = useState<string>("");
+
   useEffect(() => {
     const v = localStorage.getItem("last_execution_request");
     if (v) setLastRequestJson(v);
     
-    // Cleanup interval on unmount
     return () => {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
@@ -61,34 +75,63 @@ export function TaskPanel(props: Props) {
     };
   }, []);
 
-  if (!props.plan || !milestone || !task) {
-    return (
-      <section className="panel">
-        <div className="panelHeader">
-          <h2>Task details</h2>
-          <p className="muted">No task selected.</p>
-        </div>
-      </section>
-    );
-  }
+  const loadProjects = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/projects", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setProjects(data);
+      }
+    } catch (e) {
+      console.error("Failed to load projects:", e);
+    }
+  };
 
-  const anyT = task as any;
-  const status = String(getTaskStatus(task));
-  const done = isDone(task);
+  const handleExecuteClick = async () => {
+    await loadProjects();
+    setShowProjectModal(true);
+  };
 
-  const milestoneTitle = getMilestoneTitle(milestone);
-  const taskTitle = getTaskTitle(task, props.selectedTaskIndex);
-  const taskId = anyT.id as string | undefined;
+  const handleCreateProject = async () => {
+    if (!newProjectName.trim()) {
+      alert("Project name is required");
+      return;
+    }
 
-  const acceptance = normalizeAcceptanceCriteria(task.acceptance_criteria ?? anyT.outputs);
-  const deps = safeArray<string>(task.dependencies ?? anyT.depends_on);
-  const files = safeArray<string>(task.files ?? anyT.output_files);
-  const cmds = safeArray<string>(task.commands ?? anyT.commands);
+    try {
+      const res = await fetch("http://localhost:5000/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newProjectName,
+          description: newProjectDescription,
+        }),
+      });
 
-  const raw = normalizeText(task);
+      if (!res.ok) {
+        throw new Error("Failed to create project");
+      }
+
+      const newProject = await res.json();
+      setProjects([newProject, ...projects]);
+      setSelectedProjectId(newProject.id);
+      setNewProjectName("");
+      setNewProjectDescription("");
+      setShowCreateProject(false);
+      showToast(`Project "${newProject.name}" created!`, "success");
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to create project");
+    }
+  };
 
   const handleExecute = async () => {
-    // Clear any existing poll interval
+    if (!selectedProjectId) {
+      alert("Please select a project");
+      return;
+    }
+
+    setShowProjectModal(false);
+
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current);
       pollIntervalRef.current = null;
@@ -100,31 +143,35 @@ export function TaskPanel(props: Props) {
     try {
       console.log("📡 Fetching plan artifact...");
       
-      // Fetch plan artifact to get agent sequence
       const planRes = await fetch("http://localhost:5000/api/plan", { cache: "no-store" });
       const planArtifact = await planRes.json();
       const agentSequence = planArtifact?._agent_sequence || [];
       
       console.log("📋 Agent sequence:", agentSequence);
 
-      // Build execution request
+      const milestoneTitle = getMilestoneTitle(milestone!);
+      const taskTitle = getTaskTitle(task!, props.selectedTaskIndex);
+      const anyT = task as any;
+      const taskId = anyT.id as string | undefined;
+
       const req = buildExecutionRequest({
         milestoneIndex: props.selectedMilestoneIndex,
         taskIndex: props.selectedTaskIndex,
         milestoneTitle,
         taskId,
         taskTitle,
-        taskSnapshot: task,
+        taskSnapshot: task!,
         agentSequence,
       });
 
+      // Add project_id to request
+      (req as any).project_id = selectedProjectId;
+
       console.log("📤 Execution request:", req);
 
-      // Save to localStorage for debugging
       localStorage.setItem("last_execution_request", JSON.stringify(req, null, 2));
       setLastRequestJson(JSON.stringify(req, null, 2));
 
-      // POST to Flask API
       console.log("🌐 Sending to Flask...");
       const executeRes = await fetch("http://localhost:5000/api/execute-task", {
         method: "POST",
@@ -140,7 +187,6 @@ export function TaskPanel(props: Props) {
       const executeData = await executeRes.json();
       console.log("✅ Flask response:", executeData);
 
-      // Poll for result
       let attempts = 0;
       const maxAttempts = 30;
       
@@ -191,7 +237,6 @@ export function TaskPanel(props: Props) {
           }
         } catch (pollError) {
           console.error("❌ Poll fetch error (will retry):", pollError);
-          // Don't stop polling on network errors - just log and continue
         }
 
         if (attempts >= maxAttempts) {
@@ -208,14 +253,12 @@ export function TaskPanel(props: Props) {
         return false;
       };
 
-      // Start polling every 2 seconds
       pollIntervalRef.current = setInterval(() => {
         checkStatus().catch(err => {
           console.error("❌ Unexpected error in checkStatus:", err);
         });
       }, 2000);
 
-      // Also check immediately after 1 second
       setTimeout(() => {
         checkStatus().catch(err => {
           console.error("❌ Unexpected error in initial checkStatus:", err);
@@ -234,6 +277,32 @@ export function TaskPanel(props: Props) {
     }
   };
 
+  if (!props.plan || !milestone || !task) {
+    return (
+      <section className="panel">
+        <div className="panelHeader">
+          <h2>Task details</h2>
+          <p className="muted">No task selected.</p>
+        </div>
+      </section>
+    );
+  }
+
+  const anyT = task as any;
+  const status = String(getTaskStatus(task));
+  const done = isDone(task);
+
+  const milestoneTitle = getMilestoneTitle(milestone);
+  const taskTitle = getTaskTitle(task, props.selectedTaskIndex);
+  const taskId = anyT.id as string | undefined;
+
+  const acceptance = normalizeAcceptanceCriteria(task.acceptance_criteria ?? anyT.outputs);
+  const deps = safeArray<string>(task.dependencies ?? anyT.depends_on);
+  const files = safeArray<string>(task.files ?? anyT.output_files);
+  const cmds = safeArray<string>(task.commands ?? anyT.commands);
+
+  const raw = normalizeText(task);
+
   return (
     <section className="panel">
       <div className="panelHeader">
@@ -246,7 +315,7 @@ export function TaskPanel(props: Props) {
           <button
             className="primaryBtn"
             type="button"
-            onClick={handleExecute}
+            onClick={handleExecuteClick}
             disabled={isExecuting}
             title="Execute task via Flask API"
           >
@@ -327,6 +396,175 @@ export function TaskPanel(props: Props) {
           )}
         </div>
       </div>
+
+      {/* Project Selection Modal */}
+      {showProjectModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+          onClick={() => setShowProjectModal(false)}
+        >
+          <div
+            className="card"
+            style={{ width: "500px", maxWidth: "90vw" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="cardTitle">Select Project</div>
+            
+            {!showCreateProject ? (
+              <>
+                <div style={{ marginBottom: "1rem" }}>
+                  <label style={{ display: "block", marginBottom: "0.5rem" }}>
+                    Choose a project for this execution:
+                  </label>
+                  <select
+                    value={selectedProjectId || ""}
+                    onChange={(e) => setSelectedProjectId(Number(e.target.value))}
+                    style={{
+                      width: "100%",
+                      padding: "0.5rem",
+                      backgroundColor: "#1a1a1a",
+                      border: "1px solid #333",
+                      color: "#fff",
+                      borderRadius: "4px",
+                    }}
+                  >
+                    <option value="">Select a project...</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({p.status})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ marginBottom: "1rem" }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateProject(true)}
+                    style={{
+                      padding: "0.5rem 1rem",
+                      backgroundColor: "#333",
+                      border: "1px solid #555",
+                      color: "#fff",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      width: "100%",
+                    }}
+                  >
+                    + Create New Project
+                  </button>
+                </div>
+
+                <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowProjectModal(false)}
+                    style={{
+                      padding: "0.5rem 1rem",
+                      backgroundColor: "#333",
+                      border: "none",
+                      color: "#fff",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleExecute}
+                    className="primaryBtn"
+                    disabled={!selectedProjectId}
+                  >
+                    Execute
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ marginBottom: "1rem" }}>
+                  <label style={{ display: "block", marginBottom: "0.5rem" }}>
+                    Project Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={newProjectName}
+                    onChange={(e) => setNewProjectName(e.target.value)}
+                    placeholder="e.g., Calculator App"
+                    style={{
+                      width: "100%",
+                      padding: "0.5rem",
+                      backgroundColor: "#1a1a1a",
+                      border: "1px solid #333",
+                      color: "#fff",
+                      borderRadius: "4px",
+                    }}
+                    autoFocus
+                  />
+                </div>
+                <div style={{ marginBottom: "1rem" }}>
+                  <label style={{ display: "block", marginBottom: "0.5rem" }}>
+                    Description (optional)
+                  </label>
+                  <textarea
+                    value={newProjectDescription}
+                    onChange={(e) => setNewProjectDescription(e.target.value)}
+                    placeholder="Brief description..."
+                    rows={3}
+                    style={{
+                      width: "100%",
+                      padding: "0.5rem",
+                      backgroundColor: "#1a1a1a",
+                      border: "1px solid #333",
+                      color: "#fff",
+                      borderRadius: "4px",
+                      resize: "vertical",
+                    }}
+                  />
+                </div>
+                <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateProject(false);
+                      setNewProjectName("");
+                      setNewProjectDescription("");
+                    }}
+                    style={{
+                      padding: "0.5rem 1rem",
+                      backgroundColor: "#333",
+                      border: "none",
+                      color: "#fff",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCreateProject}
+                    className="primaryBtn"
+                  >
+                    Create & Select
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
