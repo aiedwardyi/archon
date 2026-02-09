@@ -1,4 +1,5 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import "./App.css";
 import { Plan, PlanMilestone, PlanTask, safeArray } from "./types/plan";
 import { PlanSidebar } from "./components/PlanSidebar";
@@ -6,6 +7,8 @@ import { TaskPanel } from "./components/TaskPanel";
 import { ArtifactsPanel } from "./components/ArtifactsPanel";
 import { HistoryPanel } from "./components/HistoryPanel";
 import { ToastContainer } from "./components/ToastContainer";
+import { ProjectsPage } from "./pages/ProjectsPage";
+import { ProjectDetailPage } from "./pages/ProjectDetailPage";
 
 type Tab = "board" | "raw" | "artifacts" | "history";
 
@@ -29,7 +32,9 @@ async function fetchJson<T>(path: string): Promise<T> {
   return (await res.json()) as T;
 }
 
-export default function App() {
+function BoardView() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [tab, setTab] = useState<Tab>("board");
 
   const [plan, setPlan] = useState<Plan | null>(null);
@@ -51,14 +56,11 @@ export default function App() {
         const data = await fetchJson<any>("/last_plan.json");
         if (cancelled) return;
 
-        // Handle both old format (Plan directly) and new format (PlanArtifact wrapper)
         let planData: Plan;
 
         if (data.kind === "plan_artifact" && data.plan) {
-          // New wrapped format
           planData = data.plan as Plan;
         } else if (data.milestones) {
-          // Old direct format (backward compatible)
           planData = data as Plan;
         } else {
           throw new Error("Invalid plan format: missing 'milestones' or 'plan' field");
@@ -127,6 +129,14 @@ export default function App() {
       <main className="panel">
         <div className="topBar">
           <div className="tabs">
+            <button
+              className="tabBtn"
+              onClick={() => navigate("/projects")}
+              type="button"
+            >
+              Projects
+            </button>
+
             <button
               className={`tabBtn ${tab === "board" ? "active" : ""}`}
               onClick={() => setTab("board")}
@@ -214,5 +224,15 @@ function RawView(props: { prdText: string; prdError: string; plan: Plan | null; 
         </div>
       </div>
     </section>
+  );
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<BoardView />} />
+      <Route path="/projects" element={<ProjectsPage />} />
+      <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
+    </Routes>
   );
 }
