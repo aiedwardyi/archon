@@ -1,0 +1,5 @@
+{
+  "name": "ai-dev-team-frontend",
+  "description": "A high-fidelity multi-agent AI development platform powered by Gemini 3. Orchestrates PM, Architect, and Engineer agents to build functional codebases from text prompts.",
+  "requestFramePermissions": []
+}
