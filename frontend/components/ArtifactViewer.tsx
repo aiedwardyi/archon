@@ -34,7 +34,7 @@ const SyntaxHighlighter: React.FC<{ code: string; language: string }> = ({ code,
         let lastIndex = 0;
         let match;
         const regex = new RegExp(token.regex);
-        
+
         while ((match = regex.exec(segment.text)) !== null) {
           if (match.index > lastIndex) {
             nextHighlighted.push({
@@ -62,8 +62,8 @@ const SyntaxHighlighter: React.FC<{ code: string; language: string }> = ({ code,
     });
 
     return highlighted.map((segment, i) => (
-      segment.isHighlighted ? 
-        <span key={i} className={segment.className}>{segment.text}</span> : 
+      segment.isHighlighted ?
+        <span key={i} className={segment.className}>{segment.text}</span> :
         <span key={i}>{segment.text}</span>
     ));
   };
@@ -77,7 +77,7 @@ const SyntaxHighlighter: React.FC<{ code: string; language: string }> = ({ code,
           <div key={i} className="h-[1.5em] leading-none flex items-center justify-end">{i + 1}</div>
         ))}
       </div>
-      
+
       <div className="flex-1 overflow-x-auto py-8 pl-6 relative text-slate-900 dark:text-slate-300">
         <div className="absolute inset-0 scanlines opacity-[0.02] dark:opacity-5 pointer-events-none"></div>
         <pre className="relative z-10 whitespace-pre">
@@ -106,13 +106,13 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
   const getAgentSequence = () => {
     const steps = ['pm', 'planner', 'engineer'];
     const currentIdx = artifact.type === 'PRD' ? 0 : artifact.type === 'PLAN' ? 1 : 2;
-    
+
     return (
       <div className="flex items-center gap-1 bg-indigo-500/5 dark:bg-white/5 px-2.5 py-1 rounded-full border border-indigo-500/10 dark:border-white/5">
         <span className="text-indigo-600 dark:text-indigo-400 text-[10px]">🔗</span>
         {steps.map((step, i) => (
           <React.Fragment key={step}>
-            <span className={`text-[9px] font-black tracking-wide ${i <= currentIdx ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-400 dark:text-slate-600'}`}>
+            <span className={`text-[9px] font-bold uppercase tracking-widest ${i <= currentIdx ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-400 dark:text-slate-600'}`}>
               {step}
             </span>
             {i < steps.length - 1 && (
@@ -126,134 +126,133 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
 
   const renderContent = () => {
     if (artifact.type === 'CODE') {
-        const files = artifact.content.files || [];
-        if(files.length === 0) return <div className="p-8 text-indigo-900 dark:text-indigo-400 text-center italic font-bold">No files generated.</div>;
-        
-        const currentContent = files[activeFile]?.content || '';
+      const files = artifact.content.files || [];
+      if (files.length === 0) return <div className="p-8 text-indigo-900 dark:text-indigo-400 text-center italic font-bold">No files generated.</div>;
 
-        return (
-          <div className="flex flex-col md:flex-row h-full min-h-[550px] bg-white dark:bg-[#080a0f]">
-             <div className="w-full md:w-60 h-40 md:h-auto border-b md:border-b-0 md:border-r border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#080a0f] flex flex-col shrink-0">
-               <div className="p-4 flex items-center justify-between border-b border-slate-200 dark:border-white/5 bg-white dark:bg-[#0a0d14]/50">
-                 <div className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Explorer</div>
-                 <Hash size={12} className="text-slate-300 dark:text-slate-700" />
-               </div>
-               <div className="p-2 space-y-1 overflow-y-auto custom-scrollbar flex-1">
-                 {files.map((f: any, idx: number) => (
-                   <button 
-                    key={idx}
-                    onClick={() => setActiveFile(idx)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 text-[11px] font-mono rounded-xl transition-all focus:outline-none focus:ring-0 group border ${
-                      activeFile === idx 
-                      ? 'bg-indigo-600/10 text-indigo-700 dark:text-white border-indigo-500/30 shadow-sm' 
-                      : 'text-slate-500 dark:text-indigo-200/40 hover:text-indigo-600 dark:hover:text-white hover:bg-white dark:hover:bg-white/5 border-transparent'
+      const currentContent = files[activeFile]?.content || '';
+
+      return (
+        <div className="flex flex-col md:flex-row h-full min-h-[550px] bg-white dark:bg-[#080a0f]">
+          <div className="w-full md:w-60 h-40 md:h-auto border-b md:border-b-0 md:border-r border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#080a0f] flex flex-col shrink-0">
+            <div className="p-4 flex items-center justify-between border-b border-slate-200 dark:border-white/5 bg-white dark:bg-[#0a0d14]/50">
+              <div className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Explorer</div>
+              <Hash size={12} className="text-slate-300 dark:text-slate-700" />
+            </div>
+            <div className="p-2 space-y-1 overflow-y-auto custom-scrollbar flex-1">
+              {files.map((f: any, idx: number) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveFile(idx)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 text-[11px] font-mono rounded-xl transition-all focus:outline-none focus:ring-0 group border ${activeFile === idx
+                    ? 'bg-indigo-600/10 text-indigo-700 dark:text-white border-indigo-500/30 shadow-sm'
+                    : 'text-slate-500 dark:text-indigo-200/40 hover:text-indigo-600 dark:hover:text-white hover:bg-white dark:hover:bg-white/5 border-transparent'
                     }`}
-                   >
-                     <FileCode size={14} className={activeFile === idx ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-300 dark:text-slate-700 group-hover:text-indigo-400'} />
-                     <span className="truncate text-left flex-1 font-bold">{f.filename}</span>
-                   </button>
-                 ))}
-               </div>
-             </div>
-
-             <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-[#080a0f]">
-                <div className="h-10 bg-slate-50 dark:bg-[#0a0d14] border-b border-slate-200 dark:border-white/5 flex items-center px-4 gap-2">
-                   <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-[#080a0f] border-x border-t border-slate-200 dark:border-white/5 rounded-t-lg -mb-[1px] relative z-10">
-                      <FileCode size={12} className="text-indigo-600 dark:text-indigo-400" />
-                      <span className="text-[10px] font-bold text-slate-800 dark:text-slate-300 font-mono">{files[activeFile]?.filename}</span>
-                   </div>
-                   <div className="ml-auto flex items-center gap-3">
-                      <div className="flex items-center gap-2 text-[9px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest">
-                        <span>{files[activeFile]?.language || 'plaintext'}</span>
-                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500/50"></div>
-                      </div>
-                   </div>
-                </div>
-                <div className="flex-1 overflow-auto custom-scrollbar">
-                  <SyntaxHighlighter 
-                    code={currentContent} 
-                    language={files[activeFile]?.language || 'typescript'} 
-                  />
-                </div>
-             </div>
+                >
+                  <FileCode size={14} className={activeFile === idx ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-300 dark:text-slate-700 group-hover:text-indigo-400'} />
+                  <span className="truncate text-left flex-1 font-bold">{f.filename}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        );
+
+          <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-[#080a0f]">
+            <div className="h-10 bg-slate-50 dark:bg-[#0a0d14] border-b border-slate-200 dark:border-white/5 flex items-center px-4 gap-2">
+              <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-[#080a0f] border-x border-t border-slate-200 dark:border-white/5 rounded-t-lg -mb-[1px] relative z-10">
+                <FileCode size={12} className="text-indigo-600 dark:text-indigo-400" />
+                <span className="text-[10px] font-bold text-slate-800 dark:text-slate-300 font-mono">{files[activeFile]?.filename}</span>
+              </div>
+              <div className="ml-auto flex items-center gap-3">
+                <div className="flex items-center gap-2 text-[9px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest">
+                  <span>{files[activeFile]?.language || 'plaintext'}</span>
+                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-500/50"></div>
+                </div>
+              </div>
+            </div>
+            <div className="flex-1 overflow-auto custom-scrollbar">
+              <SyntaxHighlighter
+                code={currentContent}
+                language={files[activeFile]?.language || 'typescript'}
+              />
+            </div>
+          </div>
+        </div>
+      );
     }
 
     if (artifact.type === 'PRD') {
-        const prd = artifact.content as PrdResponse;
-        return (
-            <div className="bg-white dark:bg-[#0f111a] p-6 md:p-10 space-y-10 font-sans relative h-full overflow-y-auto custom-scrollbar">
-                <div className="absolute inset-0 bg-grid-pattern opacity-[0.03] pointer-events-none"></div>
-                <div className="space-y-4 relative z-10">
-                    <h3 className="text-2xl font-black text-slate-900 dark:text-white border-b border-slate-200 dark:border-white/10 pb-4">Product Requirements Document</h3>
-                    <p className="text-slate-600 dark:text-indigo-100/60 leading-relaxed font-bold">{prd.summary}</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-10 relative z-10 pb-10">
-                    <div className="space-y-6">
-                        <h4 className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.2em]">Functional Scope</h4>
-                        <ul className="space-y-3">
-                            {prd.features.map((f, i) => (
-                                <li key={i} className="flex gap-3 text-xs items-start text-slate-700 dark:text-indigo-100/80 font-bold">
-                                    <CheckCircle2 size={16} className="text-indigo-600 dark:text-indigo-500 shrink-0 mt-[-1px]" />
-                                    <span>{f}</span>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                    <div className="space-y-6">
-                        <h4 className="text-[10px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-[0.2em]">User Context</h4>
-                        <ul className="space-y-3">
-                            {prd.userStories.map((s, i) => (
-                                <li key={i} className="flex gap-3 text-xs items-start italic text-slate-400 dark:text-indigo-300/40 font-bold">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-600/30 dark:bg-indigo-500/30 mt-1.5 shrink-0" />
-                                    <span>"{s}"</span>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                </div>
+      const prd = artifact.content as PrdResponse;
+      return (
+        <div className="bg-white dark:bg-[#0f111a] p-6 md:p-10 space-y-10 font-sans relative h-full overflow-y-auto custom-scrollbar">
+          <div className="absolute inset-0 bg-grid-pattern opacity-[0.03] pointer-events-none"></div>
+          <div className="space-y-4 relative z-10">
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white border-b border-slate-200 dark:border-white/10 pb-4">Product Requirements Document</h3>
+            <p className="text-slate-600 dark:text-indigo-100/60 leading-relaxed font-bold">{prd.summary}</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 relative z-10 pb-10">
+            <div className="space-y-6">
+              <h4 className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.2em]">Functional Scope</h4>
+              <ul className="space-y-3">
+                {prd.features.map((f, i) => (
+                  <li key={i} className="flex gap-3 text-xs items-start text-slate-700 dark:text-indigo-100/80 font-bold">
+                    <CheckCircle2 size={16} className="text-indigo-600 dark:text-indigo-500 shrink-0 mt-[-1px]" />
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-        );
+            <div className="space-y-6">
+              <h4 className="text-[10px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-[0.2em]">User Context</h4>
+              <ul className="space-y-3">
+                {prd.userStories.map((s, i) => (
+                  <li key={i} className="flex gap-3 text-xs items-start italic text-slate-400 dark:text-indigo-300/40 font-bold">
+                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-600/30 dark:bg-indigo-500/30 mt-1.5 shrink-0" />
+                    <span>"{s}"</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      );
     }
 
     if (artifact.type === 'PLAN') {
-        const plan = artifact.content as PlanResponse;
-        return (
-            <div className="bg-white dark:bg-[#0f111a] p-6 md:p-10 space-y-8 relative h-full overflow-y-auto custom-scrollbar">
-                <div className="absolute inset-0 bg-grid-pattern opacity-[0.03] pointer-events-none"></div>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 dark:border-white/10 pb-6 relative z-10 gap-4">
-                    <h3 className="text-xl font-black text-slate-900 dark:text-white">System Architecture & Roadmap</h3>
-                    <div className="flex items-center gap-2 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20 w-fit">
-                        <Clock size={12} />
-                        Cycle: {plan.estimatedTimeline}
-                    </div>
-                </div>
-                <div className="space-y-12 relative z-10 pb-10">
-                    {plan.phases.map((phase, idx) => (
-                        <div key={idx} className="relative pl-8 border-l border-slate-200 dark:border-white/10">
-                            <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-indigo-600 border-4 border-white dark:border-[#0f111a]" />
-                            <div className="space-y-4">
-                                <div>
-                                    <h4 className="text-lg font-black text-slate-900 dark:text-white">{phase.name}</h4>
-                                    <p className="text-sm text-slate-500 dark:text-indigo-300/40 mt-1 font-bold">{phase.description}</p>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    {phase.steps.map((step, i) => (
-                                        <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 text-[11px] text-slate-700 dark:text-indigo-100/80 font-bold">
-                                            <div className="w-1 h-1 rounded-full bg-indigo-500 dark:bg-indigo-400/50" />
-                                            {step}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+      const plan = artifact.content as PlanResponse;
+      return (
+        <div className="bg-white dark:bg-[#0f111a] p-6 md:p-10 space-y-8 relative h-full overflow-y-auto custom-scrollbar">
+          <div className="absolute inset-0 bg-grid-pattern opacity-[0.03] pointer-events-none"></div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 dark:border-white/10 pb-6 relative z-10 gap-4">
+            <h3 className="text-xl font-black text-slate-900 dark:text-white">System Architecture & Roadmap</h3>
+            <div className="flex items-center gap-2 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20 w-fit">
+              <Clock size={12} />
+              Cycle: {plan.estimatedTimeline}
             </div>
-        );
+          </div>
+          <div className="space-y-12 relative z-10 pb-10">
+            {plan.phases.map((phase, idx) => (
+              <div key={idx} className="relative pl-8 border-l border-slate-200 dark:border-white/10">
+                <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-indigo-600 border-4 border-white dark:border-[#0f111a]" />
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-lg font-black text-slate-900 dark:text-white">{phase.name}</h4>
+                    <p className="text-sm text-slate-500 dark:text-indigo-300/40 mt-1 font-bold">{phase.description}</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {phase.steps.map((step, i) => (
+                      <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 text-[11px] text-slate-700 dark:text-indigo-100/80 font-bold">
+                        <div className="w-1 h-1 rounded-full bg-indigo-500 dark:bg-indigo-400/50" />
+                        {step}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
     }
-    
+
     return (
       <div className="bg-slate-50 dark:bg-[#151b28] p-8 font-mono text-xs overflow-x-auto min-h-[200px] relative border-l-2 border-indigo-500/50 rounded-2xl shadow-xl dark:shadow-2xl">
         <pre className="text-slate-800 dark:text-indigo-400 selection:bg-indigo-500/30 relative z-10">
@@ -267,12 +266,12 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
     <div className="animate-fade-in h-full flex flex-col">
       <div className="flex items-center justify-between mb-4 mt-3 px-2 shrink-0">
         <div className="flex items-center gap-2">
-           <div className="text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-             {artifact.type === 'PRD' ? <FileText size={14} /> : artifact.type === 'PLAN' ? <Map size={14} /> : <Terminal size={14} />}
-           </div>
-           <h4 className="text-[10px] font-bold text-slate-500 dark:text-indigo-300 uppercase tracking-[0.2em] leading-none pt-0.5">{artifact.title}</h4>
+          <div className="text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            {artifact.type === 'PRD' ? <FileText size={14} /> : artifact.type === 'PLAN' ? <Map size={14} /> : <Terminal size={14} />}
+          </div>
+          <h4 className="text-[10px] font-bold text-slate-500 dark:text-indigo-300 uppercase tracking-[0.2em] leading-none pt-0.5">{artifact.title}</h4>
         </div>
-        <button 
+        <button
           onClick={() => navigator.clipboard.writeText(JSON.stringify(artifact.content, null, 2))}
           className="flex items-center gap-2 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-white transition-all uppercase tracking-widest cursor-pointer group"
         >
@@ -299,26 +298,24 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
 
           {/* Row 2 (mobile) / Right side (desktop): action buttons */}
           <div className="flex items-center gap-2 sm:ml-auto">
-            <button 
+            <button
               onClick={handleReplay}
               disabled={isReplaying}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all ${
-                isReplaying 
-                ? 'bg-slate-100 dark:bg-white/5 text-slate-400 cursor-not-allowed' 
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all ${isReplaying
+                ? 'bg-slate-100 dark:bg-white/5 text-slate-400 cursor-not-allowed'
                 : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 cursor-pointer'
-              }`}
+                }`}
             >
               <RefreshCw size={11} className={isReplaying ? 'animate-spin' : ''} />
               {isReplaying ? 'Running...' : 'Replay'}
             </button>
-            
-            <button 
+
+            <button
               onClick={() => setIsJsonView(!isJsonView)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all border cursor-pointer ${
-                isJsonView 
-                ? 'bg-indigo-600/10 text-indigo-700 dark:text-white border-indigo-500/30' 
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all border cursor-pointer ${isJsonView
+                ? 'bg-indigo-600/10 text-indigo-700 dark:text-white border-indigo-500/30'
                 : 'bg-white dark:bg-transparent text-slate-600 dark:text-indigo-300/60 border-slate-200 dark:border-white/10 hover:border-indigo-500/50'
-              }`}
+                }`}
             >
               <Braces size={11} />
               JSON
@@ -329,10 +326,10 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
         <div className="flex-1 overflow-hidden">
           {isJsonView ? (
             <div className="h-full bg-white dark:bg-[#080a0f] overflow-auto custom-scrollbar">
-               <SyntaxHighlighter 
-                 code={JSON.stringify(artifact.content, null, 2)} 
-                 language="json" 
-               />
+              <SyntaxHighlighter
+                code={JSON.stringify(artifact.content, null, 2)}
+                language="json"
+              />
             </div>
           ) : (
             renderContent()
