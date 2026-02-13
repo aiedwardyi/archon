@@ -150,17 +150,68 @@ Every step emits structured artifacts that can be inspected, validated, and repl
 
 ---
 
+### Phase 6.2 — Enhanced UI/UX (✅ Completed)
+
+**Accomplished:**
+- **Polished dark/light mode UI** with Tailwind design system
+- **Sidebar navigation** with smooth transitions
+- **ArtifactViewer component** rendering PRD, Plan, and Code artifacts
+- **ProjectDetailPage** with full agent workflow visualization
+- **Live code preview** with syntax highlighting
+- **Real backend wiring** — all artifact tabs connected to Flask API
+- **Data normalization** between backend schemas and frontend types
+- **Error handling** with backend connection overlay
+- **Mobile-responsive** layout with chat/preview toggle
+- **Fault monitor** with simulated error injection and fix flow
+- **Agent status messages** with animated progress indicators
+- **Monorepo consolidation** — frontend moved into ai-dev-team repo
+
+**Technical Implementation:**
+- React + TypeScript + Vite + Tailwind CSS
+- Vite dev server on port 3000, Flask API on port 5000
+- orchestrator.ts: BackendService class with normalizePrd/Plan/Code
+- ArtifactViewer: Renders PRD (document), Plan (timeline), Code (editor)
+- ProjectDetailPage: Tabs for Preview/Brief/PRD/Plan/Code/Tasks/Logs
+- Custom syntax highlighter for TypeScript/Python/JSON
+- File explorer sidebar in code view
+- Polling-based execution status with 2-second intervals
+
+---
+
+### Phase 6.3 — Differentiator Features & Polish (🚧 In Progress)
+
+**Goal:** Surface the platform's key competitive advantages in the UI —
+determinism, replayability, schema validation, and agent chain transparency.
+
+**Work Items:**
+1. ✅ ROADMAP.md and CURRENT_SPRINT.md updated
+2. ⬜ Agent chain badge in ArtifactViewer (pm → planner → engineer | Replayable | Schema Validated)
+3. ⬜ Replay button in ProjectDetailPage header (re-runs full pipeline)
+4. ⬜ Raw JSON toggle in ArtifactViewer ({ } button next to Copy Artifact)
+
+**Differentiator Story:**
+These features make the platform's architecture visible to users and evaluators.
+Unlike Lovable and Bolt (chat-based, opaque), our system shows:
+- Which agents produced each artifact
+- That outputs are replayable (deterministic)
+- That every artifact passes schema validation
+- The full agent sequence for audit/debug purposes
+
+---
+
 ## Current State
 
-**Production-ready multi-agent system with project management:**
+**Production-ready multi-agent system with polished UI and project management:**
 - ✅ Three-agent coordination (PM, Planner, Engineer)
 - ✅ Flask API backend with async execution
 - ✅ SQLite database with full persistence
 - ✅ Project management and execution history
-- ✅ React UI with multi-page navigation
+- ✅ React UI with multi-page navigation and dark/light mode
 - ✅ Complete observability (all artifacts visible)
 - ✅ Deterministic, replayable workflows
 - ✅ Schema validation at all boundaries
+- ✅ Polished UI/UX with mobile support
+- 🚧 Differentiator features (agent chain badge, replay, JSON toggle)
 
 **Architecture:**
 ```
