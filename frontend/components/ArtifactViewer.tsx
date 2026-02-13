@@ -1,7 +1,7 @@
-
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Artifact, PrdResponse, PlanResponse } from '../types';
-import { FileCode, FileText, Layout, Copy, Terminal, ChevronRight, CheckCircle2, Clock, Map, Hash, Wand2, Loader2, Check } from 'lucide-react';
+import { FileCode, FileText, Layout, Copy, Terminal, ChevronRight, CheckCircle2, Clock, Map, Hash, Wand2, Loader2, Check, RotateCcw, Braces, ShieldCheck, RefreshCw } from 'lucide-react';
+import { backend } from '../services/orchestrator';
 
 interface ArtifactViewerProps {
   artifact: Artifact;
@@ -94,6 +94,35 @@ const SyntaxHighlighter: React.FC<{ code: string; language: string }> = ({ code,
 
 const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
   const [activeFile, setActiveFile] = useState<number>(0);
+  const [isJsonView, setIsJsonView] = useState(false);
+  const [isReplaying, setIsReplaying] = useState(false);
+
+  const handleReplay = async () => {
+    setIsReplaying(true);
+    await backend.startExecution(artifact.projectId);
+    setIsReplaying(false);
+  };
+
+  const getAgentSequence = () => {
+    const steps = ['pm', 'planner', 'engineer'];
+    const currentIdx = artifact.type === 'PRD' ? 0 : artifact.type === 'PLAN' ? 1 : 2;
+    
+    return (
+      <div className="flex items-center gap-1 bg-indigo-500/5 dark:bg-white/5 px-2.5 py-1 rounded-full border border-indigo-500/10 dark:border-white/5">
+        <span className="text-indigo-600 dark:text-indigo-400 text-[10px]">🔗</span>
+        {steps.map((step, i) => (
+          <React.Fragment key={step}>
+            <span className={`text-[9px] font-black tracking-wide ${i <= currentIdx ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-400 dark:text-slate-600'}`}>
+              {step}
+            </span>
+            {i < steps.length - 1 && (
+              <span className="text-slate-300 dark:text-white/20 text-[9px] mx-0.5">→</span>
+            )}
+          </React.Fragment>
+        ))}
+      </div>
+    );
+  };
 
   const renderContent = () => {
     if (artifact.type === 'CODE') {
@@ -104,7 +133,6 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
 
         return (
           <div className="flex flex-col md:flex-row h-full min-h-[550px] bg-white dark:bg-[#080a0f]">
-             {/* File Explorer */}
              <div className="w-full md:w-60 h-40 md:h-auto border-b md:border-b-0 md:border-r border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#080a0f] flex flex-col shrink-0">
                <div className="p-4 flex items-center justify-between border-b border-slate-200 dark:border-white/5 bg-white dark:bg-[#0a0d14]/50">
                  <div className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Explorer</div>
@@ -128,14 +156,12 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
                </div>
              </div>
 
-             {/* Code Editor */}
              <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-[#080a0f]">
                 <div className="h-10 bg-slate-50 dark:bg-[#0a0d14] border-b border-slate-200 dark:border-white/5 flex items-center px-4 gap-2">
                    <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-[#080a0f] border-x border-t border-slate-200 dark:border-white/5 rounded-t-lg -mb-[1px] relative z-10">
                       <FileCode size={12} className="text-indigo-600 dark:text-indigo-400" />
                       <span className="text-[10px] font-bold text-slate-800 dark:text-slate-300 font-mono">{files[activeFile]?.filename}</span>
                    </div>
-                   
                    <div className="ml-auto flex items-center gap-3">
                       <div className="flex items-center gap-2 text-[9px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest">
                         <span>{files[activeFile]?.language || 'plaintext'}</span>
@@ -143,7 +169,6 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
                       </div>
                    </div>
                 </div>
-
                 <div className="flex-1 overflow-auto custom-scrollbar">
                   <SyntaxHighlighter 
                     code={currentContent} 
@@ -160,12 +185,10 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
         return (
             <div className="bg-white dark:bg-[#0f111a] p-6 md:p-10 space-y-10 font-sans relative h-full overflow-y-auto custom-scrollbar">
                 <div className="absolute inset-0 bg-grid-pattern opacity-[0.03] pointer-events-none"></div>
-                
                 <div className="space-y-4 relative z-10">
                     <h3 className="text-2xl font-black text-slate-900 dark:text-white border-b border-slate-200 dark:border-white/10 pb-4">Product Requirements Document</h3>
                     <p className="text-slate-600 dark:text-indigo-100/60 leading-relaxed font-bold">{prd.summary}</p>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10 relative z-10 pb-10">
                     <div className="space-y-6">
                         <h4 className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.2em]">Functional Scope</h4>
@@ -206,7 +229,6 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
                         Cycle: {plan.estimatedTimeline}
                     </div>
                 </div>
-
                 <div className="space-y-12 relative z-10 pb-10">
                     {plan.phases.map((phase, idx) => (
                         <div key={idx} className="relative pl-8 border-l border-slate-200 dark:border-white/10">
@@ -258,8 +280,64 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
           <span className="hidden sm:inline">Copy Artifact</span>
         </button>
       </div>
-      <div className="border border-slate-200 dark:border-white/10 rounded-3xl overflow-hidden shadow-2xl bg-white dark:bg-[#080a0f] flex-1">
-        {renderContent()}
+      <div className="border border-slate-200 dark:border-white/10 rounded-3xl overflow-hidden shadow-2xl bg-white dark:bg-[#080a0f] flex-1 flex flex-col">
+        {/* Agent chain banner — two rows on mobile, single row on sm+ */}
+        <div className="px-4 py-2.5 border-b border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] flex flex-col sm:flex-row sm:items-center gap-2 shrink-0">
+          {/* Row 1 (mobile) / Left side (desktop): chain + status pills */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {getAgentSequence()}
+            <div className="h-3 w-px bg-slate-200 dark:bg-white/10 hidden sm:block"></div>
+            <div className="flex items-center gap-1.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">
+              <span>♻️</span>
+              <span>Replayable</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[9px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">
+              <span>✅</span>
+              <span>Schema Validated</span>
+            </div>
+          </div>
+
+          {/* Row 2 (mobile) / Right side (desktop): action buttons */}
+          <div className="flex items-center gap-2 sm:ml-auto">
+            <button 
+              onClick={handleReplay}
+              disabled={isReplaying}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all ${
+                isReplaying 
+                ? 'bg-slate-100 dark:bg-white/5 text-slate-400 cursor-not-allowed' 
+                : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 cursor-pointer'
+              }`}
+            >
+              <RefreshCw size={11} className={isReplaying ? 'animate-spin' : ''} />
+              {isReplaying ? 'Running...' : 'Replay'}
+            </button>
+            
+            <button 
+              onClick={() => setIsJsonView(!isJsonView)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all border cursor-pointer ${
+                isJsonView 
+                ? 'bg-indigo-600/10 text-indigo-700 dark:text-white border-indigo-500/30' 
+                : 'bg-white dark:bg-transparent text-slate-600 dark:text-indigo-300/60 border-slate-200 dark:border-white/10 hover:border-indigo-500/50'
+              }`}
+            >
+              <Braces size={11} />
+              JSON
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-hidden">
+          {isJsonView ? (
+            <div className="h-full bg-white dark:bg-[#080a0f] overflow-auto custom-scrollbar">
+               <SyntaxHighlighter 
+                 code={JSON.stringify(artifact.content, null, 2)} 
+                 language="json" 
+               />
+            </div>
+          ) : (
+            renderContent()
+          )}
+        </div>
       </div>
     </div>
   );
