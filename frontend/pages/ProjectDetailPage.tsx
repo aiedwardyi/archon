@@ -577,14 +577,32 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
                           <div className="bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 rounded-3xl p-6 divide-y divide-slate-100 dark:divide-white/5 shadow-sm">
                             {prdArtifact.content.techStackRecommendation.map((t: string, i: number) => {
                               const colonIdx = t.indexOf(':');
-                              // Fallback labels for when AI omits "Key: Value" format
-                              const fallbackLabels = ['Frontend', 'Styling', 'Backend', 'Database', 'State', 'Testing', 'Deployment', 'Auth'];
-                              const label = colonIdx > -1 ? t.slice(0, colonIdx).trim() : (fallbackLabels[i] || `Stack ${i + 1}`);
-                              const value = colonIdx > -1 ? t.slice(colonIdx + 1).trim() : t.trim();
+                              let label: string;
+                              let value: string;
+                              if (colonIdx > -1) {
+                                // AI used "Key: Value" format — use as-is
+                                label = t.slice(0, colonIdx).trim();
+                                value = t.slice(colonIdx + 1).trim();
+                              } else {
+                                // AI used a plain sentence — detect category from content
+                                const lower = t.toLowerCase();
+                                if (lower.includes('react') || lower.includes('vue') || lower.includes('angular') || lower.includes('front-end') || lower.includes('frontend') || lower.includes('ui') || lower.includes('html') || lower.includes('unity') || lower.includes('unreal')) label = 'Frontend';
+                                else if (lower.includes('css') || lower.includes('tailwind') || lower.includes('sass') || lower.includes('style') || lower.includes('bootstrap')) label = 'Styling';
+                                else if (lower.includes('node') || lower.includes('express') || lower.includes('django') || lower.includes('flask') || lower.includes('back-end') || lower.includes('backend') || lower.includes('server') || lower.includes('api')) label = 'Backend';
+                                else if (lower.includes('mongo') || lower.includes('postgres') || lower.includes('mysql') || lower.includes('sqlite') || lower.includes('database') || lower.includes('firebase') || lower.includes('supabase')) label = 'Database';
+                                else if (lower.includes('stripe') || lower.includes('paypal') || lower.includes('payment') || lower.includes('transaction')) label = 'Payments';
+                                else if (lower.includes('aws') || lower.includes('heroku') || lower.includes('vercel') || lower.includes('netlify') || lower.includes('hosting') || lower.includes('deploy') || lower.includes('cloud')) label = 'Hosting';
+                                else if (lower.includes('auth') || lower.includes('jwt') || lower.includes('oauth') || lower.includes('login') || lower.includes('session')) label = 'Auth';
+                                else if (lower.includes('test') || lower.includes('jest') || lower.includes('cypress') || lower.includes('vitest')) label = 'Testing';
+                                else if (lower.includes('redux') || lower.includes('zustand') || lower.includes('context') || lower.includes('state')) label = 'State';
+                                else if (lower.includes('restful') || lower.includes('graphql') || lower.includes('integration') || lower.includes('third-party')) label = 'Integration';
+                                else label = `Stack ${i + 1}`;
+                                value = t.trim();
+                              }
                               return (
-                                <div key={i} className="py-3.5 first:pt-0 last:pb-0 text-[11px] flex items-center justify-between font-bold group">
-                                  <span className="text-slate-500 dark:text-indigo-200/40 uppercase tracking-tighter group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{label}</span>
-                                  <span className={`text-[10px] font-mono ${getTechColor(label)} group-hover:brightness-125 transition-all text-right max-w-[55%]`}>{value}</span>
+                                <div key={i} className="py-3.5 first:pt-0 last:pb-0 text-[11px] flex items-center justify-between font-bold group gap-4">
+                                  <span className="text-slate-500 dark:text-indigo-200/40 uppercase tracking-tighter group-hover:text-slate-900 dark:group-hover:text-white transition-colors shrink-0">{label}</span>
+                                  <span className={`text-[10px] font-mono ${getTechColor(label)} group-hover:brightness-125 transition-all text-right`}>{value}</span>
                                 </div>
                               );
                             })}
@@ -695,4 +713,5 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
 };
 
 export default ProjectDetailPage;
+
 

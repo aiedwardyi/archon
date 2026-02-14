@@ -11,9 +11,10 @@ const SyntaxHighlighter: React.FC<{ code: string; language: string }> = ({ code,
   const highlight = (text: string) => {
     if (!text) return text;
 
+    // IMPORTANT: Strings must come BEFORE comments so "// inside a string" stays green
     let tokens = [
-      { regex: /(\/\/.*$|\/\*[\s\S]*?\*\/)/gm, class: 'text-slate-400 dark:text-slate-500 italic' },
       { regex: /(["'])(?:(?=(\\?))\2.)*?\1/g, class: 'text-emerald-600 dark:text-emerald-400' },
+      { regex: /(\/\/.*$|\/\*[\s\S]*?\*\/)/gm, class: 'text-slate-400 dark:text-slate-500 italic' },
       { regex: /\b(export|class|async|await|import|from|return|const|let|var|function|if|else|for|while|interface|type|default|extends|new|try|catch|finally|throw)\b/g, class: 'text-indigo-600 dark:text-purple-400 font-bold' },
       { regex: /\b(true|false|null|undefined|\d+)\b/g, class: 'text-amber-600 dark:text-amber-500' },
       { regex: /\b([a-z_][a-zA-Z0-9_]*)(?=\s*\()/g, class: 'text-blue-600 dark:text-blue-400' },
@@ -71,16 +72,18 @@ const SyntaxHighlighter: React.FC<{ code: string; language: string }> = ({ code,
   const lines = code.split('\n');
 
   return (
-    <div className="flex font-mono text-[12px] leading-relaxed relative group bg-white dark:bg-[#080a0f] min-w-0">
-      <div className="flex flex-col text-right pr-4 border-r border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#080a0f] text-slate-400 dark:text-slate-600 select-none min-w-[3.5rem] py-8 shrink-0">
+    <div className="flex font-mono text-[12px] leading-relaxed relative group bg-white dark:bg-[#080a0f]">
+      {/* Line numbers — fixed width, no scroll */}
+      <div className="flex flex-col text-right pr-4 border-r border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#080a0f] text-slate-400 dark:text-slate-600 select-none min-w-[3.5rem] py-8 shrink-0 sticky left-0 z-10">
         {lines.map((_, i) => (
           <div key={i} className="h-[1.5em] leading-none flex items-center justify-end">{i + 1}</div>
         ))}
       </div>
 
-      <div className="flex-1 py-8 pl-6 relative text-slate-900 dark:text-slate-300 min-w-0">
+      {/* Code — scrolls horizontally here, not at parent */}
+      <div className="flex-1 py-8 pl-6 relative text-slate-900 dark:text-slate-300 overflow-x-auto">
         <div className="absolute inset-0 scanlines opacity-[0.02] dark:opacity-5 pointer-events-none"></div>
-        <pre className="relative z-10 whitespace-pre overflow-x-auto">
+        <pre className="relative z-10 whitespace-pre">
           {lines.map((line, i) => (
             <div key={i} className="h-[1.5em] flex items-center hover:bg-slate-100 dark:hover:bg-white/[0.03] -ml-6 pl-6 transition-colors">
               {highlight(line)}
@@ -156,7 +159,7 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
           </div>
 
           <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-[#080a0f]">
-            <div className="h-10 bg-slate-50 dark:bg-[#0a0d14] border-b border-slate-200 dark:border-white/5 flex items-center px-4 gap-2">
+            <div className="h-10 bg-slate-50 dark:bg-[#0a0d14] border-b border-slate-200 dark:border-white/5 flex items-center px-4 gap-2 shrink-0">
               <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-[#080a0f] border-x border-t border-slate-200 dark:border-white/5 rounded-t-lg -mb-[1px] relative z-10">
                 <FileCode size={12} className="text-indigo-600 dark:text-indigo-400" />
                 <span className="text-[10px] font-bold text-slate-800 dark:text-slate-300 font-mono">{files[activeFile]?.filename}</span>
@@ -168,7 +171,7 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
                 </div>
               </div>
             </div>
-            <div className="flex-1 overflow-auto custom-scrollbar">
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
               <SyntaxHighlighter
                 code={currentContent}
                 language={files[activeFile]?.language || 'typescript'}
@@ -280,15 +283,10 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
         </button>
       </div>
       <div className="border border-slate-200 dark:border-white/10 rounded-3xl overflow-hidden shadow-2xl bg-white dark:bg-[#080a0f] flex-1 flex flex-col">
-        {/* Agent chain banner — compact single row on all screen sizes */}
+        {/* Agent chain banner — single scrollable row */}
         <div className="px-3 py-2 border-b border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] flex items-center gap-2 shrink-0 overflow-x-auto no-scrollbar">
-          {/* Agent chain pill */}
           {getAgentSequence()}
-
-          {/* Divider */}
           <div className="h-3 w-px bg-slate-200 dark:bg-white/10 shrink-0"></div>
-
-          {/* Status pills */}
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 shrink-0">
             <span className="text-[8px]">♻️</span>
             <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Replayable</span>
@@ -297,8 +295,6 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
             <span className="text-[8px]">✅</span>
             <span className="text-[8px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">Schema</span>
           </div>
-
-          {/* Action buttons — pushed to right */}
           <div className="flex items-center gap-1.5 ml-auto shrink-0">
             <button
               onClick={handleReplay}
@@ -311,7 +307,6 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
               <RefreshCw size={10} className={isReplaying ? 'animate-spin' : ''} />
               {isReplaying ? 'Running...' : 'Replay'}
             </button>
-
             <button
               onClick={() => setIsJsonView(!isJsonView)}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all border cursor-pointer whitespace-nowrap ${isJsonView
@@ -325,9 +320,10 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
           </div>
         </div>
 
+        {/* Content — single scroll container, no nested overflow */}
         <div className="flex-1 overflow-hidden">
           {isJsonView ? (
-            <div className="h-full bg-white dark:bg-[#080a0f] overflow-auto custom-scrollbar">
+            <div className="h-full overflow-y-auto custom-scrollbar">
               <SyntaxHighlighter
                 code={JSON.stringify(artifact.content, null, 2)}
                 language="json"
