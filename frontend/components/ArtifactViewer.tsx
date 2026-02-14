@@ -71,16 +71,16 @@ const SyntaxHighlighter: React.FC<{ code: string; language: string }> = ({ code,
   const lines = code.split('\n');
 
   return (
-    <div className="flex font-mono text-[12px] leading-relaxed relative group bg-white dark:bg-[#080a0f]">
-      <div className="flex flex-col text-right pr-4 border-r border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#080a0f] text-slate-400 dark:text-slate-600 select-none min-w-[3.5rem] py-8">
+    <div className="flex font-mono text-[12px] leading-relaxed relative group bg-white dark:bg-[#080a0f] min-w-0">
+      <div className="flex flex-col text-right pr-4 border-r border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#080a0f] text-slate-400 dark:text-slate-600 select-none min-w-[3.5rem] py-8 shrink-0">
         {lines.map((_, i) => (
           <div key={i} className="h-[1.5em] leading-none flex items-center justify-end">{i + 1}</div>
         ))}
       </div>
 
-      <div className="flex-1 overflow-x-auto py-8 pl-6 relative text-slate-900 dark:text-slate-300">
+      <div className="flex-1 py-8 pl-6 relative text-slate-900 dark:text-slate-300 min-w-0">
         <div className="absolute inset-0 scanlines opacity-[0.02] dark:opacity-5 pointer-events-none"></div>
-        <pre className="relative z-10 whitespace-pre">
+        <pre className="relative z-10 whitespace-pre overflow-x-auto">
           {lines.map((line, i) => (
             <div key={i} className="h-[1.5em] flex items-center hover:bg-slate-100 dark:hover:bg-white/[0.03] -ml-6 pl-6 transition-colors">
               {highlight(line)}
@@ -108,7 +108,7 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
     const currentIdx = artifact.type === 'PRD' ? 0 : artifact.type === 'PLAN' ? 1 : 2;
 
     return (
-      <div className="flex items-center gap-1 bg-indigo-500/5 dark:bg-white/5 px-2.5 py-1 rounded-full border border-indigo-500/10 dark:border-white/5">
+      <div className="flex items-center gap-1 bg-indigo-500/5 dark:bg-white/5 px-2.5 py-1 rounded-full border border-indigo-500/10 dark:border-white/5 shrink-0">
         <span className="text-indigo-600 dark:text-indigo-400 text-[10px]">🔗</span>
         {steps.map((step, i) => (
           <React.Fragment key={step}>
@@ -280,44 +280,46 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
         </button>
       </div>
       <div className="border border-slate-200 dark:border-white/10 rounded-3xl overflow-hidden shadow-2xl bg-white dark:bg-[#080a0f] flex-1 flex flex-col">
-        {/* Agent chain banner — two rows on mobile, single row on sm+ */}
-        <div className="px-4 py-2.5 border-b border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] flex flex-col sm:flex-row sm:items-center gap-2 shrink-0">
-          {/* Row 1 (mobile) / Left side (desktop): chain + status pills */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {getAgentSequence()}
-            <div className="h-3 w-px bg-slate-200 dark:bg-white/10 hidden sm:block"></div>
-            <div className="flex items-center gap-1.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">
-              <span>♻️</span>
-              <span>Replayable</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-[9px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">
-              <span>✅</span>
-              <span>Schema Validated</span>
-            </div>
+        {/* Agent chain banner — compact single row on all screen sizes */}
+        <div className="px-3 py-2 border-b border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] flex items-center gap-2 shrink-0 overflow-x-auto no-scrollbar">
+          {/* Agent chain pill */}
+          {getAgentSequence()}
+
+          {/* Divider */}
+          <div className="h-3 w-px bg-slate-200 dark:bg-white/10 shrink-0"></div>
+
+          {/* Status pills */}
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 shrink-0">
+            <span className="text-[8px]">♻️</span>
+            <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Replayable</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 shrink-0">
+            <span className="text-[8px]">✅</span>
+            <span className="text-[8px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">Schema</span>
           </div>
 
-          {/* Row 2 (mobile) / Right side (desktop): action buttons */}
-          <div className="flex items-center gap-2 sm:ml-auto">
+          {/* Action buttons — pushed to right */}
+          <div className="flex items-center gap-1.5 ml-auto shrink-0">
             <button
               onClick={handleReplay}
               disabled={isReplaying}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all ${isReplaying
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${isReplaying
                 ? 'bg-slate-100 dark:bg-white/5 text-slate-400 cursor-not-allowed'
                 : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 cursor-pointer'
                 }`}
             >
-              <RefreshCw size={11} className={isReplaying ? 'animate-spin' : ''} />
+              <RefreshCw size={10} className={isReplaying ? 'animate-spin' : ''} />
               {isReplaying ? 'Running...' : 'Replay'}
             </button>
 
             <button
               onClick={() => setIsJsonView(!isJsonView)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all border cursor-pointer ${isJsonView
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all border cursor-pointer whitespace-nowrap ${isJsonView
                 ? 'bg-indigo-600/10 text-indigo-700 dark:text-white border-indigo-500/30'
                 : 'bg-white dark:bg-transparent text-slate-600 dark:text-indigo-300/60 border-slate-200 dark:border-white/10 hover:border-indigo-500/50'
                 }`}
             >
-              <Braces size={11} />
+              <Braces size={10} />
               JSON
             </button>
           </div>

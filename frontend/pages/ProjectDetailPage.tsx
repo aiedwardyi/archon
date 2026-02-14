@@ -577,13 +577,14 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
                           <div className="bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 rounded-3xl p-6 divide-y divide-slate-100 dark:divide-white/5 shadow-sm">
                             {prdArtifact.content.techStackRecommendation.map((t: string, i: number) => {
                               const colonIdx = t.indexOf(':');
-                              const label = colonIdx > -1 ? t.slice(0, colonIdx).trim() : t.trim();
-                              const value = colonIdx > -1 ? t.slice(colonIdx + 1).trim() : '';
+                              // Fallback labels for when AI omits "Key: Value" format
+                              const fallbackLabels = ['Frontend', 'Styling', 'Backend', 'Database', 'State', 'Testing', 'Deployment', 'Auth'];
+                              const label = colonIdx > -1 ? t.slice(0, colonIdx).trim() : (fallbackLabels[i] || `Stack ${i + 1}`);
+                              const value = colonIdx > -1 ? t.slice(colonIdx + 1).trim() : t.trim();
                               return (
                                 <div key={i} className="py-3.5 first:pt-0 last:pb-0 text-[11px] flex items-center justify-between font-bold group">
                                   <span className="text-slate-500 dark:text-indigo-200/40 uppercase tracking-tighter group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{label}</span>
-                                  {value && <span className={`text-[10px] font-mono ${getTechColor(label)} group-hover:brightness-125 transition-all`}>{value}</span>}
-                                  {!value && <span className={`text-[10px] font-mono ${getTechColor(label)} group-hover:brightness-125 transition-all`}>{label}</span>}
+                                  <span className={`text-[10px] font-mono ${getTechColor(label)} group-hover:brightness-125 transition-all text-right max-w-[55%]`}>{value}</span>
                                 </div>
                               );
                             })}
@@ -694,3 +695,4 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
 };
 
 export default ProjectDetailPage;
+
