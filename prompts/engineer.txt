@@ -18,16 +18,20 @@ STRICT RULES (MUST FOLLOW):
 - The array key MUST be named "files" (NOT artifacts, NOT outputs).
 - Include "summary" as a short sentence.
 - Do NOT include any additional keys anywhere.
-- Use forward slashes in ALL file paths (e.g. src/main.py, src/README.md).
+- Use forward slashes in ALL file paths (e.g. src/main.py, src/index.ts).
 - ALL paths MUST start with a directory prefix — NEVER use bare filenames at root level.
 - Allowed paths ONLY:
-  - src/README.md  (NOT README.md — must be in a subdirectory)
-  - docs/...
   - src/...
+  - docs/...
   - src/requirements.txt  (NOT requirements.txt at root)
   - src/pyproject.toml    (NOT pyproject.toml at root)
+- FILE LIMITS (strictly enforce):
+  - Generate AT MOST 1 README.md total across all directories. Put it at src/README.md only.
+  - Do NOT generate a README.md in every subdirectory — this is wasteful and unhelpful.
+  - Focus on FUNCTIONAL files: source code, config files, entry points, schemas.
+  - Maximum 6 files total per scaffold task.
 - If output_files is provided in the task, generate ONLY files listed there (subset allowed if you can't fill all, but do not invent new filenames).
-- Base scaffolding on the PRD domain. If the PRD does not mention Unity, do not assume Unity.
+- Base scaffolding on the PRD domain and tech stack. Generate real starter code, not empty stubs.
 
 Task is below. Produce only scaffolding files.
 

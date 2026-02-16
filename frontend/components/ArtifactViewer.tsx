@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import { Artifact, PrdResponse, PlanResponse } from '../types';
-import { FileCode, FileText, Layout, Copy, Terminal, ChevronRight, CheckCircle2, Clock, Map, Hash, Wand2, Loader2, Check, RotateCcw, Braces, ShieldCheck, RefreshCw } from 'lucide-react';
+import { FileCode, FileText, Layout, Copy, Terminal, ChevronRight, CheckCircle2, Clock, Map, Hash, Wand2, Loader2, Check, RotateCcw, Braces, ShieldCheck, RefreshCw, Folder, FolderOpen, ChevronDown } from 'lucide-react';
 import { backend } from '../services/orchestrator';
 
 interface ArtifactViewerProps {
@@ -11,7 +11,6 @@ const SyntaxHighlighter: React.FC<{ code: string; language: string }> = ({ code,
   const highlight = (text: string) => {
     if (!text) return text;
 
-    // IMPORTANT: Strings must come BEFORE comments so "// inside a string" stays green
     let tokens = [
       { regex: /(["'])(?:(?=(\\?))\2.)*?\1/g, class: 'text-emerald-600 dark:text-emerald-400' },
       { regex: /(\/\/.*$|\/\*[\s\S]*?\*\/)/gm, class: 'text-slate-400 dark:text-slate-500 italic' },
@@ -73,14 +72,11 @@ const SyntaxHighlighter: React.FC<{ code: string; language: string }> = ({ code,
 
   return (
     <div className="flex font-mono text-[12px] leading-relaxed relative group bg-white dark:bg-[#080a0f]">
-      {/* Line numbers — fixed width, no scroll */}
       <div className="flex flex-col text-right pr-4 border-r border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#080a0f] text-slate-400 dark:text-slate-600 select-none min-w-[3.5rem] py-8 shrink-0 sticky left-0 z-10">
         {lines.map((_, i) => (
           <div key={i} className="h-[1.5em] leading-none flex items-center justify-end">{i + 1}</div>
         ))}
       </div>
-
-      {/* Code — scrolls horizontally here, not at parent */}
       <div className="flex-1 py-8 pl-6 relative text-slate-900 dark:text-slate-300 overflow-x-auto">
         <div className="absolute inset-0 scanlines opacity-[0.02] dark:opacity-5 pointer-events-none"></div>
         <pre className="relative z-10 whitespace-pre">
@@ -94,6 +90,115 @@ const SyntaxHighlighter: React.FC<{ code: string; language: string }> = ({ code,
     </div>
   );
 };
+
+// ─── File Tree ────────────────────────────────────────────────────────────────
+// Builds a VS Code-style folder tree from a flat list of files with paths.
+
+interface TreeNode {
+  name: string;
+  path: string;        // full path used as key (e.g. "src/frontend/index.ts")
+  fileIndex: number;   // -1 for folders, index into files[] for leaf files
+  children: TreeNode[];
+  isFolder: boolean;
+}
+
+function buildTree(files: { filename: string }[]): TreeNode {
+  const root: TreeNode = { name: 'root', path: '', fileIndex: -1, children: [], isFolder: true };
+
+  files.forEach((f, idx) => {
+    // filename here is the relative path set by orchestrator.ts (e.g. "src/backend/package.json")
+    // For _summary.md there's no directory, treat as root-level
+    const parts = f.filename.replace(/\\/g, '/').split('/').filter(Boolean);
+    let node = root;
+    parts.forEach((part, partIdx) => {
+      const isLast = partIdx === parts.length - 1;
+      let child = node.children.find(c => c.name === part);
+      if (!child) {
+        const pathSoFar = parts.slice(0, partIdx + 1).join('/');
+        child = {
+          name: part,
+          path: pathSoFar,
+          fileIndex: isLast ? idx : -1,
+          children: [],
+          isFolder: !isLast,
+        };
+        node.children.push(child);
+      } else if (isLast) {
+        // Reached an existing folder node — update to file
+        child.fileIndex = idx;
+        child.isFolder = false;
+      }
+      node = child;
+    });
+  });
+
+  return root;
+}
+
+const FileTreeNode: React.FC<{
+  node: TreeNode;
+  depth: number;
+  activeFile: number;
+  onSelect: (idx: number) => void;
+  defaultOpen?: boolean;
+}> = ({ node, depth, activeFile, onSelect, defaultOpen = true }) => {
+  const [open, setOpen] = useState(defaultOpen);
+
+  if (node.isFolder) {
+    return (
+      <div>
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[10px] font-bold text-slate-500 dark:text-indigo-300/50 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-all cursor-pointer group"
+          style={{ paddingLeft: `${8 + depth * 12}px` }}
+        >
+          {open
+            ? <FolderOpen size={13} className="text-amber-500/70 shrink-0" />
+            : <Folder size={13} className="text-amber-500/50 shrink-0" />}
+          <span className="truncate uppercase tracking-wider">{node.name}</span>
+          <ChevronDown
+            size={10}
+            className={`ml-auto shrink-0 transition-transform text-slate-300 dark:text-white/20 ${open ? '' : '-rotate-90'}`}
+          />
+        </button>
+        {open && (
+          <div>
+            {node.children.map(child => (
+              <FileTreeNode
+                key={child.path}
+                node={child}
+                depth={depth + 1}
+                activeFile={activeFile}
+                onSelect={onSelect}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const isActive = node.fileIndex === activeFile;
+  return (
+    <button
+      onClick={() => node.fileIndex >= 0 && onSelect(node.fileIndex)}
+      className={`w-full flex items-center gap-2 py-1.5 rounded-lg text-[11px] font-mono transition-all focus:outline-none group border ${
+        isActive
+          ? 'bg-indigo-600/10 text-indigo-700 dark:text-white border-indigo-500/30 shadow-sm'
+          : 'text-slate-500 dark:text-indigo-200/40 hover:text-indigo-600 dark:hover:text-white hover:bg-white dark:hover:bg-white/5 border-transparent'
+      }`}
+      style={{ paddingLeft: `${8 + depth * 12}px` }}
+    >
+      <FileCode
+        size={13}
+        className={`shrink-0 ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-300 dark:text-slate-700 group-hover:text-indigo-400'}`}
+      />
+      <span className="truncate text-left font-bold">{node.name}</span>
+    </button>
+  );
+};
+
+// ─── ArtifactViewer ───────────────────────────────────────────────────────────
 
 const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
   const [activeFile, setActiveFile] = useState<number>(0);
@@ -132,41 +237,51 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
       const files = artifact.content.files || [];
       if (files.length === 0) return <div className="p-8 text-indigo-900 dark:text-indigo-400 text-center italic font-bold">No files generated.</div>;
 
-      const currentContent = files[activeFile]?.content || '';
+      const currentFile = files[activeFile];
+      const currentContent = currentFile?.content || '';
+      // Basename for the tab header (e.g. "package.json" from "src/frontend/package.json")
+      const currentBasename = (currentFile?.filename || '').split('/').pop() || currentFile?.filename || '';
+
+      // Separate _summary.md from the tree — pin it at top
+      const summaryIdx = files.findIndex((f: any) => f.filename === '_summary.md');
+      const treeFiles = files; // include all — tree handles _summary.md as root-level
+      const tree = buildTree(treeFiles);
 
       return (
         <div className="flex flex-col md:flex-row h-full min-h-[550px] bg-white dark:bg-[#080a0f]">
-          <div className="w-full md:w-60 h-40 md:h-auto border-b md:border-b-0 md:border-r border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#080a0f] flex flex-col shrink-0">
+          {/* Explorer sidebar — now a folder tree */}
+          <div className="w-full md:w-64 h-40 md:h-auto border-b md:border-b-0 md:border-r border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#080a0f] flex flex-col shrink-0">
             <div className="p-4 flex items-center justify-between border-b border-slate-200 dark:border-white/5 bg-white dark:bg-[#0a0d14]/50">
               <div className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Explorer</div>
               <Hash size={12} className="text-slate-300 dark:text-slate-700" />
             </div>
-            <div className="p-2 space-y-1 overflow-y-auto custom-scrollbar flex-1">
-              {files.map((f: any, idx: number) => (
-                <button
-                  key={idx}
-                  onClick={() => setActiveFile(idx)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 text-[11px] font-mono rounded-xl transition-all focus:outline-none focus:ring-0 group border ${activeFile === idx
-                    ? 'bg-indigo-600/10 text-indigo-700 dark:text-white border-indigo-500/30 shadow-sm'
-                    : 'text-slate-500 dark:text-indigo-200/40 hover:text-indigo-600 dark:hover:text-white hover:bg-white dark:hover:bg-white/5 border-transparent'
-                    }`}
-                >
-                  <FileCode size={14} className={activeFile === idx ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-300 dark:text-slate-700 group-hover:text-indigo-400'} />
-                  <span className="truncate text-left flex-1 font-bold">{f.filename}</span>
-                </button>
+            <div className="p-2 overflow-y-auto custom-scrollbar flex-1 space-y-0.5">
+              {tree.children.map(node => (
+                <FileTreeNode
+                  key={node.path}
+                  node={node}
+                  depth={0}
+                  activeFile={activeFile}
+                  onSelect={setActiveFile}
+                  defaultOpen={true}
+                />
               ))}
             </div>
           </div>
 
+          {/* Code panel */}
           <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-[#080a0f]">
-            <div className="h-10 bg-slate-50 dark:bg-[#0a0d14] border-b border-slate-200 dark:border-white/5 flex items-center px-4 gap-2 shrink-0">
-              <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-[#080a0f] border-x border-t border-slate-200 dark:border-white/5 rounded-t-lg -mb-[1px] relative z-10">
-                <FileCode size={12} className="text-indigo-600 dark:text-indigo-400" />
-                <span className="text-[10px] font-bold text-slate-800 dark:text-slate-300 font-mono">{files[activeFile]?.filename}</span>
+            {/* Tab bar — shows full relative path */}
+            <div className="h-10 bg-slate-50 dark:bg-[#0a0d14] border-b border-slate-200 dark:border-white/5 flex items-center px-4 gap-2 shrink-0 overflow-x-auto no-scrollbar">
+              <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-[#080a0f] border-x border-t border-slate-200 dark:border-white/5 rounded-t-lg -mb-[1px] relative z-10 shrink-0">
+                <FileCode size={12} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
+                <span className="text-[10px] font-bold text-slate-800 dark:text-slate-300 font-mono whitespace-nowrap">
+                  {currentFile?.filename || currentBasename}
+                </span>
               </div>
-              <div className="ml-auto flex items-center gap-3">
+              <div className="ml-auto flex items-center gap-3 shrink-0">
                 <div className="flex items-center gap-2 text-[9px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest">
-                  <span>{files[activeFile]?.language || 'plaintext'}</span>
+                  <span>{currentFile?.language || 'plaintext'}</span>
                   <div className="w-1.5 h-1.5 rounded-full bg-indigo-500/50"></div>
                 </div>
               </div>
@@ -174,7 +289,7 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
             <div className="flex-1 overflow-y-auto custom-scrollbar">
               <SyntaxHighlighter
                 code={currentContent}
-                language={files[activeFile]?.language || 'typescript'}
+                language={currentFile?.language || 'typescript'}
               />
             </div>
           </div>
@@ -283,7 +398,6 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
         </button>
       </div>
       <div className="border border-slate-200 dark:border-white/10 rounded-3xl overflow-hidden shadow-2xl bg-white dark:bg-[#080a0f] flex-1 flex flex-col">
-        {/* Agent chain banner — single scrollable row */}
         <div className="px-3 py-2 border-b border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] flex items-center gap-2 shrink-0 overflow-x-auto no-scrollbar">
           {getAgentSequence()}
           <div className="h-3 w-px bg-slate-200 dark:bg-white/10 shrink-0"></div>
@@ -320,7 +434,6 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
           </div>
         </div>
 
-        {/* Content — single scroll container, no nested overflow */}
         <div className="flex-1 overflow-hidden">
           {isJsonView ? (
             <div className="h-full overflow-y-auto custom-scrollbar">
