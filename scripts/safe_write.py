@@ -11,6 +11,14 @@ ALLOWED_EXTENSIONS = {
     ".xml", ".yaml", ".yml", ".toml", ".ini", ".cfg",
     ".sh", ".bash", ".bat", ".ps1",
     ".svg", ".gitignore", ".env.example",
+    # Database & query files
+    ".sql", ".prisma", ".graphql", ".gql",
+    # Environment & config
+    ".env", ".lock", ".editorconfig",
+    # Rust / Go / other common languages
+    ".rs", ".go", ".rb", ".php", ".swift", ".kt",
+    # Docs
+    ".rst", ".mdx",
 }
 
 @dataclass(frozen=True)
@@ -90,3 +98,4 @@ def safe_write_text(
     tmp.replace(target)
 
     return WriteRecord(path=str(target), sha256=digest, bytes=len(data))
+
