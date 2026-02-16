@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 import os
@@ -13,24 +13,15 @@ from utils.offline_engineer_scaffold import build_vite_react_ts_scaffold
 
 
 def _is_offline_mode() -> bool:
-    """
-    OFFLINE_MODE triggers deterministic behavior with zero model calls.
-    Accepts: 1, true, yes, y, on (case-insensitive)
-    """
     return os.getenv("OFFLINE_MODE", "").strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
 def _build_offline_engineering_result(task_id: str) -> EngineeringResult:
-    """
-    Convert deterministic offline scaffold into EngineeringResult.
-    """
     scaffold = build_vite_react_ts_scaffold(app_dir="apps/offline-vite-react")
-
     files = [
         FileArtifact(path=path, content=content)
         for path, content in sorted(scaffold.files.items())
     ]
-
     return EngineeringResult(
         task_id=task_id,
         summary="OFFLINE: Generated deterministic Vite + React + TypeScript scaffold in apps/offline-vite-react/",
@@ -38,26 +29,37 @@ def _build_offline_engineering_result(task_id: str) -> EngineeringResult:
     )
 
 
+def _deduplicate_files(files: list[FileArtifact]) -> list[FileArtifact]:
+    """
+    Remove duplicate paths — keep the LAST occurrence (last-write wins).
+    Gemini sometimes emits the same filename multiple times (e.g., three
+    package.json files for root / frontend / backend in a monorepo).
+    We normalise paths to forward-slash before comparing.
+    """
+    seen: dict[str, FileArtifact] = {}
+    for f in files:
+        normalised = f.path.replace("\\", "/").strip("/")
+        seen[normalised] = f  # overwrite — last wins
+    return list(seen.values())
+
+
 class EngineerAgent:
     def __init__(self, client: genai.Client | None):
         self.client = client
 
     def run(self, task: Task) -> EngineeringResult:
-        # Safety gates
         if task.execution_hint != "engineer":
             raise ValueError("EngineerAgent called with non-executable task")
 
         if task.task_type != "scaffold":
             raise ValueError(f"Unsupported task_type: {task.task_type}")
 
-        # OFFLINE branch
         if _is_offline_mode() or str(task.id).startswith("OFFLINE-"):
             return _build_offline_engineering_result(task_id=str(task.id))
 
         if self.client is None:
             raise RuntimeError("EngineerAgent: client is None in ONLINE mode")
 
-        # ONLINE branch
         prompt = Path("prompts/engineer.txt").read_text(encoding="utf-8")
 
         contents = (
@@ -83,19 +85,18 @@ class EngineerAgent:
 
         # Primary path
         if response.parsed is not None:
-            return response.parsed
+            result = response.parsed
+            result.files = _deduplicate_files(result.files)
+            return result
 
         # -------- FALLBACK REPAIR PATH --------
-
         raw = getattr(response, "text", "") or ""
         text = raw.strip()
 
-        # Strip markdown fences
         text = re.sub(r"^```json\s*", "", text, flags=re.IGNORECASE)
         text = re.sub(r"^```\s*", "", text)
         text = re.sub(r"\s*```$", "", text)
 
-        # Extract JSON object
         start = text.find("{")
         end = text.rfind("}")
         if start == -1 or end == -1 or end <= start:
@@ -105,8 +106,6 @@ class EngineerAgent:
             )
 
         candidate = text[start : end + 1]
-
-        # Fix missing commas between objects
         candidate = re.sub(r"}\s*\n\s*{", "},\n{", candidate)
 
         try:
@@ -118,4 +117,6 @@ class EngineerAgent:
                 f"Candidate JSON:\n{candidate}"
             ) from e
 
-        return EngineeringResult.model_validate(data)
+        result = EngineeringResult.model_validate(data)
+        result.files = _deduplicate_files(result.files)
+        return result

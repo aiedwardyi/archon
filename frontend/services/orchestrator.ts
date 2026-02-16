@@ -15,7 +15,6 @@ function normalizePrd(raw: any) {
 }
 
 function normalizePlan(raw: any) {
-  // Handle both flat { milestones } and wrapped { plan: { milestones } } shapes
   const milestones = raw?.milestones || raw?.plan?.milestones || raw?.phases || [];
   return {
     phases: milestones.map((m: any) => ({
@@ -75,7 +74,20 @@ function normalizeProject(raw: any): Project {
 function buildTasksFromResult(raw: any): EngineerTask[] {
   const writes = raw?.outputs?.writes || [];
   const producedAt = raw?._meta?.produced_at ? new Date(raw._meta.produced_at).getTime() : Date.now();
-  return writes.map((w: any, i: number) => {
+
+  // Deduplicate writes by filename — keep last occurrence.
+  // The engineer agent may write multiple files with the same name
+  // (e.g. package.json for root / frontend / backend in a monorepo).
+  // We use full path as the unique key so genuinely different paths
+  // with the same basename are preserved, but true duplicates collapse.
+  const seenPaths = new Map<string, any>();
+  for (const w of writes) {
+    const key = (w.path || '').replace(/\\/g, '/').replace(/\/+$/, '');
+    seenPaths.set(key, w);
+  }
+  const dedupedWrites = Array.from(seenPaths.values());
+
+  return dedupedWrites.map((w: any, i: number) => {
     const fullPath: string = w.path || '';
     const filename = fullPath.split('\\').pop() || fullPath.split('/').pop() || `file-${i}`;
     return {
@@ -242,7 +254,6 @@ class BackendService {
         project.currentStage = data.currentStage;
         project.engineerTasks = data.engineerTasks || [];
 
-        // Merge live server logs into local logs for this project
         if (data.logs && data.logs.length > 0) {
           const serverLogs: LogEntry[] = data.logs.map((l: any) => ({
             id: l.id || uuidv4(),
@@ -253,7 +264,6 @@ class BackendService {
           }));
           const userLogs = this.logs.filter(l => l.projectId === projectId && l.message.startsWith('User:'));
           const otherLogs = this.logs.filter(l => l.projectId !== projectId);
-          // Deduplicate by message content to avoid duplicates across polls
           const seen = new Set<string>();
           const merged = [...otherLogs, ...userLogs, ...serverLogs].filter(l => {
             const key = `${l.projectId}-${l.message}`;
@@ -314,7 +324,6 @@ class BackendService {
     }
     if (status === 'COMPLETED') {
       await fetchArtifact('CODE', 'code', 'Source Code', 'Engineer Agent', (raw) => {
-        // Inject engineer tasks from result
         const project = this.getProject(projectId);
         if (project) project.engineerTasks = buildTasksFromResult(raw);
         return normalizeCode(raw);
