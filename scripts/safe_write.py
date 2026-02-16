@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Iterable, Optional
 
 ALLOWED_EXTENSIONS = {
-    "", ".txt", ".md", ".json",  # Added "" for files without extension
+    "", ".txt", ".md", ".json",
     ".html", ".css", ".js", ".jsx", ".ts", ".tsx",
     ".py", ".java", ".c", ".cpp", ".h", ".hpp",
     ".xml", ".yaml", ".yml", ".toml", ".ini", ".cfg",
@@ -25,9 +25,14 @@ def _sha256_bytes(data: bytes) -> str:
 
 
 def _ensure_within_dir(base: Path, target: Path) -> None:
-    base_resolved = base.resolve()
-    target_resolved = target.resolve()
-    if base_resolved not in target_resolved.parents and base_resolved != target_resolved:
+    """
+    Verify target is strictly inside base.
+    Both paths must already be resolved (absolute).
+    Uses is_relative_to() so the check is CWD-independent.
+    """
+    try:
+        target.relative_to(base)
+    except ValueError:
         raise ValueError(f"Unsafe path (escapes allowlist dir): {target}")
 
 
@@ -45,31 +50,43 @@ def safe_write_text(
     - Restricts file extensions
     - Atomic write
     """
+    allowlist_dir = allowlist_dir.resolve()
     allowlist_dir.mkdir(parents=True, exist_ok=True)
+
     rel = Path(relative_path)
-    
-    # Disallow absolute paths and drive-rooted paths
+
+    # Disallow absolute paths and UNC / rooted paths
     if rel.is_absolute() or str(rel).startswith(("\\\\", "/")):
         raise ValueError(f"Unsafe path (absolute): {relative_path}")
-    
-    # Build final target
-    target = (allowlist_dir / rel)
-    
+
+    # Disallow bare root-level filenames (e.g. "README.md" with no parent dir).
+    # The engineer prompt requires a directory prefix (src/README.md, docs/X.md).
+    # A path with no parent parts is just a filename sitting at drive root after
+    # resolution — reject it early before even joining.
+    if len(rel.parts) == 1:
+        raise ValueError(
+            f"Unsafe path (no directory prefix): '{relative_path}'. "
+            f"All generated files must be inside a subdirectory (e.g. src/{relative_path})."
+        )
+
+    # Anchor target to allowlist_dir — resolve from here so CWD doesn't matter
+    target = (allowlist_dir / rel).resolve()
+
     # Enforce extension allowlist
     exts = set(allowed_extensions) if allowed_extensions is not None else ALLOWED_EXTENSIONS
     if target.suffix.lower() not in exts:
         raise ValueError(f"Disallowed extension: {target.suffix} (allowed: {sorted(exts)})")
-    
-    # Ensure no traversal outside allowlist_dir
+
+    # Ensure no traversal outside allowlist_dir (CWD-independent)
     _ensure_within_dir(allowlist_dir, target)
-    
+
     data = content.encode("utf-8")
     digest = _sha256_bytes(data)
-    
+
     # Atomic write
     target.parent.mkdir(parents=True, exist_ok=True)
     tmp = target.with_suffix(target.suffix + ".tmp")
     tmp.write_bytes(data)
     tmp.replace(target)
-    
+
     return WriteRecord(path=str(target), sha256=digest, bytes=len(data))

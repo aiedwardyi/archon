@@ -1,4 +1,4 @@
-You are a senior software engineer.
+﻿You are a senior software engineer.
 
 You will be given exactly ONE planning task.
 
@@ -18,14 +18,16 @@ STRICT RULES (MUST FOLLOW):
 - The array key MUST be named "files" (NOT artifacts, NOT outputs).
 - Include "summary" as a short sentence.
 - Do NOT include any additional keys anywhere.
-- Use forward slashes in file paths (e.g. src/__init__.py).
+- Use forward slashes in ALL file paths (e.g. src/main.py, src/README.md).
+- ALL paths MUST start with a directory prefix — NEVER use bare filenames at root level.
 - Allowed paths ONLY:
-  - README.md
+  - src/README.md  (NOT README.md — must be in a subdirectory)
   - docs/...
   - src/...
-  - requirements.txt
-  - pyproject.toml
-- If output_files is provided in the task, generate ONLY files listed there (subset allowed if you can’t fill all, but do not invent new filenames).
+  - src/requirements.txt  (NOT requirements.txt at root)
+  - src/pyproject.toml    (NOT pyproject.toml at root)
+- If output_files is provided in the task, generate ONLY files listed there (subset allowed if you can't fill all, but do not invent new filenames).
 - Base scaffolding on the PRD domain. If the PRD does not mention Unity, do not assume Unity.
 
 Task is below. Produce only scaffolding files.
+

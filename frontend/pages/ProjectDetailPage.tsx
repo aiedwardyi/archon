@@ -298,8 +298,6 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
     setChatInput('');
   };
 
-  // Chat sidebar: show only meaningful progress messages, never the workflow completion line
-  // (the AgentStatusMessage component handles the "I've built X" completion message)
   const filteredLogs = logs.filter(l => {
     if (l.message === 'Workflow completed successfully.') return false;
     if (l.message.includes('Engineer Agent: Completed')) return false;
@@ -318,21 +316,77 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
     return false;
   });
 
-  // Since we filtered out the completion log, all filteredLogs go to buildLogs
   const buildLogs = filteredLogs;
   const followUpLogs: LogEntry[] = [];
 
   const handleInjectError = () => backend.injectSimulatedError(projectId);
   const handleDismissFaults = () => backend.clearErrors(projectId);
 
-  // Technology Map color — broad matching so it works with any label format
-  const getTechColor = (tech: string) => {
-    const lower = tech.toLowerCase();
-    if (lower.includes('frontend') || lower.includes('react') || lower.includes('vue') || lower.includes('angular') || lower.includes('unity') || lower.includes('unreal')) return 'text-blue-600 dark:text-blue-400';
-    if (lower.includes('styling') || lower.includes('css') || lower.includes('tailwind') || lower.includes('sass')) return 'text-pink-600 dark:text-pink-400';
-    if (lower.includes('backend') || lower.includes('node') || lower.includes('express') || lower.includes('django') || lower.includes('flask') || lower.includes('aws') || lower.includes('azure') || lower.includes('cloud')) return 'text-emerald-600 dark:text-emerald-400';
-    if (lower.includes('database') || lower.includes('db') || lower.includes('sql') || lower.includes('mongo') || lower.includes('postgres') || lower.includes('mysql') || lower.includes('prisma')) return 'text-amber-600 dark:text-amber-400';
-    if (lower.includes('state') || lower.includes('redux') || lower.includes('query') || lower.includes('zustand') || lower.includes('jira') || lower.includes('trello') || lower.includes('git') || lower.includes('version')) return 'text-violet-600 dark:text-violet-400';
+  // Detect category label from a plain-sentence tech stack entry (no colon format).
+  // ORDER MATTERS: more specific buckets (Payments, Auth, Hosting) must come
+  // before the broad Backend bucket so that e.g. "Stripe API" doesn't fall
+  // through to Backend, and "AWS for hosting" doesn't duplicate Backend.
+  const detectTechLabel = (text: string, index: number): string => {
+    const lower = text.toLowerCase();
+
+    if (lower.includes('react') || lower.includes('vue') || lower.includes('angular') ||
+        lower.includes('front-end') || lower.includes('frontend') || lower.includes('html') ||
+        lower.includes('unity') || lower.includes('unreal'))
+      return 'Frontend';
+
+    if (lower.includes('css') || lower.includes('tailwind') || lower.includes('sass') ||
+        lower.includes('style') || lower.includes('bootstrap'))
+      return 'Styling';
+
+    if (lower.includes('stripe') || lower.includes('paypal') ||
+        lower.includes('payment') || lower.includes('transaction') || lower.includes('billing'))
+      return 'Payments';
+
+    if (lower.includes('auth') || lower.includes('jwt') || lower.includes('oauth') ||
+        lower.includes('login') || lower.includes('session') || lower.includes('passport'))
+      return 'Auth';
+
+    if (lower.includes('test') || lower.includes('jest') || lower.includes('cypress') || lower.includes('vitest'))
+      return 'Testing';
+
+    if (lower.includes('redux') || lower.includes('zustand') || lower.includes('context') || lower.includes('state'))
+      return 'State';
+
+    if (lower.includes('mongo') || lower.includes('postgres') || lower.includes('mysql') ||
+        lower.includes('sqlite') || lower.includes('database') || lower.includes('firebase') ||
+        lower.includes('supabase') || lower.includes('db'))
+      return 'Database';
+
+    // Hosting BEFORE Backend — aws/cloud/vercel etc. belong here, not in Backend
+    if (lower.includes('aws') || lower.includes('azure') || lower.includes('gcp') ||
+        lower.includes('heroku') || lower.includes('vercel') || lower.includes('netlify') ||
+        lower.includes('hosting') || lower.includes('deploy') || lower.includes('cloud'))
+      return 'Hosting';
+
+    if (lower.includes('node') || lower.includes('express') || lower.includes('django') ||
+        lower.includes('flask') || lower.includes('back-end') || lower.includes('backend') ||
+        lower.includes('server') || lower.includes('api') || lower.includes('restful') ||
+        lower.includes('graphql'))
+      return 'Backend';
+
+    if (lower.includes('integration') || lower.includes('third-party') || lower.includes('webhook'))
+      return 'Integration';
+
+    return `Stack ${index + 1}`;
+  };
+
+  // Technology Map color — keyed off label for consistency
+  const getTechColor = (label: string) => {
+    const lower = label.toLowerCase();
+    if (lower.includes('frontend')) return 'text-blue-600 dark:text-blue-400';
+    if (lower.includes('styling')) return 'text-pink-600 dark:text-pink-400';
+    if (lower.includes('backend')) return 'text-emerald-600 dark:text-emerald-400';
+    if (lower.includes('database') || lower.includes('db')) return 'text-amber-600 dark:text-amber-400';
+    if (lower.includes('hosting') || lower.includes('cloud')) return 'text-cyan-600 dark:text-cyan-400';
+    if (lower.includes('payments') || lower.includes('billing')) return 'text-orange-600 dark:text-orange-400';
+    if (lower.includes('auth')) return 'text-rose-600 dark:text-rose-400';
+    if (lower.includes('state') || lower.includes('integration')) return 'text-violet-600 dark:text-violet-400';
+    if (lower.includes('testing')) return 'text-teal-600 dark:text-teal-400';
     return 'text-indigo-600 dark:text-indigo-400';
   };
 
@@ -346,14 +400,6 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
     { id: 'terminal', icon: Terminal, label: 'Logs', badge: errorCount }
   ];
 
-  // Terminal log color logic:
-  // - error → red
-  // - "Workflow completed successfully." → same indigo as "Starting execution pipeline..." (system color)
-  // - "Engineer Agent: Code generation complete." → emerald (success highlight)
-  // - "Engineer Agent: Completed X" (file writes) → white (slate-100), same as PM/Planner info lines
-  // - success type → emerald
-  // - system type → indigo
-  // - info type (default) → white (slate-100)
   const getTerminalLogColor = (log: LogEntry) => {
     if (log.type === 'error') return 'text-red-600 dark:text-red-400';
     if (log.message === 'Workflow completed successfully.') return 'text-indigo-600 dark:text-indigo-400 font-black';
@@ -575,37 +621,42 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
                             Technology Map
                           </div>
                           <div className="bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 rounded-3xl p-6 divide-y divide-slate-100 dark:divide-white/5 shadow-sm">
-                            {prdArtifact.content.techStackRecommendation.map((t: string, i: number) => {
-                              const colonIdx = t.indexOf(':');
-                              let label: string;
-                              let value: string;
-                              if (colonIdx > -1) {
-                                // AI used "Key: Value" format — use as-is
-                                label = t.slice(0, colonIdx).trim();
-                                value = t.slice(colonIdx + 1).trim();
-                              } else {
-                                // AI used a plain sentence — detect category from content
-                                const lower = t.toLowerCase();
-                                if (lower.includes('react') || lower.includes('vue') || lower.includes('angular') || lower.includes('front-end') || lower.includes('frontend') || lower.includes('ui') || lower.includes('html') || lower.includes('unity') || lower.includes('unreal')) label = 'Frontend';
-                                else if (lower.includes('css') || lower.includes('tailwind') || lower.includes('sass') || lower.includes('style') || lower.includes('bootstrap')) label = 'Styling';
-                                else if (lower.includes('node') || lower.includes('express') || lower.includes('django') || lower.includes('flask') || lower.includes('back-end') || lower.includes('backend') || lower.includes('server') || lower.includes('api')) label = 'Backend';
-                                else if (lower.includes('mongo') || lower.includes('postgres') || lower.includes('mysql') || lower.includes('sqlite') || lower.includes('database') || lower.includes('firebase') || lower.includes('supabase')) label = 'Database';
-                                else if (lower.includes('stripe') || lower.includes('paypal') || lower.includes('payment') || lower.includes('transaction')) label = 'Payments';
-                                else if (lower.includes('aws') || lower.includes('heroku') || lower.includes('vercel') || lower.includes('netlify') || lower.includes('hosting') || lower.includes('deploy') || lower.includes('cloud')) label = 'Hosting';
-                                else if (lower.includes('auth') || lower.includes('jwt') || lower.includes('oauth') || lower.includes('login') || lower.includes('session')) label = 'Auth';
-                                else if (lower.includes('test') || lower.includes('jest') || lower.includes('cypress') || lower.includes('vitest')) label = 'Testing';
-                                else if (lower.includes('redux') || lower.includes('zustand') || lower.includes('context') || lower.includes('state')) label = 'State';
-                                else if (lower.includes('restful') || lower.includes('graphql') || lower.includes('integration') || lower.includes('third-party')) label = 'Integration';
-                                else label = `Stack ${i + 1}`;
-                                value = t.trim();
-                              }
-                              return (
-                                <div key={i} className="py-3.5 first:pt-0 last:pb-0 text-[11px] flex items-center justify-between font-bold group gap-4">
-                                  <span className="text-slate-500 dark:text-indigo-200/40 uppercase tracking-tighter group-hover:text-slate-900 dark:group-hover:text-white transition-colors shrink-0">{label}</span>
-                                  <span className={`text-[10px] font-mono ${getTechColor(label)} group-hover:brightness-125 transition-all text-right`}>{value}</span>
-                                </div>
-                              );
-                            })}
+                            {(() => {
+                              // Track used labels to prevent duplicates within this project's tech map
+                              const usedLabels = new Set<string>();
+                              return prdArtifact.content.techStackRecommendation.map((t: string, i: number) => {
+                                const colonIdx = t.indexOf(':');
+                                let label: string;
+                                let value: string;
+
+                                if (colonIdx > -1) {
+                                  // AI used "Key: Value" format — use as-is
+                                  label = t.slice(0, colonIdx).trim();
+                                  value = t.slice(colonIdx + 1).trim();
+                                } else {
+                                  // AI used a plain sentence — detect category from content
+                                  label = detectTechLabel(t, i);
+                                  value = t.trim();
+                                }
+
+                                // Dedup guard: if label already used, make it unique
+                                if (usedLabels.has(label)) {
+                                  // Try to make a more descriptive variant
+                                  const base = label.replace(/\s+\d+$/, ''); // strip any prior number suffix
+                                  let variant = 2;
+                                  while (usedLabels.has(`${base} ${variant}`)) variant++;
+                                  label = `${base} ${variant}`;
+                                }
+                                usedLabels.add(label);
+
+                                return (
+                                  <div key={i} className="py-3.5 first:pt-0 last:pb-0 text-[11px] flex items-center justify-between font-bold group gap-4">
+                                    <span className="text-slate-500 dark:text-indigo-200/40 uppercase tracking-tighter group-hover:text-slate-900 dark:group-hover:text-white transition-colors shrink-0">{label}</span>
+                                    <span className={`text-[10px] font-mono ${getTechColor(label)} group-hover:brightness-125 transition-all text-right`}>{value}</span>
+                                  </div>
+                                );
+                              });
+                            })()}
                           </div>
                         </section>
                       </div>
@@ -713,5 +764,3 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
 };
 
 export default ProjectDetailPage;
-
-
