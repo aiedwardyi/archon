@@ -1,4 +1,4 @@
-
+﻿
 import React, { useState } from 'react';
 import { Sparkles, Send, Zap, ArrowRight, Github, Layout, Activity, Database, Shield, Rocket, Smartphone } from 'lucide-react';
 
@@ -75,7 +75,7 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({ onCreateProject }) => {
             />
             
             <div className="absolute bottom-4 left-6 right-4 flex items-center justify-between">
-              <span className="text-[10px] text-indigo-600/50 dark:text-indigo-400/50 font-mono hidden md:block uppercase tracking-widest font-black">Press ↵ to launch pipeline</span>
+              <span className="text-[10px] text-indigo-600/50 dark:text-indigo-400/50 font-mono hidden md:block uppercase tracking-widest font-black">Press Enter to launch pipeline</span>
               <button 
                 type="submit"
                 disabled={!prompt.trim()}
@@ -90,10 +90,10 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({ onCreateProject }) => {
       </div>
 
       <div className="md:absolute bottom-8 md:bottom-12 left-0 right-0 flex justify-center items-center gap-8 text-slate-400 dark:text-slate-500 mt-8 md:mt-0">
-        <div className="flex items-center gap-2 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-default group">
+        <a href="https://github.com/aiedwardyi/ai-dev-team" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer group">
           <Github size={16} className="group-hover:scale-110 transition-transform" />
           <span className="text-xs font-black uppercase tracking-widest">Source</span>
-        </div>
+        </a>
         <div className="h-4 w-[1px] bg-slate-200 dark:bg-white/10"></div>
         <div className="flex items-center gap-2 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-default group">
           <Sparkles size={16} className="group-hover:scale-110 transition-transform" />
@@ -105,3 +105,7 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({ onCreateProject }) => {
 };
 
 export default ProjectsPage;
+
+
+
+
