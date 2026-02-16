@@ -1,22 +1,34 @@
-﻿# AI Dev Team (MVP #2)
+﻿# Archon — AI Dev Team Platform
 
-Schema-driven multi-agent system that converts product ideas into structured implementation plans and executable code.
+A deterministic multi-agent platform that converts product ideas into structured,
+auditable code. Describe what you want to build — Archon runs a full PM → Planner
+→ Engineer pipeline and generates code with a complete artifact trail.
 
-## 🎯 Current Capabilities
+**What makes Archon different from Lovable/Bolt:**
+- Full pipeline re-run on every iteration (not patching)
+- Every artifact versioned and inspectable
+- Agent chain visible on every output
+- Schema-validated at every boundary
+- Deterministic: same input = same output
 
-**Multi-Agent Workflow:**
-- **PM Agent** (OpenAI) → Generates structured Product Requirement Documents
-- **Planner Agent** (Gemini) → Creates schema-validated execution plans with milestones and tasks
-- **Engineer Agent** (Gemini) → Executes tasks and generates code files
+---
 
-**Production Features:**
-- Flask API backend with async execution
-- React UI with automated task execution
-- Real-time status polling and toast notifications
-- Complete observability with agent sequence tracking
-- Deterministic, replayable workflows
+## Architecture
+```
+User Input
+    ↓
+PM Agent (OpenAI GPT-4)     → PRD artifact
+    ↓
+Planner Agent (Gemini)      → Plan artifact (milestones + tasks)
+    ↓
+Engineer Agent (Gemini)     → Code files
+    ↓
+Execution Result            → Database + UI
+```
 
-## 🚀 Quick Start
+---
+
+## Quick Start
 
 ### Prerequisites
 - Python 3.11+
@@ -24,226 +36,136 @@ Schema-driven multi-agent system that converts product ideas into structured imp
 - OpenAI API key
 - Google Gemini API key
 
-### Setup
-
-1. **Clone and install dependencies:**
+### 1. Clone and install
 ```powershell
-# Clone repository
-git clone <your-repo-url>
+git clone https://github.com/aiedwardyi/ai-dev-team
 cd ai-dev-team
 
-# Create virtual environment
+# Python dependencies
 python -m venv venv
 .\venv\Scripts\Activate
-
-# Install Python dependencies
 pip install -r requirements.txt
 
-# Install Node dependencies
-cd apps/offline-vite-react
+# Frontend dependencies
+cd frontend
 npm install
-cd ../..
+cd ..
 ```
 
-2. **Set API keys (required for each session):**
+### 2. Set API keys (each session)
 ```powershell
 $env:OPENAI_API_KEY = "sk-proj-..."
 $env:GENAI_API_KEY = "your_gemini_key"
 ```
 
-3. **Start the servers:**
+### 3. Start the servers
 ```powershell
-# Terminal 1: Flask backend
+# Terminal 1 — Flask backend (port 5000)
+.\venv\Scripts\Activate
 python backend/app.py
 
-# Terminal 2: React frontend
-cd apps/offline-vite-react
+# Terminal 2 — React frontend (port 3000)
+cd frontend
 npm run dev
 ```
 
-4. **Open browser:**
-Navigate to `http://localhost:5173`
+### 4. Open the app
+```
+http://localhost:3000
+```
 
 ---
 
-## 📋 Multi-Agent Workflow
-
-### How It Works
+## Project Structure
 ```
-User Input (React UI)
-    ↓
-PM Agent (OpenAI)
-    ↓ generates
-PRD Artifact (JSON)
-    ↓ consumed by
-Planner Agent (Gemini)
-    ↓ generates
-Plan Artifact (milestones + tasks)
-    ↓ consumed by
-Engineer Agent (Gemini)
-    ↓ generates
-Code Files (HTML, CSS, JS, etc.)
-    ↓
-Execution Result → UI Notification
-```
-
-### Example Workflow
-
-**1. Generate a project plan:**
-```powershell
-# Run multi-agent orchestrator
-python -m scripts.orchestrate_multi_agent @idea.txt
-```
-
-Where `idea.txt` contains:
-```
-Build a simple calculator web app
+ai-dev-team/
+├── agents/
+│   ├── pm_agent.py           # PM Agent (OpenAI) — generates PRDs
+│   ├── planner_agent.py      # Planner Agent (Gemini) — generates plans
+│   └── engineer_agent.py     # Engineer Agent (Gemini) — generates code
+├── backend/
+│   ├── app.py                # Flask API (port 5000)
+│   ├── models.py             # SQLAlchemy models
+│   └── database.py           # DB init and session
+├── frontend/                 # React + TypeScript + Vite (port 3000)
+│   ├── components/
+│   │   ├── ArtifactViewer.tsx
+│   │   └── Sidebar.tsx
+│   ├── pages/
+│   │   ├── ProjectDetailPage.tsx
+│   │   └── ProjectsPage.tsx
+│   └── services/
+│       └── orchestrator.ts
+├── prompts/
+│   └── engineer.txt          # Engineer agent system prompt
+├── schemas/                  # JSON schemas for artifact validation
+├── scripts/
+│   └── safe_write.py         # Allowlisted file write guard
+├── apps/offline-vite-react/
+│   └── public/               # Runtime artifact storage (gitignored)
+├── ROADMAP.md
+└── CURRENT_SPRINT.md
 ```
 
-**Output:**
-- `artifacts/last_prd.json` - PRD with requirements, goals, features
-- `public/last_plan.json` - Plan with milestones and tasks
+---
 
-**2. Execute tasks via UI:**
-- Open `http://localhost:5173`
-- Click on a task in the sidebar
-- Click "Execute task" button
-- Watch the progress:
-  - 🔵 Blue toast: "Task execution started..."
-  - ⏳ Polling every 2 seconds
-  - 🟢 Green toast: "Task execution completed!" (after ~10-15 seconds)
+## API Endpoints
 
-**3. View generated artifacts:**
-- Click "Artifacts" tab
-- See `last_execution_result.json` with agent sequence: `pm → planner → engineer`
-- Check `public/generated/` directory for code files
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/health` | Health check |
+| GET | `/api/projects` | List all projects |
+| POST | `/api/projects` | Create project |
+| GET | `/api/projects/:id` | Get project + executions |
+| DELETE | `/api/projects/:id` | Delete project |
+| POST | `/api/execute-task` | Run full pipeline |
+| GET | `/api/execution-status` | Poll execution status |
+| GET | `/api/prd` | Get latest PRD artifact |
+| GET | `/api/plan` | Get latest plan artifact |
+| GET | `/api/code` | Get latest execution result |
 
-### Agent Roles
+---
 
-**PM Agent (Product Manager):**
-- Input: User idea (plain text)
-- Output: Structured PRD with 14 sections
-- Model: OpenAI GPT-4 with structured outputs
-- Artifact: `artifacts/last_prd.json`
+## Agent Artifacts
 
-**Planner Agent:**
-- Input: PRD artifact
-- Output: Execution plan with milestones and tasks
-- Model: Google Gemini
-- Artifact: `public/last_plan.json`
-
-**Engineer Agent:**
-- Input: Task snapshot from plan
-- Output: Code files (HTML, CSS, JS, etc.)
-- Model: Google Gemini
-- Artifact: `public/last_execution_result.json`
-
-### Agent Sequence Tracking
-
-Every artifact includes `_agent_sequence` metadata:
+Every pipeline run produces three artifacts with full agent sequence tracking:
 ```json
 {
-  "_agent_sequence": ["pm", "planner", "engineer"],
-  ...
+  "_agent_sequence": ["pm", "planner", "engineer"]
 }
 ```
 
-This provides full observability of which agents contributed to each artifact.
+| Artifact | Producer | Contains |
+|----------|----------|----------|
+| `last_prd.json` | PM Agent | Requirements, goals, features, tech stack |
+| `last_plan.json` | Planner Agent | Milestones, tasks, execution hints |
+| `last_execution_result.json` | Engineer Agent | Generated code files, write records |
 
 ---
 
-## 🏗️ Architecture
+## Design Principles
 
-### Backend (Flask)
-- **Async execution:** Consumer runs in background thread
-- **State tracking:** Knows when execution is running vs complete
-- **REST API:**
-  - `POST /api/execute-task` - Start task execution
-  - `GET /api/execution-status` - Check execution status
-  - `GET /api/plan` - Get current plan
-  - `GET /api/prd` - Get current PRD
-
-### Frontend (React + Vite)
-- **Task execution:** Click button → automated workflow
-- **Polling:** Checks status every 2 seconds
-- **Toast notifications:** Real-time feedback
-- **Artifacts panel:** View all generated artifacts
-- **Agent sequence display:** See which agents produced each artifact
-
-### File Structure
-```
-ai-dev-team/
-├── agents/                    # Agent implementations
-│   ├── pm_agent.py           # PM (OpenAI)
-│   ├── planner_agent.py      # Planner (Gemini)
-│   └── engineer_agent.py     # Engineer (Gemini)
-├── backend/
-│   └── app.py                # Flask API server
-├── apps/offline-vite-react/  # React UI
-│   ├── src/
-│   │   └── components/
-│   │       ├── TaskPanel.tsx # Task execution UI
-│   │       └── ToastContainer.tsx # Notifications
-│   └── public/               # Runtime artifacts
-│       ├── last_plan.json
-│       ├── last_execution_result.json
-│       └── generated/        # Code files
-├── scripts/
-│   ├── orchestrate_multi_agent.py  # PM → Planner orchestrator
-│   └── consume_execution_request.py # Engineer executor
-└── schemas/                  # JSON schemas for validation
-```
+- **Determinism first** — identical inputs produce identical artifacts
+- **Explicit contracts** — JSON schemas at every agent boundary
+- **Observable state** — all artifacts written as inspectable files
+- **Failure visibility** — errors surface as artifacts, not silent failures
+- **Full audit trail** — every execution traceable end-to-end
 
 ---
 
-## ✅ Determinism & Execution Guarantees
+## Roadmap
 
-This system is designed to be **replayable and deterministic**.
-
-### What determinism means here
-- Identical *semantic* execution requests produce identical execution results
-- Allowed non-deterministic fields (timestamps, transport metadata) are excluded from hashing
-- Execution is fully file-based and observable
-
-### How determinism is enforced
-- Canonical request hashing (ignores `created_at`, `_meta`)
-- Schema-validated execution requests and results
-- Regression tests that re-run the same request and assert identical outputs
-
-### Run determinism tests (Windows)
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\run_tests.ps1
-```
-
-Expected result:
-- All tests pass
-- Exit code `0`
-
-These tests act as a regression guard against hidden state, schema drift, or non-deterministic behavior.
+| Phase | Status | Description |
+|-------|--------|-------------|
+| 1–5 | ✅ Complete | Core pipeline, schemas, multi-agent coordination |
+| 6.1 | ✅ Complete | SQLite persistence, project management |
+| 6.2 | ✅ Complete | Polished React UI, full backend wiring |
+| 6.3 | ✅ Complete | Differentiator features, VS Code explorer, audit trail UI |
+| 7A | 🚧 Next | Iterative pipeline, version history, context continuation |
+| 7B | ⬜ Planned | Live iframe preview of generated apps |
 
 ---
 
-## 📊 Status
+## License
 
-**Phase 5 Complete:** Multi-agent coordination with Flask API integration
-
-**Next:**
-- Additional features (progress indicators, execution history)
-- Performance optimization
-- Production deployment considerations
-
----
-
-## 🎯 Design Principles
-
-- **Determinism first:** Identical inputs produce identical artifacts
-- **Explicit contracts:** JSON schemas define all agent boundaries
-- **Observable state:** All artifacts written as files
-- **Failure visibility:** Errors surface as artifacts, not hidden logs
-- **No hidden state:** All agent interactions through explicit file handoffs
-
----
-
-## 📝 License
-
-This project is proprietary software. All rights reserved.
+Proprietary. All rights reserved.
