@@ -382,23 +382,48 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
 
   return (
     <div className="animate-fade-in h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4 mt-3 px-2 shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+      {/* Title row — artifact name on left, action buttons on right */}
+      <div className="flex items-center justify-between mb-4 mt-3 px-2 shrink-0 gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
             {artifact.type === 'PRD' ? <FileText size={14} /> : artifact.type === 'PLAN' ? <Map size={14} /> : <Terminal size={14} />}
           </div>
-          <h4 className="text-[10px] font-bold text-slate-500 dark:text-indigo-300 uppercase tracking-[0.2em] leading-none pt-0.5">{artifact.title}</h4>
+          <h4 className="text-[10px] font-bold text-slate-500 dark:text-indigo-300 uppercase tracking-[0.2em] leading-none pt-0.5 truncate">{artifact.title}</h4>
         </div>
-        <button
-          onClick={() => navigator.clipboard.writeText(JSON.stringify(artifact.content, null, 2))}
-          className="flex items-center gap-2 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-white transition-all uppercase tracking-widest cursor-pointer group"
-        >
-          <Copy size={12} className="group-hover:scale-110 transition-transform" />
-          <span className="hidden sm:inline">Copy Artifact</span>
-        </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            onClick={handleReplay}
+            disabled={isReplaying}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${isReplaying
+              ? 'bg-slate-100 dark:bg-white/5 text-slate-400 cursor-not-allowed'
+              : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 cursor-pointer'
+              }`}
+          >
+            <RefreshCw size={10} className={isReplaying ? 'animate-spin' : ''} />
+            {isReplaying ? 'Running...' : 'Replay'}
+          </button>
+          <button
+            onClick={() => setIsJsonView(!isJsonView)}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all border cursor-pointer whitespace-nowrap ${isJsonView
+              ? 'bg-indigo-600/10 text-indigo-700 dark:text-white border-indigo-500/30'
+              : 'bg-white dark:bg-transparent text-slate-600 dark:text-indigo-300/60 border-slate-200 dark:border-white/10 hover:border-indigo-500/50'
+              }`}
+          >
+            <Braces size={10} />
+            JSON
+          </button>
+          <button
+            onClick={() => navigator.clipboard.writeText(JSON.stringify(artifact.content, null, 2))}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-white transition-all uppercase tracking-widest cursor-pointer border border-transparent hover:border-indigo-500/30 whitespace-nowrap"
+          >
+            <Copy size={10} />
+            <span className="hidden sm:inline">Copy</span>
+          </button>
+        </div>
       </div>
       <div className="border border-slate-200 dark:border-white/10 rounded-3xl overflow-hidden shadow-2xl bg-white dark:bg-[#080a0f] flex-1 flex flex-col">
-        <div className="px-3 py-2 border-b border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] flex items-center gap-2 shrink-0 overflow-x-auto no-scrollbar">
+        {/* Agent chain banner — badges only, no buttons, no scroll */}
+        <div className="px-3 py-2 border-b border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] flex items-center gap-2 shrink-0 flex-wrap">
           {getAgentSequence()}
           <div className="h-3 w-px bg-slate-200 dark:bg-white/10 shrink-0"></div>
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 shrink-0">
@@ -408,29 +433,6 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 shrink-0">
             <span className="text-[8px]">✅</span>
             <span className="text-[8px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">Schema</span>
-          </div>
-          <div className="flex items-center gap-1.5 ml-auto shrink-0">
-            <button
-              onClick={handleReplay}
-              disabled={isReplaying}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${isReplaying
-                ? 'bg-slate-100 dark:bg-white/5 text-slate-400 cursor-not-allowed'
-                : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 cursor-pointer'
-                }`}
-            >
-              <RefreshCw size={10} className={isReplaying ? 'animate-spin' : ''} />
-              {isReplaying ? 'Running...' : 'Replay'}
-            </button>
-            <button
-              onClick={() => setIsJsonView(!isJsonView)}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all border cursor-pointer whitespace-nowrap ${isJsonView
-                ? 'bg-indigo-600/10 text-indigo-700 dark:text-white border-indigo-500/30'
-                : 'bg-white dark:bg-transparent text-slate-600 dark:text-indigo-300/60 border-slate-200 dark:border-white/10 hover:border-indigo-500/50'
-                }`}
-            >
-              <Braces size={10} />
-              JSON
-            </button>
           </div>
         </div>
 
@@ -452,3 +454,4 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
 };
 
 export default ArtifactViewer;
+
