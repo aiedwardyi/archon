@@ -82,7 +82,15 @@ def safe_write_text(
 
     # Enforce extension allowlist
     exts = set(allowed_extensions) if allowed_extensions is not None else ALLOWED_EXTENSIONS
-    if target.suffix.lower() not in exts:
+    # Check suffix — but also handle multi-dot filenames like .env.example
+    # by checking if the full filename ends with any allowed extension
+    target_name_lower = target.name.lower()
+    suffix_lower = target.suffix.lower()
+    allowed = (
+        suffix_lower in exts
+        or any(target_name_lower.endswith(ext) for ext in exts if ext)
+    )
+    if not allowed:
         raise ValueError(f"Disallowed extension: {target.suffix} (allowed: {sorted(exts)})")
 
     # Ensure no traversal outside allowlist_dir (CWD-independent)
@@ -98,4 +106,5 @@ def safe_write_text(
     tmp.replace(target)
 
     return WriteRecord(path=str(target), sha256=digest, bytes=len(data))
+
 
