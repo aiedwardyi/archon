@@ -1,142 +1,202 @@
-﻿# Current Sprint — Phase 6.3: Differentiator Features & Polish
+﻿# Current Sprint — Phase 7A: Iterative Pipeline & Version History
 
 ## Sprint Goal
 
-Surface the platform's **key competitive advantages** visually in the UI:
-determinism, replayability, schema validation, and agent chain transparency.
+Transform Archon from a single-shot generator into a true iterative build tool.
+Every prompt submission runs the full PM → Planner → Engineer pipeline and
+creates a complete versioned snapshot — leaving a full audit trail across the
+entire build history.
 
-This phase makes the architecture *visible* — not just functional.
-These are the features that differentiate us from Lovable, Bolt, and other
-chat-based tools that produce opaque, non-replayable outputs.
-
----
-
-## Context: What Makes Us Different
-
-| Feature | Lovable/Bolt | AI Dev Team |
-|---------|-------------|-------------|
-| Agent chain visibility | ❌ Hidden | ✅ Shown on every artifact |
-| Replayability | ❌ No | ✅ Replay button re-runs full pipeline |
-| Schema validation | ❌ No | ✅ Badge on every artifact |
-| Raw artifact inspection | ❌ No | ✅ JSON toggle in viewer |
-| Deterministic outputs | ❌ No | ✅ Same input = same output |
+This is Archon's core differentiator: not just "generate once" but
+**full artifact trail across every iteration**, with context continuation
+and version restore.
 
 ---
 
-## Current State (Verified ✅)
+## Context: What Makes This Different
 
-- Phase 6.2 complete: Polished UI/UX with full backend wiring
-- All artifact tabs working (PRD, Plan, Code, Tasks, Logs)
-- Dark/light mode, mobile layout, sidebar navigation
+| Feature | Lovable/Bolt | Archon |
+|---------|-------------|--------|
+| Context continuation | ✅ | ✅ |
+| Full chain on every edit | ❌ | ✅ |
+| Artifact trail per version | ❌ | ✅ |
+| Restore previous version | ✅ | ✅ |
+| Restore forward after revert | ❌ | ✅ |
+| Auditable PRD per iteration | ❌ | ✅ |
+
+---
+
+## Current State (Phase 6.3 Complete ✅)
+
+- Agent chain badge, JSON toggle, Replay button all working
+- VS Code-style folder tree in Code explorer
+- Sidebar status dots, Clear All Projects
+- Engineer prompt capped (1 README, 6 files max)
+- safe_write.py allowlist expanded
+- Duplicate file dedup working
 - Flask backend on port 5000, Vite frontend on port 3000
 - Repo clean and committed
 
 ---
 
-## Phase 6.3 Work Items
+## How Iteration Works
 
-### 1. Update Documentation
-**Status:** ✅ COMPLETED
-
-- ✅ ROADMAP.md updated to mark Phase 6.2 complete, 6.3 in progress
-- ✅ CURRENT_SPRINT.md rewritten for Phase 6.3
-
----
-
-### 2. Agent Chain Badge in ArtifactViewer
-**Status:** ⬜ TODO
-
-**What:** A banner strip inside `ArtifactViewer.tsx` that shows:
+### Context Continuation
+The PM agent receives the full conversation history on every run:
 ```
-🔗 pm → planner → engineer   |   ♻️ Replayable   |   ✅ Schema Validated
-                                                    [↺ Replay]  [{ } JSON]
+Turn 1: "Build a surfboard landing page"
+Turn 2: "Change colors to ocean blues and sunset oranges"
+Turn 3: "Add a login page with email/password"
 ```
 
-**Design (from screenshots):**
-- Pill/badge strip between the artifact header and the content area
-- Left side: agent chain with arrows (`pm → planner → engineer`)
-- Middle badges: green "REPLAYABLE" pill, green "SCHEMA VALIDATED" pill
-- Right side: "REPLAY" button (purple/indigo filled), "{ } JSON" button (outlined)
-- Shows on: PRD, Plan, and Code artifact types
+PM agent sees all 3 turns → writes a PRD reflecting cumulative intent.
+Planner and Engineer build from that complete PRD.
 
-**Technical:**
-- Agent sequence comes from `artifact.agent` field
-- Map agent name → sequence: PM Agent → "pm", Planner Agent → "pm → planner", Engineer Agent → "pm → planner → engineer"
-- Replay button calls `backend.startExecution(artifact.projectId)` 
-- JSON toggle is local state (`showJson: boolean`) in ArtifactViewer
-- When JSON is active, render raw `<pre>` instead of rich view
+### Versioned Storage
+Each execution is a complete snapshot — nothing is overwritten:
+```
+project/
+  v1/  ← "Build a surfboard landing page"
+    prd.json, plan.json, code_files/, execution_result.json
+  v2/  ← "Change colors to ocean blues..."
+    prd.json, plan.json, code_files/, execution_result.json
+  v3/  ← "Add login page with email/password"
+    ...
+```
 
-**Files to modify:**
-- `frontend/components/ArtifactViewer.tsx`
-
----
-
-### 3. Raw JSON Toggle
-**Status:** ⬜ TODO (bundled with item 2 above)
-
-**What:** `{ }` button next to "Copy Artifact" that toggles between rendered view and raw JSON
-
-**Design (from screenshots):**
-- Outlined button with `{ }` icon text
-- When active: shows formatted JSON with line numbers
-- When inactive: shows normal rich render (PRD/Plan/Code view)
-- State lives in ArtifactViewer component (`showRawJson` boolean)
-
-**Files to modify:**
-- `frontend/components/ArtifactViewer.tsx`
+### Restore Model
+- Clicking a past version previews its artifacts (read-only, nothing changes)
+- "Restore" sets that version as the active HEAD
+- Past versions after a branch point remain accessible (forward-restore supported)
+- New prompt from a restored version creates a new branch (v4+)
+- This is more powerful than Lovable — forward versions are never deleted
 
 ---
 
-### 4. Replay Button in ProjectDetailPage Header
+## Phase 7A Work Items
+
+### 7A.1 — Backend: Versioned Execution Storage
 **Status:** ⬜ TODO
 
-**What:** An "↺ Replay" button in the ProjectDetailPage header that re-runs the full PM → Planner → Engineer pipeline for the current project
+**What:**
+- Add `version` (int), `prompt_history` (JSON array), `is_active_head` (bool),
+  `parent_execution_id` (nullable FK) to executions table
+- Migration script for existing DB
+- Each new execution auto-increments version per project
 
-**Design:**
-- Only visible when `project.status === 'COMPLETED'`
-- Label: "↺ Replay" 
-- Style: outlined/secondary (not the primary Deploy button style)
-- Calls `backend.startExecution(projectId)`
-- Reinforces the determinism/replayability story
+**Files:**
+- `backend/models.py`
+- `backend/database.py` (migration)
 
-**Files to modify:**
+---
+
+### 7A.2 — Backend: /iterate and /restore Endpoints
+**Status:** ⬜ TODO
+
+**What:**
+- `POST /api/projects/:id/iterate` — accepts `{ prompt, prompt_history }`,
+  runs full pipeline, stores as new version
+- `POST /api/executions/:id/restore` — sets `is_active_head=true` for this
+  execution, false for all others in the project
+- `GET /api/projects/:id/versions` — returns all versions with metadata
+  (version number, truncated prompt, timestamp, is_active_head)
+
+**Files:**
+- `backend/app.py`
+
+---
+
+### 7A.3 — Frontend: Continuous Chat Panel
+**Status:** ⬜ TODO
+
+**What:**
+- Replace current single input box with a continuous chat panel
+- Always visible at the bottom of the main panel
+- Shows conversation history (user prompts + agent responses/status)
+- Submitting a new message calls /iterate with full prompt_history
+- Like this Claude chat, Lovable, Gemini Build — natural continuous flow
+
+**Files:**
+- `frontend/components/ChatPanel.tsx` (new)
+- `frontend/pages/ProjectDetailPage.tsx` (integrate ChatPanel)
+
+---
+
+### 7A.4 — Frontend: Clock Icon + History Drawer
+**Status:** ⬜ TODO
+
+**What:**
+- Clock icon button in the chat panel header (top right)
+- Hover tooltip: "View history"
+- On click: slides open a history drawer
+- History drawer shows version timeline:
+```
+  v1  "Build a surfboard landing page"        2h ago
+  v2  "Change colors to ocean blues..."       1h ago
+  v3  "Add login page with email/passw..."    30m ago
+```
+- Prompt labels truncated at ~35 chars with ellipsis
+- Active HEAD version highlighted
+- Versions after a branch point shown dimmed but clickable
+
+**Files:**
+- `frontend/components/HistoryDrawer.tsx` (new)
+- `frontend/pages/ProjectDetailPage.tsx` (integrate)
+
+---
+
+### 7A.5 — Frontend: Version Preview + Restore Flow
+**Status:** ⬜ TODO
+
+**What:**
+- Clicking a version in history drawer loads that snapshot's artifacts
+  in the main artifact panel (read-only, labelled "Viewing v2")
+- "Restore to this version" button appears when viewing a past version
+- Restore calls /restore endpoint, sets new HEAD, updates UI
+- Forward-restore: if user restores v1 from v3, v2 and v3 remain in
+  history and can be restored forward again
+- New prompt from restored version creates v4 (new branch)
+
+**Files:**
 - `frontend/pages/ProjectDetailPage.tsx`
+- `frontend/components/ArtifactViewer.tsx` (read-only mode indicator)
 
 ---
 
 ## Definition of Done (Sprint)
 
-- ✅ ROADMAP.md and CURRENT_SPRINT.md updated
-- ⬜ Agent chain badge visible on all artifact tabs (PRD, Plan, Code)
-- ⬜ Replay button visible in header when project.status === 'COMPLETED'
-- ⬜ JSON toggle works — switches between rich view and raw JSON
-- ⬜ Agent sequence correctly mapped from artifact.agent field
-- ⬜ All changes committed and pushed
+- ⬜ DB schema updated with version, prompt_history, is_active_head
+- ⬜ /iterate endpoint runs full pipeline with context continuation
+- ⬜ /restore endpoint sets active HEAD correctly
+- ⬜ /versions endpoint returns full version list
+- ⬜ Chat panel renders conversation history and submits new prompts
+- ⬜ Clock icon opens history drawer with version timeline
+- ⬜ Clicking version loads that snapshot's artifacts
+- ⬜ Restore sets new HEAD; forward-restore works
+- ⬜ New prompt from restored version creates new branch
+- ⬜ All changes committed
 
 ---
 
 ## Files In Scope
 ```
+backend/
+  models.py              ← DB schema changes
+  database.py            ← migration
+  app.py                 ← new endpoints
+
 frontend/
   components/
-    ArtifactViewer.tsx     ← Main work: badge + JSON toggle
+    ChatPanel.tsx         ← new: continuous chat input
+    HistoryDrawer.tsx     ← new: version timeline
+    ArtifactViewer.tsx    ← read-only mode indicator
   pages/
-    ProjectDetailPage.tsx  ← Add Replay button to header
+    ProjectDetailPage.tsx ← integrate ChatPanel + HistoryDrawer
 ```
 
 ## Files NOT to touch
 ```
 frontend/services/orchestrator.ts   (working, don't break)
-frontend/types.ts                   (no schema changes needed)
-backend/                            (no backend changes for this phase)
+frontend/types.ts                   (schema changes in separate PR if needed)
+prompts/                            (no prompt changes this phase)
 ```
-
----
-
-## Screenshot Reference
-
-The UI design targets match the screenshots shared at session start:
-- `pm.png` / `pm-json.png` — PRD tab with agent badge
-- `plan.png` / `plan-json.png` — Plan tab with agent badge  
-- `code.png` / `code-json.png` — Code tab with agent badge
-- JSON toggle shows raw artifact data in a clean pre/code block

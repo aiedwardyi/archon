@@ -93,115 +93,119 @@ Every step emits structured artifacts that can be inspected, validated, and repl
 ### Phase 5 — Multi-Agent Coordination (✅ Completed)
 
 **Accomplished:**
-- **Multi-agent workflow:** PM (OpenAI) → Planner (Gemini) → Engineer (Gemini)
-- **Flask API backend:** Async execution with threading, state tracking
-- **React UI integration:** Task execution with polling and toast notifications
-- **Agent sequence tracking:** Metadata preserved throughout entire chain (`_agent_sequence`)
-- **File-based handoffs:** PRD → Plan → Execution Request → Execution Result
-- **Automated workflow:** No manual script execution required
-- **Production-ready patterns:** Async processing, proper error handling, user feedback
-
-**Technical Implementation:**
-- PM agent generates structured PRDs using OpenAI structured outputs
-- Planner consumes PRDs, generates plans with milestones and tasks
-- Engineer executes tasks, generates code files deterministically
-- Flask backend manages async execution with background threading
-- React frontend polls for completion, shows toast notifications
-- All artifacts schema-validated at boundaries
-- Agent metadata tracked end-to-end for observability
-
-**UI Features:**
-- Click "Execute task" → automated PM → Planner → Engineer flow
-- Real-time status polling (every 2 seconds)
-- Visual feedback with toast notifications (blue start, green success, red error)
-- Artifacts panel shows agent sequence for each execution
-- No page refreshes interrupt workflow
+- Multi-agent workflow: PM (OpenAI) → Planner (Gemini) → Engineer (Gemini)
+- Flask API backend: Async execution with threading, state tracking
+- React UI integration: Task execution with polling and toast notifications
+- Agent sequence tracking: Metadata preserved throughout entire chain
+- File-based handoffs: PRD → Plan → Execution Request → Execution Result
+- Automated workflow: No manual script execution required
 
 ---
 
 ### Phase 6.1 — Project History & Persistence (✅ Completed)
 
-**Accomplished:**
-- **Database persistence:** SQLite with SQLAlchemy ORM
-- **Project management:** Create, view, organize projects
-- **Execution tracking:** Link executions to projects with full history
-- **React Router:** Multi-page navigation (Board, Projects, Project Detail)
-- **Project selection:** Choose project before task execution
-
-**Technical Implementation:**
-- Database models: Project and Execution tables with relationships
-- Flask API endpoints: CRUD operations for projects
-- Project-linked executions: Each execution record tied to a project
-- React UI: Projects list view, project detail view with execution history
-- Project selection modal: Dropdown + quick project creation during execution
-
-**Database Schema:**
-- `projects` table: id, name, description, status, timestamps
-- `executions` table: id, project_id, status, artifact paths, timestamps
-- One-to-many relationship: project → executions
-
-**UI Features:**
-- Projects page with grid view of all projects
-- Click project → view execution history
-- Create projects with name and description
-- Select project before executing tasks
-- Status indicators (pending, in_progress, completed, failed)
-- Execution count per project
+- SQLite with SQLAlchemy ORM
+- Project management: create, view, organize projects
+- Execution tracking linked to projects
+- React Router multi-page navigation
+- Project selection modal during execution
 
 ---
 
 ### Phase 6.2 — Enhanced UI/UX (✅ Completed)
 
-**Accomplished:**
-- **Polished dark/light mode UI** with Tailwind design system
-- **Sidebar navigation** with smooth transitions
-- **ArtifactViewer component** rendering PRD, Plan, and Code artifacts
-- **ProjectDetailPage** with full agent workflow visualization
-- **Live code preview** with syntax highlighting
-- **Real backend wiring** — all artifact tabs connected to Flask API
-- **Data normalization** between backend schemas and frontend types
-- **Error handling** with backend connection overlay
-- **Mobile-responsive** layout with chat/preview toggle
-- **Fault monitor** with simulated error injection and fix flow
-- **Agent status messages** with animated progress indicators
-- **Monorepo consolidation** — frontend moved into ai-dev-team repo
-
-**Technical Implementation:**
-- React + TypeScript + Vite + Tailwind CSS
-- Vite dev server on port 3000, Flask API on port 5000
-- orchestrator.ts: BackendService class with normalizePrd/Plan/Code
-- ArtifactViewer: Renders PRD (document), Plan (timeline), Code (editor)
-- ProjectDetailPage: Tabs for Preview/Brief/PRD/Plan/Code/Tasks/Logs
-- Custom syntax highlighter for TypeScript/Python/JSON
-- File explorer sidebar in code view
-- Polling-based execution status with 2-second intervals
+- Polished dark/light mode UI with Tailwind
+- Sidebar navigation with smooth transitions
+- ArtifactViewer: PRD, Plan, Code tabs with real backend data
+- ProjectDetailPage with full agent workflow visualization
+- Mobile-responsive layout
+- Monorepo consolidation: frontend moved into ai-dev-team repo
 
 ---
 
-### Phase 6.3 — Differentiator Features & Polish (🚧 In Progress)
+### Phase 6.3 — Differentiator Features & Polish (✅ Completed)
 
-**Goal:** Surface the platform's key competitive advantages in the UI —
-determinism, replayability, schema validation, and agent chain transparency.
+**Accomplished:**
+- Agent chain badge in ArtifactViewer (pm → planner → engineer)
+- Replay + JSON + Copy buttons moved to artifact title row
+- Raw JSON toggle with syntax highlighting and line numbers
+- VS Code-style folder tree explorer in Code artifact view
+- Terminal log colors, chat filter, tech map category detection
+- Sidebar status dots: blue pulsing=running, green=completed, red=failed
+- Clear All Projects with DELETE ALL confirmation modal
+- Engineer prompt: max 1 README, 6 file cap, functional files focus
+- safe_write.py: expanded allowlist (.sql, .prisma, .graphql, .env.example)
+- Duplicate file dedup in engineer_agent.py and orchestrator.ts
+- Tasks view shows full relative paths (src/frontend/package.json)
+- GitHub SOURCE link on landing page
+- All changes committed
+
+---
+
+### Phase 7A — Iterative Pipeline & Version History (🚧 Next)
+
+**Goal:** Transform Archon from a single-shot generator into a true iterative
+build tool. Every prompt submission runs the full pipeline and creates a
+versioned snapshot — making Archon auditable across the entire build history.
+
+**Key differentiator:** Full pipeline re-run on every iteration (PM → Planner
+→ Engineer) with complete artifact trail per version. Lovable/Bolt have no
+equivalent audit trail.
 
 **Work Items:**
-1. ✅ ROADMAP.md and CURRENT_SPRINT.md updated
-2. ⬜ Agent chain badge in ArtifactViewer (pm → planner → engineer | Replayable | Schema Validated)
-3. ⬜ Replay button in ProjectDetailPage header (re-runs full pipeline)
-4. ⬜ Raw JSON toggle in ArtifactViewer ({ } button next to Copy Artifact)
+- 7A.1 Backend: versioned execution storage + prompt history in DB
+- 7A.2 Backend: /iterate and /restore endpoints
+- 7A.3 Frontend: continuous chat panel (always visible, Lovable-style)
+- 7A.4 Frontend: clock icon + history drawer (version timeline)
+- 7A.5 Frontend: version preview + restore flow (with forward-restore support)
 
-**Differentiator Story:**
-These features make the platform's architecture visible to users and evaluators.
-Unlike Lovable and Bolt (chat-based, opaque), our system shows:
-- Which agents produced each artifact
-- That outputs are replayable (deterministic)
-- That every artifact passes schema validation
-- The full agent sequence for audit/debug purposes
+**Architecture:**
+- Each execution stores version number + full prompt_history array
+- Prompt history passed to PM agent for context continuation
+- Restore sets is_active_head flag; past versions remain accessible
+- Version labels: truncated prompt snippet (~35 chars) + timestamp
+
+**UI:**
+- Chat panel replaces single input box — continuous conversation
+- Clock icon in chat header → slides open history drawer
+- History drawer: v1/v2/v3 with truncated prompt + timestamp
+- Clicking version previews that snapshot's artifacts (read-only)
+- Restore button loads version into main panel; forward-restore supported
+- New prompt from restored version creates a new branch (v4+)
+
+---
+
+### Phase 7B — Live Preview (⬜ Planned)
+
+**Goal:** Replace the static placeholder preview with a real running iframe
+of the engineer's generated output.
+
+**Work Items:**
+- 7B.1 Engineer agent: prompt engineering for self-contained runnable output
+- 7B.2 Backend: dynamic file serving route (/preview/:projectId/:version)
+- 7B.3 Frontend: iframe preview panel loading generated files
+- 7B.4 History integration: clicking past version loads that version in iframe
+
+---
+
+## Competitive Positioning
+
+| Feature | Lovable/Bolt | Archon |
+|---------|-------------|--------|
+| Context continuation | ✅ | ✅ |
+| Full chain on every edit | ❌ | ✅ |
+| Artifact trail per version | ❌ | ✅ |
+| Restore previous version | ✅ | ✅ |
+| Restore forward after revert | ❌ | ✅ |
+| Auditable PRD per iteration | ❌ | ✅ |
+| Agent chain visibility | ❌ | ✅ |
+| Schema validation | ❌ | ✅ |
 
 ---
 
 ## Current State
 
-**Production-ready multi-agent system with polished UI and project management:**
+**Production-ready multi-agent system with full UI polish:**
 - ✅ Three-agent coordination (PM, Planner, Engineer)
 - ✅ Flask API backend with async execution
 - ✅ SQLite database with full persistence
@@ -211,23 +215,25 @@ Unlike Lovable and Bolt (chat-based, opaque), our system shows:
 - ✅ Deterministic, replayable workflows
 - ✅ Schema validation at all boundaries
 - ✅ Polished UI/UX with mobile support
-- 🚧 Differentiator features (agent chain badge, replay, JSON toggle)
+- ✅ Differentiator features visible in UI
+- 🚧 Iterative pipeline with version history (Phase 7A)
+- ⬜ Live preview (Phase 7B)
 
 **Architecture:**
 ```
-User Input (UI)
+User Input (Chat Panel)
     ↓
-Project Selection
+Prompt History (context continuation)
     ↓
-PM Agent (OpenAI) → PRD artifact
+PM Agent (OpenAI) → PRD artifact (versioned)
     ↓
-Planner Agent (Gemini) → Plan artifact
+Planner Agent (Gemini) → Plan artifact (versioned)
     ↓
-Flask API → Execution Record (Database)
+Flask API → Execution Record (Database, version N)
     ↓
-Engineer Agent (Gemini) → Code files
+Engineer Agent (Gemini) → Code files (versioned)
     ↓
-Execution Result → Database + UI notification
+Execution Result → Database + UI + History Timeline
 ```
 
 ---
