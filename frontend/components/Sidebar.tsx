@@ -1,4 +1,4 @@
-
+﻿
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Project } from '../types';
@@ -136,9 +136,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                   : 'text-slate-400 dark:text-indigo-200/40 hover:text-indigo-600 dark:hover:text-indigo-100 hover:bg-slate-100 dark:hover:bg-white/5'
                 }`}
               >
-                <div className={`w-1.5 h-1.5 rounded-full ${
-                  project.status === 'RUNNING' ? 'bg-indigo-500 animate-pulse' : 
-                  project.status === 'COMPLETED' ? 'bg-indigo-500 dark:bg-indigo-400' : 'bg-slate-300 dark:bg-indigo-900/50'
+                <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                  project.status === 'RUNNING'   ? 'bg-indigo-500 animate-pulse' :
+                  project.status === 'COMPLETED' ? 'bg-emerald-500' :
+                  project.status === 'FAILED'    ? 'bg-red-500' :
+                                                   'bg-slate-300 dark:bg-slate-700'
                 }`} />
                 <span className="truncate flex-1 text-left font-bold">{project.name}</span>
                 
@@ -237,3 +239,4 @@ const Sidebar: React.FC<SidebarProps> = ({
 };
 
 export default Sidebar;
+
