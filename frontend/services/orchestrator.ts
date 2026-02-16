@@ -88,11 +88,18 @@ function buildTasksFromResult(raw: any): EngineerTask[] {
   const dedupedWrites = Array.from(seenPaths.values());
 
   return dedupedWrites.map((w: any, i: number) => {
-    const fullPath: string = w.path || '';
-    const filename = fullPath.split('\\').pop() || fullPath.split('/').pop() || `file-${i}`;
+    const fullPath: string = (w.path || '').replace(/\\/g, '/');
+    // Show path relative to generated/ so src/frontend/package.json and
+    // src/backend/package.json are distinguishable in the Tasks view
+    const generatedMarker = 'generated/';
+    const markerIdx = fullPath.indexOf(generatedMarker);
+    const displayPath = markerIdx !== -1
+      ? fullPath.slice(markerIdx + generatedMarker.length)
+      : fullPath.split('/').pop() || `file-${i}`;
+    const filename = fullPath.split('/').pop() || `file-${i}`;
     return {
       id: uuidv4(),
-      filename,
+      filename: displayPath,
       timestamp: producedAt + i * 100,
       description: `Generated ${filename} (${w.bytes} bytes)`,
     };
@@ -333,3 +340,4 @@ class BackendService {
 }
 
 export const backend = new BackendService();
+
