@@ -1,19 +1,24 @@
-﻿# Current Sprint — Phase 7A: Iterative Pipeline & Version History
+﻿# Current Sprint — Phase 7A: Iterative Pipeline, Version History & UI Redesign
 
 ## Sprint Goal
 
-Transform Archon from a single-shot generator into a true iterative build tool.
-Every prompt submission runs the full PM → Planner → Engineer pipeline and
-creates a complete versioned snapshot — leaving a full audit trail across the
-entire build history.
+Two parallel objectives:
+1. Transform Archon into a true iterative build tool with full version history
+2. Redesign the frontend to match the approved enterprise design target
 
-This is Archon's core differentiator: not just "generate once" but
-**full artifact trail across every iteration**, with context continuation
-and version restore.
+Together these make Archon production-ready for agency clients.
 
 ---
 
-## Context: What Makes This Different
+## Target Audience Context
+
+**Primary user:** Digital agency owner or project lead
+**Their pain:** Need to build client web apps fast AND show clients every decision
+**Archon's answer:** AI builds it + full audit trail + client-presentable history
+
+---
+
+## What Makes This Different
 
 | Feature | Lovable/Bolt | Archon |
 |---------|-------------|--------|
@@ -22,19 +27,19 @@ and version restore.
 | Artifact trail per version | ❌ | ✅ |
 | Restore previous version | ✅ | ✅ |
 | Restore forward after revert | ❌ | ✅ |
-| Auditable PRD per iteration | ❌ | ✅ |
+| Client-presentable build history | ❌ | ✅ |
 
 ---
 
 ## Current State (Phase 6.3 Complete ✅)
 
-- Agent chain badge, JSON toggle, Replay button all working
+- Agent chain badge, JSON toggle, Replay button working
 - VS Code-style folder tree in Code explorer
 - Sidebar status dots, Clear All Projects
-- Engineer prompt capped (1 README, 6 files max)
-- safe_write.py allowlist expanded
-- Duplicate file dedup working
-- Flask backend on port 5000, Vite frontend on port 3000
+- Flask backend port 5000, Vite frontend port 3000
+- enterprise-ui branch created for redesign work
+- Approved design target: Lovable mockups (top navbar, agent cards,
+  version timeline, artifact tabs)
 - Repo clean and committed
 
 ---
@@ -42,34 +47,28 @@ and version restore.
 ## How Iteration Works
 
 ### Context Continuation
-The PM agent receives the full conversation history on every run:
+PM agent receives full conversation history on every run:
 ```
-Turn 1: "Build a surfboard landing page"
-Turn 2: "Change colors to ocean blues and sunset oranges"
-Turn 3: "Add a login page with email/password"
+Turn 1: "Build a restaurant booking website"
+Turn 2: "Add online payments with Stripe"
+Turn 3: "Change the color scheme to match our brand"
 ```
-
-PM agent sees all 3 turns → writes a PRD reflecting cumulative intent.
-Planner and Engineer build from that complete PRD.
+PM sees all turns → PRD reflects cumulative intent → complete new version built.
 
 ### Versioned Storage
-Each execution is a complete snapshot — nothing is overwritten:
+Each run is a complete independent snapshot:
 ```
 project/
-  v1/  ← "Build a surfboard landing page"
+  v1/  ← "Build a restaurant booking website"
     prd.json, plan.json, code_files/, execution_result.json
-  v2/  ← "Change colors to ocean blues..."
+  v2/  ← "Add online payments with Stripe"
     prd.json, plan.json, code_files/, execution_result.json
-  v3/  ← "Add login page with email/password"
-    ...
 ```
 
 ### Restore Model
-- Clicking a past version previews its artifacts (read-only, nothing changes)
-- "Restore" sets that version as the active HEAD
-- Past versions after a branch point remain accessible (forward-restore supported)
-- New prompt from a restored version creates a new branch (v4+)
-- This is more powerful than Lovable — forward versions are never deleted
+- Clicking past version previews artifacts (read-only)
+- Restore sets new HEAD; forward versions preserved
+- New prompt from restored version creates new branch
 
 ---
 
@@ -77,126 +76,92 @@ project/
 
 ### 7A.1 — Backend: Versioned Execution Storage
 **Status:** ⬜ TODO
-
-**What:**
-- Add `version` (int), `prompt_history` (JSON array), `is_active_head` (bool),
-  `parent_execution_id` (nullable FK) to executions table
+- Add `version`, `prompt_history`, `is_active_head`, `parent_execution_id`
+  to executions table
 - Migration script for existing DB
-- Each new execution auto-increments version per project
-
-**Files:**
-- `backend/models.py`
-- `backend/database.py` (migration)
-
----
+- Files: `backend/models.py`, `backend/database.py`
 
 ### 7A.2 — Backend: /iterate and /restore Endpoints
 **Status:** ⬜ TODO
+- `POST /api/projects/:id/iterate` — full pipeline with prompt history
+- `POST /api/executions/:id/restore` — set active HEAD
+- `GET /api/projects/:id/versions` — version list with metadata
+- Files: `backend/app.py`
 
-**What:**
-- `POST /api/projects/:id/iterate` — accepts `{ prompt, prompt_history }`,
-  runs full pipeline, stores as new version
-- `POST /api/executions/:id/restore` — sets `is_active_head=true` for this
-  execution, false for all others in the project
-- `GET /api/projects/:id/versions` — returns all versions with metadata
-  (version number, truncated prompt, timestamp, is_active_head)
-
-**Files:**
-- `backend/app.py`
-
----
-
-### 7A.3 — Frontend: Continuous Chat Panel
+### 7A.3 — Frontend: Enterprise UI Redesign
 **Status:** ⬜ TODO
+- Rebuild frontend on enterprise-ui branch to match approved Lovable mockups
+- Top navbar (Projects / Pipeline / Versions / Artifacts)
+- Breadcrumb showing current project + version
+- All pages redesigned: Projects, Pipeline, Versions, Artifacts
+- Business-friendly language (not developer jargon)
+- Files: full frontend rebuild
 
-**What:**
-- Replace current single input box with a continuous chat panel
-- Always visible at the bottom of the main panel
-- Shows conversation history (user prompts + agent responses/status)
-- Submitting a new message calls /iterate with full prompt_history
-- Like this Claude chat, Lovable, Gemini Build — natural continuous flow
-
-**Files:**
-- `frontend/components/ChatPanel.tsx` (new)
-- `frontend/pages/ProjectDetailPage.tsx` (integrate ChatPanel)
-
----
-
-### 7A.4 — Frontend: Clock Icon + History Drawer
+### 7A.4 — Frontend: Continuous Chat Panel
 **Status:** ⬜ TODO
+- Always visible at bottom of Pipeline page
+- Shows conversation history
+- Submits to /iterate with full prompt_history
+- Files: `frontend/components/ChatPanel.tsx` (new)
 
-**What:**
-- Clock icon button in the chat panel header (top right)
-- Hover tooltip: "View history"
-- On click: slides open a history drawer
-- History drawer shows version timeline:
-```
-  v1  "Build a surfboard landing page"        2h ago
-  v2  "Change colors to ocean blues..."       1h ago
-  v3  "Add login page with email/passw..."    30m ago
-```
-- Prompt labels truncated at ~35 chars with ellipsis
-- Active HEAD version highlighted
-- Versions after a branch point shown dimmed but clickable
-
-**Files:**
-- `frontend/components/HistoryDrawer.tsx` (new)
-- `frontend/pages/ProjectDetailPage.tsx` (integrate)
-
----
-
-### 7A.5 — Frontend: Version Preview + Restore Flow
+### 7A.5 — Frontend: Version Timeline Page
 **Status:** ⬜ TODO
+- Left panel: version list (v1-vN, truncated prompt, timestamp)
+- Right panel: version detail (prompt, pipeline result, artifact cards)
+- Artifact cards clickable → navigate to Artifacts page
+- Files: `frontend/pages/VersionsPage.tsx` (new)
 
-**What:**
-- Clicking a version in history drawer loads that snapshot's artifacts
-  in the main artifact panel (read-only, labelled "Viewing v2")
-- "Restore to this version" button appears when viewing a past version
-- Restore calls /restore endpoint, sets new HEAD, updates UI
-- Forward-restore: if user restores v1 from v3, v2 and v3 remain in
-  history and can be restored forward again
-- New prompt from restored version creates v4 (new branch)
-
-**Files:**
-- `frontend/pages/ProjectDetailPage.tsx`
-- `frontend/components/ArtifactViewer.tsx` (read-only mode indicator)
+### 7A.6 — Frontend: Version Preview + Restore Flow
+**Status:** ⬜ TODO
+- Clicking version loads that snapshot read-only
+- Restore button sets new HEAD
+- Forward-restore supported
+- Files: `frontend/pages/VersionsPage.tsx`, `frontend/pages/ArtifactsPage.tsx`
 
 ---
 
-## Definition of Done (Sprint)
+## Definition of Done
 
-- ⬜ DB schema updated with version, prompt_history, is_active_head
-- ⬜ /iterate endpoint runs full pipeline with context continuation
-- ⬜ /restore endpoint sets active HEAD correctly
-- ⬜ /versions endpoint returns full version list
-- ⬜ Chat panel renders conversation history and submits new prompts
-- ⬜ Clock icon opens history drawer with version timeline
-- ⬜ Clicking version loads that snapshot's artifacts
-- ⬜ Restore sets new HEAD; forward-restore works
-- ⬜ New prompt from restored version creates new branch
-- ⬜ All changes committed
+- ⬜ DB schema: version, prompt_history, is_active_head fields added
+- ⬜ /iterate runs full pipeline with context continuation
+- ⬜ /restore sets active HEAD; forward versions preserved
+- ⬜ /versions returns full version list
+- ⬜ Enterprise UI matches approved Lovable mockups
+- ⬜ Chat panel submits iterations with full history
+- ⬜ Versions page shows timeline + detail panel
+- ⬜ Restore flow works including forward-restore
+- ⬜ All changes committed on enterprise-ui branch
 
 ---
+
+## UI Design Reference
+Approved Lovable mockups show:
+- Projects: table with status, last run, version count, created date
+- Pipeline: agent cards with timing + live output log + chat input
+- Versions: left timeline + right detail (prompt, tasks, artifact cards)
+- Artifacts: badge bar (pm→planner→engineer, REPLAYABLE, SCHEMA VALIDATED,
+  V14) + PRD/Plan/Code/Tasks/Logs tabs
 
 ## Files In Scope
 ```
 backend/
-  models.py              ← DB schema changes
-  database.py            ← migration
-  app.py                 ← new endpoints
+  models.py, database.py, app.py
 
-frontend/
-  components/
-    ChatPanel.tsx         ← new: continuous chat input
-    HistoryDrawer.tsx     ← new: version timeline
-    ArtifactViewer.tsx    ← read-only mode indicator
+frontend/ (full redesign on enterprise-ui branch)
   pages/
-    ProjectDetailPage.tsx ← integrate ChatPanel + HistoryDrawer
+    ProjectsPage.tsx
+    PipelinePage.tsx
+    VersionsPage.tsx    ← new
+    ArtifactsPage.tsx   ← new
+  components/
+    ChatPanel.tsx       ← new
+    ArtifactViewer.tsx
+    Navbar.tsx          ← new
 ```
 
 ## Files NOT to touch
 ```
-frontend/services/orchestrator.ts   (working, don't break)
-frontend/types.ts                   (schema changes in separate PR if needed)
-prompts/                            (no prompt changes this phase)
+agents/          (no agent changes this phase)
+prompts/         (no prompt changes this phase)
+scripts/         (no script changes this phase)
 ```
