@@ -1,53 +1,60 @@
-﻿# AI Dev Team — Execution Roadmap
+﻿# Archon — Execution Roadmap
 
 ## Purpose
 
-This repository implements a deterministic, offline-first **AI Dev Team system** inspired by Lovable-style workflows.
+Archon is a deterministic multi-agent platform that converts product ideas into
+structured, auditable web applications. Target market: digital agencies and dev
+shops delivering client web applications to non-technical clients.
 
-The goal is to demonstrate production-grade applied AI engineering:
-- explicit agent roles
-- schema-based contracts
-- deterministic orchestration
-- observable execution artifacts
-- safe, auditable file writes
+**Core value proposition:**
+- AI builds client apps fast with full pipeline transparency
+- Complete audit trail of every prompt, decision, and iteration
+- Client-presentable version history at every stage
+- Restore any previous version instantly
+- PDF export of full build history as client deliverable
 
-This is not a demo generator. It is designed to behave like a real internal AI-assisted development system.
+---
+
+## Target User
+
+Non-technical agency owner or project lead who:
+- Cannot read code — needs to SEE the app running
+- Needs to show clients every decision made during development
+- Needs business language, not developer jargon
+
+**Competitive positioning:** Not "build apps with AI faster" —
+instead "Build client apps with AI. Show them everything."
 
 ---
 
 ## High-Level Architecture
+```
+User Input (Chat Panel)
+    ↓
+Prompt History (context continuation)
+    ↓
+PM Agent (OpenAI) → Requirements artifact (versioned)
+    ↓
+Planner Agent (Gemini) → Build Plan artifact (versioned)
+    ↓
+Engineer Agent (Gemini) → Code files (versioned)
+    ↓
+Execution Result → Database + UI + Version Timeline
+```
 
-**Flow**
-
-User idea
-→ Product Manager (PRD)
-→ Planner (Plan schema: milestones + tasks)
-→ Deterministic Orchestrator
-→ Engineer agent
-→ Safe file writes
-→ Observable artifacts
-
-**Key principle:**
-Every step emits structured artifacts that can be inspected, validated, and replayed.
+**Key principle:** Every step emits structured artifacts that can be
+inspected, validated, and replayed. Full audit trail across every iteration.
 
 ---
 
 ## Design Principles
 
-- **Determinism first**
-  Identical inputs produce identical artifacts.
-
-- **Explicit contracts**
-  JSON schemas define all agent boundaries.
-
-- **Offline-first**
-  The system operates without network calls.
-
-- **Observable state**
-  Execution requests, plans, results, and evaluations are written as files.
-
-- **Failure visibility**
-  Errors surface as artifacts, not hidden logs.
+- **Determinism first** — identical inputs produce identical artifacts
+- **Explicit contracts** — JSON schemas at every agent boundary
+- **Observable state** — all artifacts written as inspectable files
+- **Failure visibility** — errors surface as artifacts, not silent failures
+- **Full audit trail** — every execution traceable end-to-end
+- **Business language** — non-technical users understand every screen
 
 ---
 
@@ -60,16 +67,11 @@ Every step emits structured artifacts that can be inspected, validated, and repl
 - Safe file write allowlists
 - Frontend rendering PRD + Plan artifacts
 
----
-
 ### Phase 2 — Interactive Execution (✅ Completed)
 - Lovable-style milestone/task UI
 - Deterministic execution request emission
 - UI → backend artifact handoff
 - Append-only execution logs
-- Offline fallback behavior
-
----
 
 ### Phase 3 — Orchestration & Evaluation (✅ Completed)
 - Orchestrator consumes execution request artifacts
@@ -77,87 +79,80 @@ Every step emits structured artifacts that can be inspected, validated, and repl
 - Evaluation harness producing pass/fail artifacts
 - Canonical hashing for semantic identity
 - Golden snapshot regression tests
-- All tests passing
-
----
 
 ### Phase 4 — Production Hardening (✅ Completed)
 - Read-only UI for last execution/evaluation artifacts
-- Read-only UI for NDJSON execution/evaluation histories
 - Strict schema enforcement at system boundaries
 - Deterministic replay runner for past executions
-- Replay metadata surfaced in UI artifacts
-
----
 
 ### Phase 5 — Multi-Agent Coordination (✅ Completed)
-
-**Accomplished:**
 - Multi-agent workflow: PM (OpenAI) → Planner (Gemini) → Engineer (Gemini)
-- Flask API backend: Async execution with threading, state tracking
-- React UI integration: Task execution with polling and toast notifications
-- Agent sequence tracking: Metadata preserved throughout entire chain
-- File-based handoffs: PRD → Plan → Execution Request → Execution Result
-- Automated workflow: No manual script execution required
-
----
+- Flask API backend: async execution with threading, state tracking
+- React UI integration: task execution with polling
+- Agent sequence tracking: metadata preserved throughout chain
+- File-based handoffs: PRD → Plan → Execution Request → Result
 
 ### Phase 6.1 — Project History & Persistence (✅ Completed)
-
 - SQLite with SQLAlchemy ORM
 - Project management: create, view, organize projects
 - Execution tracking linked to projects
 - React Router multi-page navigation
-- Project selection modal during execution
-
----
 
 ### Phase 6.2 — Enhanced UI/UX (✅ Completed)
-
-- Polished dark/light mode UI with Tailwind
+- Polished UI with Tailwind
 - Sidebar navigation with smooth transitions
 - ArtifactViewer: PRD, Plan, Code tabs with real backend data
 - ProjectDetailPage with full agent workflow visualization
 - Mobile-responsive layout
-- Monorepo consolidation: frontend moved into ai-dev-team repo
-
----
+- Monorepo consolidation
 
 ### Phase 6.3 — Differentiator Features & Polish (✅ Completed)
-
-**Accomplished:**
 - Agent chain badge in ArtifactViewer (pm → planner → engineer)
-- Replay + JSON + Copy buttons moved to artifact title row
 - Raw JSON toggle with syntax highlighting and line numbers
 - VS Code-style folder tree explorer in Code artifact view
-- Terminal log colors, chat filter, tech map category detection
 - Sidebar status dots: blue pulsing=running, green=completed, red=failed
-- Clear All Projects with DELETE ALL confirmation modal
-- Engineer prompt: max 1 README, 6 file cap, functional files focus
-- safe_write.py: expanded allowlist (.sql, .prisma, .graphql, .env.example)
-- Duplicate file dedup in engineer_agent.py and orchestrator.ts
-- Tasks view shows full relative paths (src/frontend/package.json)
-- GitHub SOURCE link on landing page
-- All changes committed
+- Clear All Projects with confirmation modal
+- Engineer prompt: max 1 README, 6 file cap
+- safe_write.py: expanded allowlist
+- Duplicate file dedup
+
+### Phase 6.4 — Enterprise UI Design (✅ Completed)
+**Goal:** Redesign Archon's UI for non-technical agency owners.
+Approved enterprise design (Linear/Vercel aesthetic) across 10 screens.
+
+**Accomplished:**
+- Full enterprise UI designed in Lovable — light + dark mode
+- Business language replacing all technical terms:
+  - pm→planner→engineer → Requirements→Architecture→Code
+  - REPLAYABLE → REPRODUCIBLE, SCHEMA VALIDATED → VERIFIED
+  - PRD → Brief, Implementation Plan → Build Plan
+  - Generated Tasks → Build Tasks, LOC removed entirely
+  - Plain English logs — no DEBUG/WARN/INFO labels
+  - JSON → Raw Data
+- Dark mode: enterprise-grade neutral palette (Linear/GitHub style)
+  No gradients, no glow effects, subdued #0d0d0d backgrounds
+- Dark mode toggle in navbar (sun/moon icon)
+- Preview tab added: desktop/mobile viewport toggle, placeholder state
+- Download Report button on Versions page + Projects table
+- All 10 screens approved: Projects, Pipeline, Versions,
+  Brief, Plan, Code, Tasks, Logs, Preview (desktop + mobile)
+
+**enterprise-ui branch:** Full frontend rebuild target
 
 ---
 
 ### Phase 7A — Iterative Pipeline & Version History (🚧 Next)
 
-**Goal:** Transform Archon from a single-shot generator into a true iterative
-build tool. Every prompt submission runs the full pipeline and creates a
-versioned snapshot — making Archon auditable across the entire build history.
-
-**Key differentiator:** Full pipeline re-run on every iteration (PM → Planner
-→ Engineer) with complete artifact trail per version. Lovable/Bolt have no
-equivalent audit trail.
+**Goal:** Transform Archon from single-shot generator into a true iterative
+build tool. Every prompt runs the full pipeline and creates a versioned
+snapshot — full audit trail across the entire build history.
 
 **Work Items:**
 - 7A.1 Backend: versioned execution storage + prompt history in DB
 - 7A.2 Backend: /iterate and /restore endpoints
-- 7A.3 Frontend: continuous chat panel (always visible, Lovable-style)
-- 7A.4 Frontend: clock icon + history drawer (version timeline)
-- 7A.5 Frontend: version preview + restore flow (with forward-restore support)
+- 7A.3 Frontend: continuous chat panel (Lovable-style)
+- 7A.4 Frontend: version timeline (Versions page)
+- 7A.5 Frontend: version preview + restore flow
 
 **Architecture:**
 - Each execution stores version number + full prompt_history array
@@ -165,26 +160,30 @@ equivalent audit trail.
 - Restore sets is_active_head flag; past versions remain accessible
 - Version labels: truncated prompt snippet (~35 chars) + timestamp
 
-**UI:**
-- Chat panel replaces single input box — continuous conversation
-- Clock icon in chat header → slides open history drawer
-- History drawer: v1/v2/v3 with truncated prompt + timestamp
-- Clicking version previews that snapshot's artifacts (read-only)
-- Restore button loads version into main panel; forward-restore supported
-- New prompt from restored version creates a new branch (v4+)
-
 ---
 
-### Phase 7B — Live Preview (⬜ Planned)
+### Phase 7B — Live Preview (🔴 Elevated Priority)
 
-**Goal:** Replace the static placeholder preview with a real running iframe
-of the engineer's generated output.
+**Goal:** Real running iframe of the engineer's generated output.
+Essential for non-technical users who cannot evaluate raw code.
 
 **Work Items:**
 - 7B.1 Engineer agent: prompt engineering for self-contained runnable output
 - 7B.2 Backend: dynamic file serving route (/preview/:projectId/:version)
-- 7B.3 Frontend: iframe preview panel loading generated files
+- 7B.3 Frontend: iframe preview panel (desktop + mobile toggle already designed)
 - 7B.4 History integration: clicking past version loads that version in iframe
+
+---
+
+### Phase 7C — Client Deliverables (⬜ Planned)
+
+**Goal:** Agency-facing export and sharing features.
+
+**Work Items:**
+- PDF export of full build history (audit trail for client presentations)
+- Client shareable read-only link
+- White-label option (agency branding)
+- Project handoff export
 
 ---
 
@@ -197,69 +196,33 @@ of the engineer's generated output.
 | Artifact trail per version | ❌ | ✅ |
 | Restore previous version | ✅ | ✅ |
 | Restore forward after revert | ❌ | ✅ |
-| Auditable PRD per iteration | ❌ | ✅ |
+| Auditable Brief per iteration | ❌ | ✅ |
 | Agent chain visibility | ❌ | ✅ |
 | Schema validation | ❌ | ✅ |
+| Live preview | ✅ | 🚧 7B |
+| Client PDF export | ❌ | 🚧 7C |
+| Non-technical agency UI | ❌ | ✅ |
 
 ---
 
 ## Current State
 
-**Production-ready multi-agent system with full UI polish:**
 - ✅ Three-agent coordination (PM, Planner, Engineer)
 - ✅ Flask API backend with async execution
 - ✅ SQLite database with full persistence
 - ✅ Project management and execution history
-- ✅ React UI with multi-page navigation and dark/light mode
 - ✅ Complete observability (all artifacts visible)
 - ✅ Deterministic, replayable workflows
 - ✅ Schema validation at all boundaries
-- ✅ Polished UI/UX with mobile support
-- ✅ Differentiator features visible in UI
+- ✅ Enterprise UI design approved (10 screens, light + dark)
 - 🚧 Iterative pipeline with version history (Phase 7A)
-- ⬜ Live preview (Phase 7B)
-
-**Architecture:**
-```
-User Input (Chat Panel)
-    ↓
-Prompt History (context continuation)
-    ↓
-PM Agent (OpenAI) → PRD artifact (versioned)
-    ↓
-Planner Agent (Gemini) → Plan artifact (versioned)
-    ↓
-Flask API → Execution Record (Database, version N)
-    ↓
-Engineer Agent (Gemini) → Code files (versioned)
-    ↓
-Execution Result → Database + UI + History Timeline
-```
+- 🔴 Live preview — elevated priority (Phase 7B)
+- ⬜ Client deliverables — PDF export, sharing (Phase 7C)
 
 ---
 
 ## Non-Goals
 
 - Fully autonomous unsupervised code deployment
-- "Magic" generation without traceability
+- Magic generation without traceability
 - Hidden state or implicit agent behavior
-
----
-
-## Quality Bar
-
-A change is considered complete only if:
-- artifacts are deterministic
-- schemas are validated
-- failure modes are visible
-- outputs can be reasoned about by inspection
-
----
-
-## Audience
-
-This repository is intended for:
-- Applied AI / LLM engineers
-- Platform engineers
-- Founders building AI-assisted developer tooling
-- Teams evaluating deterministic agent orchestration patterns

@@ -13,6 +13,19 @@ and version restore.
 
 ---
 
+## Previous Sprint Complete ✅
+
+### Phase 6.4 — Enterprise UI Design (Complete)
+- Full enterprise UI designed in Lovable (10 screens)
+- Business-friendly language across all screens
+- Enterprise dark mode (Linear/GitHub aesthetic)
+- Dark mode toggle in navbar
+- Preview tab with desktop/mobile viewport toggle
+- Download Report on Versions page + Projects table
+- enterprise-ui branch: ready for frontend rebuild
+
+---
+
 ## Context: What Makes This Different
 
 | Feature | Lovable/Bolt | Archon |
@@ -22,20 +35,20 @@ and version restore.
 | Artifact trail per version | ❌ | ✅ |
 | Restore previous version | ✅ | ✅ |
 | Restore forward after revert | ❌ | ✅ |
-| Auditable PRD per iteration | ❌ | ✅ |
+| Auditable Brief per iteration | ❌ | ✅ |
 
 ---
 
-## Current State (Phase 6.3 Complete ✅)
+## Current State (Phase 6.3 + 6.4 Complete ✅)
 
-- Agent chain badge, JSON toggle, Replay button all working
+- Agent chain badge, JSON→Raw Data toggle, Replay button working
 - VS Code-style folder tree in Code explorer
 - Sidebar status dots, Clear All Projects
 - Engineer prompt capped (1 README, 6 files max)
-- safe_write.py allowlist expanded
-- Duplicate file dedup working
+- Enterprise UI design approved (Lovable, 10 screens)
 - Flask backend on port 5000, Vite frontend on port 3000
 - Repo clean and committed
+- enterprise-ui branch created and pushed
 
 ---
 
@@ -49,27 +62,26 @@ Turn 2: "Change colors to ocean blues and sunset oranges"
 Turn 3: "Add a login page with email/password"
 ```
 
-PM agent sees all 3 turns → writes a PRD reflecting cumulative intent.
-Planner and Engineer build from that complete PRD.
+PM agent sees all 3 turns → writes a Brief reflecting cumulative intent.
+Planner and Engineer build from that complete Brief.
 
 ### Versioned Storage
 Each execution is a complete snapshot — nothing is overwritten:
 ```
 project/
   v1/  ← "Build a surfboard landing page"
-    prd.json, plan.json, code_files/, execution_result.json
+    brief.json, plan.json, code_files/, execution_result.json
   v2/  ← "Change colors to ocean blues..."
-    prd.json, plan.json, code_files/, execution_result.json
+    brief.json, plan.json, code_files/, execution_result.json
   v3/  ← "Add login page with email/password"
     ...
 ```
 
 ### Restore Model
-- Clicking a past version previews its artifacts (read-only, nothing changes)
-- "Restore" sets that version as the active HEAD
-- Past versions after a branch point remain accessible (forward-restore supported)
+- Clicking a past version previews its artifacts (read-only)
+- "Restore to this version" sets that version as the active HEAD
+- Past versions after a branch point remain accessible (forward-restore)
 - New prompt from a restored version creates a new branch (v4+)
-- This is more powerful than Lovable — forward versions are never deleted
 
 ---
 
@@ -99,67 +111,58 @@ project/
 - `POST /api/executions/:id/restore` — sets `is_active_head=true` for this
   execution, false for all others in the project
 - `GET /api/projects/:id/versions` — returns all versions with metadata
-  (version number, truncated prompt, timestamp, is_active_head)
 
 **Files:**
 - `backend/app.py`
 
 ---
 
-### 7A.3 — Frontend: Continuous Chat Panel
+### 7A.3 — Frontend: Enterprise UI Rebuild
 **Status:** ⬜ TODO
 
 **What:**
-- Replace current single input box with a continuous chat panel
-- Always visible at the bottom of the main panel
-- Shows conversation history (user prompts + agent responses/status)
-- Submitting a new message calls /iterate with full prompt_history
-- Like this Claude chat, Lovable, Gemini Build — natural continuous flow
+- Rebuild frontend on enterprise-ui branch matching approved Lovable designs
+- Light mode default, dark mode toggle in navbar
+- Top navbar: Projects | Pipeline | Versions | Artifacts
+- All business language (Brief, Build Plan, Build Tasks, etc.)
+- Responsive preview toggle (desktop/mobile) in Preview tab
+
+**Reference:** Approved Lovable screenshots (10 screens)
 
 **Files:**
-- `frontend/components/ChatPanel.tsx` (new)
-- `frontend/pages/ProjectDetailPage.tsx` (integrate ChatPanel)
+- `frontend/` — full rebuild on enterprise-ui branch
 
 ---
 
-### 7A.4 — Frontend: Clock Icon + History Drawer
+### 7A.4 — Frontend: Continuous Chat Panel
 **Status:** ⬜ TODO
 
 **What:**
-- Clock icon button in the chat panel header (top right)
-- Hover tooltip: "View history"
-- On click: slides open a history drawer
-- History drawer shows version timeline:
-```
-  v1  "Build a surfboard landing page"        2h ago
-  v2  "Change colors to ocean blues..."       1h ago
-  v3  "Add login page with email/passw..."    30m ago
-```
-- Prompt labels truncated at ~35 chars with ellipsis
-- Active HEAD version highlighted
-- Versions after a branch point shown dimmed but clickable
+- Replace current single input box with continuous chat panel
+- Always visible at bottom of main panel
+- Shows conversation history (user prompts + agent status)
+- Submitting calls /iterate with full prompt_history
+- Input placeholder: "What would you like to change?"
 
 **Files:**
-- `frontend/components/HistoryDrawer.tsx` (new)
+- `frontend/components/ChatPanel.tsx` (new)
 - `frontend/pages/ProjectDetailPage.tsx` (integrate)
 
 ---
 
-### 7A.5 — Frontend: Version Preview + Restore Flow
+### 7A.5 — Frontend: Version Timeline + Restore Flow
 **Status:** ⬜ TODO
 
 **What:**
-- Clicking a version in history drawer loads that snapshot's artifacts
-  in the main artifact panel (read-only, labelled "Viewing v2")
-- "Restore to this version" button appears when viewing a past version
-- Restore calls /restore endpoint, sets new HEAD, updates UI
-- Forward-restore: if user restores v1 from v3, v2 and v3 remain in
-  history and can be restored forward again
-- New prompt from restored version creates v4 (new branch)
+- Versions page: left timeline + right detail panel
+- Each version shows: prompt, What Was Built, Build Artifacts cards
+- "Restore to this version" button on past versions
+- "Download Report" button (outline style, top right)
+- Forward-restore: v2/v3 remain accessible after restoring v1
 
 **Files:**
-- `frontend/pages/ProjectDetailPage.tsx`
-- `frontend/components/ArtifactViewer.tsx` (read-only mode indicator)
+- `frontend/pages/VersionsPage.tsx` (new or rebuild)
+- `frontend/components/ArtifactViewer.tsx` (read-only mode)
 
 ---
 
@@ -169,12 +172,12 @@ project/
 - ⬜ /iterate endpoint runs full pipeline with context continuation
 - ⬜ /restore endpoint sets active HEAD correctly
 - ⬜ /versions endpoint returns full version list
-- ⬜ Chat panel renders conversation history and submits new prompts
-- ⬜ Clock icon opens history drawer with version timeline
-- ⬜ Clicking version loads that snapshot's artifacts
-- ⬜ Restore sets new HEAD; forward-restore works
-- ⬜ New prompt from restored version creates new branch
-- ⬜ All changes committed
+- ⬜ Enterprise UI rebuilt on enterprise-ui branch
+- ⬜ Chat panel renders history and submits new prompts
+- ⬜ Versions page shows timeline + detail + restore
+- ⬜ Download Report button present on Versions page
+- ⬜ Dark mode toggle working across all pages
+- ⬜ All changes committed on enterprise-ui branch
 
 ---
 
@@ -185,18 +188,19 @@ backend/
   database.py            ← migration
   app.py                 ← new endpoints
 
-frontend/
+frontend/                ← full rebuild on enterprise-ui branch
   components/
     ChatPanel.tsx         ← new: continuous chat input
-    HistoryDrawer.tsx     ← new: version timeline
-    ArtifactViewer.tsx    ← read-only mode indicator
+    ArtifactViewer.tsx    ← read-only mode + Preview tab
   pages/
-    ProjectDetailPage.tsx ← integrate ChatPanel + HistoryDrawer
+    ProjectsPage.tsx      ← enterprise design
+    ProjectDetailPage.tsx ← chat panel + pipeline view
+    VersionsPage.tsx      ← timeline + restore flow
 ```
 
 ## Files NOT to touch
 ```
-frontend/services/orchestrator.ts   (working, don't break)
-frontend/types.ts                   (schema changes in separate PR if needed)
-prompts/                            (no prompt changes this phase)
+agents/                         (no agent changes this phase)
+frontend/services/orchestrator.ts  (working, don't break)
+prompts/                        (no prompt changes this phase)
 ```

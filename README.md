@@ -1,29 +1,32 @@
 ﻿# Archon — AI Dev Team Platform
 
 A deterministic multi-agent platform that converts product ideas into structured,
-auditable code. Describe what you want to build — Archon runs a full PM → Planner
-→ Engineer pipeline and generates code with a complete artifact trail.
+auditable web applications. Designed for digital agencies delivering client apps
+to non-technical clients.
 
 **What makes Archon different from Lovable/Bolt:**
 - Full pipeline re-run on every iteration (not patching)
-- Every artifact versioned and inspectable
-- Agent chain visible on every output
+- Every artifact versioned and inspectable across all iterations
+- Complete audit trail — every prompt, decision, and agent output
+- Client-presentable version history with restore
+- Business language UI — non-technical users understand every screen
 - Schema-validated at every boundary
-- Deterministic: same input = same output
 
 ---
 
 ## Architecture
 ```
-User Input
+User Input (Chat Panel)
     ↓
-PM Agent (OpenAI GPT-4)     → PRD artifact
+Prompt History (context continuation)
     ↓
-Planner Agent (Gemini)      → Plan artifact (milestones + tasks)
+Requirements Agent (OpenAI GPT-4)  → Brief artifact (versioned)
     ↓
-Engineer Agent (Gemini)     → Code files
+Architecture Agent (Gemini)        → Build Plan artifact (versioned)
     ↓
-Execution Result            → Database + UI
+Build Agent (Gemini)               → Code files (versioned)
+    ↓
+Execution Result → Database + UI + Version Timeline
 ```
 
 ---
@@ -80,9 +83,9 @@ http://localhost:3000
 ```
 ai-dev-team/
 ├── agents/
-│   ├── pm_agent.py           # PM Agent (OpenAI) — generates PRDs
-│   ├── planner_agent.py      # Planner Agent (Gemini) — generates plans
-│   └── engineer_agent.py     # Engineer Agent (Gemini) — generates code
+│   ├── pm_agent.py           # Requirements Agent (OpenAI) — generates Briefs
+│   ├── planner_agent.py      # Architecture Agent (Gemini) — generates Build Plans
+│   └── engineer_agent.py     # Build Agent (Gemini) — generates code
 ├── backend/
 │   ├── app.py                # Flask API (port 5000)
 │   ├── models.py             # SQLAlchemy models
@@ -90,19 +93,19 @@ ai-dev-team/
 ├── frontend/                 # React + TypeScript + Vite (port 3000)
 │   ├── components/
 │   │   ├── ArtifactViewer.tsx
+│   │   ├── ChatPanel.tsx
 │   │   └── Sidebar.tsx
 │   ├── pages/
+│   │   ├── ProjectsPage.tsx
 │   │   ├── ProjectDetailPage.tsx
-│   │   └── ProjectsPage.tsx
+│   │   └── VersionsPage.tsx
 │   └── services/
 │       └── orchestrator.ts
 ├── prompts/
-│   └── engineer.txt          # Engineer agent system prompt
+│   └── engineer.txt          # Build Agent system prompt
 ├── schemas/                  # JSON schemas for artifact validation
 ├── scripts/
 │   └── safe_write.py         # Allowlisted file write guard
-├── apps/offline-vite-react/
-│   └── public/               # Runtime artifact storage (gitignored)
 ├── ROADMAP.md
 └── CURRENT_SPRINT.md
 ```
@@ -120,26 +123,40 @@ ai-dev-team/
 | DELETE | `/api/projects/:id` | Delete project |
 | POST | `/api/execute-task` | Run full pipeline |
 | GET | `/api/execution-status` | Poll execution status |
-| GET | `/api/prd` | Get latest PRD artifact |
-| GET | `/api/plan` | Get latest plan artifact |
+| GET | `/api/prd` | Get latest Brief artifact |
+| GET | `/api/plan` | Get latest Build Plan artifact |
 | GET | `/api/code` | Get latest execution result |
+| POST | `/api/projects/:id/iterate` | Run pipeline iteration (new version) |
+| POST | `/api/executions/:id/restore` | Restore version as active HEAD |
+| GET | `/api/projects/:id/versions` | Get full version history |
 
 ---
 
 ## Agent Artifacts
 
 Every pipeline run produces three artifacts with full agent sequence tracking:
-```json
-{
-  "_agent_sequence": ["pm", "planner", "engineer"]
-}
-```
 
 | Artifact | Producer | Contains |
 |----------|----------|----------|
-| `last_prd.json` | PM Agent | Requirements, goals, features, tech stack |
-| `last_plan.json` | Planner Agent | Milestones, tasks, execution hints |
-| `last_execution_result.json` | Engineer Agent | Generated code files, write records |
+| `brief.json` | Requirements Agent | User stories, success criteria |
+| `plan.json` | Architecture Agent | Modules, build tasks, dependencies |
+| `execution_result.json` | Build Agent | Generated code files, write records |
+
+---
+
+## UI Screens
+
+| Screen | Description |
+|--------|-------------|
+| Projects | Table of all projects with status, versions, last run |
+| Pipeline | Agent cards (Requirements → Architecture → Build) + live log |
+| Versions | Left timeline + right detail panel with prompt + artifacts |
+| Brief | What We're Building + Success Criteria |
+| Build Plan | Module cards with dependencies |
+| Code | VS Code-style file tree + code panel |
+| Build Tasks | Task list with T-IDs |
+| Logs | Plain English build log |
+| Preview | Live iframe with desktop/mobile toggle |
 
 ---
 
@@ -150,6 +167,7 @@ Every pipeline run produces three artifacts with full agent sequence tracking:
 - **Observable state** — all artifacts written as inspectable files
 - **Failure visibility** — errors surface as artifacts, not silent failures
 - **Full audit trail** — every execution traceable end-to-end
+- **Business language** — non-technical agency owners understand every screen
 
 ---
 
@@ -161,8 +179,10 @@ Every pipeline run produces three artifacts with full agent sequence tracking:
 | 6.1 | ✅ Complete | SQLite persistence, project management |
 | 6.2 | ✅ Complete | Polished React UI, full backend wiring |
 | 6.3 | ✅ Complete | Differentiator features, VS Code explorer, audit trail UI |
-| 7A | 🚧 Next | Iterative pipeline, version history, context continuation |
-| 7B | ⬜ Planned | Live iframe preview of generated apps |
+| 6.4 | ✅ Complete | Enterprise UI design — 10 screens, light + dark mode |
+| 7A | 🚧 Next | Iterative pipeline, version history, enterprise UI rebuild |
+| 7B | 🔴 Priority | Live iframe preview (desktop + mobile toggle) |
+| 7C | ⬜ Planned | Client deliverables — PDF export, shareable links |
 
 ---
 
