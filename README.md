@@ -1,50 +1,32 @@
-﻿# Archon — AI-Powered Development Platform for Agencies
+﻿# Archon — AI Dev Team Platform
 
-Archon helps digital agencies and development shops build client web applications
-faster — with a complete, auditable record of every decision made.
+A deterministic multi-agent platform that converts product ideas into structured,
+auditable web applications. Designed for digital agencies delivering client apps
+to non-technical clients.
 
-Describe what you want to build. Archon runs a full AI pipeline and generates
-a runnable web app. Iterate with follow-up prompts. Every version is preserved,
-inspectable, and restorable. Show clients exactly what was built and why.
-
----
-
-## Why Archon
-
-**The agency problem:** Clients ask "why did you build it this way?" or
-"can we go back to the previous version?" Agencies have no good answer.
-
-**The Archon answer:** Every prompt, every iteration, every generated file
-is stored as a versioned snapshot. Walk clients through the complete build
-history. Restore any previous version in one click.
-
-| Feature | Lovable/Bolt | Archon |
-|---------|-------------|--------|
-| AI code generation | ✅ | ✅ |
-| Context continuation | ✅ | ✅ |
-| Full pipeline on every edit | ❌ | ✅ |
-| Artifact trail per version | ❌ | ✅ |
-| Restore previous version | ✅ | ✅ |
-| Restore forward after revert | ❌ | ✅ |
-| Client-exportable build history | ❌ | ✅ |
+**What makes Archon different from Lovable/Bolt:**
+- Full pipeline re-run on every iteration (not patching)
+- Every artifact versioned and inspectable across all iterations
+- Complete audit trail — every prompt, decision, and agent output
+- Client-presentable version history with restore
+- Business language UI — non-technical users understand every screen
+- Schema-validated at every boundary
 
 ---
 
-## How It Works
+## Architecture
 ```
-Agency types: "Build a restaurant booking website"
+User Input (Chat Panel)
     ↓
-PM Agent (OpenAI)      → Requirements document (v1)
+Prompt History (context continuation)
     ↓
-Planner Agent (Gemini) → Architecture plan (v1)
+Requirements Agent (OpenAI GPT-4)  → Brief artifact (versioned)
     ↓
-Engineer Agent (Gemini)→ Complete web application (v1)
+Architecture Agent (Gemini)        → Build Plan artifact (versioned)
     ↓
-Agency iterates: "Add online payments with Stripe"
+Build Agent (Gemini)               → Code files (versioned)
     ↓
-Full pipeline re-runs  → New complete snapshot (v2)
-    ↓
-Every version preserved, restorable, client-presentable
+Execution Result → Database + UI + Version Timeline
 ```
 
 ---
@@ -101,19 +83,26 @@ http://localhost:3000
 ```
 ai-dev-team/
 ├── agents/
-│   ├── pm_agent.py           # PM Agent (OpenAI) — generates requirements
-│   ├── planner_agent.py      # Planner Agent (Gemini) — generates architecture
-│   └── engineer_agent.py     # Engineer Agent (Gemini) — generates code
+│   ├── pm_agent.py           # Requirements Agent (OpenAI) — generates Briefs
+│   ├── planner_agent.py      # Architecture Agent (Gemini) — generates Build Plans
+│   └── engineer_agent.py     # Build Agent (Gemini) — generates code
 ├── backend/
 │   ├── app.py                # Flask API (port 5000)
 │   ├── models.py             # SQLAlchemy models
 │   └── database.py           # DB init and session
 ├── frontend/                 # React + TypeScript + Vite (port 3000)
 │   ├── components/
+│   │   ├── ArtifactViewer.tsx
+│   │   ├── ChatPanel.tsx
+│   │   └── Sidebar.tsx
 │   ├── pages/
+│   │   ├── ProjectsPage.tsx
+│   │   ├── ProjectDetailPage.tsx
+│   │   └── VersionsPage.tsx
 │   └── services/
+│       └── orchestrator.ts
 ├── prompts/
-│   └── engineer.txt          # Engineer agent system prompt
+│   └── engineer.txt          # Build Agent system prompt
 ├── schemas/                  # JSON schemas for artifact validation
 ├── scripts/
 │   └── safe_write.py         # Allowlisted file write guard
@@ -134,20 +123,51 @@ ai-dev-team/
 | DELETE | `/api/projects/:id` | Delete project |
 | POST | `/api/execute-task` | Run full pipeline |
 | GET | `/api/execution-status` | Poll execution status |
-| GET | `/api/prd` | Get latest PRD artifact |
-| GET | `/api/plan` | Get latest plan artifact |
+| GET | `/api/prd` | Get latest Brief artifact |
+| GET | `/api/plan` | Get latest Build Plan artifact |
 | GET | `/api/code` | Get latest execution result |
+| POST | `/api/projects/:id/iterate` | Run pipeline iteration (new version) |
+| POST | `/api/executions/:id/restore` | Restore version as active HEAD |
+| GET | `/api/projects/:id/versions` | Get full version history |
+
+---
+
+## Agent Artifacts
+
+Every pipeline run produces three artifacts with full agent sequence tracking:
+
+| Artifact | Producer | Contains |
+|----------|----------|----------|
+| `brief.json` | Requirements Agent | User stories, success criteria |
+| `plan.json` | Architecture Agent | Modules, build tasks, dependencies |
+| `execution_result.json` | Build Agent | Generated code files, write records |
+
+---
+
+## UI Screens
+
+| Screen | Description |
+|--------|-------------|
+| Projects | Table of all projects with status, versions, last run |
+| Pipeline | Agent cards (Requirements → Architecture → Build) + live log |
+| Versions | Left timeline + right detail panel with prompt + artifacts |
+| Brief | What We're Building + Success Criteria |
+| Build Plan | Module cards with dependencies |
+| Code | VS Code-style file tree + code panel |
+| Build Tasks | Task list with T-IDs |
+| Logs | Plain English build log |
+| Preview | Live iframe with desktop/mobile toggle |
 
 ---
 
 ## Design Principles
 
-- **Full pipeline on every iteration** — no patching, always re-run from scratch
-- **Complete version snapshots** — every run produces independent artifacts
-- **Client accountability** — every decision traceable and presentable
-- **Determinism** — identical inputs produce identical outputs
+- **Determinism first** — identical inputs produce identical artifacts
+- **Explicit contracts** — JSON schemas at every agent boundary
 - **Observable state** — all artifacts written as inspectable files
 - **Failure visibility** — errors surface as artifacts, not silent failures
+- **Full audit trail** — every execution traceable end-to-end
+- **Business language** — non-technical agency owners understand every screen
 
 ---
 
@@ -158,10 +178,11 @@ ai-dev-team/
 | 1–5 | ✅ Complete | Core pipeline, schemas, multi-agent coordination |
 | 6.1 | ✅ Complete | SQLite persistence, project management |
 | 6.2 | ✅ Complete | Polished React UI, full backend wiring |
-| 6.3 | ✅ Complete | Differentiator features, audit trail UI |
-| 7A | 🚧 Next | Iterative pipeline, version history, enterprise UI redesign |
-| 7B | ⬜ Planned | Live iframe preview of generated apps |
-| 7C | ⬜ Planned | PDF export, version diff viewer, shareable client links |
+| 6.3 | ✅ Complete | Differentiator features, VS Code explorer, audit trail UI |
+| 6.4 | ✅ Complete | Enterprise UI design — 10 screens, light + dark mode |
+| 7A | 🚧 Next | Iterative pipeline, version history, enterprise UI rebuild |
+| 7B | 🔴 Priority | Live iframe preview (desktop + mobile toggle) |
+| 7C | ⬜ Planned | Client deliverables — PDF export, shareable links |
 
 ---
 

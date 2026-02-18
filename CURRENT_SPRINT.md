@@ -1,24 +1,32 @@
-﻿# Current Sprint — Phase 7A: Iterative Pipeline, Version History & UI Redesign
+﻿# Current Sprint — Phase 7A: Iterative Pipeline & Version History
 
 ## Sprint Goal
 
-Two parallel objectives:
-1. Transform Archon into a true iterative build tool with full version history
-2. Redesign the frontend to match the approved enterprise design target
+Transform Archon from a single-shot generator into a true iterative build tool.
+Every prompt submission runs the full PM → Planner → Engineer pipeline and
+creates a complete versioned snapshot — leaving a full audit trail across the
+entire build history.
 
-Together these make Archon production-ready for agency clients.
-
----
-
-## Target Audience Context
-
-**Primary user:** Digital agency owner or project lead
-**Their pain:** Need to build client web apps fast AND show clients every decision
-**Archon's answer:** AI builds it + full audit trail + client-presentable history
+This is Archon's core differentiator: not just "generate once" but
+**full artifact trail across every iteration**, with context continuation
+and version restore.
 
 ---
 
-## What Makes This Different
+## Previous Sprint Complete ✅
+
+### Phase 6.4 — Enterprise UI Design (Complete)
+- Full enterprise UI designed in Lovable (10 screens)
+- Business-friendly language across all screens
+- Enterprise dark mode (Linear/GitHub aesthetic)
+- Dark mode toggle in navbar
+- Preview tab with desktop/mobile viewport toggle
+- Download Report on Versions page + Projects table
+- enterprise-ui branch: ready for frontend rebuild
+
+---
+
+## Context: What Makes This Different
 
 | Feature | Lovable/Bolt | Archon |
 |---------|-------------|--------|
@@ -27,48 +35,53 @@ Together these make Archon production-ready for agency clients.
 | Artifact trail per version | ❌ | ✅ |
 | Restore previous version | ✅ | ✅ |
 | Restore forward after revert | ❌ | ✅ |
-| Client-presentable build history | ❌ | ✅ |
+| Auditable Brief per iteration | ❌ | ✅ |
 
 ---
 
-## Current State (Phase 6.3 Complete ✅)
+## Current State (Phase 6.3 + 6.4 Complete ✅)
 
-- Agent chain badge, JSON toggle, Replay button working
+- Agent chain badge, JSON→Raw Data toggle, Replay button working
 - VS Code-style folder tree in Code explorer
 - Sidebar status dots, Clear All Projects
-- Flask backend port 5000, Vite frontend port 3000
-- enterprise-ui branch created for redesign work
-- Approved design target: Lovable mockups (top navbar, agent cards,
-  version timeline, artifact tabs)
+- Engineer prompt capped (1 README, 6 files max)
+- Enterprise UI design approved (Lovable, 10 screens)
+- Flask backend on port 5000, Vite frontend on port 3000
 - Repo clean and committed
+- enterprise-ui branch created and pushed
 
 ---
 
 ## How Iteration Works
 
 ### Context Continuation
-PM agent receives full conversation history on every run:
+The PM agent receives the full conversation history on every run:
 ```
-Turn 1: "Build a restaurant booking website"
-Turn 2: "Add online payments with Stripe"
-Turn 3: "Change the color scheme to match our brand"
+Turn 1: "Build a surfboard landing page"
+Turn 2: "Change colors to ocean blues and sunset oranges"
+Turn 3: "Add a login page with email/password"
 ```
-PM sees all turns → PRD reflects cumulative intent → complete new version built.
+
+PM agent sees all 3 turns → writes a Brief reflecting cumulative intent.
+Planner and Engineer build from that complete Brief.
 
 ### Versioned Storage
-Each run is a complete independent snapshot:
+Each execution is a complete snapshot — nothing is overwritten:
 ```
 project/
-  v1/  ← "Build a restaurant booking website"
-    prd.json, plan.json, code_files/, execution_result.json
-  v2/  ← "Add online payments with Stripe"
-    prd.json, plan.json, code_files/, execution_result.json
+  v1/  ← "Build a surfboard landing page"
+    brief.json, plan.json, code_files/, execution_result.json
+  v2/  ← "Change colors to ocean blues..."
+    brief.json, plan.json, code_files/, execution_result.json
+  v3/  ← "Add login page with email/password"
+    ...
 ```
 
 ### Restore Model
-- Clicking past version previews artifacts (read-only)
-- Restore sets new HEAD; forward versions preserved
-- New prompt from restored version creates new branch
+- Clicking a past version previews its artifacts (read-only)
+- "Restore to this version" sets that version as the active HEAD
+- Past versions after a branch point remain accessible (forward-restore)
+- New prompt from a restored version creates a new branch (v4+)
 
 ---
 
@@ -76,92 +89,118 @@ project/
 
 ### 7A.1 — Backend: Versioned Execution Storage
 **Status:** ⬜ TODO
-- Add `version`, `prompt_history`, `is_active_head`, `parent_execution_id`
-  to executions table
+
+**What:**
+- Add `version` (int), `prompt_history` (JSON array), `is_active_head` (bool),
+  `parent_execution_id` (nullable FK) to executions table
 - Migration script for existing DB
-- Files: `backend/models.py`, `backend/database.py`
+- Each new execution auto-increments version per project
 
-### 7A.2 — Backend: /iterate and /restore Endpoints
-**Status:** ⬜ TODO
-- `POST /api/projects/:id/iterate` — full pipeline with prompt history
-- `POST /api/executions/:id/restore` — set active HEAD
-- `GET /api/projects/:id/versions` — version list with metadata
-- Files: `backend/app.py`
-
-### 7A.3 — Frontend: Enterprise UI Redesign
-**Status:** ⬜ TODO
-- Rebuild frontend on enterprise-ui branch to match approved Lovable mockups
-- Top navbar (Projects / Pipeline / Versions / Artifacts)
-- Breadcrumb showing current project + version
-- All pages redesigned: Projects, Pipeline, Versions, Artifacts
-- Business-friendly language (not developer jargon)
-- Files: full frontend rebuild
-
-### 7A.4 — Frontend: Continuous Chat Panel
-**Status:** ⬜ TODO
-- Always visible at bottom of Pipeline page
-- Shows conversation history
-- Submits to /iterate with full prompt_history
-- Files: `frontend/components/ChatPanel.tsx` (new)
-
-### 7A.5 — Frontend: Version Timeline Page
-**Status:** ⬜ TODO
-- Left panel: version list (v1-vN, truncated prompt, timestamp)
-- Right panel: version detail (prompt, pipeline result, artifact cards)
-- Artifact cards clickable → navigate to Artifacts page
-- Files: `frontend/pages/VersionsPage.tsx` (new)
-
-### 7A.6 — Frontend: Version Preview + Restore Flow
-**Status:** ⬜ TODO
-- Clicking version loads that snapshot read-only
-- Restore button sets new HEAD
-- Forward-restore supported
-- Files: `frontend/pages/VersionsPage.tsx`, `frontend/pages/ArtifactsPage.tsx`
+**Files:**
+- `backend/models.py`
+- `backend/database.py` (migration)
 
 ---
 
-## Definition of Done
+### 7A.2 — Backend: /iterate and /restore Endpoints
+**Status:** ⬜ TODO
 
-- ⬜ DB schema: version, prompt_history, is_active_head fields added
-- ⬜ /iterate runs full pipeline with context continuation
-- ⬜ /restore sets active HEAD; forward versions preserved
-- ⬜ /versions returns full version list
-- ⬜ Enterprise UI matches approved Lovable mockups
-- ⬜ Chat panel submits iterations with full history
-- ⬜ Versions page shows timeline + detail panel
-- ⬜ Restore flow works including forward-restore
+**What:**
+- `POST /api/projects/:id/iterate` — accepts `{ prompt, prompt_history }`,
+  runs full pipeline, stores as new version
+- `POST /api/executions/:id/restore` — sets `is_active_head=true` for this
+  execution, false for all others in the project
+- `GET /api/projects/:id/versions` — returns all versions with metadata
+
+**Files:**
+- `backend/app.py`
+
+---
+
+### 7A.3 — Frontend: Enterprise UI Rebuild
+**Status:** ⬜ TODO
+
+**What:**
+- Rebuild frontend on enterprise-ui branch matching approved Lovable designs
+- Light mode default, dark mode toggle in navbar
+- Top navbar: Projects | Pipeline | Versions | Artifacts
+- All business language (Brief, Build Plan, Build Tasks, etc.)
+- Responsive preview toggle (desktop/mobile) in Preview tab
+
+**Reference:** Approved Lovable screenshots (10 screens)
+
+**Files:**
+- `frontend/` — full rebuild on enterprise-ui branch
+
+---
+
+### 7A.4 — Frontend: Continuous Chat Panel
+**Status:** ⬜ TODO
+
+**What:**
+- Replace current single input box with continuous chat panel
+- Always visible at bottom of main panel
+- Shows conversation history (user prompts + agent status)
+- Submitting calls /iterate with full prompt_history
+- Input placeholder: "What would you like to change?"
+
+**Files:**
+- `frontend/components/ChatPanel.tsx` (new)
+- `frontend/pages/ProjectDetailPage.tsx` (integrate)
+
+---
+
+### 7A.5 — Frontend: Version Timeline + Restore Flow
+**Status:** ⬜ TODO
+
+**What:**
+- Versions page: left timeline + right detail panel
+- Each version shows: prompt, What Was Built, Build Artifacts cards
+- "Restore to this version" button on past versions
+- "Download Report" button (outline style, top right)
+- Forward-restore: v2/v3 remain accessible after restoring v1
+
+**Files:**
+- `frontend/pages/VersionsPage.tsx` (new or rebuild)
+- `frontend/components/ArtifactViewer.tsx` (read-only mode)
+
+---
+
+## Definition of Done (Sprint)
+
+- ⬜ DB schema updated with version, prompt_history, is_active_head
+- ⬜ /iterate endpoint runs full pipeline with context continuation
+- ⬜ /restore endpoint sets active HEAD correctly
+- ⬜ /versions endpoint returns full version list
+- ⬜ Enterprise UI rebuilt on enterprise-ui branch
+- ⬜ Chat panel renders history and submits new prompts
+- ⬜ Versions page shows timeline + detail + restore
+- ⬜ Download Report button present on Versions page
+- ⬜ Dark mode toggle working across all pages
 - ⬜ All changes committed on enterprise-ui branch
 
 ---
 
-## UI Design Reference
-Approved Lovable mockups show:
-- Projects: table with status, last run, version count, created date
-- Pipeline: agent cards with timing + live output log + chat input
-- Versions: left timeline + right detail (prompt, tasks, artifact cards)
-- Artifacts: badge bar (pm→planner→engineer, REPLAYABLE, SCHEMA VALIDATED,
-  V14) + PRD/Plan/Code/Tasks/Logs tabs
-
 ## Files In Scope
 ```
 backend/
-  models.py, database.py, app.py
+  models.py              ← DB schema changes
+  database.py            ← migration
+  app.py                 ← new endpoints
 
-frontend/ (full redesign on enterprise-ui branch)
-  pages/
-    ProjectsPage.tsx
-    PipelinePage.tsx
-    VersionsPage.tsx    ← new
-    ArtifactsPage.tsx   ← new
+frontend/                ← full rebuild on enterprise-ui branch
   components/
-    ChatPanel.tsx       ← new
-    ArtifactViewer.tsx
-    Navbar.tsx          ← new
+    ChatPanel.tsx         ← new: continuous chat input
+    ArtifactViewer.tsx    ← read-only mode + Preview tab
+  pages/
+    ProjectsPage.tsx      ← enterprise design
+    ProjectDetailPage.tsx ← chat panel + pipeline view
+    VersionsPage.tsx      ← timeline + restore flow
 ```
 
 ## Files NOT to touch
 ```
-agents/          (no agent changes this phase)
-prompts/         (no prompt changes this phase)
-scripts/         (no script changes this phase)
+agents/                         (no agent changes this phase)
+frontend/services/orchestrator.ts  (working, don't break)
+prompts/                        (no prompt changes this phase)
 ```

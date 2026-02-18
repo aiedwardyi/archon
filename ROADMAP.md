@@ -1,91 +1,60 @@
-﻿# Archon — AI Dev Team Platform
+﻿# Archon — Execution Roadmap
 
-## Vision
+## Purpose
 
-Archon is a deterministic multi-agent platform for digital agencies and development
-shops that need to build client web applications with full accountability.
+Archon is a deterministic multi-agent platform that converts product ideas into
+structured, auditable web applications. Target market: digital agencies and dev
+shops delivering client web applications to non-technical clients.
 
-An agency describes what they want to build. Archon runs a complete
-PM → Planner → Engineer pipeline, generates a runnable web app, and preserves
-every prompt, decision, and artifact as a versioned snapshot. Clients can see
-exactly what was built, when, and why — across every iteration.
+**Core value proposition:**
+- AI builds client apps fast with full pipeline transparency
+- Complete audit trail of every prompt, decision, and iteration
+- Client-presentable version history at every stage
+- Restore any previous version instantly
+- PDF export of full build history as client deliverable
 
-**The agency value proposition:**
-- Build faster with AI-generated code
-- Show clients a complete auditable history of every decision
-- Restore any previous version if the client changes their mind
-- Export build history as a client-presentable PDF
+---
+
+## Target User
+
+Non-technical agency owner or project lead who:
+- Cannot read code — needs to SEE the app running
+- Needs to show clients every decision made during development
+- Needs business language, not developer jargon
+
+**Competitive positioning:** Not "build apps with AI faster" —
+instead "Build client apps with AI. Show them everything."
 
 ---
 
 ## High-Level Architecture
+```
+User Input (Chat Panel)
+    ↓
+Prompt History (context continuation)
+    ↓
+PM Agent (OpenAI) → Requirements artifact (versioned)
+    ↓
+Planner Agent (Gemini) → Build Plan artifact (versioned)
+    ↓
+Engineer Agent (Gemini) → Code files (versioned)
+    ↓
+Execution Result → Database + UI + Version Timeline
+```
 
-**Flow**
-
-Agency types project prompt
-→ PM Agent (OpenAI) → Requirements artifact
-→ Planner Agent (Gemini) → Architecture artifact
-→ Engineer Agent (Gemini) → Runnable web application
-→ Versioned snapshot stored
-→ Client-facing preview + audit trail
-
-**Key principle:**
-Every iteration runs the full pipeline. Nothing is patched.
-Every version is a complete, independent, auditable snapshot.
+**Key principle:** Every step emits structured artifacts that can be
+inspected, validated, and replayed. Full audit trail across every iteration.
 
 ---
 
 ## Design Principles
 
 - **Determinism first** — identical inputs produce identical artifacts
-- **Full pipeline on every iteration** — no patching, always re-run
-- **Client accountability** — every decision traceable and presentable
-- **Version integrity** — past versions never deleted, always restorable
+- **Explicit contracts** — JSON schemas at every agent boundary
 - **Observable state** — all artifacts written as inspectable files
-- **Failure visibility** — errors surface as artifacts, not hidden logs
-
----
-
-## Target Audience
-
-**Primary:** Digital agencies and freelance dev shops
-- Build client websites, internal tools, and web applications
-- Need to show clients exactly what changed and why
-- Need to deliver faster without sacrificing accountability
-
-**Secondary:** Non-technical founders and small businesses
-- Want to build web apps without coding
-- Need to track and manage AI-generated output
-- Need a client-presentable audit trail
-
-**Why agencies specifically:**
-- Already pay for tools (budget exists)
-- Client accountability is an immediate pain point
-- Archon becomes infrastructure they can't work without
-- Agencies are a wedge into enterprise clients
-
----
-
-## Competitive Positioning
-
-| Feature | Lovable/Bolt | Archon |
-|---------|-------------|--------|
-| AI code generation | ✅ | ✅ |
-| Context continuation | ✅ | ✅ |
-| Live preview | ✅ | ✅ (Phase 7B) |
-| Full chain on every edit | ❌ | ✅ |
-| Artifact trail per version | ❌ | ✅ |
-| Restore previous version | ✅ | ✅ |
-| Restore forward after revert | ❌ | ✅ |
-| Auditable PRD per iteration | ❌ | ✅ |
-| Client-exportable build history | ❌ | ✅ (Phase 7C) |
-| Agent chain visibility | ❌ | ✅ |
-| Schema validation | ❌ | ✅ |
-
-**Technical moat:** Lovable patches code on iteration. Archon re-runs the full
-pipeline every time. Even if competitors add "history" features, they will be
-cosmetic — not architectural. Archon's audit trail is genuine because every
-artifact is regenerated from scratch on every run.
+- **Failure visibility** — errors surface as artifacts, not silent failures
+- **Full audit trail** — every execution traceable end-to-end
+- **Business language** — non-technical users understand every screen
 
 ---
 
@@ -106,20 +75,22 @@ artifact is regenerated from scratch on every run.
 
 ### Phase 3 — Orchestration & Evaluation (✅ Completed)
 - Orchestrator consumes execution request artifacts
+- Deterministic execution result artifacts
 - Evaluation harness producing pass/fail artifacts
 - Canonical hashing for semantic identity
 - Golden snapshot regression tests
 
 ### Phase 4 — Production Hardening (✅ Completed)
-- Read-only UI for execution/evaluation artifacts
+- Read-only UI for last execution/evaluation artifacts
 - Strict schema enforcement at system boundaries
 - Deterministic replay runner for past executions
 
 ### Phase 5 — Multi-Agent Coordination (✅ Completed)
 - Multi-agent workflow: PM (OpenAI) → Planner (Gemini) → Engineer (Gemini)
-- Flask API backend with async execution and threading
-- React UI with polling and toast notifications
-- Agent sequence tracking end-to-end
+- Flask API backend: async execution with threading, state tracking
+- React UI integration: task execution with polling
+- Agent sequence tracking: metadata preserved throughout chain
+- File-based handoffs: PRD → Plan → Execution Request → Result
 
 ### Phase 6.1 — Project History & Persistence (✅ Completed)
 - SQLite with SQLAlchemy ORM
@@ -128,68 +99,109 @@ artifact is regenerated from scratch on every run.
 - React Router multi-page navigation
 
 ### Phase 6.2 — Enhanced UI/UX (✅ Completed)
-- Polished dark/light mode UI with Tailwind
+- Polished UI with Tailwind
+- Sidebar navigation with smooth transitions
 - ArtifactViewer: PRD, Plan, Code tabs with real backend data
 - ProjectDetailPage with full agent workflow visualization
-- Monorepo consolidation: frontend moved into ai-dev-team repo
+- Mobile-responsive layout
+- Monorepo consolidation
 
 ### Phase 6.3 — Differentiator Features & Polish (✅ Completed)
-- Agent chain badge (pm → planner → engineer)
-- Raw JSON toggle with syntax highlighting
-- VS Code-style folder tree in Code explorer
-- Sidebar status dots, Clear All Projects
-- Engineer prompt: 1 README max, 6 file cap
-- safe_write.py allowlist expanded
+- Agent chain badge in ArtifactViewer (pm → planner → engineer)
+- Raw JSON toggle with syntax highlighting and line numbers
+- VS Code-style folder tree explorer in Code artifact view
+- Sidebar status dots: blue pulsing=running, green=completed, red=failed
+- Clear All Projects with confirmation modal
+- Engineer prompt: max 1 README, 6 file cap
+- safe_write.py: expanded allowlist
 - Duplicate file dedup
-- All changes committed
+
+### Phase 6.4 — Enterprise UI Design (✅ Completed)
+**Goal:** Redesign Archon's UI for non-technical agency owners.
+Approved enterprise design (Linear/Vercel aesthetic) across 10 screens.
+
+**Accomplished:**
+- Full enterprise UI designed in Lovable — light + dark mode
+- Business language replacing all technical terms:
+  - pm→planner→engineer → Requirements→Architecture→Code
+  - REPLAYABLE → REPRODUCIBLE, SCHEMA VALIDATED → VERIFIED
+  - PRD → Brief, Implementation Plan → Build Plan
+  - Generated Tasks → Build Tasks, LOC removed entirely
+  - Plain English logs — no DEBUG/WARN/INFO labels
+  - JSON → Raw Data
+- Dark mode: enterprise-grade neutral palette (Linear/GitHub style)
+  No gradients, no glow effects, subdued #0d0d0d backgrounds
+- Dark mode toggle in navbar (sun/moon icon)
+- Preview tab added: desktop/mobile viewport toggle, placeholder state
+- Download Report button on Versions page + Projects table
+- All 10 screens approved: Projects, Pipeline, Versions,
+  Brief, Plan, Code, Tasks, Logs, Preview (desktop + mobile)
+
+**enterprise-ui branch:** Full frontend rebuild target
 
 ---
 
 ### Phase 7A — Iterative Pipeline & Version History (🚧 Next)
 
-**Goal:** Transform Archon from single-shot to true iterative build tool.
-Every prompt runs the full pipeline and creates a versioned snapshot.
+**Goal:** Transform Archon from single-shot generator into a true iterative
+build tool. Every prompt runs the full pipeline and creates a versioned
+snapshot — full audit trail across the entire build history.
 
 **Work Items:**
 - 7A.1 Backend: versioned execution storage + prompt history in DB
 - 7A.2 Backend: /iterate and /restore endpoints
-- 7A.3 Frontend: complete UI redesign to enterprise design target
-- 7A.4 Frontend: continuous chat panel (always visible)
-- 7A.5 Frontend: version timeline (Versions page)
-- 7A.6 Frontend: version preview + restore flow
+- 7A.3 Frontend: continuous chat panel (Lovable-style)
+- 7A.4 Frontend: version timeline (Versions page)
+- 7A.5 Frontend: version preview + restore flow
 
-**UI Design Target:** Approved Lovable mockups (top navbar, agent timing
-cards, version timeline with detail panel, artifact tabs with badge bar)
+**Architecture:**
+- Each execution stores version number + full prompt_history array
+- Prompt history passed to PM agent for context continuation
+- Restore sets is_active_head flag; past versions remain accessible
+- Version labels: truncated prompt snippet (~35 chars) + timestamp
 
 ---
 
-### Phase 7B — Live Preview (⬜ Planned)
+### Phase 7B — Live Preview (🔴 Elevated Priority)
 
-**Goal:** Real running iframe of engineer's generated output.
-Essential for non-technical agency clients to evaluate results.
+**Goal:** Real running iframe of the engineer's generated output.
+Essential for non-technical users who cannot evaluate raw code.
 
 **Work Items:**
-- 7B.1 Engineer agent: constrain output to self-contained web apps
-- 7B.2 Backend: dynamic file serving (/preview/:projectId/:version)
-- 7B.3 Frontend: iframe preview panel
-- 7B.4 Version preview: clicking past version loads that version in iframe
+- 7B.1 Engineer agent: prompt engineering for self-contained runnable output
+- 7B.2 Backend: dynamic file serving route (/preview/:projectId/:version)
+- 7B.3 Frontend: iframe preview panel (desktop + mobile toggle already designed)
+- 7B.4 History integration: clicking past version loads that version in iframe
 
 ---
 
 ### Phase 7C — Client Deliverables (⬜ Planned)
 
-**Goal:** Features that make Archon a client-facing accountability tool.
+**Goal:** Agency-facing export and sharing features.
 
 **Work Items:**
-- 7C.1 PDF export of full build history (prompts, versions, artifacts)
-- 7C.2 Version diff viewer (side-by-side comparison between any two versions)
-- 7C.3 Shareable read-only project link for client review
+- PDF export of full build history (audit trail for client presentations)
+- Client shareable read-only link
+- White-label option (agency branding)
+- Project handoff export
 
 ---
 
-### Phase 7D — Settings & Team (⬜ Planned)
-- Settings page: API keys, model config, default parameters
-- Team roles: viewer/editor/admin per project
+## Competitive Positioning
+
+| Feature | Lovable/Bolt | Archon |
+|---------|-------------|--------|
+| Context continuation | ✅ | ✅ |
+| Full chain on every edit | ❌ | ✅ |
+| Artifact trail per version | ❌ | ✅ |
+| Restore previous version | ✅ | ✅ |
+| Restore forward after revert | ❌ | ✅ |
+| Auditable Brief per iteration | ❌ | ✅ |
+| Agent chain visibility | ❌ | ✅ |
+| Schema validation | ❌ | ✅ |
+| Live preview | ✅ | 🚧 7B |
+| Client PDF export | ❌ | 🚧 7C |
+| Non-technical agency UI | ❌ | ✅ |
 
 ---
 
@@ -199,17 +211,18 @@ Essential for non-technical agency clients to evaluate results.
 - ✅ Flask API backend with async execution
 - ✅ SQLite database with full persistence
 - ✅ Project management and execution history
-- ✅ Differentiator features visible in UI
-- 🚧 Iterative pipeline + enterprise UI redesign (Phase 7A)
-- ⬜ Live preview (Phase 7B)
-- ⬜ Client deliverables: PDF export, diff viewer (Phase 7C)
+- ✅ Complete observability (all artifacts visible)
+- ✅ Deterministic, replayable workflows
+- ✅ Schema validation at all boundaries
+- ✅ Enterprise UI design approved (10 screens, light + dark)
+- 🚧 Iterative pipeline with version history (Phase 7A)
+- 🔴 Live preview — elevated priority (Phase 7B)
+- ⬜ Client deliverables — PDF export, sharing (Phase 7C)
 
 ---
 
-## Quality Bar
+## Non-Goals
 
-A change is considered complete only if:
-- artifacts are deterministic
-- schemas are validated
-- failure modes are visible
-- outputs can be reasoned about by inspection
+- Fully autonomous unsupervised code deployment
+- Magic generation without traceability
+- Hidden state or implicit agent behavior
