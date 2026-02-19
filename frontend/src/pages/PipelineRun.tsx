@@ -35,31 +35,19 @@ function getCachedName(id: number | null): string | null {
   return sessionStorage.getItem(`project_name_${id}`);
 }
 
-// Save real logs when a run finishes — keyed by execution ID
 function cacheExecutionLogs(execId: number, logs: { id: string; timestamp: number; message: string; type: string }[]) {
   try {
     sessionStorage.setItem(`logs_exec_${execId}`, JSON.stringify(logs));
-  } catch (e) {
-    // sessionStorage can be full — fail silently
-  }
+  } catch (e) { /* storage full — fail silently */ }
 }
-// Retrieve cached real logs for a given execution ID
 function getCachedLogs(execId: number | null): { id: string; timestamp: number; message: string; type: string }[] | null {
   if (!execId) return null;
   const raw = sessionStorage.getItem(`logs_exec_${execId}`);
   if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
+  try { return JSON.parse(raw); } catch { return null; }
 }
 
-// Cache the final agent card state so navigation back is instant
-interface CachedRunState {
-  displayStatus: 'COMPLETED' | 'FAILED';
-  currentStage: string;
-}
+interface CachedRunState { displayStatus: 'COMPLETED' | 'FAILED'; currentStage: string; }
 function cacheRunState(projectId: number, state: CachedRunState) {
   sessionStorage.setItem(`run_state_${projectId}`, JSON.stringify(state));
 }
@@ -67,33 +55,22 @@ function getCachedRunState(projectId: number | null): CachedRunState | null {
   if (!projectId) return null;
   const raw = sessionStorage.getItem(`run_state_${projectId}`);
   if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
+  try { return JSON.parse(raw); } catch { return null; }
 }
 
-// Fallback for executions that have no cached logs (e.g. before this feature was added)
 function buildRestoredLogs(execution: Execution) {
   const history: { id: string; timestamp: number; message: string; type: string }[] = [];
   const t = new Date(execution.created_at).getTime();
   const add = (msg: string, offset = 0) =>
     history.push({ id: `r-${offset}`, timestamp: t + offset, message: msg, type: 'info' });
-
   add('Starting pipeline...', 0);
   add('Requirements Agent: Analyzing your request...', 500);
   add('Requirements Agent: Brief created.', 1000);
   add('Architecture Agent: Planning the build...', 1500);
   add('Architecture Agent: Build plan ready.', 2000);
   add('Build Agent: Writing your code...', 2500);
-
-  if (execution.status === 'success') {
-    add('Build complete.', 3000);
-  } else if (execution.status === 'error') {
-    add(`Something went wrong: ${execution.error_message || 'Unknown error'}`, 3000);
-  }
-
+  if (execution.status === 'success') add('Build complete.', 3000);
+  else if (execution.status === 'error') add(`Something went wrong: ${execution.error_message || 'Unknown error'}`, 3000);
   return history;
 }
 
@@ -101,7 +78,6 @@ export default function PipelineRun() {
   const [searchParams] = useSearchParams();
   const projectId = searchParams.get('project') ? Number(searchParams.get('project')) : null;
 
-  // Seed name + run state from cache immediately — no loading flash
   const cachedRunState = getCachedRunState(projectId);
   const [project, setProject] = useState<Project | null>(null);
   const [projectName, setProjectName] = useState<string | null>(() => getCachedName(projectId));
@@ -120,10 +96,8 @@ export default function PipelineRun() {
   const logsEndRef = useRef<HTMLDivElement>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const seenRunningRef = useRef(false);
-  // Track the active head execution ID so we can cache/restore logs
   const activeHeadExecIdRef = useRef<number | null>(null);
 
-  // Reset when switching projects — but seed name + run state from cache instantly
   useEffect(() => {
     const cached = getCachedRunState(projectId);
     setProject(null);
@@ -140,7 +114,6 @@ export default function PipelineRun() {
     activeHeadExecIdRef.current = null;
   }, [projectId]);
 
-  // Load full project info — restore real logs from sessionStorage if available
   useEffect(() => {
     if (!projectId) return;
     getProject(projectId)
@@ -149,18 +122,13 @@ export default function PipelineRun() {
         setProjectName(p.name);
         cacheProject(p.id, p.name);
         const head = p.executions?.find((e: Execution) => e.is_active_head);
-        if (head?.prompt_history?.length) {
-          setPromptHistory(head.prompt_history);
-        }
+        if (head?.prompt_history?.length) setPromptHistory(head.prompt_history);
         if (head && (head.status === 'success' || head.status === 'error')) {
           activeHeadExecIdRef.current = head.id;
-          // Prefer real cached logs over the fake reconstructed summary
-          const cachedLogs = getCachedLogs(head.id);
-          const logsToShow = cachedLogs ?? buildRestoredLogs(head);
+          const logsToShow = getCachedLogs(head.id) ?? buildRestoredLogs(head);
           setRestoredLogs(logsToShow);
           setRestoredStatus(head.status === 'success' ? 'COMPLETED' : 'FAILED');
           setStatusOwned(true);
-          // Also update run state cache with fresh execution stage (always 'engineer' when done)
           cacheRunState(p.id, {
             displayStatus: head.status === 'success' ? 'COMPLETED' : 'FAILED',
             currentStage: 'engineer',
@@ -170,10 +138,8 @@ export default function PipelineRun() {
       .catch(console.error);
   }, [projectId]);
 
-  // Poll execution status
   useEffect(() => {
     if (!projectId) return;
-
     function poll() {
       getExecutionStatus()
         .then((s) => {
@@ -185,18 +151,13 @@ export default function PipelineRun() {
             setRestoredLogs([]);
             setStatus(s);
           } else if (seenRunningRef.current) {
-            // Run just finished — save real logs to sessionStorage
-            if (s.execution_id) {
-              activeHeadExecIdRef.current = s.execution_id;
-              cacheExecutionLogs(s.execution_id, s.logs);
-            }
-            // Save agent card state so nav-back is instant
-            if (projectId) {
-              cacheRunState(projectId, {
-                displayStatus: s.status as 'COMPLETED' | 'FAILED',
-                currentStage: s.currentStage || 'engineer',
-              });
-            }
+            // Run just finished — save logs using the pre-seeded exec ID or status exec ID
+            const execId = activeHeadExecIdRef.current ?? s.execution_id ?? null;
+            if (execId) cacheExecutionLogs(execId, s.logs);
+            if (projectId) cacheRunState(projectId, {
+              displayStatus: s.status as 'COMPLETED' | 'FAILED',
+              currentStage: s.currentStage || 'engineer',
+            });
             setStatus(s);
             seenRunningRef.current = false;
           }
@@ -207,13 +168,11 @@ export default function PipelineRun() {
         })
         .catch(console.error);
     }
-
     poll();
     pollingRef.current = setInterval(poll, 2000);
     return () => clearInterval(pollingRef.current!);
   }, [projectId]);
 
-  // Elapsed timer
   useEffect(() => {
     if (status?.status !== 'RUNNING') return;
     if (!startedAt) setStartedAt(new Date());
@@ -221,7 +180,6 @@ export default function PipelineRun() {
     return () => clearInterval(t);
   }, [status?.status]);
 
-  // Auto-scroll logs
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [status?.logs, restoredLogs]);
@@ -243,7 +201,10 @@ export default function PipelineRun() {
     setPromptHistory(newHistory);
 
     try {
-      await iterateProject(projectId, prompt, newHistory);
+      // ← Capture execution_id immediately from /iterate response
+      const { execution_id } = await iterateProject(projectId, prompt, newHistory);
+      activeHeadExecIdRef.current = execution_id;
+
       clearInterval(pollingRef.current!);
       pollingRef.current = setInterval(async () => {
         const s = await getExecutionStatus();
@@ -252,17 +213,13 @@ export default function PipelineRun() {
           seenRunningRef.current = true;
           setStatus(s);
         } else if (seenRunningRef.current) {
-          // Run just finished — save real logs + run state
-          if (s.execution_id) {
-            activeHeadExecIdRef.current = s.execution_id;
-            cacheExecutionLogs(s.execution_id, s.logs);
-          }
-          if (projectId) {
-            cacheRunState(projectId, {
-              displayStatus: s.status as 'COMPLETED' | 'FAILED',
-              currentStage: s.currentStage || 'engineer',
-            });
-          }
+          // Save logs under the execution ID we already know
+          const execId = activeHeadExecIdRef.current ?? s.execution_id ?? null;
+          if (execId) cacheExecutionLogs(execId, s.logs);
+          if (projectId) cacheRunState(projectId, {
+            displayStatus: s.status as 'COMPLETED' | 'FAILED',
+            currentStage: s.currentStage || 'engineer',
+          });
           setStatus(s);
           seenRunningRef.current = false;
           clearInterval(pollingRef.current!);
@@ -278,14 +235,12 @@ export default function PipelineRun() {
 
   const isRunning = status?.status === 'RUNNING';
 
-  // displayStatus: live > cached poll result > restored from DB/cache
   const displayStatus = isRunning
     ? 'RUNNING'
     : status?.status === 'COMPLETED' || status?.status === 'FAILED'
     ? status.status
     : restoredStatus ?? undefined;
 
-  // currentStage: live stage > restored stage (from cache or DB)
   const currentStage = isRunning
     ? (status?.currentStage || 'pm')
     : (!isRunning && (status?.currentStage || restoredStage)) || 'engineer';
@@ -307,8 +262,6 @@ export default function PipelineRun() {
   return (
     <div className="flex flex-col h-[calc(100vh-3rem)]">
       <div className="flex-1 overflow-auto px-5 py-5">
-
-        {/* Pipeline Header */}
         <div className="mb-5">
           <div className="flex items-center gap-2 mb-0.5">
             <h1 className="text-base font-semibold text-foreground">{displayName}</h1>
@@ -333,7 +286,6 @@ export default function PipelineRun() {
           <p className="text-[11px] text-muted-foreground">{displaySub}</p>
         </div>
 
-        {/* Agent Pipeline */}
         <div className="flex items-stretch gap-0 mb-6">
           {AGENTS.map((agent, i) => {
             const agSt = agentStatus(agent.id, currentStage, displayStatus || '');
@@ -367,7 +319,6 @@ export default function PipelineRun() {
           })}
         </div>
 
-        {/* Live Logs */}
         <div className="rounded border border-border bg-card">
           <div className="flex items-center justify-between border-b border-border px-3 py-2">
             <span className="text-[11px] font-medium text-foreground uppercase tracking-wider">Live Output</span>
@@ -399,7 +350,6 @@ export default function PipelineRun() {
           </div>
         </div>
 
-        {/* Conversation */}
         {promptHistory.length > 0 && (
           <div className="mt-4 space-y-1">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Conversation</p>
@@ -413,7 +363,6 @@ export default function PipelineRun() {
         )}
       </div>
 
-      {/* Chat Input Bar */}
       <div className="border-t border-border bg-card px-5 py-2.5">
         <div className="relative max-w-3xl">
           <input
