@@ -9,7 +9,7 @@ import threading
 import time
 from datetime import datetime, timezone
 
-from models import Project, Execution, get_session, init_db
+from models import Project, Execution, get_session, init_db, get_next_version
 
 app = Flask(__name__)
 
@@ -60,10 +60,10 @@ def add_log(message: str, log_type: str = "info"):
     print(f"[LOG] {message}")
 
 
-def run_full_pipeline_async(task_description: str):
+def run_full_pipeline_async(task_description: str, prompt_history: list = None):
     """
-    Run the full PM → Planner → Engineer pipeline in a background thread.
-    This replaces the old consumer-only approach with the real multi-agent flow.
+    Run the full Requirements -> Architecture -> Build pipeline in a background thread.
+    prompt_history: full conversation array for context continuation across versions.
     """
     global execution_state
 
@@ -81,26 +81,37 @@ def run_full_pipeline_async(task_description: str):
                 session.commit()
 
         # =====================================================================
-        # STEP 1: PM Agent → PRD
+        # STEP 1: Requirements Agent → Brief
         # =====================================================================
-        add_log("Starting execution pipeline...", "system")
-        add_log("PM Agent: Analyzing requirements...", "info")
+        add_log("Starting pipeline...")
+        add_log("Requirements Agent: Analyzing your request...")
 
         from agents.pm_agent import PMAgent
         pm_agent = PMAgent()
-        prd_artifact = pm_agent.generate_prd(task_description)
+
+        # Pass full prompt history to PM agent for context continuation.
+        # On v1 this is just the single prompt; on v2+ it includes all prior turns.
+        context_input = task_description
+        if prompt_history and len(prompt_history) > 1:
+            history_text = "\n".join(
+                f"{turn['role'].upper()}: {turn['content']}"
+                for turn in prompt_history
+            )
+            context_input = f"Full conversation history:\n{history_text}\n\nLatest request: {task_description}"
+
+        prd_artifact = pm_agent.generate_prd(context_input)
 
         prd_dict = prd_artifact.model_dump()
         prd_dict["_agent_sequence"] = ["pm"]
         write_json_file(PUBLIC_DIR / "last_prd.json", prd_dict)
 
-        add_log("PM Agent: PRD generated successfully.", "success")
-        print(f"✅ PRD saved: {prd_artifact.prd.document_title}")
+        add_log("Requirements Agent: Brief created.")
+        print(f"PRD saved: {prd_artifact.prd.document_title}")
 
         # =====================================================================
-        # STEP 2: Planner Agent → Plan
+        # STEP 2: Architecture Agent → Build Plan
         # =====================================================================
-        add_log("Planner Agent: Architecting solution...", "info")
+        add_log("Architecture Agent: Planning the build...")
 
         from google import genai
         from agents.planner_agent import PlannerAgent
@@ -120,21 +131,19 @@ def run_full_pipeline_async(task_description: str):
             "created_at": datetime.now(timezone.utc).isoformat(),
             "_agent_sequence": ["pm", "planner"],
         }
-        # Also write the flat plan format the consumer expects
         flat_plan = plan.model_dump()
         write_json_file(PUBLIC_DIR / "last_plan.json", flat_plan)
         write_json_file(PUBLIC_DIR / "last_plan_artifact.json", plan_dict)
 
-        add_log("Planner Agent: Execution plan created.", "success")
+        add_log("Architecture Agent: Build plan ready.")
         milestone_count = len(plan.milestones)
         task_count = sum(len(m.tasks) for m in plan.milestones)
-        print(f"✅ Plan saved: {milestone_count} milestones, {task_count} tasks")
+        print(f"Plan saved: {milestone_count} milestones, {task_count} tasks")
 
         # =====================================================================
-        # STEP 3: Engineer Agent → Code
-        # Pick the first engineer task from the plan
+        # STEP 3: Build Agent → Code
         # =====================================================================
-        add_log("Engineer Agent: Writing code...", "info")
+        add_log("Build Agent: Writing your code...")
 
         engineer_task = None
         for milestone in plan.milestones:
@@ -152,7 +161,6 @@ def run_full_pipeline_async(task_description: str):
         engineer = EngineerAgent(genai_client)
         result = engineer.run(engineer_task)
 
-        # Write generated files
         from scripts.safe_write import safe_write_text
         allow_dir = PUBLIC_DIR / "generated"
         writes = []
@@ -163,11 +171,10 @@ def run_full_pipeline_async(task_description: str):
                 content=file_artifact.content,
             )
             writes.append(rec)
-            add_log(f"Engineer Agent: Completed {file_artifact.path}", "success")
+            add_log(f"Build Agent: Created {file_artifact.path}")
 
-        add_log("Engineer Agent: Code generation complete.", "success")
+        add_log("Build complete.")
 
-        # Build and save execution result
         execution_result = {
             "kind": "execution_result",
             "agent_role": "engineer",
@@ -198,15 +205,16 @@ def run_full_pipeline_async(task_description: str):
         }
         write_json_file(PUBLIC_DIR / "last_execution_result.json", execution_result)
 
-        add_log("Workflow completed successfully.", "success")
-        print(f"✅ Execution result saved: {len(writes)} files generated")
+        print(f"Execution result saved: {len(writes)} files generated")
 
-        # Update database
+        # Update database — mark success and store result path
         if execution_id:
             execution = session.query(Execution).get(execution_id)
             if execution:
                 execution.status = "success"
                 execution.result_path = "last_execution_result.json"
+                execution.prd_path = "last_prd.json"
+                execution.plan_path = "last_plan.json"
                 session.commit()
                 project = execution.project
                 if project:
@@ -216,8 +224,8 @@ def run_full_pipeline_async(task_description: str):
 
     except Exception as e:
         error_msg = str(e)
-        add_log(f"Error: {error_msg}", "error")
-        print(f"❌ Pipeline error: {error_msg}")
+        add_log(f"Something went wrong: {error_msg}")
+        print(f"Pipeline error: {error_msg}")
 
         if execution_id:
             try:
@@ -234,7 +242,6 @@ def run_full_pipeline_async(task_description: str):
             except Exception:
                 pass
 
-        # Write error result so frontend stops polling
         write_json_file(PUBLIC_DIR / "last_execution_result.json", {
             "kind": "execution_result",
             "agent_role": "engineer",
@@ -248,7 +255,7 @@ def run_full_pipeline_async(task_description: str):
         execution_state["running"] = False
         execution_state["current_execution_id"] = None
         session.close()
-        print(f"🏁 Pipeline complete")
+        print("Pipeline complete")
 
 
 # ============================================================================
@@ -314,11 +321,197 @@ def delete_project(project_id: int):
 
 
 # ============================================================================
+# VERSION ENDPOINTS (Phase 7A)
+# ============================================================================
+
+@app.route("/api/projects/<int:project_id>/versions", methods=["GET"])
+def get_versions(project_id: int):
+    """
+    Return all versions for a project, newest first.
+    Used by the Versions page timeline.
+    """
+    session = get_session()
+    try:
+        project = session.query(Project).get(project_id)
+        if not project:
+            return jsonify({"error": "Project not found"}), 404
+
+        executions = (
+            session.query(Execution)
+            .filter(Execution.project_id == project_id)
+            .order_by(Execution.version.desc())
+            .all()
+        )
+        return jsonify({
+            "project_id": project_id,
+            "project_name": project.name,
+            "versions": [e.to_dict() for e in executions],
+        }), 200
+    finally:
+        session.close()
+
+
+@app.route("/api/projects/<int:project_id>/iterate", methods=["POST"])
+def iterate_project(project_id: int):
+    """
+    Run a new pipeline iteration for an existing project.
+    Creates a new versioned execution — nothing is overwritten.
+
+    Request body:
+        {
+            "prompt": "Add a login page with email/password",
+            "prompt_history": [
+                {"role": "user", "content": "Build a surfboard landing page"},
+                {"role": "user", "content": "Change colors to ocean blues"}
+            ]
+        }
+    """
+    global execution_state
+
+    if execution_state["running"]:
+        return jsonify({"error": "A pipeline is already running"}), 409
+
+    session = get_session()
+    try:
+        data = request.get_json()
+        if not data or not data.get("prompt"):
+            return jsonify({"error": "prompt is required"}), 400
+
+        project = session.query(Project).get(project_id)
+        if not project:
+            return jsonify({"error": f"Project {project_id} not found"}), 404
+
+        prompt = data["prompt"]
+        # Full conversation history including this new prompt
+        prompt_history = data.get("prompt_history", [])
+        if not prompt_history:
+            prompt_history = [{"role": "user", "content": prompt}]
+
+        # Find the current active head to use as parent
+        current_head = (
+            session.query(Execution)
+            .filter(
+                Execution.project_id == project_id,
+                Execution.is_active_head == True,
+            )
+            .first()
+        )
+
+        # Deactivate the current head — the new version becomes the head
+        if current_head:
+            current_head.is_active_head = False
+            session.commit()
+
+        # Create new versioned execution
+        next_version = get_next_version(session, project_id)
+        execution = Execution(
+            project_id=project_id,
+            status="pending",
+            version=next_version,
+            prompt_history=json.dumps(prompt_history),
+            is_active_head=True,
+            parent_execution_id=current_head.id if current_head else None,
+        )
+        session.add(execution)
+
+        # Update project status
+        project.status = "in_progress"
+        project.updated_at = datetime.utcnow()
+        session.commit()
+        session.refresh(execution)
+
+        # Clear previous result file
+        result_file = PUBLIC_DIR / "last_execution_result.json"
+        if result_file.exists():
+            result_file.unlink()
+
+        execution_state["running"] = True
+        execution_state["started_at"] = time.time()
+        execution_state["current_project_id"] = project_id
+        execution_state["current_execution_id"] = execution.id
+        execution_state["logs"] = []
+
+        print(f"Starting iteration v{next_version} for project {project_id}: {prompt}")
+        thread = threading.Thread(
+            target=run_full_pipeline_async,
+            args=(prompt, prompt_history),
+            daemon=True,
+        )
+        thread.start()
+
+        return jsonify({
+            "status": "started",
+            "project_id": project_id,
+            "execution_id": execution.id,
+            "version": next_version,
+        }), 200
+
+    except Exception as e:
+        execution_state["running"] = False
+        print(f"Error in iterate_project: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
+
+
+@app.route("/api/executions/<int:execution_id>/restore", methods=["POST"])
+def restore_execution(execution_id: int):
+    """
+    Restore a past version by setting it as the active HEAD.
+
+    - Sets is_active_head=True for this execution
+    - Sets is_active_head=False for all other executions in the same project
+    - Does NOT delete any versions (forward-restore stays possible)
+    """
+    session = get_session()
+    try:
+        execution = session.query(Execution).get(execution_id)
+        if not execution:
+            return jsonify({"error": "Execution not found"}), 404
+
+        project_id = execution.project_id
+
+        # Deactivate all versions in this project
+        session.query(Execution).filter(
+            Execution.project_id == project_id
+        ).update({"is_active_head": False})
+
+        # Set this version as the active head
+        execution.is_active_head = True
+
+        # Update project updated_at so the Projects list reflects the restore
+        project = session.query(Project).get(project_id)
+        if project:
+            project.updated_at = datetime.utcnow()
+
+        session.commit()
+
+        return jsonify({
+            "message": f"Restored to version {execution.version}",
+            "project_id": project_id,
+            "execution_id": execution_id,
+            "version": execution.version,
+            "is_active_head": True,
+        }), 200
+
+    except Exception as e:
+        session.rollback()
+        print(f"Error in restore_execution: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
+
+
+# ============================================================================
 # EXECUTION ENDPOINTS
 # ============================================================================
 
 @app.route("/api/execute-task", methods=["POST"])
 def execute_task():
+    """
+    Start a brand-new project execution (first run / v1).
+    For subsequent iterations use POST /api/projects/:id/iterate instead.
+    """
     global execution_state
 
     session = get_session()
@@ -343,12 +536,23 @@ def execute_task():
             project.updated_at = datetime.utcnow()
             session.commit()
 
-        execution = Execution(project_id=project_id, status="pending")
+        # First execution for this project is always v1
+        next_version = get_next_version(session, project_id)
+        task_description = project.description or project.name
+        initial_history = [{"role": "user", "content": task_description}]
+
+        execution = Execution(
+            project_id=project_id,
+            status="pending",
+            version=next_version,
+            prompt_history=json.dumps(initial_history),
+            is_active_head=True,
+            parent_execution_id=None,
+        )
         session.add(execution)
         session.commit()
         session.refresh(execution)
 
-        # Clear previous result and logs
         result_file = PUBLIC_DIR / "last_execution_result.json"
         if result_file.exists():
             result_file.unlink()
@@ -359,14 +563,11 @@ def execute_task():
         execution_state["current_execution_id"] = execution.id
         execution_state["logs"] = []
 
-        # Use full project description as task description if available
-        task_description = project.description or project.name
-
-        print(f"🚀 Starting full pipeline for: {task_description}")
+        print(f"Starting v{next_version} for project {project_id}: {task_description}")
         thread = threading.Thread(
             target=run_full_pipeline_async,
-            args=(task_description,),
-            daemon=True
+            args=(task_description, initial_history),
+            daemon=True,
         )
         thread.start()
 
@@ -374,11 +575,12 @@ def execute_task():
             "status": "started",
             "project_id": project_id,
             "execution_id": execution.id,
+            "version": next_version,
         }), 200
 
     except Exception as e:
         execution_state["running"] = False
-        print(f"❌ Error in execute_task: {e}")
+        print(f"Error in execute_task: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
         session.close()
@@ -395,15 +597,14 @@ def execution_status():
         "pending": "RUNNING", "running": "RUNNING",
     }
 
-    # Derive current stage from live logs
     logs = execution_state.get("logs", [])
     current_stage = "pm"
     for log in reversed(logs):
         msg = log.get("message", "")
-        if "Engineer" in msg:
+        if "Build Agent" in msg:
             current_stage = "engineer"
             break
-        if "Planner" in msg:
+        if "Architecture Agent" in msg:
             current_stage = "planner"
             break
 
@@ -419,7 +620,6 @@ def execution_status():
         }), 200
 
     if execution_state["running"]:
-        elapsed = time.time() - (execution_state["started_at"] or 0)
         return jsonify({
             "status": "RUNNING",
             "currentStage": current_stage,
@@ -477,4 +677,3 @@ if __name__ == "__main__":
     print(f"PUBLIC_DIR: {PUBLIC_DIR}")
     print(f"CORS enabled for: http://localhost:5173, http://localhost:3000")
     app.run(debug=True, port=5000)
-
