@@ -38,7 +38,7 @@ function getCachedName(id: number | null): string | null {
 function cacheExecutionLogs(execId: number, logs: { id: string; timestamp: number; message: string; type: string }[]) {
   try {
     sessionStorage.setItem(`logs_exec_${execId}`, JSON.stringify(logs));
-  } catch (e) { /* storage full — fail silently */ }
+  } catch (e) { /* storage full */ }
 }
 function getCachedLogs(execId: number | null): { id: string; timestamp: number; message: string; type: string }[] | null {
   if (!execId) return null;
@@ -81,13 +81,20 @@ export default function PipelineRun() {
   const cachedRunState = getCachedRunState(projectId);
   const [project, setProject] = useState<Project | null>(null);
   const [projectName, setProjectName] = useState<string | null>(() => getCachedName(projectId));
-  const [status, setStatus] = useState<ExecutionStatus | null>(null);
-  const [statusOwned, setStatusOwned] = useState(() => cachedRunState !== null);
-  const [restoredStatus, setRestoredStatus] = useState<'COMPLETED' | 'FAILED' | null>(
+
+  // Single source of truth for what to display in the log panel
+  // 'idle' = no run yet, 'sending' = waiting for backend to accept, 'running' = live polling, 'done' = completed
+  type RunPhase = 'idle' | 'sending' | 'running' | 'done';
+  const [runPhase, setRunPhase] = useState<RunPhase>(() => cachedRunState ? 'done' : 'idle');
+  const [liveStatus, setLiveStatus] = useState<ExecutionStatus | null>(null);
+  const [displayedLogs, setDisplayedLogs] = useState<{ id: string; timestamp: number; message: string; type: string }[]>([]);
+  const [displayedStatus, setDisplayedStatus] = useState<'COMPLETED' | 'FAILED' | null>(
     () => cachedRunState?.displayStatus ?? null
   );
-  const [restoredLogs, setRestoredLogs] = useState<{ id: string; timestamp: number; message: string; type: string }[]>([]);
-  const [restoredStage, setRestoredStage] = useState<string>(() => cachedRunState?.currentStage ?? 'engineer');
+  const [currentStage, setCurrentStage] = useState<string>(
+    () => cachedRunState?.currentStage ?? 'engineer'
+  );
+
   const [input, setInput] = useState('');
   const [promptHistory, setPromptHistory] = useState<{ role: string; content: string }[]>([]);
   const [sending, setSending] = useState(false);
@@ -98,15 +105,16 @@ export default function PipelineRun() {
   const seenRunningRef = useRef(false);
   const activeHeadExecIdRef = useRef<number | null>(null);
 
+  // Reset on project switch — seed from cache instantly
   useEffect(() => {
     const cached = getCachedRunState(projectId);
     setProject(null);
     setProjectName(getCachedName(projectId));
-    setStatus(null);
-    setStatusOwned(cached !== null);
-    setRestoredStatus(cached?.displayStatus ?? null);
-    setRestoredStage(cached?.currentStage ?? 'engineer');
-    setRestoredLogs([]);
+    setLiveStatus(null);
+    setRunPhase(cached ? 'done' : 'idle');
+    setDisplayedStatus(cached?.displayStatus ?? null);
+    setCurrentStage(cached?.currentStage ?? 'engineer');
+    setDisplayedLogs([]);
     setStartedAt(null);
     setElapsed(0);
     setPromptHistory([]);
@@ -114,6 +122,7 @@ export default function PipelineRun() {
     activeHeadExecIdRef.current = null;
   }, [projectId]);
 
+  // Load project + restore logs from sessionStorage or fallback
   useEffect(() => {
     if (!projectId) return;
     getProject(projectId)
@@ -126,18 +135,18 @@ export default function PipelineRun() {
         if (head && (head.status === 'success' || head.status === 'error')) {
           activeHeadExecIdRef.current = head.id;
           const logsToShow = getCachedLogs(head.id) ?? buildRestoredLogs(head);
-          setRestoredLogs(logsToShow);
-          setRestoredStatus(head.status === 'success' ? 'COMPLETED' : 'FAILED');
-          setStatusOwned(true);
-          cacheRunState(p.id, {
-            displayStatus: head.status === 'success' ? 'COMPLETED' : 'FAILED',
-            currentStage: 'engineer',
-          });
+          const finalStatus = head.status === 'success' ? 'COMPLETED' : 'FAILED';
+          setDisplayedLogs(logsToShow);
+          setDisplayedStatus(finalStatus);
+          setCurrentStage('engineer');
+          setRunPhase('done');
+          cacheRunState(p.id, { displayStatus: finalStatus, currentStage: 'engineer' });
         }
       })
       .catch(console.error);
   }, [projectId]);
 
+  // Initial poll — detect if a run is already happening for this project
   useEffect(() => {
     if (!projectId) return;
     function poll() {
@@ -146,19 +155,21 @@ export default function PipelineRun() {
           const belongsHere = s.status === 'RUNNING' && s.project_id === projectId;
           if (belongsHere) {
             seenRunningRef.current = true;
-            setStatusOwned(true);
-            setRestoredStatus(null);
-            setRestoredLogs([]);
-            setStatus(s);
+            setRunPhase('running');
+            setLiveStatus(s);
+            setCurrentStage(s.currentStage || 'pm');
+            setDisplayedStatus(null);
           } else if (seenRunningRef.current) {
-            // Run just finished — save logs using the pre-seeded exec ID or status exec ID
+            // Transition: running → done
             const execId = activeHeadExecIdRef.current ?? s.execution_id ?? null;
             if (execId) cacheExecutionLogs(execId, s.logs);
-            if (projectId) cacheRunState(projectId, {
-              displayStatus: s.status as 'COMPLETED' | 'FAILED',
-              currentStage: s.currentStage || 'engineer',
-            });
-            setStatus(s);
+            const finalStatus = s.status as 'COMPLETED' | 'FAILED';
+            if (projectId) cacheRunState(projectId, { displayStatus: finalStatus, currentStage: s.currentStage || 'engineer' });
+            setDisplayedLogs(s.logs || []);
+            setDisplayedStatus(finalStatus);
+            setCurrentStage(s.currentStage || 'engineer');
+            setRunPhase('done');
+            setLiveStatus(null);
             seenRunningRef.current = false;
           }
           if (s.status !== 'RUNNING') {
@@ -173,16 +184,18 @@ export default function PipelineRun() {
     return () => clearInterval(pollingRef.current!);
   }, [projectId]);
 
+  // Elapsed timer while running
   useEffect(() => {
-    if (status?.status !== 'RUNNING') return;
+    if (runPhase !== 'running') return;
     if (!startedAt) setStartedAt(new Date());
     const t = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(t);
-  }, [status?.status]);
+  }, [runPhase]);
 
+  // Auto-scroll logs
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [status?.logs, restoredLogs]);
+  }, [liveStatus?.logs, displayedLogs]);
 
   async function handleSend() {
     if (!input.trim() || !projectId || sending) return;
@@ -191,36 +204,41 @@ export default function PipelineRun() {
     setSending(true);
     setStartedAt(null);
     setElapsed(0);
-    setStatusOwned(true);
-    setStatus(null);
-    setRestoredStatus(null);
-    setRestoredLogs([]);
+    // Clear logs immediately and show "sending" phase — no blank placeholder
+    setRunPhase('sending');
+    setLiveStatus(null);
+    setDisplayedLogs([]);
+    setDisplayedStatus(null);
     seenRunningRef.current = false;
 
     const newHistory = [...promptHistory, { role: 'user', content: prompt }];
     setPromptHistory(newHistory);
 
     try {
-      // ← Capture execution_id immediately from /iterate response
       const { execution_id } = await iterateProject(projectId, prompt, newHistory);
       activeHeadExecIdRef.current = execution_id;
 
+      // Switch to running phase — poll for live status
+      setRunPhase('running');
       clearInterval(pollingRef.current!);
       pollingRef.current = setInterval(async () => {
         const s = await getExecutionStatus();
         const belongsHere = s.status === 'RUNNING' && s.project_id === projectId;
         if (belongsHere) {
           seenRunningRef.current = true;
-          setStatus(s);
+          setLiveStatus(s);
+          setCurrentStage(s.currentStage || 'pm');
         } else if (seenRunningRef.current) {
-          // Save logs under the execution ID we already know
+          // Save logs and transition to done
           const execId = activeHeadExecIdRef.current ?? s.execution_id ?? null;
           if (execId) cacheExecutionLogs(execId, s.logs);
-          if (projectId) cacheRunState(projectId, {
-            displayStatus: s.status as 'COMPLETED' | 'FAILED',
-            currentStage: s.currentStage || 'engineer',
-          });
-          setStatus(s);
+          const finalStatus = s.status as 'COMPLETED' | 'FAILED';
+          if (projectId) cacheRunState(projectId, { displayStatus: finalStatus, currentStage: 'engineer' });
+          setDisplayedLogs(s.logs || []);
+          setDisplayedStatus(finalStatus);
+          setCurrentStage('engineer');
+          setRunPhase('done');
+          setLiveStatus(null);
           seenRunningRef.current = false;
           clearInterval(pollingRef.current!);
           pollingRef.current = null;
@@ -228,32 +246,22 @@ export default function PipelineRun() {
       }, 2000);
     } catch (e) {
       console.error(e);
+      setRunPhase('idle');
     } finally {
       setSending(false);
     }
   }
 
-  const isRunning = status?.status === 'RUNNING';
+  const isRunning = runPhase === 'running';
+  const isSending = runPhase === 'sending';
 
-  const displayStatus = isRunning
-    ? 'RUNNING'
-    : status?.status === 'COMPLETED' || status?.status === 'FAILED'
-    ? status.status
-    : restoredStatus ?? undefined;
+  // What to show in the log panel
+  const logs = isRunning ? (liveStatus?.logs || []) : displayedLogs;
 
-  const currentStage = isRunning
-    ? (status?.currentStage || 'pm')
-    : (!isRunning && (status?.currentStage || restoredStage)) || 'engineer';
+  // Agent card overall status
+  const overallStatus = isRunning ? 'RUNNING' : displayedStatus ?? '';
 
-  const logs = statusOwned
-    ? isRunning
-      ? status?.logs || []
-      : status && !restoredStatus
-      ? status.logs || []
-      : restoredLogs
-    : [];
-
-  const versionLabel = isRunning ? '...' : (project?.execution_count ?? '—');
+  const versionLabel = isRunning || isSending ? '...' : (project?.execution_count ?? '—');
   const displayName = projectName ?? (projectId ? '...' : 'No project selected');
   const displaySub = projectId
     ? `Version ${versionLabel}${startedAt && isRunning ? ` · Started ${elapsed}s ago` : ''}`
@@ -265,19 +273,19 @@ export default function PipelineRun() {
         <div className="mb-5">
           <div className="flex items-center gap-2 mb-0.5">
             <h1 className="text-base font-semibold text-foreground">{displayName}</h1>
-            {isRunning && (
+            {(isRunning || isSending) && (
               <span className="rounded bg-secondary px-2 py-0.5 text-[10px] font-medium text-status-running">
                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-status-running mr-1 align-middle status-pulse" />
                 Building...
               </span>
             )}
-            {displayStatus === 'COMPLETED' && (
+            {displayedStatus === 'COMPLETED' && !isRunning && !isSending && (
               <span className="rounded bg-secondary px-2 py-0.5 text-[10px] font-medium text-status-complete">
                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-status-complete mr-1 align-middle" />
                 Done
               </span>
             )}
-            {displayStatus === 'FAILED' && (
+            {displayedStatus === 'FAILED' && !isRunning && !isSending && (
               <span className="rounded bg-secondary px-2 py-0.5 text-[10px] font-medium text-status-failed">
                 Failed
               </span>
@@ -288,7 +296,7 @@ export default function PipelineRun() {
 
         <div className="flex items-stretch gap-0 mb-6">
           {AGENTS.map((agent, i) => {
-            const agSt = agentStatus(agent.id, currentStage, displayStatus || '');
+            const agSt = agentStatus(agent.id, currentStage, overallStatus);
             return (
               <div key={agent.id} className="flex items-center">
                 <div className={`rounded border p-3 min-w-[200px] transition-all ${
@@ -325,7 +333,15 @@ export default function PipelineRun() {
             <span className="text-[11px] text-muted-foreground font-mono">{logs.length} entries</span>
           </div>
           <div className="p-3 font-mono text-[11px] space-y-0.5 max-h-[320px] overflow-auto">
-            {logs.length === 0 && (
+            {/* Sending phase: waiting for backend to accept the prompt */}
+            {isSending && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                <span>Starting pipeline...</span>
+              </div>
+            )}
+            {/* Idle: no run yet */}
+            {!isSending && logs.length === 0 && (
               <div className="text-muted-foreground italic">
                 {projectId ? 'Type a prompt below to start building.' : 'Select a project to get started.'}
               </div>
@@ -371,15 +387,15 @@ export default function PipelineRun() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder={projectId ? 'What would you like to change?' : 'Select a project first'}
-            disabled={isRunning || sending}
+            disabled={isRunning || isSending}
             className="w-full rounded border border-border bg-background pl-3 pr-10 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
           />
           <button
             onClick={handleSend}
-            disabled={isRunning || sending || !input.trim() || !projectId}
+            disabled={isRunning || isSending || !input.trim() || !projectId}
             className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded bg-primary p-1 text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
-            {sending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+            {(sending || isSending) ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
           </button>
         </div>
       </div>
