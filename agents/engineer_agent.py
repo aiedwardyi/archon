@@ -44,6 +44,51 @@ def _deduplicate_files(files: list[FileArtifact]) -> list[FileArtifact]:
     return list(seen.values())
 
 
+def _repair_json(raw: str) -> dict:
+    """
+    Attempt to repair and parse JSON that Gemini returned outside the
+    structured-output path. Handles common Gemini failure modes:
+      - Wrapped in ```json ... ``` fences
+      - Stray backslash-whitespace sequences (e.g. \<newline> or \  before a key)
+      - Multiple top-level objects concatenated
+    """
+    text = raw.strip()
+
+    # Strip markdown fences
+    text = re.sub(r"^```json\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"^```\s*", "", text)
+    text = re.sub(r"\s*```$", "", text)
+
+    # Find outermost JSON object
+    start = text.find("{")
+    end = text.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        raise RuntimeError(
+            "EngineerAgent: no JSON object found in model output.\n\n"
+            f"Raw output:\n{raw}"
+        )
+
+    candidate = text[start : end + 1]
+
+    # Fix concatenated objects: }{ -> },{ 
+    candidate = re.sub(r"}\s*\n\s*{", "},\n{", candidate)
+
+    # Fix stray backslashes before whitespace or quotes that Gemini sometimes emits.
+    # e.g.  "ISC",\  "dependencies"  ->  "ISC", "dependencies"
+    # This removes backslashes that are NOT valid JSON escape sequences.
+    # Valid JSON escapes: \", \\, \/, \b, \f, \n, \r, \t, \uXXXX
+    candidate = re.sub(r'\\(?!["\\/bfnrtu])', "", candidate)
+
+    try:
+        return json.loads(candidate)
+    except json.JSONDecodeError as e:
+        raise RuntimeError(
+            "EngineerAgent: JSON repair failed.\n\n"
+            f"Parse error: {e}\n\n"
+            f"Candidate JSON (first 2000 chars):\n{candidate[:2000]}"
+        ) from e
+
+
 class EngineerAgent:
     def __init__(self, client: genai.Client | None):
         self.client = client
@@ -84,39 +129,15 @@ class EngineerAgent:
             },
         )
 
+        # Primary path: structured output parsed cleanly
         if response.parsed is not None:
             result = response.parsed
             result.files = _deduplicate_files(result.files)
             return result
 
-        # -------- FALLBACK REPAIR PATH --------
+        # Fallback: attempt JSON repair on raw text
         raw = getattr(response, "text", "") or ""
-        text = raw.strip()
-
-        text = re.sub(r"^```json\s*", "", text, flags=re.IGNORECASE)
-        text = re.sub(r"^```\s*", "", text)
-        text = re.sub(r"\s*```$", "", text)
-
-        start = text.find("{")
-        end = text.rfind("}")
-        if start == -1 or end == -1 or end <= start:
-            raise RuntimeError(
-                "EngineerAgent: no JSON object found in model output.\n\n"
-                f"Raw output:\n{raw}"
-            )
-
-        candidate = text[start : end + 1]
-        candidate = re.sub(r"}\s*\n\s*{", "},\n{", candidate)
-
-        try:
-            data = json.loads(candidate)
-        except Exception as e:
-            raise RuntimeError(
-                "EngineerAgent: JSON repair failed.\n\n"
-                f"Raw output:\n{raw}\n\n"
-                f"Candidate JSON:\n{candidate}"
-            ) from e
-
+        data = _repair_json(raw)
         result = EngineeringResult.model_validate(data)
         result.files = _deduplicate_files(result.files)
         return result

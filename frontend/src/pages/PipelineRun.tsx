@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useRef } from 'react';
 import { Check, Loader2, Clock, ArrowRight, Send } from 'lucide-react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { getExecutionStatus, iterateProject, startExecution, getProject, type ExecutionStatus, type Project } from '@/services/api';
+import { useSearchParams } from 'react-router-dom';
+import { getExecutionStatus, iterateProject, getProject, type ExecutionStatus, type Project, type Execution } from '@/services/api';
 
 const AGENTS = [
   { id: 'pm', name: 'Requirements Agent', description: 'Understands your request' },
@@ -25,16 +25,48 @@ function agentStatus(agentId: string, currentStage: string, overallStatus: strin
   return 'pending';
 }
 
+function buildRestoredLogs(execution: Execution) {
+  const history: { id: string; timestamp: number; message: string; type: string }[] = [];
+  const t = new Date(execution.created_at).getTime();
+  const add = (msg: string, offset = 0) =>
+    history.push({ id: `r-${offset}`, timestamp: t + offset, message: msg, type: 'info' });
+
+  add('Starting pipeline...', 0);
+  add('Requirements Agent: Analyzing your request...', 500);
+  add('Requirements Agent: Brief created.', 1000);
+  add('Architecture Agent: Planning the build...', 1500);
+  add('Architecture Agent: Build plan ready.', 2000);
+  add('Build Agent: Writing your code...', 2500);
+
+  if (execution.status === 'success') {
+    add('Build complete.', 3000);
+  } else if (execution.status === 'error') {
+    add(`Something went wrong: ${execution.error_message || 'Unknown error'}`, 3000);
+  }
+
+  return history;
+}
+
+// Cache helpers — store project name keyed by ID so nav feels instant
+function cacheProject(id: number, name: string) {
+  sessionStorage.setItem(`project_name_${id}`, name);
+}
+function getCachedName(id: number | null): string | null {
+  if (!id) return null;
+  return sessionStorage.getItem(`project_name_${id}`);
+}
+
 export default function PipelineRun() {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const projectId = searchParams.get('project') ? Number(searchParams.get('project')) : null;
 
+  // Seed name from cache immediately — no loading flash
   const [project, setProject] = useState<Project | null>(null);
-  // null = not yet determined; we use this to avoid flashing stale state
+  const [projectName, setProjectName] = useState<string | null>(() => getCachedName(projectId));
   const [status, setStatus] = useState<ExecutionStatus | null>(null);
-  // Whether the status we fetched actually belongs to this project
   const [statusOwned, setStatusOwned] = useState(false);
+  const [restoredStatus, setRestoredStatus] = useState<'COMPLETED' | 'FAILED' | null>(null);
+  const [restoredLogs, setRestoredLogs] = useState<{ id: string; timestamp: number; message: string; type: string }[]>([]);
   const [input, setInput] = useState('');
   const [promptHistory, setPromptHistory] = useState<{ role: string; content: string }[]>([]);
   const [sending, setSending] = useState(false);
@@ -42,25 +74,38 @@ export default function PipelineRun() {
   const [elapsed, setElapsed] = useState(0);
   const logsEndRef = useRef<HTMLDivElement>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const seenRunningRef = useRef(false);
 
-  // Reset owned-status flag whenever we switch projects
+  // Reset when switching projects — but seed name from cache instantly
   useEffect(() => {
+    setProject(null);
+    setProjectName(getCachedName(projectId)); // instant from cache
     setStatusOwned(false);
     setStatus(null);
+    setRestoredStatus(null);
+    setRestoredLogs([]);
     setStartedAt(null);
     setElapsed(0);
+    setPromptHistory([]);
+    seenRunningRef.current = false;
   }, [projectId]);
 
-  // Load project info
+  // Load full project info
   useEffect(() => {
     if (!projectId) return;
     getProject(projectId)
       .then((p) => {
         setProject(p);
-        // Pre-fill prompt history from the active head execution
-        const head = p.executions?.find((e: { is_active_head: boolean }) => e.is_active_head);
+        setProjectName(p.name);
+        cacheProject(p.id, p.name); // update cache with fresh name
+        const head = p.executions?.find((e: Execution) => e.is_active_head);
         if (head?.prompt_history?.length) {
           setPromptHistory(head.prompt_history);
+        }
+        if (head && (head.status === 'success' || head.status === 'error')) {
+          setRestoredLogs(buildRestoredLogs(head));
+          setRestoredStatus(head.status === 'success' ? 'COMPLETED' : 'FAILED');
+          setStatusOwned(true);
         }
       })
       .catch(console.error);
@@ -73,21 +118,17 @@ export default function PipelineRun() {
     function poll() {
       getExecutionStatus()
         .then((s) => {
-          // Only treat the status as belonging to this project if:
-          // 1. The backend says it's currently running for this project, OR
-          // 2. We already know this project started a run this session (statusOwned is true)
-          const belongsHere =
-            s.status === 'RUNNING' && s.project_id === projectId;
-
+          const belongsHere = s.status === 'RUNNING' && s.project_id === projectId;
           if (belongsHere) {
+            seenRunningRef.current = true;
             setStatusOwned(true);
+            setRestoredStatus(null);
+            setRestoredLogs([]);
             setStatus(s);
-          } else if (statusOwned) {
-            // We owned it and now it finished — keep showing the result
+          } else if (seenRunningRef.current) {
             setStatus(s);
+            seenRunningRef.current = false;
           }
-          // Otherwise: stale data from a different project — ignore it
-
           if (s.status !== 'RUNNING') {
             clearInterval(pollingRef.current!);
             pollingRef.current = null;
@@ -99,9 +140,9 @@ export default function PipelineRun() {
     poll();
     pollingRef.current = setInterval(poll, 2000);
     return () => clearInterval(pollingRef.current!);
-  }, [projectId, statusOwned]);
+  }, [projectId]);
 
-  // Elapsed timer while running
+  // Elapsed timer
   useEffect(() => {
     if (status?.status !== 'RUNNING') return;
     if (!startedAt) setStartedAt(new Date());
@@ -112,33 +153,39 @@ export default function PipelineRun() {
   // Auto-scroll logs
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [status?.logs]);
+  }, [status?.logs, restoredLogs]);
 
   async function handleSend() {
     if (!input.trim() || !projectId || sending) return;
     const prompt = input.trim();
     setInput('');
     setSending(true);
-    setStartedAt(new Date());
+    setStartedAt(null);
     setElapsed(0);
-    setStatusOwned(true); // this project is now the owner of the pipeline
+    setStatusOwned(true);
+    setStatus(null);
+    setRestoredStatus(null);
+    setRestoredLogs([]);
 
     const newHistory = [...promptHistory, { role: 'user', content: prompt }];
     setPromptHistory(newHistory);
 
     try {
       await iterateProject(projectId, prompt, newHistory);
-      // Start polling
-      if (!pollingRef.current) {
-        pollingRef.current = setInterval(async () => {
-          const s = await getExecutionStatus();
+      clearInterval(pollingRef.current!);
+      pollingRef.current = setInterval(async () => {
+        const s = await getExecutionStatus();
+        const belongsHere = s.status === 'RUNNING' && s.project_id === projectId;
+        if (belongsHere) {
+          seenRunningRef.current = true;
           setStatus(s);
-          if (s.status !== 'RUNNING') {
-            clearInterval(pollingRef.current!);
-            pollingRef.current = null;
-          }
-        }, 2000);
-      }
+        } else if (seenRunningRef.current) {
+          setStatus(s);
+          seenRunningRef.current = false;
+          clearInterval(pollingRef.current!);
+          pollingRef.current = null;
+        }
+      }, 2000);
     } catch (e) {
       console.error(e);
     } finally {
@@ -146,12 +193,24 @@ export default function PipelineRun() {
     }
   }
 
-  const isRunning = status?.status === 'RUNNING' || sending;
+  const isRunning = status?.status === 'RUNNING';
+
+  const displayStatus = isRunning
+    ? 'RUNNING'
+    : status?.status === 'COMPLETED' || status?.status === 'FAILED'
+    ? status.status
+    : restoredStatus ?? undefined;
+
   const currentStage = status?.currentStage || 'pm';
-  // Only show logs if this project owns the status
-  const logs = statusOwned ? (status?.logs || []) : [];
-  const displayStatus = statusOwned ? status?.status : undefined;
+  const logs = statusOwned
+    ? (isRunning || (status && !restoredStatus) ? status?.logs || [] : restoredLogs)
+    : [];
+
   const versionLabel = isRunning ? '...' : (project?.execution_count ?? '—');
+  const displayName = projectName ?? (projectId ? '...' : 'No project selected');
+  const displaySub = projectId
+    ? `Version ${versionLabel}${startedAt && isRunning ? ` · Started ${elapsed}s ago` : ''}`
+    : 'Select a project from Projects page';
 
   return (
     <div className="flex flex-col h-[calc(100vh-3rem)]">
@@ -160,9 +219,7 @@ export default function PipelineRun() {
         {/* Pipeline Header */}
         <div className="mb-5">
           <div className="flex items-center gap-2 mb-0.5">
-            <h1 className="text-base font-semibold text-foreground">
-              {project?.name || 'No project selected'}
-            </h1>
+            <h1 className="text-base font-semibold text-foreground">{displayName}</h1>
             {isRunning && (
               <span className="rounded bg-secondary px-2 py-0.5 text-[10px] font-medium text-status-running">
                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-status-running mr-1 align-middle status-pulse" />
@@ -175,11 +232,13 @@ export default function PipelineRun() {
                 Done
               </span>
             )}
+            {displayStatus === 'FAILED' && (
+              <span className="rounded bg-secondary px-2 py-0.5 text-[10px] font-medium text-status-failed">
+                Failed
+              </span>
+            )}
           </div>
-          <p className="text-[11px] text-muted-foreground">
-            {project ? `Version ${versionLabel}` : 'Select a project from Projects page'}
-            {startedAt && isRunning && ` · Started ${elapsed}s ago`}
-          </p>
+          <p className="text-[11px] text-muted-foreground">{displaySub}</p>
         </div>
 
         {/* Agent Pipeline */}
@@ -233,7 +292,9 @@ export default function PipelineRun() {
                 <span className="text-muted-foreground/50 select-none w-20 flex-shrink-0 text-[10px]">
                   {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                 </span>
-                <span className="text-foreground/80">{log.message}</span>
+                <span className={log.message.startsWith('Something went wrong') ? 'text-status-failed' : 'text-foreground/80'}>
+                  {log.message}
+                </span>
               </div>
             ))}
             {isRunning && (
@@ -246,7 +307,7 @@ export default function PipelineRun() {
           </div>
         </div>
 
-        {/* Prompt history display */}
+        {/* Conversation */}
         {promptHistory.length > 0 && (
           <div className="mt-4 space-y-1">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Conversation</p>
@@ -269,12 +330,12 @@ export default function PipelineRun() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder={projectId ? 'What would you like to change?' : 'Select a project first'}
-            disabled={isRunning || !projectId}
+            disabled={isRunning || sending}
             className="w-full rounded border border-border bg-background pl-3 pr-10 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
           />
           <button
             onClick={handleSend}
-            disabled={isRunning || !input.trim() || !projectId}
+            disabled={isRunning || sending || !input.trim() || !projectId}
             className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded bg-primary p-1 text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
             {sending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}

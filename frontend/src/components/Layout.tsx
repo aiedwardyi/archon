@@ -1,17 +1,11 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Box, LayoutDashboard, GitBranch, FileCode, ChevronRight, Sun, Moon } from 'lucide-react';
-
-const navItems = [
-  { path: '/', label: 'Projects', icon: LayoutDashboard },
-  { path: '/pipeline', label: 'Pipeline', icon: Box },
-  { path: '/versions', label: 'Versions', icon: GitBranch },
-  { path: '/artifacts', label: 'Artifacts', icon: FileCode },
-];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'));
+  const [lastProjectId, setLastProjectId] = useState<string | null>(null);
 
   useEffect(() => {
     if (dark) {
@@ -20,6 +14,33 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       document.documentElement.classList.remove('dark');
     }
   }, [dark]);
+
+  // Keep lastProjectId in sync whenever the URL contains a project param
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const id = params.get('project');
+    if (id) {
+      setLastProjectId(id);
+      sessionStorage.setItem('lastProjectId', id);
+    }
+  }, [location.search]);
+
+  // On mount, restore from sessionStorage
+  useEffect(() => {
+    const stored = sessionStorage.getItem('lastProjectId');
+    if (stored) setLastProjectId(stored);
+  }, []);
+
+  const navItems = [
+    { path: '/', label: 'Projects', icon: LayoutDashboard },
+    {
+      path: lastProjectId ? `/pipeline?project=${lastProjectId}` : '/pipeline',
+      label: 'Pipeline',
+      icon: Box,
+    },
+    { path: '/versions', label: 'Versions', icon: GitBranch },
+    { path: '/artifacts', label: 'Artifacts', icon: FileCode },
+  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -34,10 +55,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           <nav className="flex items-center gap-0.5">
             {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
+              const isActive = location.pathname === item.path.split('?')[0];
               return (
                 <Link
-                  key={item.path}
+                  key={item.label}
                   to={item.path}
                   className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition-colors ${
                     isActive
