@@ -25,6 +25,56 @@ function agentStatus(agentId: string, currentStage: string, overallStatus: strin
   return 'pending';
 }
 
+// ─── sessionStorage helpers ────────────────────────────────────────────────────
+
+function cacheProject(id: number, name: string) {
+  sessionStorage.setItem(`project_name_${id}`, name);
+}
+function getCachedName(id: number | null): string | null {
+  if (!id) return null;
+  return sessionStorage.getItem(`project_name_${id}`);
+}
+
+// Save real logs when a run finishes — keyed by execution ID
+function cacheExecutionLogs(execId: number, logs: { id: string; timestamp: number; message: string; type: string }[]) {
+  try {
+    sessionStorage.setItem(`logs_exec_${execId}`, JSON.stringify(logs));
+  } catch (e) {
+    // sessionStorage can be full — fail silently
+  }
+}
+// Retrieve cached real logs for a given execution ID
+function getCachedLogs(execId: number | null): { id: string; timestamp: number; message: string; type: string }[] | null {
+  if (!execId) return null;
+  const raw = sessionStorage.getItem(`logs_exec_${execId}`);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+// Cache the final agent card state so navigation back is instant
+interface CachedRunState {
+  displayStatus: 'COMPLETED' | 'FAILED';
+  currentStage: string;
+}
+function cacheRunState(projectId: number, state: CachedRunState) {
+  sessionStorage.setItem(`run_state_${projectId}`, JSON.stringify(state));
+}
+function getCachedRunState(projectId: number | null): CachedRunState | null {
+  if (!projectId) return null;
+  const raw = sessionStorage.getItem(`run_state_${projectId}`);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+// Fallback for executions that have no cached logs (e.g. before this feature was added)
 function buildRestoredLogs(execution: Execution) {
   const history: { id: string; timestamp: number; message: string; type: string }[] = [];
   const t = new Date(execution.created_at).getTime();
@@ -47,26 +97,21 @@ function buildRestoredLogs(execution: Execution) {
   return history;
 }
 
-// Cache helpers — store project name keyed by ID so nav feels instant
-function cacheProject(id: number, name: string) {
-  sessionStorage.setItem(`project_name_${id}`, name);
-}
-function getCachedName(id: number | null): string | null {
-  if (!id) return null;
-  return sessionStorage.getItem(`project_name_${id}`);
-}
-
 export default function PipelineRun() {
   const [searchParams] = useSearchParams();
   const projectId = searchParams.get('project') ? Number(searchParams.get('project')) : null;
 
-  // Seed name from cache immediately — no loading flash
+  // Seed name + run state from cache immediately — no loading flash
+  const cachedRunState = getCachedRunState(projectId);
   const [project, setProject] = useState<Project | null>(null);
   const [projectName, setProjectName] = useState<string | null>(() => getCachedName(projectId));
   const [status, setStatus] = useState<ExecutionStatus | null>(null);
-  const [statusOwned, setStatusOwned] = useState(false);
-  const [restoredStatus, setRestoredStatus] = useState<'COMPLETED' | 'FAILED' | null>(null);
+  const [statusOwned, setStatusOwned] = useState(() => cachedRunState !== null);
+  const [restoredStatus, setRestoredStatus] = useState<'COMPLETED' | 'FAILED' | null>(
+    () => cachedRunState?.displayStatus ?? null
+  );
   const [restoredLogs, setRestoredLogs] = useState<{ id: string; timestamp: number; message: string; type: string }[]>([]);
+  const [restoredStage, setRestoredStage] = useState<string>(() => cachedRunState?.currentStage ?? 'engineer');
   const [input, setInput] = useState('');
   const [promptHistory, setPromptHistory] = useState<{ role: string; content: string }[]>([]);
   const [sending, setSending] = useState(false);
@@ -75,37 +120,51 @@ export default function PipelineRun() {
   const logsEndRef = useRef<HTMLDivElement>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const seenRunningRef = useRef(false);
+  // Track the active head execution ID so we can cache/restore logs
+  const activeHeadExecIdRef = useRef<number | null>(null);
 
-  // Reset when switching projects — but seed name from cache instantly
+  // Reset when switching projects — but seed name + run state from cache instantly
   useEffect(() => {
+    const cached = getCachedRunState(projectId);
     setProject(null);
-    setProjectName(getCachedName(projectId)); // instant from cache
-    setStatusOwned(false);
+    setProjectName(getCachedName(projectId));
     setStatus(null);
-    setRestoredStatus(null);
+    setStatusOwned(cached !== null);
+    setRestoredStatus(cached?.displayStatus ?? null);
+    setRestoredStage(cached?.currentStage ?? 'engineer');
     setRestoredLogs([]);
     setStartedAt(null);
     setElapsed(0);
     setPromptHistory([]);
     seenRunningRef.current = false;
+    activeHeadExecIdRef.current = null;
   }, [projectId]);
 
-  // Load full project info
+  // Load full project info — restore real logs from sessionStorage if available
   useEffect(() => {
     if (!projectId) return;
     getProject(projectId)
       .then((p) => {
         setProject(p);
         setProjectName(p.name);
-        cacheProject(p.id, p.name); // update cache with fresh name
+        cacheProject(p.id, p.name);
         const head = p.executions?.find((e: Execution) => e.is_active_head);
         if (head?.prompt_history?.length) {
           setPromptHistory(head.prompt_history);
         }
         if (head && (head.status === 'success' || head.status === 'error')) {
-          setRestoredLogs(buildRestoredLogs(head));
+          activeHeadExecIdRef.current = head.id;
+          // Prefer real cached logs over the fake reconstructed summary
+          const cachedLogs = getCachedLogs(head.id);
+          const logsToShow = cachedLogs ?? buildRestoredLogs(head);
+          setRestoredLogs(logsToShow);
           setRestoredStatus(head.status === 'success' ? 'COMPLETED' : 'FAILED');
           setStatusOwned(true);
+          // Also update run state cache with fresh execution stage (always 'engineer' when done)
+          cacheRunState(p.id, {
+            displayStatus: head.status === 'success' ? 'COMPLETED' : 'FAILED',
+            currentStage: 'engineer',
+          });
         }
       })
       .catch(console.error);
@@ -126,6 +185,18 @@ export default function PipelineRun() {
             setRestoredLogs([]);
             setStatus(s);
           } else if (seenRunningRef.current) {
+            // Run just finished — save real logs to sessionStorage
+            if (s.execution_id) {
+              activeHeadExecIdRef.current = s.execution_id;
+              cacheExecutionLogs(s.execution_id, s.logs);
+            }
+            // Save agent card state so nav-back is instant
+            if (projectId) {
+              cacheRunState(projectId, {
+                displayStatus: s.status as 'COMPLETED' | 'FAILED',
+                currentStage: s.currentStage || 'engineer',
+              });
+            }
             setStatus(s);
             seenRunningRef.current = false;
           }
@@ -166,6 +237,7 @@ export default function PipelineRun() {
     setStatus(null);
     setRestoredStatus(null);
     setRestoredLogs([]);
+    seenRunningRef.current = false;
 
     const newHistory = [...promptHistory, { role: 'user', content: prompt }];
     setPromptHistory(newHistory);
@@ -180,6 +252,17 @@ export default function PipelineRun() {
           seenRunningRef.current = true;
           setStatus(s);
         } else if (seenRunningRef.current) {
+          // Run just finished — save real logs + run state
+          if (s.execution_id) {
+            activeHeadExecIdRef.current = s.execution_id;
+            cacheExecutionLogs(s.execution_id, s.logs);
+          }
+          if (projectId) {
+            cacheRunState(projectId, {
+              displayStatus: s.status as 'COMPLETED' | 'FAILED',
+              currentStage: s.currentStage || 'engineer',
+            });
+          }
           setStatus(s);
           seenRunningRef.current = false;
           clearInterval(pollingRef.current!);
@@ -195,15 +278,24 @@ export default function PipelineRun() {
 
   const isRunning = status?.status === 'RUNNING';
 
+  // displayStatus: live > cached poll result > restored from DB/cache
   const displayStatus = isRunning
     ? 'RUNNING'
     : status?.status === 'COMPLETED' || status?.status === 'FAILED'
     ? status.status
     : restoredStatus ?? undefined;
 
-  const currentStage = status?.currentStage || 'pm';
+  // currentStage: live stage > restored stage (from cache or DB)
+  const currentStage = isRunning
+    ? (status?.currentStage || 'pm')
+    : (!isRunning && (status?.currentStage || restoredStage)) || 'engineer';
+
   const logs = statusOwned
-    ? (isRunning || (status && !restoredStatus) ? status?.logs || [] : restoredLogs)
+    ? isRunning
+      ? status?.logs || []
+      : status && !restoredStatus
+      ? status.logs || []
+      : restoredLogs
     : [];
 
   const versionLabel = isRunning ? '...' : (project?.execution_count ?? '—');

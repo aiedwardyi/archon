@@ -137,28 +137,37 @@ Approved enterprise design (Linear/Vercel aesthetic) across 10 screens.
 - All 10 screens approved: Projects, Pipeline, Versions,
   Brief, Plan, Code, Tasks, Logs, Preview (desktop + mobile)
 
-**enterprise-ui branch:** Full frontend rebuild target
+**enterprise-ui branch:** Full frontend rebuild complete
 
 ---
 
-### Phase 7A — Iterative Pipeline & Version History (🚧 Next)
+### Phase 7A — Iterative Pipeline & Version History (✅ Completed)
 
 **Goal:** Transform Archon from single-shot generator into a true iterative
 build tool. Every prompt runs the full pipeline and creates a versioned
 snapshot — full audit trail across the entire build history.
 
 **Work Items:**
-- 7A.1 Backend: versioned execution storage + prompt history in DB
-- 7A.2 Backend: /iterate and /restore endpoints
-- 7A.3 Frontend: continuous chat panel (Lovable-style)
-- 7A.4 Frontend: version timeline (Versions page)
-- 7A.5 Frontend: version preview + restore flow
+- ✅ 7A.1 Backend: versioned execution storage + prompt history in DB
+- ✅ 7A.2 Backend: /iterate and /restore endpoints
+- ✅ 7A.3 Frontend: enterprise UI rebuild on enterprise-ui branch
+- ✅ 7A.4 Frontend: continuous chat panel + log persistence + navigation polish
 
-**Architecture:**
-- Each execution stores version number + full prompt_history array
-- Prompt history passed to PM agent for context continuation
-- Restore sets is_active_head flag; past versions remain accessible
-- Version labels: truncated prompt snippet (~35 chars) + timestamp
+**What was built:**
+- Iterative pipeline: every prompt submission runs the full PM → Planner →
+  Engineer chain and creates a new versioned execution in the DB
+- Prompt history continuation: PM agent sees all previous turns on every run
+- sessionStorage caching: project name, real logs (keyed by execution ID),
+  and agent card state all cached for instant navigation-back experience
+- Real log persistence: logs saved on run completion, restored on return —
+  no more fake reconstructed summaries
+- Agent card state restored instantly from cache — no settling/flash on nav back
+- Versions page: timeline + detail panel + restore flow
+- ArtifactViewer: Brief, Build Plan, Code tabs wired to real backend data
+
+**Known remaining items:**
+- ArtifactViewer Code tab uses mock data (real file tree wiring: Phase 7B scope)
+- Live preview iframe: Phase 7B
 
 ---
 
@@ -172,6 +181,7 @@ Essential for non-technical users who cannot evaluate raw code.
 - 7B.2 Backend: dynamic file serving route (/preview/:projectId/:version)
 - 7B.3 Frontend: iframe preview panel (desktop + mobile toggle already designed)
 - 7B.4 History integration: clicking past version loads that version in iframe
+- 7B.5 ArtifactViewer: wire Code tab to real generated file tree
 
 ---
 
@@ -214,8 +224,9 @@ Essential for non-technical users who cannot evaluate raw code.
 - ✅ Complete observability (all artifacts visible)
 - ✅ Deterministic, replayable workflows
 - ✅ Schema validation at all boundaries
-- ✅ Enterprise UI design approved (10 screens, light + dark)
-- 🚧 Iterative pipeline with version history (Phase 7A)
+- ✅ Enterprise UI live on enterprise-ui branch (10 screens, light + dark)
+- ✅ Iterative pipeline with version history (Phase 7A complete)
+- ✅ Real log persistence + instant navigation-back (sessionStorage caching)
 - 🔴 Live preview — elevated priority (Phase 7B)
 - ⬜ Client deliverables — PDF export, sharing (Phase 7C)
 

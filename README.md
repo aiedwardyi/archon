@@ -61,21 +61,38 @@ $env:OPENAI_API_KEY = "sk-proj-..."
 $env:GENAI_API_KEY = "your_gemini_key"
 ```
 
-### 3. Start the servers
+### 3. Checkout enterprise-ui branch (current active branch)
+```powershell
+git checkout enterprise-ui
+```
+
+### 4. Start the servers
 ```powershell
 # Terminal 1 — Flask backend (port 5000)
 .\venv\Scripts\Activate
 python backend/app.py
 
-# Terminal 2 — React frontend (port 3000)
+# Terminal 2 — React frontend (port 8080)
 cd frontend
 npm run dev
 ```
 
-### 4. Open the app
+### 5. Open the app
 ```
-http://localhost:3000
+http://localhost:8080
 ```
+
+---
+
+## Branches
+
+| Branch | Description |
+|--------|-------------|
+| `main` | Stable baseline (Phase 6.3 complete) |
+| `enterprise-ui` | **Active development branch** — enterprise UI + Phase 7A iterative pipeline |
+
+All active development happens on `enterprise-ui`. Do not merge to main
+until a milestone is fully tested.
 
 ---
 
@@ -88,19 +105,20 @@ ai-dev-team/
 │   └── engineer_agent.py     # Build Agent (Gemini) — generates code
 ├── backend/
 │   ├── app.py                # Flask API (port 5000)
-│   ├── models.py             # SQLAlchemy models
+│   ├── models.py             # SQLAlchemy models (versioned executions)
 │   └── database.py           # DB init and session
-├── frontend/                 # React + TypeScript + Vite (port 3000)
-│   ├── components/
-│   │   ├── ArtifactViewer.tsx
-│   │   ├── ChatPanel.tsx
-│   │   └── Sidebar.tsx
-│   ├── pages/
-│   │   ├── ProjectsPage.tsx
-│   │   ├── ProjectDetailPage.tsx
-│   │   └── VersionsPage.tsx
-│   └── services/
-│       └── orchestrator.ts
+├── frontend/                 # React + TypeScript + Vite (port 8080)
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── ArtifactViewer.tsx
+│   │   │   ├── Sidebar.tsx
+│   │   │   └── ThemeToggle.tsx
+│   │   ├── pages/
+│   │   │   ├── ProjectsPage.tsx
+│   │   │   ├── PipelineRun.tsx   # Main pipeline + chat + logs
+│   │   │   └── VersionsPage.tsx  # Version timeline + restore
+│   │   └── services/
+│   │       └── api.ts
 ├── prompts/
 │   └── engineer.txt          # Build Agent system prompt
 ├── schemas/                  # JSON schemas for artifact validation
@@ -121,14 +139,13 @@ ai-dev-team/
 | POST | `/api/projects` | Create project |
 | GET | `/api/projects/:id` | Get project + executions |
 | DELETE | `/api/projects/:id` | Delete project |
-| POST | `/api/execute-task` | Run full pipeline |
-| GET | `/api/execution-status` | Poll execution status |
+| POST | `/api/projects/:id/iterate` | Run pipeline iteration (new version) |
+| GET | `/api/projects/:id/versions` | Get full version history |
+| POST | `/api/executions/:id/restore` | Restore version as active HEAD |
+| GET | `/api/execution-status` | Poll live execution status |
 | GET | `/api/prd` | Get latest Brief artifact |
 | GET | `/api/plan` | Get latest Build Plan artifact |
 | GET | `/api/code` | Get latest execution result |
-| POST | `/api/projects/:id/iterate` | Run pipeline iteration (new version) |
-| POST | `/api/executions/:id/restore` | Restore version as active HEAD |
-| GET | `/api/projects/:id/versions` | Get full version history |
 
 ---
 
@@ -144,19 +161,19 @@ Every pipeline run produces three artifacts with full agent sequence tracking:
 
 ---
 
-## UI Screens
+## UI Screens (enterprise-ui branch)
 
 | Screen | Description |
 |--------|-------------|
 | Projects | Table of all projects with status, versions, last run |
-| Pipeline | Agent cards (Requirements → Architecture → Build) + live log |
-| Versions | Left timeline + right detail panel with prompt + artifacts |
+| Pipeline | Agent cards (Requirements → Architecture → Build) + live log + chat |
+| Versions | Left timeline + right detail panel with prompt + artifacts + restore |
 | Brief | What We're Building + Success Criteria |
 | Build Plan | Module cards with dependencies |
 | Code | VS Code-style file tree + code panel |
 | Build Tasks | Task list with T-IDs |
 | Logs | Plain English build log |
-| Preview | Live iframe with desktop/mobile toggle |
+| Preview | Live iframe with desktop/mobile toggle (Phase 7B) |
 
 ---
 
@@ -180,7 +197,7 @@ Every pipeline run produces three artifacts with full agent sequence tracking:
 | 6.2 | ✅ Complete | Polished React UI, full backend wiring |
 | 6.3 | ✅ Complete | Differentiator features, VS Code explorer, audit trail UI |
 | 6.4 | ✅ Complete | Enterprise UI design — 10 screens, light + dark mode |
-| 7A | 🚧 Next | Iterative pipeline, version history, enterprise UI rebuild |
+| 7A | ✅ Complete | Iterative pipeline, version history, log persistence, nav polish |
 | 7B | 🔴 Priority | Live iframe preview (desktop + mobile toggle) |
 | 7C | ⬜ Planned | Client deliverables — PDF export, shareable links |
 
