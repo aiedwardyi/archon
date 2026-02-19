@@ -11,6 +11,8 @@ from schemas.plan_schema import Task
 from schemas.engineering_schema import EngineeringResult, FileArtifact
 from utils.offline_engineer_scaffold import build_vite_react_ts_scaffold
 
+PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
+
 
 def _is_offline_mode() -> bool:
     return os.getenv("OFFLINE_MODE", "").strip().lower() in {"1", "true", "yes", "y", "on"}
@@ -32,14 +34,13 @@ def _build_offline_engineering_result(task_id: str) -> EngineeringResult:
 def _deduplicate_files(files: list[FileArtifact]) -> list[FileArtifact]:
     """
     Remove duplicate paths — keep the LAST occurrence (last-write wins).
-    Gemini sometimes emits the same filename multiple times (e.g., three
-    package.json files for root / frontend / backend in a monorepo).
+    Gemini sometimes emits the same filename multiple times.
     We normalise paths to forward-slash before comparing.
     """
     seen: dict[str, FileArtifact] = {}
     for f in files:
         normalised = f.path.replace("\\", "/").strip("/")
-        seen[normalised] = f  # overwrite — last wins
+        seen[normalised] = f
     return list(seen.values())
 
 
@@ -60,7 +61,7 @@ class EngineerAgent:
         if self.client is None:
             raise RuntimeError("EngineerAgent: client is None in ONLINE mode")
 
-        prompt = Path("prompts/engineer.txt").read_text(encoding="utf-8")
+        prompt = (PROMPTS_DIR / "engineer.txt").read_text(encoding="utf-8")
 
         contents = (
             f"{prompt}\n\n"
@@ -83,7 +84,6 @@ class EngineerAgent:
             },
         )
 
-        # Primary path
         if response.parsed is not None:
             result = response.parsed
             result.files = _deduplicate_files(result.files)

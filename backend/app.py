@@ -13,7 +13,7 @@ from models import Project, Execution, get_session, init_db, get_next_version
 
 app = Flask(__name__)
 
-CORS(app, origins=["http://localhost:5173", "http://localhost:3000"])
+CORS(app, origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:8080"])
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PUBLIC_DIR = REPO_ROOT / "apps" / "offline-vite-react" / "public"
@@ -81,7 +81,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
                 session.commit()
 
         # =====================================================================
-        # STEP 1: Requirements Agent → Brief
+        # STEP 1: Requirements Agent ? Brief
         # =====================================================================
         add_log("Starting pipeline...")
         add_log("Requirements Agent: Analyzing your request...")
@@ -109,7 +109,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
         print(f"PRD saved: {prd_artifact.prd.document_title}")
 
         # =====================================================================
-        # STEP 2: Architecture Agent → Build Plan
+        # STEP 2: Architecture Agent ? Build Plan
         # =====================================================================
         add_log("Architecture Agent: Planning the build...")
 
@@ -141,7 +141,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
         print(f"Plan saved: {milestone_count} milestones, {task_count} tasks")
 
         # =====================================================================
-        # STEP 3: Build Agent → Code
+        # STEP 3: Build Agent ? Code
         # =====================================================================
         add_log("Build Agent: Writing your code...")
 
@@ -207,7 +207,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
 
         print(f"Execution result saved: {len(writes)} files generated")
 
-        # Update database — mark success and store result path
+        # Update database � mark success and store result path
         if execution_id:
             execution = session.query(Execution).get(execution_id)
             if execution:
@@ -355,7 +355,7 @@ def get_versions(project_id: int):
 def iterate_project(project_id: int):
     """
     Run a new pipeline iteration for an existing project.
-    Creates a new versioned execution — nothing is overwritten.
+    Creates a new versioned execution � nothing is overwritten.
 
     Request body:
         {
@@ -397,7 +397,7 @@ def iterate_project(project_id: int):
             .first()
         )
 
-        # Deactivate the current head — the new version becomes the head
+        # Deactivate the current head � the new version becomes the head
         if current_head:
             current_head.is_active_head = False
             session.commit()
@@ -677,3 +677,4 @@ if __name__ == "__main__":
     print(f"PUBLIC_DIR: {PUBLIC_DIR}")
     print(f"CORS enabled for: http://localhost:5173, http://localhost:3000")
     app.run(debug=True, port=5000)
+
