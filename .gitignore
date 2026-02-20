@@ -22,7 +22,11 @@ ai-dev-team.db-journal
 .DS_Store
 Thumbs.db
 
-# Artifacts
+# Artifacts (legacy path)
 apps/offline-vite-react/public/generated/
 apps/offline-vite-react/public/last_*.json
 apps/offline-vite-react/public/*.ndjson
+
+# Generated output (active)
+generated/*
+!generated/.gitkeep

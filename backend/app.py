@@ -16,7 +16,7 @@ app = Flask(__name__)
 CORS(app, origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:8080"])
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-PUBLIC_DIR = REPO_ROOT / "apps" / "offline-vite-react" / "public"
+PUBLIC_DIR = REPO_ROOT / "generated"
 
 execution_state = {
     "running": False,
