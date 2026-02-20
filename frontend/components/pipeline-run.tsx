@@ -47,13 +47,31 @@ export function PipelineRun() {
   const [showAllLogs, setShowAllLogs] = useState(false)
   const logsEndRef = useRef<HTMLDivElement>(null)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
+  const executionIdRef = useRef<number | null>(null)
 
-  // Load project from sessionStorage on mount
+  // Load project + restore cached state on mount
   useEffect(() => {
     const pid = sessionStorage.getItem("archon_current_project_id")
     const pname = sessionStorage.getItem("archon_project_name")
+    const eid = sessionStorage.getItem("archon_current_execution_id")
+    const ver = sessionStorage.getItem("archon_current_version")
+    const cachedStatus = sessionStorage.getItem("archon_pipeline_status") as typeof pipelineStatus | null
+    const cachedStage = sessionStorage.getItem("archon_current_stage") as typeof currentStage | null
+
     if (pid) setProjectId(Number(pid))
     if (pname) setProjectName(pname)
+    if (ver) setVersion(Number(ver))
+
+    if (eid) {
+      executionIdRef.current = Number(eid)
+      const cachedLogs = sessionStorage.getItem(`archon_logs_${eid}`)
+      if (cachedLogs) {
+        try { setLogs(JSON.parse(cachedLogs)) } catch {}
+      }
+    }
+
+    if (cachedStatus && cachedStatus !== "idle") setPipelineStatus(cachedStatus)
+    if (cachedStage) setCurrentStage(cachedStage)
   }, [])
 
   // Auto-scroll logs
@@ -68,36 +86,51 @@ export function PipelineRun() {
     }
   }
 
+  const saveLogs = (newLogs: LogEntry[], eid: number | null) => {
+    const id = eid ?? executionIdRef.current
+    if (id) sessionStorage.setItem(`archon_logs_${id}`, JSON.stringify(newLogs))
+  }
+
   const pollStatus = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/execution-status`)
       const data = await res.json()
 
-      setLogs(data.logs || [])
+      const newLogs = data.logs || []
+      setLogs(newLogs)
+      saveLogs(newLogs, null)
 
       const stage = data.currentStage
-      if (stage === "engineer") setCurrentStage("engineer")
-      else if (stage === "planner") setCurrentStage("planner")
-      else setCurrentStage("pm")
+      if (stage === "engineer") {
+        setCurrentStage("engineer")
+        sessionStorage.setItem("archon_current_stage", "engineer")
+      } else if (stage === "planner") {
+        setCurrentStage("planner")
+        sessionStorage.setItem("archon_current_stage", "planner")
+      } else {
+        setCurrentStage("pm")
+        sessionStorage.setItem("archon_current_stage", "pm")
+      }
 
       if (data.status === "COMPLETED") {
         setPipelineStatus("complete")
+        sessionStorage.setItem("archon_pipeline_status", "complete")
         setIsRunning(false)
         stopPolling()
         if (data.execution_id) {
-          sessionStorage.setItem("archon_current_execution_id", String(data.execution_id))
+          const eid = Number(data.execution_id)
+          executionIdRef.current = eid
+          sessionStorage.setItem("archon_current_execution_id", String(eid))
+          saveLogs(newLogs, eid)
         }
         if (data.project_id) {
           sessionStorage.setItem("archon_current_project_id", String(data.project_id))
           setProjectId(data.project_id)
         }
-        // Store version for preview
-        const versionNum = version
-        if (versionNum) {
-          sessionStorage.setItem("archon_current_version", String(versionNum))
-        }
+        if (version) sessionStorage.setItem("archon_current_version", String(version))
       } else if (data.status === "FAILED") {
         setPipelineStatus("failed")
+        sessionStorage.setItem("archon_pipeline_status", "failed")
         setIsRunning(false)
         stopPolling()
       }
@@ -113,7 +146,9 @@ export function PipelineRun() {
     setInputValue("")
     setIsRunning(true)
     setPipelineStatus("running")
+    sessionStorage.setItem("archon_pipeline_status", "running")
     setCurrentStage("pm")
+    sessionStorage.setItem("archon_current_stage", "pm")
     setLogs([])
     setShowAllLogs(false)
 
@@ -132,20 +167,21 @@ export function PipelineRun() {
         setVersion(data.version)
         sessionStorage.setItem("archon_current_version", String(data.version))
       }
+      if (data.execution_id) {
+        executionIdRef.current = Number(data.execution_id)
+        sessionStorage.setItem("archon_current_execution_id", String(data.execution_id))
+      }
 
-      // Start polling
       pollRef.current = setInterval(pollStatus, 1500)
     } catch (e) {
       setPipelineStatus("failed")
+      sessionStorage.setItem("archon_pipeline_status", "failed")
       setIsRunning(false)
     }
   }
 
-  useEffect(() => {
-    return () => stopPolling()
-  }, [])
+  useEffect(() => { return () => stopPolling() }, [])
 
-  // Re-attach pollStatus when version changes
   useEffect(() => {
     if (isRunning && !pollRef.current) {
       pollRef.current = setInterval(pollStatus, 1500)
@@ -157,7 +193,6 @@ export function PipelineRun() {
     { key: "planner", name: "Architecture Agent", role: "Plans the build" },
     { key: "engineer", name: "Build Agent", role: "Writes your code" },
   ]
-
   const stageOrder = ["pm", "planner", "engineer"]
 
   const getAgentStatus = (key: string): AgentStatus => {
@@ -174,8 +209,10 @@ export function PipelineRun() {
 
   const formatTime = (ts: number) => {
     const d = new Date(ts)
-    return d.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" }) +
+    return (
+      d.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" }) +
       "." + String(d.getMilliseconds()).padStart(3, "0")
+    )
   }
 
   const statusLabel = {
@@ -187,7 +224,6 @@ export function PipelineRun() {
 
   return (
     <div className="flex-1 flex flex-col">
-      {/* Header */}
       <div className="border-b border-border bg-card px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
@@ -267,7 +303,8 @@ export function PipelineRun() {
               </p>
             )}
             {displayedLogs.map((log) => (
-              <div key={`${log.id}-${log.timestamp}`} className="flex items-start gap-3 py-1 hover:bg-muted/30 px-2 -mx-2 rounded">
+              // FIX: use log.id only — it already contains the timestamp
+              <div key={log.id} className="flex items-start gap-3 py-1 hover:bg-muted/30 px-2 -mx-2 rounded">
                 <span className="text-muted-foreground/60 shrink-0 w-28">{formatTime(log.timestamp)}</span>
                 <span className="text-foreground/70">{log.message}</span>
               </div>
@@ -305,4 +342,3 @@ export function PipelineRun() {
     </div>
   )
 }
-

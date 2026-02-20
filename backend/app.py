@@ -50,7 +50,6 @@ def write_json_file(filepath: Path, data: Dict[str, Any]) -> bool:
 
 
 def add_log(message: str, log_type: str = "info"):
-    """Add a log entry to the current execution state."""
     execution_state["logs"].append({
         "id": f"log-{int(time.time() * 1000)}",
         "timestamp": int(time.time() * 1000),
@@ -61,15 +60,52 @@ def add_log(message: str, log_type: str = "info"):
 
 
 def get_version_dir(project_id: int, version: int) -> Path:
-    """Returns the isolated output directory for a specific project version."""
     return PUBLIC_DIR / str(project_id) / f"v{version}"
 
 
+def build_file_tree(root: Path, base: Path):
+    """Recursively build a file tree structure from a directory."""
+    nodes = []
+    try:
+        items = sorted(root.iterdir(), key=lambda p: (p.is_file(), p.name.lower()))
+        for item in items:
+            if item.name.startswith("."):
+                continue
+            rel = item.relative_to(base)
+            if item.is_dir():
+                children = build_file_tree(item, base)
+                nodes.append({
+                    "name": item.name,
+                    "type": "folder",
+                    "path": str(rel).replace("\\", "/"),
+                    "children": children,
+                })
+            else:
+                nodes.append({
+                    "name": item.name,
+                    "type": "file",
+                    "path": str(rel).replace("\\", "/"),
+                })
+    except Exception:
+        pass
+    return nodes
+
+
+def get_language_from_ext(filename: str) -> str:
+    ext_map = {
+        ".ts": "typescript", ".tsx": "typescript",
+        ".js": "javascript", ".jsx": "javascript",
+        ".py": "python", ".html": "html",
+        ".css": "css", ".json": "json",
+        ".md": "markdown", ".sh": "shell",
+        ".yaml": "yaml", ".yml": "yaml",
+        ".txt": "text",
+    }
+    ext = Path(filename).suffix.lower()
+    return ext_map.get(ext, "text")
+
+
 def run_full_pipeline_async(task_description: str, prompt_history: list = None):
-    """
-    Run the full Requirements -> Architecture -> Build pipeline in a background thread.
-    prompt_history: full conversation array for context continuation across versions.
-    """
     global execution_state
 
     sys.path.insert(0, str(REPO_ROOT))
@@ -78,7 +114,6 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
     execution_id = execution_state.get("current_execution_id")
 
     try:
-        # Mark execution as running
         if execution_id:
             execution = session.query(Execution).get(execution_id)
             if execution:
@@ -92,8 +127,6 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
             if execution:
                 version = execution.version
 
-        # Determine versioned output dir for this run
-        # Falls back to PUBLIC_DIR / "shared" if we somehow lack project/version
         if project_id and version:
             version_dir = get_version_dir(project_id, version)
         else:
@@ -354,10 +387,21 @@ def get_versions(project_id: int):
             .order_by(Execution.version.desc())
             .all()
         )
+        # Enrich with files_generated count from execution result
+        versions_list = []
+        for e in executions:
+            e_dict = e.to_dict()
+            # Try to read files_generated from the result artifact
+            if project_id and e.version:
+                result_path = get_version_dir(project_id, e.version) / "last_execution_result.json"
+                result_data = read_json_file(result_path)
+                if result_data:
+                    e_dict["files_generated"] = result_data.get("outputs", {}).get("files_generated", 0)
+            versions_list.append(e_dict)
         return jsonify({
             "project_id": project_id,
             "project_name": project.name,
-            "versions": [e.to_dict() for e in executions],
+            "versions": versions_list,
         }), 200
     finally:
         session.close()
@@ -699,6 +743,44 @@ def get_prd():
 
 
 # ============================================================================
+# FILE TREE ENDPOINT (Phase 7B.5)
+# ============================================================================
+
+@app.route("/api/projects/<int:project_id>/versions/<int:version>/files", methods=["GET"])
+def get_version_files(project_id: int, version: int):
+    """
+    Returns the real file tree for a specific project version.
+    Optionally returns file content when ?path=src/index.html is provided.
+    """
+    code_dir = get_version_dir(project_id, version) / "code"
+
+    # If a specific file path is requested, return its content
+    file_path = request.args.get("path")
+    if file_path:
+        target = code_dir / file_path
+        # Security: ensure the resolved path is within code_dir
+        try:
+            target.resolve().relative_to(code_dir.resolve())
+        except ValueError:
+            return jsonify({"error": "Invalid path"}), 400
+        if not target.exists() or not target.is_file():
+            return jsonify({"error": "File not found"}), 404
+        try:
+            content = target.read_text(encoding="utf-8", errors="replace")
+            language = get_language_from_ext(target.name)
+            return jsonify({"path": file_path, "content": content, "language": language}), 200
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    # Return file tree
+    if not code_dir.exists():
+        return jsonify({"tree": [], "message": "No files generated yet"}), 200
+
+    tree = build_file_tree(code_dir, code_dir)
+    return jsonify({"tree": tree, "code_dir": str(code_dir)}), 200
+
+
+# ============================================================================
 # PREVIEW ENDPOINT (Phase 7B.2)
 # ============================================================================
 
@@ -734,18 +816,12 @@ PREVIEW_PLACEHOLDER = """<!DOCTYPE html>
 
 @app.route("/api/preview/<int:project_id>/<int:version>", methods=["GET"])
 def get_preview(project_id: int, version: int):
-    """
-    Serve the self-contained HTML output for a specific project version.
-    Looks for src/index.html inside the versioned code directory.
-    Falls back to a placeholder if no previewable file exists.
-    """
     code_dir = get_version_dir(project_id, version) / "code"
     html_file = code_dir / "src" / "index.html"
 
     if html_file.exists():
         return send_file(html_file, mimetype="text/html")
 
-    # Search for any .html file as a fallback
     if code_dir.exists():
         html_files = list(code_dir.rglob("*.html"))
         if html_files:
