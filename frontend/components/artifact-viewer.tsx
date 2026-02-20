@@ -15,11 +15,9 @@ import {
   Shield,
   CheckCircle2,
   Play,
-  Monitor,
-  Smartphone,
-  ExternalLink,
   Eye,
 } from "lucide-react"
+import { PreviewPanel } from "@/components/preview-panel"
 
 const tabs = [
   { id: "brief", label: "Brief", icon: FileText },
@@ -101,84 +99,6 @@ const codeContent = [
   "  maxDelay: 30000,",
   "  backoffMultiplier: 2,",
   "};",
-  "",
-  "export class WebhookRetryHandler {",
-  "  private config: RetryConfig;",
-  "  private deadLetterQueue: WebhookEvent[] = [];",
-  "",
-  "  constructor(config: Partial<RetryConfig> = {}) {",
-  "    this.config = { ...DEFAULT_RETRY_CONFIG, ...config };",
-  "  }",
-  "",
-  "  async processWithRetry(event: WebhookEvent): Promise<boolean> {",
-  "    let attempt = 0;",
-  "    let delay = this.config.baseDelay;",
-  "",
-  "    while (attempt < this.config.maxAttempts) {",
-  "      try {",
-  "        await this.deliver(event);",
-  "        logger.info(`Webhook delivered successfully`, {",
-  "          eventId: event.id,",
-  "          attempt: attempt + 1,",
-  "        });",
-  "        return true;",
-  "      } catch (error) {",
-  "        attempt++;",
-  "        if (attempt >= this.config.maxAttempts) {",
-  "          logger.error(`Max retry attempts reached`, {",
-  "            eventId: event.id,",
-  "            attempts: attempt,",
-  "          });",
-  "          this.deadLetterQueue.push(event);",
-  "          return false;",
-  "        }",
-  "        logger.warn(`Retry attempt ${attempt}`, {",
-  "          eventId: event.id,",
-  "          nextDelay: delay,",
-  "        });",
-  "        await this.sleep(delay);",
-  "        delay = Math.min(",
-  "          delay * this.config.backoffMultiplier,",
-  "          this.config.maxDelay",
-  "        );",
-  "      }",
-  "    }",
-  "    return false;",
-  "  }",
-  "",
-  "  private async deliver(event: WebhookEvent): Promise<void> {",
-  "    const isValid = verifySignature(",
-  "      event.payload,",
-  "      event.signature,",
-  "      event.secret",
-  "    );",
-  "    if (!isValid) {",
-  "      throw new Error('Invalid webhook signature');",
-  "    }",
-  "",
-  "    const response = await fetch(event.endpoint, {",
-  "      method: 'POST',",
-  "      headers: {",
-  "        'Content-Type': 'application/json',",
-  "        'X-Webhook-Signature': event.signature,",
-  "        'X-Webhook-Id': event.id,",
-  "      },",
-  "      body: JSON.stringify(event.payload),",
-  "    });",
-  "",
-  "    if (!response.ok) {",
-  "      throw new Error(`Delivery failed: ${response.status}`);",
-  "    }",
-  "  }",
-  "",
-  "  private sleep(ms: number): Promise<void> {",
-  "    return new Promise((resolve) => setTimeout(resolve, ms));",
-  "  }",
-  "",
-  "  getDeadLetterQueue(): WebhookEvent[] {",
-  "    return [...this.deadLetterQueue];",
-  "  }",
-  "}",
 ].join("\n")
 
 const prdContent = {
@@ -286,7 +206,7 @@ function FileTreeNode({
 
 function highlightLine(line: string): string {
   const keywords = /\b(import|from|export|class|interface|const|let|new|return|async|await|try|catch|throw|if|while|private|extends|typeof|void|number|string|boolean|true|false|null|undefined)\b/g
-  const strings = /(["'` + "`" + `])(?:(?=(\\?))\2.)*?\1/g
+  const strings = /(["'`])(?:(?=(\\?))\2.)*?\1/g
   const comments = /(\/\/.*$)/g
 
   let highlighted = line
@@ -340,46 +260,37 @@ function SyntaxHighlightedCode({ code }: { code: string }) {
   )
 }
 
-function ViewportToggle({
-  viewport,
-  onChange,
-}: {
-  viewport: "desktop" | "mobile"
-  onChange: (v: "desktop" | "mobile") => void
-}) {
-  return (
-    <div className="flex items-center bg-muted rounded-md p-0.5">
-      <button
-        onClick={() => onChange("desktop")}
-        className={`p-1.5 rounded transition-colors ${
-          viewport === "desktop"
-            ? "bg-card text-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground"
-        }`}
-        aria-label="Desktop view"
-      >
-        <Monitor className="h-3.5 w-3.5" />
-      </button>
-      <button
-        onClick={() => onChange("mobile")}
-        className={`p-1.5 rounded transition-colors ${
-          viewport === "mobile"
-            ? "bg-card text-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground"
-        }`}
-        aria-label="Mobile view"
-      >
-        <Smartphone className="h-3.5 w-3.5" />
-      </button>
-    </div>
-  )
+interface ArtifactViewerProps {
+  projectId?: number | null
+  version?: number | null
 }
 
-export function ArtifactViewer() {
+export function ArtifactViewer({ projectId: propProjectId, version: propVersion }: ArtifactViewerProps = {}) {
   const [activeTab, setActiveTab] = useState("brief")
   const [selectedFile, setSelectedFile] = useState("retry.ts")
   const [showRawJson, setShowRawJson] = useState(false)
-  const [previewViewport, setPreviewViewport] = useState<"desktop" | "mobile">("desktop")
+
+  // Read projectId and version from props or sessionStorage fallback
+  const [projectId, setProjectId] = useState<number | null>(propProjectId ?? null)
+  const [version, setVersion] = useState<number | null>(propVersion ?? null)
+
+  useEffect(() => {
+    if (propProjectId != null) {
+      setProjectId(propProjectId)
+    } else {
+      const cached = sessionStorage.getItem("archon_current_project_id")
+      if (cached) setProjectId(Number(cached))
+    }
+  }, [propProjectId])
+
+  useEffect(() => {
+    if (propVersion != null) {
+      setVersion(propVersion)
+    } else {
+      const cached = sessionStorage.getItem("archon_current_version")
+      if (cached) setVersion(Number(cached))
+    }
+  }, [propVersion])
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -402,9 +313,11 @@ export function ArtifactViewer() {
               <Shield className="h-3 w-3" />
               Verified
             </span>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-primary/30 bg-primary/10 text-primary font-mono">
-              V14
-            </span>
+            {version && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-primary/30 bg-primary/10 text-primary font-mono">
+                V{version}
+              </span>
+            )}
           </div>
           <button
             onClick={() => setShowRawJson(!showRawJson)}
@@ -542,7 +455,7 @@ export function ArtifactViewer() {
                       Architecture Overview
                     </h3>
                     <p className="text-sm text-foreground/70 leading-relaxed">
-                      The retry mechanism will be implemented as a standalone handler class within the existing webhook processing pipeline. It uses exponential backoff with configurable parameters and routes permanently failed events to a dead letter queue for manual inspection and retry.
+                      The retry mechanism will be implemented as a standalone handler class within the existing webhook processing pipeline.
                     </p>
                   </div>
                   <div>
@@ -649,91 +562,21 @@ export function ArtifactViewer() {
                 <h3 className="text-sm font-semibold text-foreground">
                   Pipeline Execution Logs
                 </h3>
-                <span className="text-xs text-muted-foreground">v14</span>
+                <span className="text-xs text-muted-foreground">
+                  {version ? `v${version}` : "—"}
+                </span>
               </div>
               <div className="p-4 font-mono text-xs space-y-0.5">
-                {[
-                  { ts: "14:23:01.234", agent: "System", msg: "Pipeline started for payment-service v14" },
-                  { ts: "14:23:01.235", agent: "System", msg: "Agent chain: Requirements > Architecture > Code" },
-                  { ts: "14:23:01.500", agent: "Req", msg: "Analyzing your request..." },
-                  { ts: "14:23:04.102", agent: "Req", msg: "Requirements document created" },
-                  { ts: "14:23:07.445", agent: "Req", msg: "Requirements verified and ready" },
-                  { ts: "14:23:08.201", agent: "Req", msg: "Handing off to Architecture Agent" },
-                  { ts: "14:23:09.012", agent: "Arch", msg: "Planning the build..." },
-                  { ts: "14:23:11.334", agent: "Arch", msg: "Created 4 build tasks" },
-                  { ts: "14:23:13.891", agent: "Arch", msg: "Resolving build dependencies..." },
-                  { ts: "14:23:15.102", agent: "Arch", msg: "Restructuring retry-handler dependencies" },
-                  { ts: "14:23:17.445", agent: "Arch", msg: "Build plan ready — 4 files" },
-                ].map((log, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start gap-3 py-1 px-2 rounded hover:bg-muted/30"
-                  >
-                    <span className="text-muted-foreground/50 w-24 shrink-0">
-                      {log.ts}
-                    </span>
-                    <span
-                      className={`w-16 shrink-0 font-medium ${
-                        log.agent === "Arch"
-                          ? "text-info"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      [{log.agent}]
-                    </span>
-                    <span className="text-foreground/70">{log.msg}</span>
-                  </div>
-                ))}
+                <p className="text-muted-foreground italic">
+                  Run a pipeline to see real logs here.
+                </p>
               </div>
             </div>
           </div>
         )}
 
         {activeTab === "preview" && (
-          <div className="flex-1 overflow-auto flex flex-col">
-            <div className="flex items-center justify-between px-6 py-3 border-b border-border bg-card">
-              <div className="flex-1" />
-              <ViewportToggle
-                viewport={previewViewport}
-                onChange={setPreviewViewport}
-              />
-              <div className="flex-1 flex justify-end">
-                <button
-                  className="p-1.5 rounded border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                  aria-label="Open in new tab"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </div>
-            <div className="flex-1 flex items-center justify-center bg-muted/30 p-6">
-              {previewViewport === "mobile" ? (
-                <div className="relative w-[290px]">
-                  <div className="rounded-[2.5rem] border-[3px] border-foreground/20 bg-card p-2 shadow-lg">
-                    <div className="flex justify-center mb-2">
-                      <div className="w-20 h-5 bg-foreground/20 rounded-full" />
-                    </div>
-                    <div className="rounded-[2rem] overflow-hidden bg-muted/50 min-h-[520px] flex items-center justify-center border border-border">
-                      <p className="text-xs text-muted-foreground text-center px-4">
-                        Live preview will appear here when your build is complete
-                      </p>
-                    </div>
-                    <div className="flex justify-center mt-2">
-                      <div className="w-28 h-1 bg-foreground/15 rounded-full" />
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="w-full h-full min-h-[400px]">
-                  <div className="border-2 border-dashed border-border rounded-lg flex items-center justify-center h-full min-h-[400px]">
-                    <p className="text-sm text-muted-foreground">
-                      Live preview will appear here when your build is complete
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          <PreviewPanel projectId={projectId} version={version} />
         )}
       </div>
     </div>
