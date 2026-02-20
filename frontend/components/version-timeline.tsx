@@ -41,9 +41,9 @@ function parseVersions(raw: any[]): Version[] {
 
     const promptRaw = (() => {
       try {
-        const hist = JSON.parse(e.prompt_history || "[]")
+        const hist = Array.isArray(e.prompt_history) ? e.prompt_history : JSON.parse(e.prompt_history || "[]")
         const last = hist.filter((h: any) => h.role === "user").pop()
-        return last?.content || "Build project"
+        return last?.content || "No prompt"
       } catch {
         return "Build project"
       }

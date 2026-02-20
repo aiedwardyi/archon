@@ -1,4 +1,4 @@
-﻿from flask import Flask, request, jsonify, send_file, Response
+from flask import Flask, request, jsonify, send_file, Response
 from flask_cors import CORS
 import json
 import os
@@ -49,10 +49,15 @@ def write_json_file(filepath: Path, data: Dict[str, Any]) -> bool:
         return False
 
 
+_log_counter = 0
+
 def add_log(message: str, log_type: str = "info"):
+    global _log_counter
+    _log_counter += 1
+    ts = int(time.time() * 1000)
     execution_state["logs"].append({
-        "id": f"log-{int(time.time() * 1000)}",
-        "timestamp": int(time.time() * 1000),
+        "id": f"log-{ts}-{_log_counter}",
+        "timestamp": ts,
         "message": message,
         "type": log_type,
     })
@@ -196,21 +201,29 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
         # =====================================================================
         add_log("Build Agent: Writing your code...")
 
+        # Prefer scaffold tasks mentioning UI/frontend for the actual app build
         engineer_task = None
+        fallback_task = None
+        ui_keywords = ["html", "ui", "frontend", "scaffold", "interface", "web", "page", "app", "component"]
         for milestone in plan.milestones:
             for task in milestone.tasks:
-                if task.execution_hint == "engineer":
-                    engineer_task = task
-                    break
+                if task.execution_hint == "engineer" and task.task_type == "scaffold":
+                    desc_lower = task.description.lower()
+                    if any(kw in desc_lower for kw in ui_keywords):
+                        engineer_task = task
+                        break
+                    elif fallback_task is None:
+                        fallback_task = task
             if engineer_task:
                 break
-
+        if not engineer_task:
+            engineer_task = fallback_task
         if not engineer_task:
             raise ValueError("No engineer tasks found in plan")
 
         from agents.engineer_agent import EngineerAgent
         engineer = EngineerAgent(genai_client)
-        result = engineer.run(engineer_task)
+        result = engineer.run(engineer_task, user_prompt=task_description)
 
         from scripts.safe_write import safe_write_text
         allow_dir = version_dir / "code"
@@ -842,3 +855,7 @@ if __name__ == "__main__":
     print(f"PUBLIC_DIR: {PUBLIC_DIR}")
     print(f"CORS enabled for: http://localhost:5173, http://localhost:3000")
     app.run(debug=True, port=5000)
+
+
+
+

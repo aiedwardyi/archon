@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 import os
@@ -32,11 +32,6 @@ def _build_offline_engineering_result(task_id: str) -> EngineeringResult:
 
 
 def _deduplicate_files(files: list[FileArtifact]) -> list[FileArtifact]:
-    """
-    Remove duplicate paths — keep the LAST occurrence (last-write wins).
-    Gemini sometimes emits the same filename multiple times.
-    We normalise paths to forward-slash before comparing.
-    """
     seen: dict[str, FileArtifact] = {}
     for f in files:
         normalised = f.path.replace("\\", "/").strip("/")
@@ -45,21 +40,10 @@ def _deduplicate_files(files: list[FileArtifact]) -> list[FileArtifact]:
 
 
 def _repair_json(raw: str) -> dict:
-    """
-    Attempt to repair and parse JSON that Gemini returned outside the
-    structured-output path. Handles common Gemini failure modes:
-      - Wrapped in ```json ... ``` fences
-      - Stray backslash-whitespace sequences (e.g. \<newline> or \  before a key)
-      - Multiple top-level objects concatenated
-    """
     text = raw.strip()
-
-    # Strip markdown fences
     text = re.sub(r"^```json\s*", "", text, flags=re.IGNORECASE)
     text = re.sub(r"^```\s*", "", text)
     text = re.sub(r"\s*```$", "", text)
-
-    # Find outermost JSON object
     start = text.find("{")
     end = text.rfind("}")
     if start == -1 or end == -1 or end <= start:
@@ -67,18 +51,9 @@ def _repair_json(raw: str) -> dict:
             "EngineerAgent: no JSON object found in model output.\n\n"
             f"Raw output:\n{raw}"
         )
-
     candidate = text[start : end + 1]
-
-    # Fix concatenated objects: }{ -> },{ 
     candidate = re.sub(r"}\s*\n\s*{", "},\n{", candidate)
-
-    # Fix stray backslashes before whitespace or quotes that Gemini sometimes emits.
-    # e.g.  "ISC",\  "dependencies"  ->  "ISC", "dependencies"
-    # This removes backslashes that are NOT valid JSON escape sequences.
-    # Valid JSON escapes: \", \\, \/, \b, \f, \n, \r, \t, \uXXXX
     candidate = re.sub(r'\\(?!["\\/bfnrtu])', "", candidate)
-
     try:
         return json.loads(candidate)
     except json.JSONDecodeError as e:
@@ -93,7 +68,7 @@ class EngineerAgent:
     def __init__(self, client: genai.Client | None):
         self.client = client
 
-    def run(self, task: Task) -> EngineeringResult:
+    def run(self, task: Task, user_prompt: str = None) -> EngineeringResult:
         if task.execution_hint != "engineer":
             raise ValueError("EngineerAgent called with non-executable task")
 
@@ -108,8 +83,17 @@ class EngineerAgent:
 
         prompt = (PROMPTS_DIR / "engineer.txt").read_text(encoding="utf-8")
 
+        user_context = ""
+        if user_prompt:
+            user_context = (
+                f"--- USER REQUEST (what to build) ---\n"
+                f"{user_prompt}\n"
+                f"--- END USER REQUEST ---\n\n"
+            )
+
         contents = (
             f"{prompt}\n\n"
+            f"{user_context}"
             f"--- TASK START ---\n"
             f"id: {task.id}\n"
             f"description: {task.description}\n"
@@ -129,13 +113,11 @@ class EngineerAgent:
             },
         )
 
-        # Primary path: structured output parsed cleanly
         if response.parsed is not None:
             result = response.parsed
             result.files = _deduplicate_files(result.files)
             return result
 
-        # Fallback: attempt JSON repair on raw text
         raw = getattr(response, "text", "") or ""
         data = _repair_json(raw)
         result = EngineeringResult.model_validate(data)
