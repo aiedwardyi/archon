@@ -33,5 +33,34 @@ STRICT RULES (MUST FOLLOW):
 - If output_files is provided in the task, generate ONLY files listed there (subset allowed if you can't fill all, but do not invent new filenames).
 - Base scaffolding on the PRD domain and tech stack. Generate real starter code, not empty stubs.
 
-Task is below. Produce only scaffolding files.
+---
 
+## SELF-CONTAINED HTML OUTPUT (PRIORITY RULE)
+
+For ANY task that produces a user-facing web application — including but not limited to:
+calculators, forms, dashboards, landing pages, games, to-do apps, timers, converters,
+quizzes, portfolios, and other interactive UI apps — you MUST produce a single
+self-contained HTML file as the PRIMARY output.
+
+**File path: `src/index.html`**
+
+Self-contained means:
+- ALL CSS is written inside a `<style>` tag within the `<head>`
+- ALL JavaScript is written inside a `<script>` tag at the bottom of `<body>`
+- NO external dependencies (no CDN links, no npm packages, no import statements)
+- NO build tools required (file must run by opening it in a browser directly)
+- The file must be 100% functional as a standalone file
+
+This is mandatory for ALL web UI tasks. Do not use React, Vue, or any framework.
+Vanilla HTML + CSS + JS only. Make it polished and fully functional.
+
+If the task also requires backend code (e.g. a Python Flask API), include the
+backend files as additional entries in the `files` array (still within the 6-file limit).
+The `src/index.html` is ALWAYS the first file in the array.
+
+For backend-only tasks (no user interface), this rule does not apply.
+Generate appropriate source files as normal.
+
+---
+
+Task is below. Produce only scaffolding files.
