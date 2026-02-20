@@ -1,6 +1,7 @@
-"use client"
+﻿"use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import {
   Plus,
   Search,
@@ -10,124 +11,115 @@ import {
   Clock,
   ChevronDown,
   Download,
+  Loader2,
 } from "lucide-react"
 import { StatusBadge } from "@/components/status-badge"
 
+const API_BASE = "http://localhost:5000"
+
 type Project = {
-  id: string
+  id: number
   name: string
   description: string
-  status: "running" | "completed" | "failed" | "pending"
-  lastRun: string
-  versions: number
-  created: string
-  branch: string
+  status: "running" | "completed" | "failed" | "pending" | "in_progress"
+  created_at: string
+  updated_at: string
+  execution_count: number
 }
 
-const projects: Project[] = [
-  {
-    id: "proj_001",
-    name: "payment-service",
-    description: "Stripe integration microservice with webhook handling",
-    status: "running",
-    lastRun: "2 min ago",
-    versions: 14,
-    created: "Jan 12, 2026",
-    branch: "main",
-  },
-  {
-    id: "proj_002",
-    name: "auth-gateway",
-    description: "OAuth2 authentication gateway with RBAC",
-    status: "completed",
-    lastRun: "1 hr ago",
-    versions: 23,
-    created: "Dec 03, 2025",
-    branch: "main",
-  },
-  {
-    id: "proj_003",
-    name: "notification-engine",
-    description: "Multi-channel notification dispatch system",
-    status: "failed",
-    lastRun: "34 min ago",
-    versions: 8,
-    created: "Feb 01, 2026",
-    branch: "develop",
-  },
-  {
-    id: "proj_004",
-    name: "data-pipeline-etl",
-    description: "ETL pipeline for analytics data warehouse ingestion",
-    status: "completed",
-    lastRun: "3 hr ago",
-    versions: 31,
-    created: "Nov 18, 2025",
-    branch: "main",
-  },
-  {
-    id: "proj_005",
-    name: "inventory-api",
-    description: "REST API for warehouse inventory management",
-    status: "pending",
-    lastRun: "Never",
-    versions: 1,
-    created: "Feb 18, 2026",
-    branch: "feature/init",
-  },
-  {
-    id: "proj_006",
-    name: "ml-scoring-service",
-    description: "Real-time ML model scoring endpoint with A/B testing",
-    status: "completed",
-    lastRun: "6 hr ago",
-    versions: 19,
-    created: "Oct 22, 2025",
-    branch: "main",
-  },
-  {
-    id: "proj_007",
-    name: "email-renderer",
-    description: "Template-based email rendering with MJML support",
-    status: "running",
-    lastRun: "Just now",
-    versions: 5,
-    created: "Feb 14, 2026",
-    branch: "develop",
-  },
-  {
-    id: "proj_008",
-    name: "config-service",
-    description: "Centralized configuration management with versioning",
-    status: "completed",
-    lastRun: "12 hr ago",
-    versions: 42,
-    created: "Sep 05, 2025",
-    branch: "main",
-  },
-]
-
 export function ProjectDashboard() {
+  const router = useRouter()
+  const [projects, setProjects] = useState<Project[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [creating, setCreating] = useState(false)
+  const [newProjectName, setNewProjectName] = useState("")
+  const [showNewProjectInput, setShowNewProjectInput] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchProjects = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/projects`)
+      const data = await res.json()
+      setProjects(data)
+    } catch (e) {
+      setError("Could not connect to backend")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchProjects()
+  }, [])
+
+  const handleCreateProject = async () => {
+    if (!newProjectName.trim()) return
+    setCreating(true)
+    try {
+      const res = await fetch(`${API_BASE}/api/projects`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newProjectName.trim() }),
+      })
+      const project = await res.json()
+      setProjects((prev) => [project, ...prev])
+      setNewProjectName("")
+      setShowNewProjectInput(false)
+      // Navigate to pipeline for the new project
+      sessionStorage.setItem("archon_current_project_id", String(project.id))
+      sessionStorage.setItem("archon_project_name", project.name)
+      router.push("/pipeline")
+    } catch (e) {
+      setError("Failed to create project")
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  const handleProjectClick = (project: Project) => {
+    sessionStorage.setItem("archon_current_project_id", String(project.id))
+    sessionStorage.setItem("archon_project_name", project.name)
+    router.push("/pipeline")
+  }
 
   const filtered = projects.filter((p) => {
     const matchesSearch =
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.description.toLowerCase().includes(searchQuery.toLowerCase())
+      (p.description || "").toLowerCase().includes(searchQuery.toLowerCase())
     const matchesStatus = statusFilter === "all" || p.status === statusFilter
     return matchesSearch && matchesStatus
   })
 
   const stats = {
     total: projects.length,
-    running: projects.filter((p) => p.status === "running").length,
+    running: projects.filter((p) => p.status === "running" || p.status === "in_progress").length,
     completed: projects.filter((p) => p.status === "completed").length,
     failed: projects.filter((p) => p.status === "failed").length,
   }
 
+  const formatDate = (iso: string) => {
+    if (!iso) return "—"
+    return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+  }
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
   return (
     <div className="flex-1 p-6">
+      {error && (
+        <div className="mb-4 px-4 py-3 rounded-lg border border-destructive/30 bg-destructive/10 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
       {/* Stats bar */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         {[
@@ -136,10 +128,7 @@ export function ProjectDashboard() {
           { label: "Completed", value: stats.completed, color: "text-success" },
           { label: "Failed", value: stats.failed, color: "text-destructive" },
         ].map((stat) => (
-          <div
-            key={stat.label}
-            className="bg-card border border-border rounded-lg p-4"
-          >
+          <div key={stat.label} className="bg-card border border-border rounded-lg p-4">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
               {stat.label}
             </p>
@@ -178,10 +167,30 @@ export function ProjectDashboard() {
             <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           </div>
         </div>
-        <button className="h-9 flex items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
-          <Plus className="h-4 w-4" />
-          New Project
-        </button>
+        <div className="flex items-center gap-2">
+          {showNewProjectInput && (
+            <input
+              autoFocus
+              type="text"
+              placeholder="Project name..."
+              value={newProjectName}
+              onChange={(e) => setNewProjectName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleCreateProject()
+                if (e.key === "Escape") setShowNewProjectInput(false)
+              }}
+              className="h-9 w-52 rounded-md border border-input bg-card px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          )}
+          <button
+            onClick={() => showNewProjectInput ? handleCreateProject() : setShowNewProjectInput(true)}
+            disabled={creating}
+            className="h-9 flex items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-60"
+          >
+            {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            {showNewProjectInput ? "Create" : "New Project"}
+          </button>
+        </div>
       </div>
 
       {/* Table */}
@@ -189,32 +198,24 @@ export function ProjectDashboard() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-border">
-              {["Project", "Status", "Last Run", "Versions", "Created", ""].map(
-                (header) => (
-                  <th
-                    key={header}
-                    className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider"
-                  >
-                    {header && (
-                      <span className="flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors">
-                        {header}
-                        {header !== "" && (
-                          <ArrowUpDown className="h-3 w-3" />
-                        )}
-                      </span>
-                    )}
-                  </th>
-                )
-              )}
+              {["Project", "Status", "Last Run", "Versions", "Created", ""].map((header) => (
+                <th key={header} className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  {header && (
+                    <span className="flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors">
+                      {header}
+                      {header !== "" && <ArrowUpDown className="h-3 w-3" />}
+                    </span>
+                  )}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map((project, i) => (
               <tr
                 key={project.id}
-                className={`border-b border-border last:border-b-0 hover:bg-muted/50 transition-colors cursor-pointer group ${
-                  i % 2 === 0 ? "" : "bg-muted/20"
-                }`}
+                onClick={() => handleProjectClick(project)}
+                className={`border-b border-border last:border-b-0 hover:bg-muted/50 transition-colors cursor-pointer group ${i % 2 === 0 ? "" : "bg-muted/20"}`}
               >
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
@@ -222,32 +223,30 @@ export function ProjectDashboard() {
                       <Folder className="h-4 w-4 text-accent-foreground" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-foreground font-mono">
-                        {project.name}
-                      </p>
+                      <p className="text-sm font-medium text-foreground font-mono">{project.name}</p>
                       <p className="text-xs text-muted-foreground mt-0.5 max-w-xs truncate">
-                        {project.description}
+                        {project.description || "No description"}
                       </p>
                     </div>
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <StatusBadge status={project.status} />
+                  <StatusBadge status={project.status === "in_progress" ? "running" : project.status} />
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                     <Clock className="h-3.5 w-3.5" />
-                    {project.lastRun}
+                    {formatDate(project.updated_at)}
                   </div>
                 </td>
                 <td className="px-4 py-3">
                   <span className="text-sm text-foreground font-mono">
-                    v{project.versions}
+                    v{project.execution_count || 1}
                   </span>
                 </td>
                 <td className="px-4 py-3">
                   <span className="text-sm text-muted-foreground">
-                    {project.created}
+                    {formatDate(project.created_at)}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right">
@@ -255,10 +254,15 @@ export function ProjectDashboard() {
                     <button
                       className="p-1 rounded hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
                       aria-label="Download report"
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <Download className="h-4 w-4 text-muted-foreground" />
                     </button>
-                    <button className="p-1 rounded hover:bg-muted transition-colors" aria-label="More options">
+                    <button
+                      className="p-1 rounded hover:bg-muted transition-colors"
+                      aria-label="More options"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                     </button>
                   </div>
@@ -270,7 +274,7 @@ export function ProjectDashboard() {
         {filtered.length === 0 && (
           <div className="p-12 text-center">
             <p className="text-sm text-muted-foreground">
-              No projects match your search criteria.
+              {projects.length === 0 ? "No projects yet. Create your first project above." : "No projects match your search."}
             </p>
           </div>
         )}
