@@ -1,4 +1,4 @@
-﻿from flask import Flask, request, jsonify
+﻿from flask import Flask, request, jsonify, send_file, Response
 from flask_cors import CORS
 import json
 import os
@@ -60,6 +60,11 @@ def add_log(message: str, log_type: str = "info"):
     print(f"[LOG] {message}")
 
 
+def get_version_dir(project_id: int, version: int) -> Path:
+    """Returns the isolated output directory for a specific project version."""
+    return PUBLIC_DIR / str(project_id) / f"v{version}"
+
+
 def run_full_pipeline_async(task_description: str, prompt_history: list = None):
     """
     Run the full Requirements -> Architecture -> Build pipeline in a background thread.
@@ -79,6 +84,21 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
             if execution:
                 execution.status = "running"
                 session.commit()
+
+        project_id = execution_state.get("current_project_id")
+        version = None
+        if execution_id:
+            execution = session.query(Execution).get(execution_id)
+            if execution:
+                version = execution.version
+
+        # Determine versioned output dir for this run
+        # Falls back to PUBLIC_DIR / "shared" if we somehow lack project/version
+        if project_id and version:
+            version_dir = get_version_dir(project_id, version)
+        else:
+            version_dir = PUBLIC_DIR / "shared"
+        version_dir.mkdir(parents=True, exist_ok=True)
 
         # =====================================================================
         # STEP 1: Requirements Agent -> Brief
@@ -101,7 +121,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
 
         prd_dict = prd_artifact.model_dump()
         prd_dict["_agent_sequence"] = ["pm"]
-        write_json_file(PUBLIC_DIR / "last_prd.json", prd_dict)
+        write_json_file(version_dir / "last_prd.json", prd_dict)
 
         add_log("Requirements Agent: Brief created.")
         print(f"PRD saved: {prd_artifact.prd.document_title}")
@@ -120,7 +140,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
 
         genai_client = genai.Client(api_key=genai_key)
         planner = PlannerAgent(genai_client)
-        plan = planner.run_from_prd_artifact(PUBLIC_DIR / "last_prd.json")
+        plan = planner.run_from_prd_artifact(version_dir / "last_prd.json")
 
         plan_dict = {
             "kind": "plan_artifact",
@@ -130,8 +150,8 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
             "_agent_sequence": ["pm", "planner"],
         }
         flat_plan = plan.model_dump()
-        write_json_file(PUBLIC_DIR / "last_plan.json", flat_plan)
-        write_json_file(PUBLIC_DIR / "last_plan_artifact.json", plan_dict)
+        write_json_file(version_dir / "last_plan.json", flat_plan)
+        write_json_file(version_dir / "last_plan_artifact.json", plan_dict)
 
         add_log("Architecture Agent: Build plan ready.")
         milestone_count = len(plan.milestones)
@@ -160,7 +180,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
         result = engineer.run(engineer_task)
 
         from scripts.safe_write import safe_write_text
-        allow_dir = PUBLIC_DIR / "generated"
+        allow_dir = version_dir / "code"
         writes = []
         for file_artifact in result.files:
             rec = safe_write_text(
@@ -201,7 +221,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
                 "consumer_version": "v4",
             },
         }
-        write_json_file(PUBLIC_DIR / "last_execution_result.json", execution_result)
+        write_json_file(version_dir / "last_execution_result.json", execution_result)
 
         print(f"Execution result saved: {len(writes)} files generated")
 
@@ -209,9 +229,9 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
             execution = session.query(Execution).get(execution_id)
             if execution:
                 execution.status = "success"
-                execution.result_path = "last_execution_result.json"
-                execution.prd_path = "last_prd.json"
-                execution.plan_path = "last_plan.json"
+                execution.result_path = str(version_dir / "last_execution_result.json")
+                execution.prd_path = str(version_dir / "last_prd.json")
+                execution.plan_path = str(version_dir / "last_plan.json")
                 session.commit()
                 project = execution.project
                 if project:
@@ -239,18 +259,17 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
             except Exception:
                 pass
 
-        write_json_file(PUBLIC_DIR / "last_execution_result.json", {
-            "kind": "execution_result",
-            "agent_role": "engineer",
-            "status": "error",
-            "error": {"message": error_msg, "type": type(e).__name__},
-            "outputs": {},
-            "_agent_sequence": [],
-        })
+        if project_id and version:
+            write_json_file(get_version_dir(project_id, version) / "last_execution_result.json", {
+                "kind": "execution_result",
+                "agent_role": "engineer",
+                "status": "error",
+                "error": {"message": error_msg, "type": type(e).__name__},
+                "outputs": {},
+                "_agent_sequence": [],
+            })
 
     finally:
-        # Keep current_execution_id so /execution-status can return it
-        # on the COMPLETED/FAILED response. Only clear running flag.
         execution_state["running"] = False
         session.close()
         print("Pipeline complete")
@@ -395,11 +414,6 @@ def iterate_project(project_id: int):
         session.commit()
         session.refresh(execution)
 
-        # Clear previous result file so status endpoint knows we're running fresh
-        result_file = PUBLIC_DIR / "last_execution_result.json"
-        if result_file.exists():
-            result_file.unlink()
-
         execution_state["running"] = True
         execution_state["started_at"] = time.time()
         execution_state["current_project_id"] = project_id
@@ -513,10 +527,6 @@ def execute_task():
         session.commit()
         session.refresh(execution)
 
-        result_file = PUBLIC_DIR / "last_execution_result.json"
-        if result_file.exists():
-            result_file.unlink()
-
         execution_state["running"] = True
         execution_state["started_at"] = time.time()
         execution_state["current_project_id"] = project_id
@@ -548,8 +558,24 @@ def execute_task():
 
 @app.route("/api/execution-status", methods=["GET"])
 def execution_status():
-    result_file = PUBLIC_DIR / "last_execution_result.json"
-    data = read_json_file(result_file)
+    project_id = execution_state.get("current_project_id")
+    version = None
+    execution_id = execution_state.get("current_execution_id")
+
+    if execution_id:
+        session = get_session()
+        try:
+            execution = session.query(Execution).get(execution_id)
+            if execution:
+                version = execution.version
+        finally:
+            session.close()
+
+    result_file = None
+    if project_id and version:
+        result_file = get_version_dir(project_id, version) / "last_execution_result.json"
+
+    data = read_json_file(result_file) if result_file else None
 
     STATUS_MAP = {
         "success": "COMPLETED", "error": "FAILED",
@@ -568,7 +594,6 @@ def execution_status():
             current_stage = "planner"
             break
 
-    # Run is complete — result file exists
     if data is not None:
         raw_status = str(data.get("status", "success")).lower()
         frontend_status = STATUS_MAP.get(raw_status, "COMPLETED")
@@ -577,57 +602,156 @@ def execution_status():
             "currentStage": "engineer",
             "logs": logs,
             "engineerTasks": [],
-            "project_id": execution_state.get("current_project_id"),
-            "execution_id": execution_state.get("current_execution_id"),
+            "project_id": project_id,
+            "execution_id": execution_id,
         }), 200
 
-    # Still running
     if execution_state["running"]:
         return jsonify({
             "status": "RUNNING",
             "currentStage": current_stage,
             "logs": logs,
             "engineerTasks": [],
-            "project_id": execution_state.get("current_project_id"),
-            "execution_id": execution_state.get("current_execution_id"),
+            "project_id": project_id,
+            "execution_id": execution_id,
         }), 200
 
-    # Nothing running, no result file
     return jsonify({
         "status": "FAILED",
         "currentStage": "complete",
         "logs": logs,
         "engineerTasks": [],
-        "project_id": execution_state.get("current_project_id"),
-        "execution_id": execution_state.get("current_execution_id"),
+        "project_id": project_id,
+        "execution_id": execution_id,
     }), 200
 
 
 @app.route("/api/code", methods=["GET"])
 def get_code():
-    result_file = PUBLIC_DIR / "last_execution_result.json"
-    data = read_json_file(result_file)
-    if data is None:
-        return jsonify({"error": "No execution result available"}), 404
-    return jsonify(data), 200
+    project_id = execution_state.get("current_project_id")
+    execution_id = execution_state.get("current_execution_id")
+    version = None
+
+    if execution_id:
+        session = get_session()
+        try:
+            execution = session.query(Execution).get(execution_id)
+            if execution:
+                version = execution.version
+        finally:
+            session.close()
+
+    if project_id and version:
+        result_file = get_version_dir(project_id, version) / "last_execution_result.json"
+        data = read_json_file(result_file)
+        if data:
+            return jsonify(data), 200
+
+    return jsonify({"error": "No execution result available"}), 404
 
 
 @app.route("/api/plan", methods=["GET"])
 def get_plan():
-    plan_file = PUBLIC_DIR / "last_plan.json"
-    data = read_json_file(plan_file)
-    if data is None:
-        return jsonify({"error": "Plan not found"}), 404
-    return jsonify(data), 200
+    project_id = execution_state.get("current_project_id")
+    execution_id = execution_state.get("current_execution_id")
+    version = None
+
+    if execution_id:
+        session = get_session()
+        try:
+            execution = session.query(Execution).get(execution_id)
+            if execution:
+                version = execution.version
+        finally:
+            session.close()
+
+    if project_id and version:
+        plan_file = get_version_dir(project_id, version) / "last_plan.json"
+        data = read_json_file(plan_file)
+        if data:
+            return jsonify(data), 200
+
+    return jsonify({"error": "Plan not found"}), 404
 
 
 @app.route("/api/prd", methods=["GET"])
 def get_prd():
-    prd_file = PUBLIC_DIR / "last_prd.json"
-    data = read_json_file(prd_file)
-    if data is None:
-        return jsonify({"error": "PRD not found"}), 404
-    return jsonify(data), 200
+    project_id = execution_state.get("current_project_id")
+    execution_id = execution_state.get("current_execution_id")
+    version = None
+
+    if execution_id:
+        session = get_session()
+        try:
+            execution = session.query(Execution).get(execution_id)
+            if execution:
+                version = execution.version
+        finally:
+            session.close()
+
+    if project_id and version:
+        prd_file = get_version_dir(project_id, version) / "last_prd.json"
+        data = read_json_file(prd_file)
+        if data:
+            return jsonify(data), 200
+
+    return jsonify({"error": "PRD not found"}), 404
+
+
+# ============================================================================
+# PREVIEW ENDPOINT (Phase 7B.2)
+# ============================================================================
+
+PREVIEW_PLACEHOLDER = """<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preview</title>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #f5f5f5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #999;
+    }
+    .msg { text-align: center; }
+    .msg p { margin: 8px 0; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="msg">
+    <p>Live preview will appear here</p>
+    <p>when your build is complete</p>
+  </div>
+</body>
+</html>"""
+
+
+@app.route("/api/preview/<int:project_id>/<int:version>", methods=["GET"])
+def get_preview(project_id: int, version: int):
+    """
+    Serve the self-contained HTML output for a specific project version.
+    Looks for src/index.html inside the versioned code directory.
+    Falls back to a placeholder if no previewable file exists.
+    """
+    code_dir = get_version_dir(project_id, version) / "code"
+    html_file = code_dir / "src" / "index.html"
+
+    if html_file.exists():
+        return send_file(html_file, mimetype="text/html")
+
+    # Search for any .html file as a fallback
+    if code_dir.exists():
+        html_files = list(code_dir.rglob("*.html"))
+        if html_files:
+            return send_file(html_files[0], mimetype="text/html")
+
+    return Response(PREVIEW_PLACEHOLDER, mimetype="text/html", status=200)
 
 
 @app.route("/api/health", methods=["GET"])
