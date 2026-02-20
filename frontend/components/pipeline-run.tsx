@@ -267,7 +267,7 @@ export function PipelineRun() {
               </p>
             )}
             {displayedLogs.map((log) => (
-              <div key={log.id} className="flex items-start gap-3 py-1 hover:bg-muted/30 px-2 -mx-2 rounded">
+              <div key={`${log.id}-${log.timestamp}`} className="flex items-start gap-3 py-1 hover:bg-muted/30 px-2 -mx-2 rounded">
                 <span className="text-muted-foreground/60 shrink-0 w-28">{formatTime(log.timestamp)}</span>
                 <span className="text-foreground/70">{log.message}</span>
               </div>
@@ -305,3 +305,4 @@ export function PipelineRun() {
     </div>
   )
 }
+
