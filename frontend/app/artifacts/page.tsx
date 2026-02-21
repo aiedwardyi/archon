@@ -12,14 +12,9 @@ export default function ArtifactsPage() {
 
   useEffect(() => {
     const pid = sessionStorage.getItem("archon_current_project_id")
-    const ver = sessionStorage.getItem("archon_current_version")
 
-    if (pid && ver) {
-      setProjectId(Number(pid))
-      setVersion(Number(ver))
-      setReady(true)
-    } else if (pid) {
-      // Have project but no version — fetch active head
+    if (pid) {
+      // Always fetch head from DB — never trust cached version for Artifacts
       fetch(`${API_BASE}/api/projects/${pid}/head`)
         .then(r => r.json())
         .then(data => {
@@ -50,3 +45,4 @@ export default function ArtifactsPage() {
 
   return <ArtifactViewer projectId={projectId} version={version} />
 }
+

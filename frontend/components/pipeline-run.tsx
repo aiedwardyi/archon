@@ -1,6 +1,7 @@
 ﻿"use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
+import { useSearchParams } from "next/navigation"
 import {
   CheckCircle2,
   Circle,
@@ -49,19 +50,41 @@ export function PipelineRun() {
   const pollRef = useRef<NodeJS.Timeout | null>(null)
   const executionIdRef = useRef<number | null>(null)
 
-  // Load project + restore cached state on mount
+  const searchParams = useSearchParams()
+
+  // Load project — URL ?pid= takes priority over sessionStorage
+  // Re-runs whenever the URL pid changes (i.e. user switches projects)
   useEffect(() => {
-    const pid = sessionStorage.getItem("archon_current_project_id")
+    const urlPid = searchParams.get("pid")
+    const storedPid = sessionStorage.getItem("archon_current_project_id")
+    const pid = urlPid || storedPid
     const pname = sessionStorage.getItem("archon_project_name")
-    const eid = sessionStorage.getItem("archon_current_execution_id")
+
+    if (!pid) return
+
+    // If URL pid differs from stored pid, clear stale state
+    if (urlPid && urlPid !== storedPid) {
+      sessionStorage.setItem("archon_current_project_id", urlPid)
+      setProjectId(Number(urlPid))
+      setProjectName(pname || "my-project")
+      setVersion(null)
+      setLogs([])
+      setPipelineStatus("idle")
+      setCurrentStage("pm")
+      executionIdRef.current = null
+      return
+    }
+
+    // Same project — restore cached state
+    if (pid) setProjectId(Number(pid))
+    if (pname) setProjectName(pname)
+
     const ver = sessionStorage.getItem("archon_current_version")
+    const eid = sessionStorage.getItem("archon_current_execution_id")
     const cachedStatus = sessionStorage.getItem("archon_pipeline_status") as typeof pipelineStatus | null
     const cachedStage = sessionStorage.getItem("archon_current_stage") as typeof currentStage | null
 
-    if (pid) setProjectId(Number(pid))
-    if (pname) setProjectName(pname)
     if (ver) setVersion(Number(ver))
-
     if (eid) {
       executionIdRef.current = Number(eid)
       const cachedLogs = sessionStorage.getItem(`archon_logs_${eid}`)
@@ -69,10 +92,9 @@ export function PipelineRun() {
         try { setLogs(JSON.parse(cachedLogs)) } catch {}
       }
     }
-
     if (cachedStatus && cachedStatus !== "idle") setPipelineStatus(cachedStatus)
     if (cachedStage) setCurrentStage(cachedStage)
-  }, [])
+  }, [searchParams])
 
   // Auto-scroll logs
   useEffect(() => {
@@ -342,3 +364,5 @@ export function PipelineRun() {
     </div>
   )
 }
+
+

@@ -70,7 +70,11 @@ export function ProjectDashboard() {
       // Navigate to pipeline for the new project
       sessionStorage.setItem("archon_current_project_id", String(project.id))
       sessionStorage.setItem("archon_project_name", project.name)
-      router.push("/pipeline")
+      sessionStorage.removeItem("archon_current_version")
+      sessionStorage.removeItem("archon_current_execution_id")
+      sessionStorage.removeItem("archon_pipeline_status")
+      sessionStorage.removeItem("archon_current_stage")
+      router.push(`/pipeline?pid=${project.id}`)
     } catch (e) {
       setError("Failed to create project")
     } finally {
@@ -81,7 +85,11 @@ export function ProjectDashboard() {
   const handleProjectClick = (project: Project) => {
     sessionStorage.setItem("archon_current_project_id", String(project.id))
     sessionStorage.setItem("archon_project_name", project.name)
-    router.push("/pipeline")
+    sessionStorage.removeItem("archon_current_version")
+    sessionStorage.removeItem("archon_current_execution_id")
+    sessionStorage.removeItem("archon_pipeline_status")
+    sessionStorage.removeItem("archon_current_stage")
+    router.push(`/pipeline?pid=${project.id}`)
   }
 
   const filtered = projects.filter((p) => {
@@ -282,3 +290,5 @@ export function ProjectDashboard() {
     </div>
   )
 }
+
+
