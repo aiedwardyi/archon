@@ -89,6 +89,7 @@ export function ProjectDashboard() {
     sessionStorage.removeItem("archon_current_execution_id")
     sessionStorage.removeItem("archon_pipeline_status")
     sessionStorage.removeItem("archon_current_stage")
+    sessionStorage.removeItem("archon_selected_version")
     router.push(`/pipeline?pid=${project.id}`)
   }
 
@@ -290,5 +291,6 @@ export function ProjectDashboard() {
     </div>
   )
 }
+
 
 

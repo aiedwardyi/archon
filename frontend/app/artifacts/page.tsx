@@ -12,17 +12,24 @@ export default function ArtifactsPage() {
 
   useEffect(() => {
     const pid = sessionStorage.getItem("archon_current_project_id")
+    const selectedVer = sessionStorage.getItem("archon_selected_version")
 
     if (pid) {
-      // Always fetch head from DB — never trust cached version for Artifacts
-      fetch(`${API_BASE}/api/projects/${pid}/head`)
-        .then(r => r.json())
-        .then(data => {
-          setProjectId(Number(pid))
-          if (data.version) setVersion(data.version)
-          setReady(true)
-        })
-        .catch(() => setReady(true))
+      setProjectId(Number(pid))
+      if (selectedVer) {
+        // User clicked a specific version on the Versions page — use it
+        setVersion(Number(selectedVer))
+        setReady(true)
+      } else {
+        // No selection — default to head
+        fetch(`${API_BASE}/api/projects/${pid}/head`)
+          .then(r => r.json())
+          .then(data => {
+            if (data.version) setVersion(data.version)
+            setReady(true)
+          })
+          .catch(() => setReady(true))
+      }
     } else {
       // No session at all — load most recent project + its head
       fetch(`${API_BASE}/api/projects`)
@@ -45,4 +52,5 @@ export default function ArtifactsPage() {
 
   return <ArtifactViewer projectId={projectId} version={version} />
 }
+
 
