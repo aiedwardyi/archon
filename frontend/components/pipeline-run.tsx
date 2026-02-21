@@ -135,6 +135,8 @@ export function PipelineRun() {
       }
 
       if (data.status === "COMPLETED") {
+        setCurrentStage("engineer")
+        sessionStorage.setItem("archon_current_stage", "engineer")
         setPipelineStatus("complete")
         sessionStorage.setItem("archon_pipeline_status", "complete")
         setIsRunning(false)
@@ -364,5 +366,6 @@ export function PipelineRun() {
     </div>
   )
 }
+
 
 

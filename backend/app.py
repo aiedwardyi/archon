@@ -112,37 +112,42 @@ def get_language_from_ext(filename: str) -> str:
 def resolve_project_version(q_project_id=None, q_version=None):
     """
     Resolves (project_id, version) from:
-      1. execution_state in-memory (set when pipeline runs)
-      2. query params q_project_id / q_version (survives backend restart)
+      1. Explicit query params (highest priority — user asked for a specific version)
+      2. execution_state in-memory (current running/last run)
       3. DB lookup of active head if only project_id is known
     """
-    project_id = execution_state.get("current_project_id")
+    project_id = None
     version = None
-    execution_id = execution_state.get("current_execution_id")
 
-    if execution_id:
-        session = get_session()
-        try:
-            execution = session.query(Execution).get(execution_id)
-            if execution:
-                version = execution.version
-        finally:
-            session.close()
-
-    # Fallback: use query params when in-memory state is empty (after restart)
-    if not project_id and q_project_id:
+    # Priority 1: explicit query params always win
+    if q_project_id:
         try:
             project_id = int(q_project_id)
         except (ValueError, TypeError):
             pass
 
-    if not version and q_version:
+    if q_version:
         try:
             version = int(q_version)
         except (ValueError, TypeError):
             pass
 
-    # If we have project_id but still no version, look up active head in DB
+    # Priority 2: fall back to in-memory state only if params not provided
+    if not project_id:
+        project_id = execution_state.get("current_project_id")
+
+    if not version:
+        execution_id = execution_state.get("current_execution_id")
+        if execution_id:
+            session = get_session()
+            try:
+                execution = session.query(Execution).get(execution_id)
+                if execution:
+                    version = execution.version
+            finally:
+                session.close()
+
+    # Priority 3: if we have project_id but still no version, look up active head in DB
     if project_id and not version:
         session = get_session()
         try:
@@ -190,6 +195,25 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
             version_dir = PUBLIC_DIR / "shared"
         version_dir.mkdir(parents=True, exist_ok=True)
 
+        # Load existing code from parent version for iteration context
+        existing_code = None
+        session_check = get_session()
+        try:
+            current_exec = session_check.query(Execution).get(execution_id)
+            if current_exec and current_exec.parent_execution_id:
+                parent_exec = session_check.query(Execution).get(current_exec.parent_execution_id)
+                if parent_exec:
+                    parent_dir = get_version_dir(project_id, parent_exec.version) / "code"
+                    candidate = parent_dir / "src" / "index.html"
+                    if not candidate.exists():
+                        html_files = list(parent_dir.rglob("*.html"))
+                        candidate = html_files[0] if html_files else None
+                    if candidate and Path(candidate).exists():
+                        existing_code = Path(candidate).read_text(encoding="utf-8", errors="replace")
+                        add_log("Build Agent: Loading previous version for context...")
+        finally:
+            session_check.close()
+
         add_log("Starting pipeline...")
         add_log("Requirements Agent: Analyzing your request...")
 
@@ -203,6 +227,8 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
                 for turn in prompt_history
             )
             context_input = f"Full conversation history:\n{history_text}\n\nLatest request: {task_description}"
+        if existing_code:
+            context_input += f"\n\nNOTE: This is an iteration on an existing app. The current HTML is provided to the engineer. The PRD should reflect ONLY the changes requested, not rebuild from scratch."
 
         prd_artifact = pm_agent.generate_prd(context_input)
 
@@ -265,19 +291,23 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
 
         from agents.engineer_agent import EngineerAgent
         engineer = EngineerAgent(genai_client)
-        result = engineer.run(engineer_task, user_prompt=task_description)
+        result = engineer.run(engineer_task, user_prompt=task_description, existing_code=existing_code)
 
         from scripts.safe_write import safe_write_text
         allow_dir = version_dir / "code"
         writes = []
         for file_artifact in result.files:
-            rec = safe_write_text(
-                allowlist_dir=allow_dir,
-                relative_path=file_artifact.path,
-                content=file_artifact.content,
-            )
-            writes.append(rec)
-            add_log(f"Build Agent: Created {file_artifact.path}")
+            try:
+                rec = safe_write_text(
+                    allowlist_dir=allow_dir,
+                    relative_path=file_artifact.path,
+                    content=file_artifact.content,
+                )
+                writes.append(rec)
+                add_log(f"Build Agent: Created {file_artifact.path}")
+            except ValueError as skip_err:
+                add_log(f"Build Agent: Skipped {file_artifact.path} ({skip_err})")
+                print(f"Skipped file: {skip_err}")
 
         add_log("Build complete.")
 
@@ -907,4 +937,10 @@ if __name__ == "__main__":
     print(f"PUBLIC_DIR: {PUBLIC_DIR}")
     print(f"CORS enabled for: http://localhost:5173, http://localhost:3000")
     app.run(debug=True, port=5000)
+
+
+
+
+
+
 

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 import os
@@ -68,7 +68,7 @@ class EngineerAgent:
     def __init__(self, client: genai.Client | None):
         self.client = client
 
-    def run(self, task: Task, user_prompt: str = None) -> EngineeringResult:
+    def run(self, task: Task, user_prompt: str = None, existing_code: str = None) -> EngineeringResult:
         if task.execution_hint != "engineer":
             raise ValueError("EngineerAgent called with non-executable task")
 
@@ -109,7 +109,7 @@ class EngineerAgent:
             contents=contents,
             config={
                 "response_schema": EngineeringResult,
-                "temperature": 0.2,
+                "temperature": 0.7,
             },
         )
 
@@ -123,3 +123,6 @@ class EngineerAgent:
         result = EngineeringResult.model_validate(data)
         result.files = _deduplicate_files(result.files)
         return result
+
+
+
