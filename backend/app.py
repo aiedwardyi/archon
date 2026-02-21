@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file, Response
+﻿from flask import Flask, request, jsonify, send_file, Response
 from flask_cors import CORS
 import json
 import os
@@ -69,7 +69,6 @@ def get_version_dir(project_id: int, version: int) -> Path:
 
 
 def build_file_tree(root: Path, base: Path):
-    """Recursively build a file tree structure from a directory."""
     nodes = []
     try:
         items = sorted(root.iterdir(), key=lambda p: (p.is_file(), p.name.lower()))
@@ -110,6 +109,59 @@ def get_language_from_ext(filename: str) -> str:
     return ext_map.get(ext, "text")
 
 
+def resolve_project_version(q_project_id=None, q_version=None):
+    """
+    Resolves (project_id, version) from:
+      1. execution_state in-memory (set when pipeline runs)
+      2. query params q_project_id / q_version (survives backend restart)
+      3. DB lookup of active head if only project_id is known
+    """
+    project_id = execution_state.get("current_project_id")
+    version = None
+    execution_id = execution_state.get("current_execution_id")
+
+    if execution_id:
+        session = get_session()
+        try:
+            execution = session.query(Execution).get(execution_id)
+            if execution:
+                version = execution.version
+        finally:
+            session.close()
+
+    # Fallback: use query params when in-memory state is empty (after restart)
+    if not project_id and q_project_id:
+        try:
+            project_id = int(q_project_id)
+        except (ValueError, TypeError):
+            pass
+
+    if not version and q_version:
+        try:
+            version = int(q_version)
+        except (ValueError, TypeError):
+            pass
+
+    # If we have project_id but still no version, look up active head in DB
+    if project_id and not version:
+        session = get_session()
+        try:
+            head = (
+                session.query(Execution)
+                .filter(
+                    Execution.project_id == project_id,
+                    Execution.is_active_head == True,
+                )
+                .first()
+            )
+            if head:
+                version = head.version
+        finally:
+            session.close()
+
+    return project_id, version
+
+
 def run_full_pipeline_async(task_description: str, prompt_history: list = None):
     global execution_state
 
@@ -138,9 +190,6 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
             version_dir = PUBLIC_DIR / "shared"
         version_dir.mkdir(parents=True, exist_ok=True)
 
-        # =====================================================================
-        # STEP 1: Requirements Agent -> Brief
-        # =====================================================================
         add_log("Starting pipeline...")
         add_log("Requirements Agent: Analyzing your request...")
 
@@ -164,9 +213,6 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
         add_log("Requirements Agent: Brief created.")
         print(f"PRD saved: {prd_artifact.prd.document_title}")
 
-        # =====================================================================
-        # STEP 2: Architecture Agent -> Build Plan
-        # =====================================================================
         add_log("Architecture Agent: Planning the build...")
 
         from google import genai
@@ -196,12 +242,8 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
         task_count = sum(len(m.tasks) for m in plan.milestones)
         print(f"Plan saved: {milestone_count} milestones, {task_count} tasks")
 
-        # =====================================================================
-        # STEP 3: Build Agent -> Code
-        # =====================================================================
         add_log("Build Agent: Writing your code...")
 
-        # Prefer scaffold tasks mentioning UI/frontend for the actual app build
         engineer_task = None
         fallback_task = None
         ui_keywords = ["html", "ui", "frontend", "scaffold", "interface", "web", "page", "app", "component"]
@@ -400,11 +442,9 @@ def get_versions(project_id: int):
             .order_by(Execution.version.desc())
             .all()
         )
-        # Enrich with files_generated count from execution result
         versions_list = []
         for e in executions:
             e_dict = e.to_dict()
-            # Try to read files_generated from the result artifact
             if project_id and e.version:
                 result_path = get_version_dir(project_id, e.version) / "last_execution_result.json"
                 result_data = read_json_file(result_path)
@@ -709,18 +749,14 @@ def get_code():
 
 @app.route("/api/plan", methods=["GET"])
 def get_plan():
-    project_id = execution_state.get("current_project_id")
-    execution_id = execution_state.get("current_execution_id")
-    version = None
-
-    if execution_id:
-        session = get_session()
-        try:
-            execution = session.query(Execution).get(execution_id)
-            if execution:
-                version = execution.version
-        finally:
-            session.close()
+    """
+    Returns the build plan. Survives backend restarts via query params.
+    Priority: in-memory state -> ?project_id&version -> DB active head
+    """
+    project_id, version = resolve_project_version(
+        request.args.get("project_id"),
+        request.args.get("version"),
+    )
 
     if project_id and version:
         plan_file = get_version_dir(project_id, version) / "last_plan.json"
@@ -733,18 +769,14 @@ def get_plan():
 
 @app.route("/api/prd", methods=["GET"])
 def get_prd():
-    project_id = execution_state.get("current_project_id")
-    execution_id = execution_state.get("current_execution_id")
-    version = None
-
-    if execution_id:
-        session = get_session()
-        try:
-            execution = session.query(Execution).get(execution_id)
-            if execution:
-                version = execution.version
-        finally:
-            session.close()
+    """
+    Returns the PRD/Brief. Survives backend restarts via query params.
+    Priority: in-memory state -> ?project_id&version -> DB active head
+    """
+    project_id, version = resolve_project_version(
+        request.args.get("project_id"),
+        request.args.get("version"),
+    )
 
     if project_id and version:
         prd_file = get_version_dir(project_id, version) / "last_prd.json"
@@ -761,17 +793,11 @@ def get_prd():
 
 @app.route("/api/projects/<int:project_id>/versions/<int:version>/files", methods=["GET"])
 def get_version_files(project_id: int, version: int):
-    """
-    Returns the real file tree for a specific project version.
-    Optionally returns file content when ?path=src/index.html is provided.
-    """
     code_dir = get_version_dir(project_id, version) / "code"
 
-    # If a specific file path is requested, return its content
     file_path = request.args.get("path")
     if file_path:
         target = code_dir / file_path
-        # Security: ensure the resolved path is within code_dir
         try:
             target.resolve().relative_to(code_dir.resolve())
         except ValueError:
@@ -785,7 +811,6 @@ def get_version_files(project_id: int, version: int):
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-    # Return file tree
     if not code_dir.exists():
         return jsonify({"tree": [], "message": "No files generated yet"}), 200
 
@@ -843,6 +868,33 @@ def get_preview(project_id: int, version: int):
     return Response(PREVIEW_PLACEHOLDER, mimetype="text/html", status=200)
 
 
+
+@app.route("/api/projects/<int:project_id>/head", methods=["GET"])
+def get_project_head(project_id: int):
+    """Returns the active head execution for a project."""
+    session = get_session()
+    try:
+        head = (
+            session.query(Execution)
+            .filter(
+                Execution.project_id == project_id,
+                Execution.is_active_head == True,
+            )
+            .first()
+        )
+        if not head:
+            # Fallback: latest version
+            head = (
+                session.query(Execution)
+                .filter(Execution.project_id == project_id)
+                .order_by(Execution.version.desc())
+                .first()
+            )
+        if not head:
+            return jsonify({"error": "No executions found"}), 404
+        return jsonify({"project_id": project_id, "version": head.version, "execution_id": head.id}), 200
+    finally:
+        session.close()
 @app.route("/api/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok"}), 200
@@ -855,7 +907,4 @@ if __name__ == "__main__":
     print(f"PUBLIC_DIR: {PUBLIC_DIR}")
     print(f"CORS enabled for: http://localhost:5173, http://localhost:3000")
     app.run(debug=True, port=5000)
-
-
-
 
