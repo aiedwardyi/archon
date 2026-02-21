@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect } from "react"
 import {
@@ -189,7 +189,10 @@ export function VersionTimeline() {
                   return (
                     <button
                       key={v.id}
-                      onClick={() => setSelectedVersionId(v.id)}
+                      onClick={() => {
+                        setSelectedVersionId(v.id)
+                        sessionStorage.setItem('archon_selected_version', String(v.version))
+                      }}
                       className={`w-full text-left px-4 py-3 border-b border-border transition-colors ${
                         isActive
                           ? "bg-accent border-l-2 border-l-primary"
@@ -382,3 +385,4 @@ export function VersionTimeline() {
     </div>
   )
 }
+
