@@ -14,7 +14,7 @@ import {
 } from "lucide-react"
 
 const API_BASE = "http://localhost:5000"
-const POLL_INTERVAL_MS = 1500   // CHANGED: was 5000 — faster live updates
+const POLL_INTERVAL_MS = 1500
 type AgentStatus = "pending" | "running" | "complete"
 
 type LogEntry = {
@@ -47,21 +47,28 @@ export function PipelineRun() {
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [promptHistory, setPromptHistory] = useState<{ role: string; content: string }[]>([])
   const [showAllLogs, setShowAllLogs] = useState(false)
+  const [globallyBlocked, setGloballyBlocked] = useState(false)
+  const [blockingProjectId, setBlockingProjectId] = useState<number | null>(null)
   const logsEndRef = useRef<HTMLDivElement>(null)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
   const executionIdRef = useRef<number | null>(null)
-  // CHANGED: stable ref so the interval never captures a stale closure
   const versionRef = useRef<number | null>(null)
   const isRunningRef = useRef(false)
-  const newRunRef = useRef(false)  // true = ignore stale logs for stage detection
+  const newRunRef = useRef(false)
 
   const searchParams = useSearchParams()
 
-  // Keep refs in sync with state
   useEffect(() => { versionRef.current = version }, [version])
   useEffect(() => { isRunningRef.current = isRunning }, [isRunning])
 
-  // Load project — URL ?pid= takes priority over sessionStorage
+  // 7C.3: persist prompt history whenever it changes
+  useEffect(() => {
+    if (promptHistory.length > 0) {
+      sessionStorage.setItem("archon_prompt_history", JSON.stringify(promptHistory))
+    }
+  }, [promptHistory])
+
+  // Load project from URL or sessionStorage
   useEffect(() => {
     const urlPid = searchParams.get("pid")
     const storedPid = sessionStorage.getItem("archon_current_project_id")
@@ -70,6 +77,7 @@ export function PipelineRun() {
 
     if (!pid) return
 
+    // Switching projects — clear all state
     if (urlPid && urlPid !== storedPid) {
       sessionStorage.setItem("archon_current_project_id", urlPid)
       setProjectId(Number(urlPid))
@@ -79,10 +87,13 @@ export function PipelineRun() {
       setPipelineStatus("idle")
       setCurrentStage("pm")
       executionIdRef.current = null
+      sessionStorage.removeItem("archon_prompt_history")
+      setPromptHistory([])
       return
     }
 
-    if (pid) setProjectId(Number(pid))
+    const pidNum = Number(pid)
+    if (pid) setProjectId(pidNum)
     if (pname) setProjectName(pname)
 
     const ver = sessionStorage.getItem("archon_current_version")
@@ -100,9 +111,65 @@ export function PipelineRun() {
     }
     if (cachedStatus && cachedStatus !== "idle") setPipelineStatus(cachedStatus)
     if (cachedStage) setCurrentStage(cachedStage)
+
+    // 7C.3: restore prompt history
+    const cachedHistory = sessionStorage.getItem("archon_prompt_history")
+    if (cachedHistory) {
+      try { setPromptHistory(JSON.parse(cachedHistory)) } catch {}
+    }
+
+    // 7C.1: DB fallback if no cached status
+    if (!cachedStatus || cachedStatus === "idle") {
+      fetch(`${API_BASE}/api/projects/${pidNum}`)
+        .then(r => r.json())
+        .then(data => {
+          const execs: any[] = data.executions || []
+          if (!execs.length) return
+          execs.sort((a: any, b: any) => b.version - a.version)
+          const latest = execs[0]
+          const statusMap: Record<string, typeof pipelineStatus> = {
+            success: "complete", completed: "complete",
+            error: "failed", failed: "failed",
+            running: "running", in_progress: "running",
+          }
+          const restored = statusMap[latest.status]
+          if (restored) {
+            setPipelineStatus(restored)
+            sessionStorage.setItem("archon_pipeline_status", restored)
+          }
+          // Always sync to the latest execution so logs key matches
+          const resolvedEid = latest.id
+          const resolvedVer = latest.version
+          if (resolvedVer) {
+            setVersion(resolvedVer)
+            versionRef.current = resolvedVer
+            sessionStorage.setItem("archon_current_version", String(resolvedVer))
+          }
+          if (resolvedEid) {
+            executionIdRef.current = resolvedEid
+            sessionStorage.setItem("archon_current_execution_id", String(resolvedEid))
+            // Load logs for this execution from cache
+            const cachedLogs = sessionStorage.getItem(`archon_logs_${resolvedEid}`)
+            if (cachedLogs) {
+              try { setLogs(JSON.parse(cachedLogs)) } catch {}
+            }
+          }
+          if (restored === "complete") {
+            setCurrentStage("engineer")
+            sessionStorage.setItem("archon_current_stage", "engineer")
+          }
+          // Restart polling if pipeline was mid-run when we navigated away
+          if (restored === "running") {
+            isRunningRef.current = true
+            setIsRunning(true)
+            stopPolling()
+            pollRef.current = setInterval(pollStatus, POLL_INTERVAL_MS)
+          }
+        })
+        .catch(() => {})
+    }
   }, [searchParams])
 
-  // Auto-scroll logs
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [logs])
@@ -117,10 +184,11 @@ export function PipelineRun() {
   const saveLogs = (newLogs: LogEntry[], eid: number | null) => {
     const id = eid ?? executionIdRef.current
     if (id) sessionStorage.setItem(`archon_logs_${id}`, JSON.stringify(newLogs))
+    // Also save by version so Artifacts page can retrieve without knowing execution ID
+    const v = versionRef.current
+    if (v) sessionStorage.setItem(`archon_logs_v${v}`, JSON.stringify(newLogs))
   }
 
-  // CHANGED: no useCallback with [version] dependency — uses refs instead
-  // This means the interval never captures a stale version value
   const pollStatus = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/execution-status`)
@@ -130,17 +198,14 @@ export function PipelineRun() {
       setLogs(newLogs)
       saveLogs(newLogs, null)
 
-      // CHANGED: derive stage from log messages on the client side too,
-      // so we're not 100% dependent on backend's currentStage field
       const stage = data.currentStage
       let derivedStage: "pm" | "planner" | "engineer" = "pm"
       if (stage === "engineer") derivedStage = "engineer"
       else if (stage === "planner") derivedStage = "planner"
       else {
-        // Double-check using log content in case backend stage lags
         for (let i = newLogs.length - 1; i >= 0; i--) {
           const msg = newLogs[i].message
-          if (msg.includes("Loading previous version")) continue  // setup log, not a stage transition
+          if (msg.includes("Loading previous version")) continue
           if (msg.includes("Build Agent")) { derivedStage = "engineer"; break }
           if (msg.includes("Architecture Agent")) { derivedStage = "planner"; break }
         }
@@ -149,8 +214,8 @@ export function PipelineRun() {
       setCurrentStage(derivedStage)
       sessionStorage.setItem("archon_current_stage", derivedStage)
 
-      if (data.status === "COMPLETED" && (!data.execution_id || Number(data.execution_id) === executionIdRef.current)) {
-        // All agents done — force engineer (last stage) as complete
+      // 7C.2: accept COMPLETED whenever we are the active running pipeline
+      if (data.status === "COMPLETED" && isRunningRef.current) {
         setCurrentStage("engineer")
         sessionStorage.setItem("archon_current_stage", "engineer")
         setPipelineStatus("complete")
@@ -168,7 +233,6 @@ export function PipelineRun() {
           sessionStorage.setItem("archon_current_project_id", String(data.project_id))
           setProjectId(data.project_id)
         }
-        // CHANGED: use ref so version is always current even from a closure
         const v = versionRef.current
         if (v) sessionStorage.setItem("archon_current_version", String(v))
       } else if (data.status === "FAILED") {
@@ -191,20 +255,21 @@ export function PipelineRun() {
 
     sessionStorage.removeItem("archon_pipeline_status")
     sessionStorage.removeItem("archon_current_stage")
-    sessionStorage.removeItem("archon_current_execution_id")
+    // Don't clear execution_id here — keep it until the new one arrives so saveLogs works
 
+    isRunningRef.current = true  // set ref synchronously before any async
     setIsRunning(true)
-    isRunningRef.current = true
     setPipelineStatus("running")
     sessionStorage.setItem("archon_pipeline_status", "running")
     setCurrentStage("pm")
     sessionStorage.setItem("archon_current_stage", "pm")
     setLogs([])
     setShowAllLogs(false)
-    newRunRef.current = true  // block stale log stage detection until fresh logs arrive
+    newRunRef.current = true
 
     const newHistory = [...promptHistory, { role: "user", content: prompt }]
     setPromptHistory(newHistory)
+    sessionStorage.setItem("archon_prompt_history", JSON.stringify(newHistory))
 
     try {
       const res = await fetch(`${API_BASE}/api/projects/${projectId}/iterate`, {
@@ -216,7 +281,7 @@ export function PipelineRun() {
 
       if (data.version) {
         setVersion(data.version)
-        versionRef.current = data.version   // CHANGED: update ref immediately
+        versionRef.current = data.version
         sessionStorage.setItem("archon_current_version", String(data.version))
       }
       if (data.execution_id) {
@@ -224,7 +289,6 @@ export function PipelineRun() {
         sessionStorage.setItem("archon_current_execution_id", String(data.execution_id))
       }
 
-      // Small delay so backend clears state before first poll
       stopPolling()
       await new Promise(r => setTimeout(r, 800))
       pollRef.current = setInterval(pollStatus, POLL_INTERVAL_MS)
@@ -238,8 +302,24 @@ export function PipelineRun() {
 
   useEffect(() => { return () => stopPolling() }, [])
 
-  // CHANGED: removed the useEffect that restarted polling on pollStatus change
-  // (that pattern caused double-intervals). Polling is now fully managed in handleSend.
+  // Check if a different project is already building
+  const checkGlobalBlock = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/execution-status`)
+      const data = await res.json()
+      if (data.status === "RUNNING" && data.project_id && data.project_id !== projectId) {
+        setGloballyBlocked(true)
+        setBlockingProjectId(data.project_id)
+      } else {
+        setGloballyBlocked(false)
+        setBlockingProjectId(null)
+      }
+    } catch {}
+  }
+
+  useEffect(() => {
+    if (projectId && !isRunning) checkGlobalBlock()
+  }, [projectId, isRunning])
 
   const agentStages = [
     { key: "pm", name: "Requirements Agent", role: "Understands your request" },
@@ -297,7 +377,6 @@ export function PipelineRun() {
       </div>
 
       <div className="flex-1 flex flex-col p-6 gap-6 overflow-auto">
-        {/* Agent pipeline */}
         <div className="bg-card border border-border rounded-lg p-5">
           <div className="flex items-center gap-2 mb-4">
             <Zap className="h-4 w-4 text-primary" />
@@ -333,7 +412,6 @@ export function PipelineRun() {
           </div>
         </div>
 
-        {/* Live log feed */}
         <div className="flex-1 bg-card border border-border rounded-lg flex flex-col min-h-0">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <div className="flex items-center gap-2">
@@ -366,7 +444,6 @@ export function PipelineRun() {
         </div>
       </div>
 
-      {/* Chat input */}
       <div className="border-t border-border bg-card px-6 py-3">
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground font-mono shrink-0">{projectName} {">"}</span>
@@ -376,13 +453,17 @@ export function PipelineRun() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") handleSend() }}
-              placeholder={projectId ? "What would you like to build?" : "Select a project first..."}
-              disabled={!projectId || isRunning}
+              placeholder={
+                !projectId ? "Select a project first..." :
+                globallyBlocked ? `Another project (ID: ${blockingProjectId}) is building. Wait for it to finish.` :
+                "What would you like to build?"
+              }
+              disabled={!projectId || isRunning || globallyBlocked}
               className="w-full h-9 rounded-md border border-input bg-background pl-3 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring font-mono disabled:opacity-50"
             />
             <button
               onClick={handleSend}
-              disabled={!inputValue.trim() || isRunning || !projectId}
+              disabled={!inputValue.trim() || isRunning || !projectId || globallyBlocked}
               className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40"
               aria-label="Send message"
             >
@@ -394,9 +475,3 @@ export function PipelineRun() {
     </div>
   )
 }
-
-
-
-
-
-
