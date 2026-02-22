@@ -64,20 +64,33 @@ CRITICAL: Build the ACTUAL app the task describes.
 
 EMBED / LIVE PREVIEW IMAGE COMPATIBILITY
 
-Assume the live preview may run inside a sandboxed iframe and/or strict CSP which can block external <img> requests.
+Use real imagery for premium visual quality. The preview iframe allows external images.
 
-Therefore:
-  Do NOT rely on <img> tags for core visuals.
-  Primary visuals MUST be created using:
-    CSS gradients (layered radial/linear)
-    inline SVG illustrations (embedded directly in HTML)
-    decorative shapes via pseudo-elements
-  NEVER use emoji or Unicode characters as icons or decorative elements.
-  For icons use inline SVG only (simple geometric paths, no external icon libraries).
+For hero and section visuals, use real Unsplash photo URLs:
+  Format: https://images.unsplash.com/photo-[ID]?w=1200&q=80&fit=crop&auto=format
 
-NO external images of any kind. The preview runs in a sandboxed iframe.
-  Build all visuals using CSS gradients, SVG, and geometric shapes only.
-  Hero visuals must be CSS/SVG compositions — no image placeholders, no broken boxes.
+GAMING / FANTASY theme — use these Unsplash photo IDs in <img> tags or CSS background-image:
+  Dark cityscape:     photo-1542751371-adc38448a05e
+  Fantasy landscape:  photo-1518709268805-4e9042af9f23
+  Neon city:          photo-1550745165-9bc0b252726f
+  Warrior silhouette: photo-1552664730-d307ca884978
+  Epic battle:        photo-1558618666-fcd25c85cd64
+  Sci-fi space:       photo-1462331940025-496dfbfc7564
+
+SAAS / DASHBOARD theme — use these IDs:
+  Team collaboration: photo-1522071820081-009f0129c71c
+  Data/charts:        photo-1551288049-bebda4e38f71
+  Office/work:        photo-1497366216548-37526070297c
+  Tech abstract:      photo-1518770660439-4636190af475
+
+Always pair <img> tags with a CSS gradient fallback background in case image fails.
+For weapon/item card images: use object-fit: contain, transparent or dark-matched background, no white box. Set the card background to match the image tone.
+
+For typography on creative/gaming apps, use Google Fonts:
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+  For SaaS/dashboards use: Inter, Plus Jakarta Sans, or DM Sans from Google Fonts.
+
+For icons use inline SVG only. Do NOT use external icon libraries.
 
 DESIGN DIRECTOR MODE — "V0 / LOVABLE QUALITY"
 
@@ -215,8 +228,12 @@ OUTPUT CONTENT RULES
   Use CSS Grid with auto-fit/minmax for responsive card layouts.
 
 OUTPUT SIZE LIMIT — CRITICAL
-  The entire src/index.html file MUST be 600 lines or fewer.
-  This is a hard limit. Do not exceed it.
+  The entire src/index.html file MUST be 500 lines or fewer.
+  This is a HARD limit. Violating it causes JSON parse failures and breaks the entire pipeline.
+  If you are approaching 500 lines, STOP adding features and close the file.
+  Do NOT write comments in CSS or JS — they waste lines.
+  Do NOT write more than 3 seed data items.
+  Do NOT add extra sections beyond the mandatory ones.
   Achieve this by:
     Writing tight, efficient CSS (combine selectors, avoid redundancy)
     Using concise JS (no verbose comments, no console.logs)
@@ -235,6 +252,9 @@ FINAL CHECKLIST (MUST SATISFY BEFORE OUTPUT)
   JSON schema exactly correct
 
 Task is below. Produce only scaffolding files.
+
+
+
 
 
 

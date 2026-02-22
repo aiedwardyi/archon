@@ -278,6 +278,23 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
         task_count = sum(len(m.tasks) for m in plan.milestones)
         print(f"Plan saved: {milestone_count} milestones, {task_count} tasks")
 
+        add_log("Design Agent: Generating visuals...")
+
+        design_assets = []
+        try:
+            from agents.design_agent import DesignAgent
+            prd_data = read_json_file(version_dir / "last_prd.json") or {}
+            design_agent = DesignAgent()
+            design_assets = design_agent.run(prd_data, max_images=6)
+            if design_assets:
+                write_json_file(version_dir / "last_design_assets.json", {"assets": design_assets})
+                add_log(f"Design Agent: {len(design_assets)} images ready.")
+            else:
+                add_log("Design Agent: No images generated, continuing...")
+        except Exception as design_err:
+            print(f"DesignAgent failed (non-fatal): {design_err}")
+            add_log("Design Agent: Skipped, continuing with build...")
+
         add_log("Build Agent: Writing your code...")
 
         engineer_task = None
@@ -301,7 +318,19 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
 
         from agents.engineer_agent import EngineerAgent
         engineer = EngineerAgent(genai_client)
-        result = engineer.run(engineer_task, user_prompt=task_description, existing_code=existing_code)
+        # Inject design assets into engineer prompt if available
+        design_context = ""
+        if design_assets:
+            asset_lines = []
+            for a in design_assets:
+                line = "  - " + a["key"] + " (" + a["purpose"] + "): " + a["url"]
+                asset_lines.append(line)
+            design_context = "\n\nDESIGN ASSETS - USE THESE IMAGE URLs IN THE HTML:\n" + "\n".join(asset_lines) + "\nIMPORTANT: Use these exact URLs in <img> tags or CSS background-image. Do not use placeholder images.\n"
+            task_description_with_assets = task_description + design_context
+        else:
+            task_description_with_assets = task_description
+
+        result = engineer.run(engineer_task, user_prompt=task_description_with_assets, existing_code=existing_code)
 
         from scripts.safe_write import safe_write_text
         allow_dir = version_dir / "code"
@@ -976,6 +1005,9 @@ if __name__ == "__main__":
     print(f"PUBLIC_DIR: {PUBLIC_DIR}")
     print(f"CORS enabled for: http://localhost:5173, http://localhost:3000")
     app.run(debug=True, port=5000)
+
+
+
 
 
 

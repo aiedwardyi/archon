@@ -70,15 +70,17 @@ def _repair_json(raw: str) -> dict:
 
 
 def _run_claude(contents: str) -> EngineeringResult:
-    """Call Claude Sonnet as the build agent."""
+    """Call Claude Sonnet as the build agent (streaming for large outputs)."""
     import anthropic
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-    message = client.messages.create(
+    raw = ""
+    with client.messages.stream(
         model="claude-sonnet-4-5",
         max_tokens=32000,
         messages=[{"role": "user", "content": contents}],
-    )
-    raw = message.content[0].text
+    ) as stream:
+        for text in stream.text_stream:
+            raw += text
     data = _repair_json(raw)
     result = EngineeringResult.model_validate(data)
     result.files = _deduplicate_files(result.files)
@@ -160,3 +162,4 @@ class EngineerAgent:
             raise RuntimeError("EngineerAgent: no API client available")
 
         return _run_gemini(self.client, contents)
+
