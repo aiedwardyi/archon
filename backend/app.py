@@ -964,13 +964,19 @@ def get_preview(project_id: int, version: int):
     code_dir = get_version_dir(project_id, version) / "code"
     html_file = code_dir / "src" / "index.html"
 
+    target = None
     if html_file.exists():
-        return send_file(html_file, mimetype="text/html")
-
-    if code_dir.exists():
+        target = html_file
+    elif code_dir.exists():
         html_files = list(code_dir.rglob("*.html"))
         if html_files:
-            return send_file(html_files[0], mimetype="text/html")
+            target = html_files[0]
+
+    if target:
+        html = target.read_text(encoding="utf-8", errors="replace")
+        base = f"/api/preview/{project_id}/{version}/src/"
+        html = html.replace("<head>", f"<head><base href=\"{base}\">", 1)
+        return Response(html, mimetype="text/html")
 
     return Response(PREVIEW_PLACEHOLDER, mimetype="text/html", status=200)
 
