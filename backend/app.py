@@ -1,4 +1,4 @@
-﻿from flask import Flask, request, jsonify, send_file, Response
+from flask import Flask, request, jsonify, send_file, Response
 from flask_cors import CORS
 import json
 import os
@@ -1016,6 +1016,7 @@ if __name__ == "__main__":
     print(f"PUBLIC_DIR: {PUBLIC_DIR}")
     print(f"CORS enabled for: http://localhost:5173, http://localhost:3000")
     app.run(debug=True, port=5000)
+
 
 
 
