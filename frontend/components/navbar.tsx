@@ -1,8 +1,9 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
+import { useEffect, useState } from "react"
 import {
   LayoutDashboard,
   Play,
@@ -24,22 +25,46 @@ const navItems = [
 export function Navbar() {
   const pathname = usePathname()
   const { resolvedTheme, setTheme } = useTheme()
+  const [projectName, setProjectName] = useState<string | null>(null)
+  const [version, setVersion] = useState<string | null>(null)
+
+  useEffect(() => {
+    const readStorage = () => {
+      const pname = sessionStorage.getItem("archon_project_name")
+      // Pipeline page: always show the current build version
+      // All other pages (Versions, Artifacts, etc.): prefer the user-selected version
+      const isPipelinePage = window.location.pathname.startsWith("/pipeline")
+      const ver = isPipelinePage
+        ? (sessionStorage.getItem("archon_current_version") || sessionStorage.getItem("archon_selected_version"))
+        : (sessionStorage.getItem("archon_selected_version") || sessionStorage.getItem("archon_current_version"))
+      setProjectName(pname)
+      setVersion(ver)
+    }
+
+    const onVersionChange = (e: Event) => {
+      const v = (e as CustomEvent).detail?.version
+      if (v != null) setVersion(String(v))
+    }
+
+    readStorage()
+    window.addEventListener("storage", readStorage)
+    window.addEventListener("archon:version-change", onVersionChange)
+    return () => {
+      window.removeEventListener("storage", readStorage)
+      window.removeEventListener("archon:version-change", onVersionChange)
+    }
+  }, [pathname])
 
   return (
     <header className="flex items-center justify-between h-14 border-b border-border bg-card px-6">
       <div className="flex items-center gap-8">
         <Link href="/" className="flex items-center gap-2">
           <Hexagon className="h-5 w-5 text-primary" strokeWidth={2.5} />
-          <span className="text-foreground font-semibold text-base tracking-tight">
-            Archon
-          </span>
+          <span className="text-foreground font-semibold text-base tracking-tight">Archon</span>
         </Link>
         <nav className="flex items-center gap-1">
           {navItems.map((item) => {
-            const isActive =
-              item.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(item.href)
+            const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)
             return (
               <Link
                 key={item.href}
@@ -58,23 +83,26 @@ export function Navbar() {
         </nav>
       </div>
       <div className="flex items-center gap-3">
-        <span className="hidden md:flex items-center text-xs text-muted-foreground font-mono">
-          checkout-service
-          <ChevronRight className="h-3 w-3 mx-0.5" />
-          <span className="text-foreground">v14</span>
-        </span>
+        {projectName && (
+          <span className="hidden md:flex items-center text-xs text-muted-foreground font-mono">
+            {projectName}
+            {version && (
+              <>
+                <ChevronRight className="h-3 w-3 mx-0.5" />
+                <span className="text-foreground">v{version}</span>
+              </>
+            )}
+          </span>
+        )}
         <button
           onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
           className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-          aria-label="Toggle dark mode"
         >
           <Sun className="h-4 w-4 hidden dark:block" />
           <Moon className="h-4 w-4 block dark:hidden" />
         </button>
         <div className="h-7 w-7 rounded-full bg-primary flex items-center justify-center">
-          <span className="text-primary-foreground text-xs font-medium">
-            JD
-          </span>
+          <span className="text-primary-foreground text-xs font-medium">JD</span>
         </div>
       </div>
     </header>

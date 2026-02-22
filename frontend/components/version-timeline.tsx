@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect } from "react"
 import {
@@ -38,35 +38,22 @@ function parseVersions(raw: any[]): Version[] {
     yesterday.setDate(now.getDate() - 1)
     const isYesterday = date.toDateString() === yesterday.toDateString()
     const dateLabel = isToday ? "Today" : isYesterday ? "Yesterday" : date.toLocaleDateString()
-
     const promptRaw = (() => {
       try {
         const hist = Array.isArray(e.prompt_history) ? e.prompt_history : JSON.parse(e.prompt_history || "[]")
         const last = hist.filter((h: any) => h.role === "user").pop()
         return last?.content || "No prompt"
-      } catch {
-        return "Build project"
-      }
+      } catch { return "Build project" }
     })()
-
     const statusMap: Record<string, Version["status"]> = {
-      success: "completed",
-      completed: "completed",
-      error: "failed",
-      failed: "failed",
-      running: "running",
-      in_progress: "running",
-      pending: "pending",
+      success: "completed", completed: "completed",
+      error: "failed", failed: "failed",
+      running: "running", in_progress: "running", pending: "pending",
     }
-
     return {
-      id: e.id,
-      version: e.version,
-      prompt: promptRaw,
+      id: e.id, version: e.version, prompt: promptRaw,
       timestamp: date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
-      date: dateLabel,
-      status: statusMap[e.status] ?? "pending",
-      filesChanged: e.files_generated ?? 0,
+      date: dateLabel, status: statusMap[e.status] ?? "pending", filesChanged: e.files_generated ?? 0,
     }
   })
 }
@@ -87,7 +74,6 @@ export function VersionTimeline() {
   const [loading, setLoading] = useState(true)
   const [restoring, setRestoring] = useState(false)
 
-  // Load project ID from sessionStorage
   useEffect(() => {
     const pid = sessionStorage.getItem("archon_current_project_id")
     const pname = sessionStorage.getItem("archon_project_name")
@@ -95,12 +81,8 @@ export function VersionTimeline() {
     if (pname) setProjectName(pname)
   }, [])
 
-  // Fetch versions when projectId is known
   useEffect(() => {
-    if (!projectId) {
-      setLoading(false)
-      return
-    }
+    if (!projectId) { setLoading(false); return }
     fetchVersions()
   }, [projectId])
 
@@ -114,12 +96,18 @@ export function VersionTimeline() {
       setVersions(parsed)
       if (parsed.length > 0 && selectedVersionId === null) {
         setSelectedVersionId(parsed[0].id)
+        // Also fire the event for the default selection so navbar + artifacts sync
+        sessionStorage.setItem("archon_selected_version", String(parsed[0].version))
+        window.dispatchEvent(new CustomEvent("archon:version-change", { detail: { version: parsed[0].version } }))
       }
-    } catch (e) {
-      console.error("Failed to load versions:", e)
-    } finally {
-      setLoading(false)
-    }
+    } catch (e) { console.error("Failed to load versions:", e) }
+    finally { setLoading(false) }
+  }
+
+  const handleVersionClick = (v: Version) => {
+    setSelectedVersionId(v.id)
+    sessionStorage.setItem("archon_selected_version", String(v.version))
+    window.dispatchEvent(new CustomEvent("archon:version-change", { detail: { version: v.version } }))
   }
 
   const handleRestore = async (executionId: number) => {
@@ -127,17 +115,12 @@ export function VersionTimeline() {
     try {
       await fetch(`${API_BASE}/api/executions/${executionId}/restore`, { method: "POST" })
       await fetchVersions()
-    } catch (e) {
-      console.error("Restore failed:", e)
-    } finally {
-      setRestoring(false)
-    }
+    } catch (e) { console.error("Restore failed:", e) }
+    finally { setRestoring(false) }
   }
 
   const selected = versions.find((v) => v.id === selectedVersionId)
   const headVersion = versions[0]
-
-  // Group versions by date for display
   const versionsByDate = versions.reduce((acc, v) => {
     if (!acc[v.date]) acc[v.date] = []
     acc[v.date].push(v)
@@ -146,7 +129,6 @@ export function VersionTimeline() {
 
   return (
     <div className="flex-1 flex overflow-hidden">
-      {/* Version panel */}
       {panelOpen && (
         <aside className="w-80 border-r border-border bg-card flex flex-col shrink-0">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
@@ -154,11 +136,7 @@ export function VersionTimeline() {
               <Clock className="h-4 w-4 text-muted-foreground" />
               <h3 className="text-sm font-semibold text-foreground">Version History</h3>
             </div>
-            <button
-              onClick={() => setPanelOpen(false)}
-              className="p-1 rounded hover:bg-muted transition-colors"
-              aria-label="Close version panel"
-            >
+            <button onClick={() => setPanelOpen(false)} className="p-1 rounded hover:bg-muted transition-colors">
               <PanelLeftClose className="h-4 w-4 text-muted-foreground" />
             </button>
           </div>
@@ -189,14 +167,9 @@ export function VersionTimeline() {
                   return (
                     <button
                       key={v.id}
-                      onClick={() => {
-                        setSelectedVersionId(v.id)
-                        sessionStorage.setItem('archon_selected_version', String(v.version))
-                      }}
+                      onClick={() => handleVersionClick(v)}
                       className={`w-full text-left px-4 py-3 border-b border-border transition-colors ${
-                        isActive
-                          ? "bg-accent border-l-2 border-l-primary"
-                          : "hover:bg-muted/50 opacity-70 hover:opacity-100"
+                        isActive ? "bg-accent border-l-2 border-l-primary" : "hover:bg-muted/50 opacity-70 hover:opacity-100"
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1">
@@ -223,14 +196,10 @@ export function VersionTimeline() {
         </aside>
       )}
 
-      {/* Main content */}
       <div className="flex-1 flex flex-col overflow-auto">
         {!panelOpen && (
           <div className="px-6 pt-4">
-            <button
-              onClick={() => setPanelOpen(true)}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border hover:bg-muted"
-            >
+            <button onClick={() => setPanelOpen(true)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border hover:bg-muted">
               <PanelLeft className="h-3.5 w-3.5" />
               Show versions
             </button>
@@ -239,7 +208,6 @@ export function VersionTimeline() {
 
         {selected && (
           <div className="flex-1 p-6 flex flex-col gap-6">
-            {/* Header */}
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-3 mb-2">
@@ -269,7 +237,6 @@ export function VersionTimeline() {
               </div>
             </div>
 
-            {/* Prompt */}
             <div className="bg-card border border-border rounded-lg">
               <div className="px-4 py-3 border-b border-border">
                 <h3 className="text-sm font-semibold text-foreground">Prompt</h3>
@@ -290,7 +257,6 @@ export function VersionTimeline() {
               </div>
             </div>
 
-            {/* Status + files */}
             <div className="flex items-center gap-4">
               <div className="inline-flex items-center gap-2 bg-card border border-border rounded-lg px-4 py-2.5">
                 <VersionStatusIcon status={selected.status} />
@@ -299,7 +265,6 @@ export function VersionTimeline() {
               <span className="text-xs text-muted-foreground">{selected.filesChanged} files changed</span>
             </div>
 
-            {/* What Was Built */}
             <div className="bg-card border border-border rounded-lg">
               <div className="px-4 py-3 border-b border-border">
                 <h3 className="text-sm font-semibold text-foreground">What Was Built</h3>
@@ -324,45 +289,31 @@ export function VersionTimeline() {
               </div>
             </div>
 
-            {/* Build Artifacts */}
             <div className="bg-card border border-border rounded-lg">
               <div className="px-4 py-3 border-b border-border">
                 <h3 className="text-sm font-semibold text-foreground">Build Artifacts</h3>
               </div>
               <div className="p-4">
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="flex items-center gap-3 p-4 rounded-lg border border-border bg-muted/20">
-                    <div className="h-9 w-9 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
-                      <FileText className="h-4 w-4 text-primary" />
+                  {[
+                    { label: "Brief", sub: "Requirements doc", icon: FileText, color: "text-primary", bg: "bg-primary/10" },
+                    { label: "Build Plan", sub: "Architecture plan", icon: Map, color: "text-info", bg: "bg-info/10" },
+                    { label: "Code", sub: `${selected.filesChanged} files`, icon: Code2, color: "text-success", bg: "bg-success/10" },
+                  ].map((art) => (
+                    <div key={art.label} className="flex items-center gap-3 p-4 rounded-lg border border-border bg-muted/20">
+                      <div className={`h-9 w-9 rounded-md ${art.bg} flex items-center justify-center shrink-0`}>
+                        <art.icon className={`h-4 w-4 ${art.color}`} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{art.label}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{art.sub}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Brief</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">Requirements doc</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-4 rounded-lg border border-border bg-muted/20">
-                    <div className="h-9 w-9 rounded-md bg-info/10 flex items-center justify-center shrink-0">
-                      <Map className="h-4 w-4 text-info" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Build Plan</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">Architecture plan</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-4 rounded-lg border border-border bg-muted/20">
-                    <div className="h-9 w-9 rounded-md bg-success/10 flex items-center justify-center shrink-0">
-                      <Code2 className="h-4 w-4 text-success" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Code</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{selected.filesChanged} files</p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>
 
-            {/* Live Preview */}
             <div className="bg-card border border-border rounded-lg overflow-hidden">
               <div className="px-4 py-3 border-b border-border">
                 <h3 className="text-sm font-semibold text-foreground">Live Preview</h3>
@@ -385,4 +336,3 @@ export function VersionTimeline() {
     </div>
   )
 }
-

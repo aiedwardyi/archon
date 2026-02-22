@@ -1,6 +1,6 @@
 ﻿"use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import {
   Plus,
@@ -12,6 +12,8 @@ import {
   ChevronDown,
   Download,
   Loader2,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react"
 import { StatusBadge } from "@/components/status-badge"
 
@@ -27,6 +29,12 @@ type Project = {
   execution_count: number
 }
 
+type ConfirmModal = {
+  type: "single" | "all"
+  projectId?: number
+  projectName?: string
+}
+
 export function ProjectDashboard() {
   const router = useRouter()
   const [projects, setProjects] = useState<Project[]>([])
@@ -37,6 +45,11 @@ export function ProjectDashboard() {
   const [newProjectName, setNewProjectName] = useState("")
   const [showNewProjectInput, setShowNewProjectInput] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null)
+  const [confirmModal, setConfirmModal] = useState<ConfirmModal | null>(null)
+  const [deleteConfirmText, setDeleteConfirmText] = useState("")
+  const [deleting, setDeleting] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   const fetchProjects = async () => {
     try {
@@ -50,8 +63,16 @@ export function ProjectDashboard() {
     }
   }
 
+  useEffect(() => { fetchProjects() }, [])
+
   useEffect(() => {
-    fetchProjects()
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null)
+      }
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
   }, [])
 
   const handleCreateProject = async () => {
@@ -67,7 +88,6 @@ export function ProjectDashboard() {
       setProjects((prev) => [project, ...prev])
       setNewProjectName("")
       setShowNewProjectInput(false)
-      // Navigate to pipeline for the new project
       sessionStorage.setItem("archon_current_project_id", String(project.id))
       sessionStorage.setItem("archon_project_name", project.name)
       sessionStorage.removeItem("archon_current_version")
@@ -91,6 +111,47 @@ export function ProjectDashboard() {
     sessionStorage.removeItem("archon_current_stage")
     sessionStorage.removeItem("archon_selected_version")
     router.push(`/pipeline?pid=${project.id}`)
+  }
+
+  const closeModal = () => {
+    setConfirmModal(null)
+    setDeleteConfirmText("")
+  }
+
+  const handleDeleteProject = async (projectId: number) => {
+    setDeleting(true)
+    try {
+      await fetch(`${API_BASE}/api/projects/${projectId}`, { method: "DELETE" })
+      setProjects((prev) => prev.filter((p) => p.id !== projectId))
+      if (sessionStorage.getItem("archon_current_project_id") === String(projectId)) {
+        sessionStorage.removeItem("archon_current_project_id")
+        sessionStorage.removeItem("archon_project_name")
+        sessionStorage.removeItem("archon_current_version")
+      }
+    } catch (e) {
+      setError("Failed to delete project")
+    } finally {
+      setDeleting(false)
+      closeModal()
+    }
+  }
+
+  const handleDeleteAll = async () => {
+    setDeleting(true)
+    try {
+      await Promise.all(
+        projects.map((p) => fetch(`${API_BASE}/api/projects/${p.id}`, { method: "DELETE" }))
+      )
+      setProjects([])
+      sessionStorage.removeItem("archon_current_project_id")
+      sessionStorage.removeItem("archon_project_name")
+      sessionStorage.removeItem("archon_current_version")
+    } catch (e) {
+      setError("Failed to delete all projects")
+    } finally {
+      setDeleting(false)
+      closeModal()
+    }
   }
 
   const filtered = projects.filter((p) => {
@@ -138,12 +199,8 @@ export function ProjectDashboard() {
           { label: "Failed", value: stats.failed, color: "text-destructive" },
         ].map((stat) => (
           <div key={stat.label} className="bg-card border border-border rounded-lg p-4">
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-              {stat.label}
-            </p>
-            <p className={`text-2xl font-semibold mt-1 ${stat.color}`}>
-              {stat.value}
-            </p>
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{stat.label}</p>
+            <p className={`text-2xl font-semibold mt-1 ${stat.color}`}>{stat.value}</p>
           </div>
         ))}
       </div>
@@ -177,6 +234,15 @@ export function ProjectDashboard() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {projects.length > 0 && (
+            <button
+              onClick={() => setConfirmModal({ type: "all" })}
+              className="h-9 flex items-center gap-2 rounded-md border border-border px-3 text-sm font-medium text-muted-foreground hover:text-destructive hover:border-destructive/50 transition-colors"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete All
+            </button>
+          )}
           {showNewProjectInput && (
             <input
               autoFocus
@@ -203,11 +269,11 @@ export function ProjectDashboard() {
       </div>
 
       {/* Table */}
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
+      <div className="bg-card border border-border rounded-lg overflow-hidden" ref={menuRef}>
         <table className="w-full">
           <thead>
             <tr className="border-b border-border">
-              {["Project", "Status", "Last Run", "Versions", "Created", ""].map((header) => (
+              {["Project", "ID", "Status", "Last Run", "Versions", "Created", ""].map((header) => (
                 <th key={header} className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   {header && (
                     <span className="flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors">
@@ -240,6 +306,11 @@ export function ProjectDashboard() {
                   </div>
                 </td>
                 <td className="px-4 py-3">
+                  <span className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                    #{project.id}
+                  </span>
+                </td>
+                <td className="px-4 py-3">
                   <StatusBadge status={project.status === "in_progress" ? "running" : project.status} />
                 </td>
                 <td className="px-4 py-3">
@@ -249,14 +320,10 @@ export function ProjectDashboard() {
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <span className="text-sm text-foreground font-mono">
-                    v{project.execution_count || 1}
-                  </span>
+                  <span className="text-sm text-foreground font-mono">v{project.execution_count || 1}</span>
                 </td>
                 <td className="px-4 py-3">
-                  <span className="text-sm text-muted-foreground">
-                    {formatDate(project.created_at)}
-                  </span>
+                  <span className="text-sm text-muted-foreground">{formatDate(project.created_at)}</span>
                 </td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex items-center justify-end gap-1">
@@ -267,13 +334,33 @@ export function ProjectDashboard() {
                     >
                       <Download className="h-4 w-4 text-muted-foreground" />
                     </button>
-                    <button
-                      className="p-1 rounded hover:bg-muted transition-colors"
-                      aria-label="More options"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                    </button>
+                    <div className="relative">
+                      <button
+                        className="p-1 rounded hover:bg-muted transition-colors"
+                        aria-label="More options"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setOpenMenuId(openMenuId === project.id ? null : project.id)
+                        }}
+                      >
+                        <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                      {openMenuId === project.id && (
+                        <div className="absolute right-0 top-8 z-50 w-44 bg-popover border border-border rounded-lg shadow-lg py-1 overflow-hidden">
+                          <button
+                            className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setOpenMenuId(null)
+                              setConfirmModal({ type: "single", projectId: project.id, projectName: project.name })
+                            }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Delete project
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </td>
               </tr>
@@ -288,9 +375,69 @@ export function ProjectDashboard() {
           </div>
         )}
       </div>
+
+      {/* Confirmation Modal */}
+      {confirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={closeModal} />
+          <div className="relative bg-card border border-border rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4">
+            <div className="flex items-start gap-3 mb-5">
+              <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center shrink-0 mt-0.5">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">
+                  {confirmModal.type === "all" ? "Delete all projects?" : "Delete project?"}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  {confirmModal.type === "all"
+                    ? `Permanently deletes all ${projects.length} projects and their version history. This cannot be undone.`
+                    : `Permanently deletes "${confirmModal.projectName}" and all its version history. This cannot be undone.`}
+                </p>
+              </div>
+            </div>
+            <div className="mb-5">
+              <label className="block text-xs text-muted-foreground mb-1.5">
+                Type <span className="font-mono font-semibold text-foreground">delete</span> to confirm
+              </label>
+              <input
+                autoFocus
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && deleteConfirmText === "delete") {
+                    if (confirmModal.type === "all") handleDeleteAll()
+                    else if (confirmModal.projectId) handleDeleteProject(confirmModal.projectId)
+                  }
+                  if (e.key === "Escape") closeModal()
+                }}
+                placeholder="delete"
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 focus:ring-destructive/40 font-mono"
+              />
+            </div>
+            <div className="flex items-center gap-2 justify-end">
+              <button
+                onClick={closeModal}
+                className="h-9 px-4 rounded-md border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (confirmModal.type === "all") handleDeleteAll()
+                  else if (confirmModal.projectId) handleDeleteProject(confirmModal.projectId)
+                }}
+                disabled={deleting || deleteConfirmText !== "delete"}
+                className="h-9 px-4 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
-
-
-

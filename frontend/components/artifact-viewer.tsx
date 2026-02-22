@@ -176,12 +176,30 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion 
   }, [propProjectId])
 
   useEffect(() => {
-    if (propVersion != null) setVersion(propVersion)
-    else {
-      const c = sessionStorage.getItem("archon_current_version")
-      if (c) setVersion(Number(c))
+    if (propVersion != null) {
+      setVersion(propVersion)
+    } else {
+      const sel = sessionStorage.getItem("archon_selected_version")
+      const cur = sessionStorage.getItem("archon_current_version")
+      if (sel || cur) setVersion(Number(sel || cur))
     }
   }, [propVersion])
+
+  // Listen for version-timeline clicks (same-tab custom event)
+  useEffect(() => {
+    const onVersionChange = (e: Event) => {
+      const v = (e as CustomEvent).detail?.version
+      if (v != null) {
+        setVersion(Number(v))
+        setPrdData(null)
+        setPlanData(null)
+        setFileTree([])
+        setFileContent("")
+      }
+    }
+    window.addEventListener("archon:version-change", onVersionChange)
+    return () => window.removeEventListener("archon:version-change", onVersionChange)
+  }, [])
 
   useEffect(() => {
     if (activeTab === "brief" && projectId) fetchPrd()
@@ -617,6 +635,8 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion 
     </div>
   )
 }
+
+
 
 
 

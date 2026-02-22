@@ -87,14 +87,14 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 
 ---
 
-### Phase 7D — UI Polish & Quick Wins (🔴 Current Sprint)
+### Phase 7D — UI Polish & Quick Wins (🟡 In Progress)
 
-- 7D.1 Navbar: real project name + version (replace hardcoded "checkout-service > v14")
-- 7D.2 Projects table: add Project ID column
-- 7D.3 Delete project + delete all with confirmation modal
-- 7D.4 Avatar dropdown (v0-style: email, dark mode, credits, sign out)
-- 7D.5 Versions page live preview height increase
-- 7D.6 Artifacts version sync fix from Versions page nav
+- ✅ 7D.1 Navbar: real project name + version (live from sessionStorage)
+- ✅ 7D.2 Projects table: Project ID column added
+- ✅ 7D.3 Delete project + delete all with type-to-confirm modal
+- ✅ 7D.6 Artifacts + Navbar version sync fixed (custom event bus)
+- 🔴 7D.4 Avatar dropdown (v0-style: email, dark mode, credits, sign out)
+- 🔴 7D.5 Versions page live preview height increase
 
 ---
 
@@ -146,6 +146,6 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - ✅ Design Agent — DALL-E 3 images, locally served, smart skip for dashboards
 - ✅ Engineer prompt — 10-shell layout intelligence, mandatory asset usage
 - ✅ JSON repair — backtick hex color fix
-- 🔴 UI polish — navbar, Projects table, avatar dropdown (Phase 7D)
+- 🟡 UI polish — 7D.1-7D.3 + 7D.6 done; avatar dropdown + preview height remain (Phase 7D)
 - ⬜ Chatbox upgrades (Phase 7F)
 - ⬜ Client deliverables (Phase 8)
