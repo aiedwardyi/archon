@@ -25,7 +25,24 @@ Schema (informal):
           "task_type": "scaffold | single_file | doc | null",
           "output_files": ["string", "..."] | null,
           "ui_archetype": "dashboard | landing | ecommerce | kanban | chat | editor | feed | form | game | portfolio | null",
-          "archetype_rules": { "required_blocks": [...], "required_interactions": [...], "avoid": [...] } | null
+          "archetype_rules": {
+            "required_blocks": [...],
+            "required_interactions": [...],
+            "avoid": [...],
+            "layout_contract": {
+              "regions": [...],
+              "sidebar": { "width_px": int, "nav_groups": int, "icons_required": bool } | null,
+              "topbar": [...],
+              "main_grid": [{ "row": int, "component": str, "count": int|null, "aspect_ratio": str|null, "left": str|null, "right": str|null, "ratio": str|null }],
+              "density": "compact | comfortable"
+            },
+            "content_contract": {
+              "kpi_labels": [...],
+              "table_columns": [...],
+              "seed_rows": int,
+              "required_states": ["loading", "empty", "error"]
+            }
+          } | null
         }
       ]
     }
@@ -73,10 +90,54 @@ UI archetype rules (CRITICAL):
     portfolio -> required_blocks: ["hero_band", "projects_grid", "skills"], required_interactions: ["view_project"], avoid: ["sidebar_nav", "kpis"]
 - ui_archetype and archetype_rules are REQUIRED on the scaffold task — never null for scaffold tasks
 - Set ui_archetype: null and archetype_rules: null on all non-scaffold tasks
+- layout_contract and content_contract are REQUIRED inside archetype_rules on scaffold tasks
+- Use the exact layout_contract and content_contract templates below for each archetype:
+
+  dashboard:
+    layout_contract: regions=[sidebar,topbar,main], sidebar={width_px:220,nav_groups:2,icons_required:true}, topbar=[search,notifications,avatar], main_grid=[{row:1,component:kpi_cards,count:4},{row:2,component:chart,aspect_ratio:"16:5"},{row:3,component:split,left:data_table,right:activity_feed,ratio:"65:35"}], density=compact
+    content_contract: kpi_labels match app domain (e.g. portfolio value/24h change/top coin prices), table_columns match domain (e.g. asset/price/change/holdings/value), seed_rows=5, required_states=[loading,empty,error]
+
+  landing:
+    layout_contract: regions=[header,hero,features,social_proof,cta,footer], sidebar=null, topbar=[logo,nav,cta_button], main_grid=[{row:1,component:hero,aspect_ratio:"16:6"},{row:2,component:feature_grid,count:4},{row:3,component:testimonials},{row:4,component:cta_band}], density=comfortable
+    content_contract: kpi_labels=[], table_columns=[], seed_rows=0, required_states=[hover,active]
+
+  ecommerce:
+    layout_contract: regions=[header,filter_bar,product_grid,cart_drawer], sidebar=null, topbar=[logo,search,cart_icon], main_grid=[{row:1,component:filter_bar},{row:2,component:product_grid,count:6}], density=comfortable
+    content_contract: kpi_labels=[], table_columns=[product,price,rating,stock], seed_rows=6, required_states=[loading,empty,cart_open]
+
+  kanban:
+    layout_contract: regions=[topbar,board], sidebar=null, topbar=[app_name,add_button,filter], main_grid=[{row:1,component:kanban_columns,count:3}], density=compact
+    content_contract: kpi_labels=[], table_columns=[title,assignee,priority,due_date], seed_rows=3, required_states=[loading,empty,detail_modal]
+
+  chat:
+    layout_contract: regions=[contact_list,thread,info_panel], sidebar={width_px:280,nav_groups:1,icons_required:false}, topbar=[search,compose], main_grid=[{row:1,component:message_thread},{row:2,component:input_bar}], density=compact
+    content_contract: kpi_labels=[], table_columns=[], seed_rows=5, required_states=[loading,empty,unread_badge]
+
+  editor:
+    layout_contract: regions=[toolbar,edit_area,status_bar], sidebar=null, topbar=[file_name,format_actions,save_export], main_grid=[{row:1,component:toolbar},{row:2,component:edit_area,aspect_ratio:"full"},{row:3,component:status_bar}], density=comfortable
+    content_contract: kpi_labels=[], table_columns=[], seed_rows=0, required_states=[loading,saved,unsaved]
+
+  feed:
+    layout_contract: regions=[topbar,featured,card_grid], sidebar=null, topbar=[search,filter_tabs], main_grid=[{row:1,component:featured_card,aspect_ratio:"16:5"},{row:2,component:card_grid,count:6}], density=comfortable
+    content_contract: kpi_labels=[], table_columns=[title,author,date,tags], seed_rows=6, required_states=[loading,empty,search_results]
+
+  form:
+    layout_contract: regions=[step_indicator,form_body,actions], sidebar=null, topbar=[logo,step_indicator], main_grid=[{row:1,component:inputs},{row:2,component:submit_button}], density=comfortable
+    content_contract: kpi_labels=[], table_columns=[], seed_rows=0, required_states=[idle,validating,error,success]
+
+  game:
+    layout_contract: regions=[start_screen,game_canvas,hud,game_over], sidebar=null, topbar=[], main_grid=[{row:1,component:game_canvas,aspect_ratio:"16:9"},{row:2,component:hud}], density=compact
+    content_contract: kpi_labels=[score,lives,level,timer], table_columns=[], seed_rows=0, required_states=[start,playing,paused,game_over]
+
+  portfolio:
+    layout_contract: regions=[hero_band,about,skills,projects,experience], sidebar=null, topbar=[name,nav,contact_cta], main_grid=[{row:1,component:hero_band,aspect_ratio:"16:5"},{row:2,component:skills_grid},{row:3,component:projects_grid,count:4}], density=comfortable
+    content_contract: kpi_labels=[], table_columns=[project,tech_stack,description,links], seed_rows=4, required_states=[hover,project_modal]
 
 Formatting rules:
 - Every task MUST include execution_hint, task_type, and output_files
 - Use null explicitly where fields do not apply
 - Output JSON only, no commentary
+
+
 
 

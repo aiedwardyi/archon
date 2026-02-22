@@ -113,6 +113,21 @@ If the task JSON contains a "ui_archetype" field with a non-null value:
       required_interactions -> every listed interaction MUST be implemented
       avoid -> none of the listed elements may appear anywhere in the HTML
   - Skip STEP 1, STEP 2, and STEP 3 entirely. Jump directly to STEP 4.
+  - If archetype_rules contains a layout_contract, enforce it as GEOMETRY LAW:
+      regions -> the HTML must have exactly these top-level layout regions as direct children of <body> or the app wrapper
+      sidebar -> if present, render a fixed sidebar at the specified width_px. It MUST contain nav_groups sections with inline SVG icons.
+      topbar -> render a fixed top bar containing exactly the listed elements in order
+      main_grid -> render each row in order. row component/count/aspect_ratio are HARD constraints:
+        kpi_cards: render exactly count cards in a CSS grid row
+        chart: canvas/SVG chart, height proportional to aspect_ratio (e.g. 16:5 = 31% of width)
+        split: two-column layout with left/right components at the given ratio (e.g. 65:35)
+        feature_grid: CSS grid with count columns
+      density: compact = tighter padding (--space-xs/sm), comfortable = normal padding (--space-md/lg)
+  - If archetype_rules contains a content_contract, enforce it as CONTENT LAW:
+      kpi_labels -> use these exact labels on KPI cards (or domain-appropriate equivalents)
+      table_columns -> render exactly these columns in the data table, in this order
+      seed_rows -> seed exactly this many rows of realistic data
+      required_states -> implement ALL listed states (loading shimmer, empty state, error state)
 If "ui_archetype" is absent or null: proceed normally from STEP 1.
 
 STEP 1 — IDENTIFY THE PRIMARY USER ACTION:
@@ -338,6 +353,7 @@ FINAL CHECKLIST (MUST SATISFY BEFORE OUTPUT)
   JSON schema exactly correct
 
 Task is below. Produce only scaffolding files.
+
 
 
 
