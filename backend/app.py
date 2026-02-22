@@ -710,6 +710,17 @@ def execution_status():
             execution = session.get(Execution, execution_id)
             if execution:
                 version = execution.version
+                # 7C.2: DB is ground truth when pipeline not actively running
+                if not execution_state["running"] and execution.status in ("success", "error"):
+                    db_status = "COMPLETED" if execution.status == "success" else "FAILED"
+                    return jsonify({
+                        "status": db_status,
+                        "currentStage": "engineer",
+                        "logs": execution_state.get("logs", []),
+                        "engineerTasks": [],
+                        "project_id": project_id,
+                        "execution_id": execution_id,
+                    }), 200
         finally:
             session.close()
 
@@ -782,6 +793,17 @@ def get_code():
             execution = session.get(Execution, execution_id)
             if execution:
                 version = execution.version
+                # 7C.2: DB is ground truth when pipeline not actively running
+                if not execution_state["running"] and execution.status in ("success", "error"):
+                    db_status = "COMPLETED" if execution.status == "success" else "FAILED"
+                    return jsonify({
+                        "status": db_status,
+                        "currentStage": "engineer",
+                        "logs": execution_state.get("logs", []),
+                        "engineerTasks": [],
+                        "project_id": project_id,
+                        "execution_id": execution_id,
+                    }), 200
         finally:
             session.close()
 

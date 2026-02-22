@@ -118,8 +118,8 @@ export function PipelineRun() {
       try { setPromptHistory(JSON.parse(cachedHistory)) } catch {}
     }
 
-    // 7C.1: DB fallback if no cached status
-    if (!cachedStatus || cachedStatus === "idle") {
+    // 7C.1: DB fallback — always sync version/execution from DB on mount
+    if (!cachedStatus || cachedStatus === "idle" || cachedStatus === "complete") {
       fetch(`${API_BASE}/api/projects/${pidNum}`)
         .then(r => r.json())
         .then(data => {
@@ -214,8 +214,8 @@ export function PipelineRun() {
       setCurrentStage(derivedStage)
       sessionStorage.setItem("archon_current_stage", derivedStage)
 
-      // 7C.2: accept COMPLETED whenever we are the active running pipeline
-      if (data.status === "COMPLETED" && isRunningRef.current) {
+      // 7C.2: accept COMPLETED if we started this run OR backend says done
+      if (data.status === "COMPLETED" && (isRunningRef.current || newRunRef.current)) {
         setCurrentStage("engineer")
         sessionStorage.setItem("archon_current_stage", "engineer")
         setPipelineStatus("complete")
@@ -263,7 +263,7 @@ export function PipelineRun() {
     sessionStorage.setItem("archon_pipeline_status", "running")
     setCurrentStage("pm")
     sessionStorage.setItem("archon_current_stage", "pm")
-    setLogs([])
+    // Don't clear logs here — keep previous run visible until new logs stream in
     setShowAllLogs(false)
     newRunRef.current = true
 

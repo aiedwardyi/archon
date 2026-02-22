@@ -294,6 +294,28 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion 
   }
 
   const getCachedLogs = () => {
+    // Try to find logs for the specific version being viewed
+    if (projectId && version) {
+      // Scan sessionStorage for an execution matching this project+version
+      const currentEid = sessionStorage.getItem("archon_current_execution_id")
+      const currentVer = sessionStorage.getItem("archon_current_version")
+      if (currentEid && currentVer && Number(currentVer) === version) {
+        try {
+          const logs = JSON.parse(sessionStorage.getItem(`archon_logs_${currentEid}`) || "[]")
+          if (logs.length) return logs
+        } catch {}
+      }
+      // Fallback: scan all archon_logs_* keys for any that match
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i)
+        if (key && key.startsWith("archon_logs_")) {
+          try {
+            const logs = JSON.parse(sessionStorage.getItem(key) || "[]")
+            if (logs.length) return logs
+          } catch {}
+        }
+      }
+    }
     const eid = sessionStorage.getItem("archon_current_execution_id")
     if (!eid) return []
     try { return JSON.parse(sessionStorage.getItem(`archon_logs_${eid}`) || "[]") } catch { return [] }
