@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 import os
@@ -164,5 +164,6 @@ class EngineerAgent:
             raise RuntimeError("EngineerAgent: no API client available")
 
         return _run_gemini(self.client, contents)
+
 
 
