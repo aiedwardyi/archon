@@ -214,7 +214,13 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
                         html_files = list(parent_dir.rglob("*.html"))
                         candidate = html_files[0] if html_files else None
                     if candidate and Path(candidate).exists():
-                        existing_code = Path(candidate).read_text(encoding="utf-8", errors="replace")
+                        html_content = Path(candidate).read_text(encoding="utf-8", errors="replace")
+                        css_candidate = parent_dir / "src" / "style.css"
+                        if css_candidate.exists():
+                            css_content = css_candidate.read_text(encoding="utf-8", errors="replace")
+                            existing_code = f"<!-- src/index.html -->\n{html_content}\n\n/* src/style.css */\n{css_content}"
+                        else:
+                            existing_code = html_content
                         add_log("Build Agent: Loading previous version for context...")
         finally:
             session_check.close()
@@ -969,6 +975,24 @@ def get_preview(project_id: int, version: int):
     return Response(PREVIEW_PLACEHOLDER, mimetype="text/html", status=200)
 
 
+@app.route("/api/preview/<int:project_id>/<int:version>/src/<path:filename>", methods=["GET"])
+def get_preview_static(project_id: int, version: int, filename: str):
+    src_dir = get_version_dir(project_id, version) / "code" / "src"
+    target = src_dir / filename
+    try:
+        target.resolve().relative_to(src_dir.resolve())
+    except ValueError:
+        return jsonify({"error": "Invalid path"}), 400
+    if not target.exists():
+        return jsonify({"error": "File not found"}), 404
+    ext_mime = {
+        ".css": "text/css", ".js": "application/javascript",
+        ".png": "image/png", ".jpg": "image/jpeg",
+        ".svg": "image/svg+xml",
+    }
+    mime = ext_mime.get(target.suffix.lower(), "application/octet-stream")
+    return send_file(target, mimetype=mime)
+
 
 @app.route("/api/projects/<int:project_id>/head", methods=["GET"])
 def get_project_head(project_id: int):
@@ -1016,6 +1040,8 @@ if __name__ == "__main__":
     print(f"PUBLIC_DIR: {PUBLIC_DIR}")
     print(f"CORS enabled for: http://localhost:5173, http://localhost:3000")
     app.run(debug=True, port=5000)
+
+
 
 
 

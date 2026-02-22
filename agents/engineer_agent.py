@@ -53,14 +53,11 @@ def _repair_json(raw: str) -> dict:
         )
     candidate = text[start : end + 1]
     candidate = re.sub(r"}\s*\n\s*{", "},\n{", candidate)
-    # Strip backtick-wrapped hex colors e.g. `#0a0e14` -> #0a0e14
     candidate = re.sub(r"`(#[0-9a-fA-F]{3,8})`", r"\1", candidate)
-    # Pass 1: strip invalid escapes
     try:
         return json.loads(re.sub(r'\\(?!["\\/bfnrtu])', "", candidate))
     except json.JSONDecodeError:
         pass
-    # Pass 2: double them instead
     try:
         return json.loads(re.sub(r'\\(?!["\\/bfnrtu])', r"\\\\", candidate))
     except json.JSONDecodeError as e:
@@ -72,7 +69,6 @@ def _repair_json(raw: str) -> dict:
 
 
 def _run_claude(contents: str) -> EngineeringResult:
-    """Call Claude Sonnet as the build agent (streaming for large outputs)."""
     import anthropic
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     raw = ""
@@ -90,7 +86,6 @@ def _run_claude(contents: str) -> EngineeringResult:
 
 
 def _run_gemini(client: genai.Client, contents: str) -> EngineeringResult:
-    """Call Gemini Flash as the build agent (fallback)."""
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=contents,
@@ -143,6 +138,20 @@ class EngineerAgent:
                 f"--- END EXISTING CODE ---\n\n"
             )
 
+        archetype_block = ""
+        if task.ui_archetype:
+            rules = task.archetype_rules
+            rules_str = ""
+            if rules:
+                rules_str = (
+                    f"\n  required_blocks: {rules.required_blocks}"
+                    f"\n  required_interactions: {rules.required_interactions}"
+                    f"\n  avoid: {rules.avoid}"
+                    f"\n  layout_contract: {rules.layout_contract}"
+                    f"\n  content_contract: {rules.content_contract}"
+                )
+            archetype_block = f"ui_archetype: {task.ui_archetype}\narchetype_rules:{rules_str}\n"
+
         contents = (
             f"{prompt}\n\n"
             f"{user_context}"
@@ -154,6 +163,7 @@ class EngineerAgent:
             f"outputs: {task.outputs}\n"
             f"output_files: {task.output_files}\n"
             f"task_type: {task.task_type}\n"
+            f"{archetype_block}"
             f"--- TASK END ---"
         )
 
@@ -164,8 +174,3 @@ class EngineerAgent:
             raise RuntimeError("EngineerAgent: no API client available")
 
         return _run_gemini(self.client, contents)
-
-
-
-
-

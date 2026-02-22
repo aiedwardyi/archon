@@ -23,15 +23,13 @@ Include "summary" as a short sentence.
 
 Do NOT include any additional keys anywhere.
 
-Use forward slashes in ALL file paths (e.g. src/index.html, src/app.js).
+Use forward slashes in ALL file paths (e.g. src/index.html, src/style.css).
 
 ALL paths MUST start with a directory prefix — NEVER use bare filenames at root level.
 
 Allowed paths ONLY:
   src/...
   docs/...
-  src/requirements.txt  (NOT requirements.txt at root)
-  src/pyproject.toml    (NOT pyproject.toml at root)
 
 FILE LIMITS (STRICT)
 
@@ -43,19 +41,22 @@ If output_files is provided in the task, generate ONLY files listed there.
 
 Base scaffolding on the PRD domain and tech stack. Generate real starter code, not empty stubs.
 
-SELF-CONTAINED HTML OUTPUT — TOP PRIORITY
+TWO-FILE OUTPUT — MANDATORY FOR ALL WEB APPS
 
-For ANY task that produces a user-facing web application (landing pages, dashboards, forms, tools, games, etc.):
+For ANY task that produces a user-facing web application, you MUST output EXACTLY two files:
 
-You MUST produce a single self-contained HTML file as the PRIMARY output:
+FILE 1: src/index.html
+  - Contains: DOCTYPE, head with <link rel="stylesheet" href="./style.css">, body with all HTML structure, and ONE script tag at bottom of body with ALL JavaScript
+  - Contains NO style tags — all CSS lives in style.css
+  - NO external dependencies, NO CDN links, NO npm, NO imports, NO build tools
+  - Must work by opening directly in a browser (style.css is in the same directory)
 
-File path: src/index.html
+FILE 2: src/style.css
+  - Contains: ALL CSS — :root variables, reset, layout, components, animations, media queries
+  - This is where all the visual quality lives — do NOT hold back here
+  - NO inline styles in HTML — everything goes in this file
 
-Self-contained means:
-  ALL CSS inside a <style> tag within <head>
-  ALL JavaScript inside a <script> tag at bottom of <body>
-  NO external dependencies, NO CDN links, NO npm, NO imports, NO build tools
-  Must work by opening directly in a browser
+WHY TWO FILES: index.html handles structure and logic (500 lines max). style.css handles ALL visual design (400 lines max). This split gives you room to produce genuinely premium CSS without line pressure.
 
 CRITICAL: Build the ACTUAL app the task describes.
   Real, working functionality
@@ -68,13 +69,13 @@ If the task contains a "DESIGN ASSETS" section with image URLs, you MUST use eve
 These are real pre-generated images. Using them is MANDATORY — not optional.
 
 RULES FOR DESIGN ASSETS:
-- hero_background key -> use as CSS background-image on the hero/header section: background-image: url("URL_HERE"); background-size: cover; background-position: center;
-- feature_illustration_* keys -> use as <img src="URL"> in feature cards or section visuals
-- character_* keys -> use as <img src="URL"> in character cards, team sections, or profile displays
-- product_* keys -> use as <img src="URL"> in product cards or showcase sections
+- hero_background key -> use as CSS background-image on the hero/header section
+- feature_illustration_* keys -> use as img src in feature cards or section visuals
+- character_* keys -> use as img src in character cards, team sections, or profile displays
+- product_* keys -> use as img src in product cards or showcase sections
 - Always add a CSS gradient fallback alongside background-image in case of load failure
-- Set <img> tags to width:100%; height:auto; object-fit:cover; or object-fit:contain; as appropriate
-- NEVER replace provided asset URLs with Unsplash URLs or CSS blob shapes
+- Set img tags to width:100%; height:auto; object-fit:cover; or object-fit:contain; as appropriate
+- NEVER replace provided asset URLs with placeholder images
 - NEVER skip an asset — if 3 assets are provided, all 3 must appear in the HTML
 
 FALLBACK IMAGES (only use if NO design assets are provided in the task):
@@ -82,10 +83,6 @@ For hero visuals use Unsplash:
   Format: https://images.unsplash.com/photo-[ID]?w=1200&q=80&fit=crop&auto=format
   Gaming: photo-1542751371-adc38448a05e, photo-1518709268805-4e9042af9f23
   SaaS:   photo-1551288049-bebda4e38f71, photo-1497366216548-37526070297c
-
-For typography on creative/gaming apps use Google Fonts:
-  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
-  For SaaS/dashboards use: Inter, Plus Jakarta Sans, or DM Sans.
 
 For icons use inline SVG only. Do NOT use external icon libraries.
 
@@ -114,7 +111,7 @@ If the task JSON contains a "ui_archetype" field with a non-null value:
       avoid -> none of the listed elements may appear anywhere in the HTML
   - Skip STEP 1, STEP 2, and STEP 3 entirely. Jump directly to STEP 4.
   - If archetype_rules contains a layout_contract, enforce it as GEOMETRY LAW:
-      regions -> the HTML must have exactly these top-level layout regions as direct children of <body> or the app wrapper
+      regions -> the HTML must have exactly these top-level layout regions as direct children of body or the app wrapper
       sidebar -> if present, render a fixed sidebar at the specified width_px. It MUST contain nav_groups sections with inline SVG icons.
       topbar -> render a fixed top bar containing exactly the listed elements in order
       main_grid -> render each row in order. row component/count/aspect_ratio are HARD constraints:
@@ -201,7 +198,7 @@ PRIMARY ACTION: "play a game / interactive experience"
   -> SHELL: GAME / INTERACTIVE
   -> Full-viewport game canvas or play area (centered)
   -> HUD elements: score, lives, timer overlaid on game area
-  -> Start screen → game screen → game over screen (JS state machine)
+  -> Start screen -> game screen -> game over screen (JS state machine)
   -> Dark immersive background, high contrast UI
   -> KEYWORDS: game, puzzle, quiz game, arcade, clicker, adventure, RPG, interactive story
 
@@ -247,8 +244,7 @@ Use grid/flex (no floats).
 
 Mobile-first with a 768px breakpoint.
 
-SPACING SCALE (CSS VARIABLES)
-Define at :root:
+SPACING SCALE (in style.css :root)
   --space-2xs: 4px;
   --space-xs: 8px;
   --space-sm: 12px;
@@ -258,7 +254,7 @@ Define at :root:
   --space-2xl: 48px;
   --space-3xl: 72px;
 
-TYPE SCALE (CSS VARIABLES)
+TYPE SCALE (in style.css :root)
   --text-xs: 11px;
   --text-sm: 13px;
   --text-base: 15px;
@@ -268,19 +264,17 @@ TYPE SCALE (CSS VARIABLES)
   --text-3xl: 48px;
 
 Typography rules:
-  System font stack only (no external font imports to avoid embed blocks):
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  System font stack only:
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
   Headings: letter-spacing: -0.02em; line-height: 1.1-1.2
   Body: line-height: 1.6
-  Use clear hierarchy: primary / secondary / muted text colors
 
-COLOR SYSTEM (VARIABLES, NO HARDCODED HEX IN COMPONENTS)
-At :root define:
-  background layers (bg0, bg1, bg2)
-  border
-  text primary/secondary/muted
-  accent + accent2 (for gradients)
-  success/warn/danger
+COLOR SYSTEM (in style.css :root, NO hardcoded hex in components)
+  background layers: --bg0, --bg1, --bg2
+  --border
+  --text, --text-secondary, --text-muted
+  --accent, --accent2 (for gradients)
+  --success, --warn, --danger
 
 Choose accent contextually:
   finance -> green family
@@ -289,83 +283,70 @@ Choose accent contextually:
   gaming -> orange/red
   wellness -> teal/emerald
 
-VISUAL DEPTH REQUIREMENTS (MUST INCLUDE)
-Include at least 4 of the following:
+VISUAL DEPTH REQUIREMENTS — IN style.css (MUST INCLUDE AT LEAST 4)
   glass panels with backdrop-filter blur
-  gradient borders (via background-clip)
-  soft glow accents (radial gradients)
-  noise overlay texture (CSS-only; subtle)
+  gradient borders via background-clip
+  soft glow accents via radial gradients
+  noise overlay texture (CSS-only, subtle)
   hover elevation + slight translateY
-  "shine" effect on primary buttons
+  shine effect on primary buttons
   section separators using faint gradients
-  decorative SVG blobs/lines anchored to corners
+  decorative SVG blobs anchored to corners
+  keyframe animations: page-load fade, skeleton shimmer, chart draw, number count-up
 
-COMPONENT REQUIREMENTS
-  Buttons: primary (gradient), secondary (outline/glass), destructive
+COMPONENT REQUIREMENTS (all styles in style.css)
+  Buttons: primary (gradient + shine), secondary (outline/glass), destructive
   Inputs: focus ring + validation states
-  Cards: gradient/glass background, hover border glow
+  Cards: gradient/glass background, hover border glow, subtle shadow
   Badges/pills: semantic colors via variables
   Modal/dialog: animated in/out, ESC closes
-  Toast notifications: animated slide/fade
-  Table/list: sticky header (if scroll), row hover, dense but readable
+  Toast notifications: animated slide/fade from corner
+  Table/list: sticky header, row hover, dense but readable
+  Skeleton shimmer: animated gradient sweep for loading states
 
-MICRO-INTERACTIONS (MANDATORY)
-  All interactive elements must have hover + active + focus-visible states
-  Use transitions 150-250ms
-  Use one subtle page-load animation (fade/slide)
-  Skeleton shimmer for loading state
+MICRO-INTERACTIONS (MANDATORY — in style.css)
+  All interactive elements: hover + active + focus-visible states
+  Transitions: 150-250ms ease
+  Page-load: staggered fade-in (animation-delay on children)
+  Chart draw: stroke-dashoffset animation on SVG paths
+  KPI numbers: CSS counter or JS count-up animation
 
-IMPLEMENTATION RULES (FUNCTIONALITY)
-  Implement the actual logic described in the task (not a demo).
-  Prefer simple state management (plain JS).
-  Validate user input; show inline errors.
-  Use localStorage when it improves UX (settings, drafts, history), unless task forbids it.
-  Provide realistic seeded data in JS so the UI is populated.
+IMPLEMENTATION RULES (in index.html script tag)
+  Implement actual logic, not a demo skeleton
+  Plain JS state management
+  Validate user input, show inline errors
+  Seed realistic data in JS constants
+  Use localStorage for settings/drafts when it improves UX
 
-OUTPUT CONTENT RULES
-  No lorem ipsum. Use believable copy aligned to the domain.
-  No "coming soon".
-  Avoid repetitive layout: alternate section patterns (left/right split, staggered cards, feature rows).
-  Use CSS Grid with auto-fit/minmax for responsive card layouts.
+OUTPUT SIZE LIMITS — CRITICAL
+  src/index.html: 500 lines max — structure + JS only, NO CSS
+  src/style.css: 400 lines max — ALL CSS, no JS
 
-OUTPUT SIZE LIMIT — CRITICAL
-  The entire src/index.html file MUST be 800 lines or fewer.
-  This is a HARD limit. Violating it causes JSON parse failures and breaks the entire pipeline.
-  If you are approaching 800 lines, STOP adding features and close the file.
-  Do NOT write comments in CSS or JS — they waste lines.
-  Do NOT write more than 5 seed data items.
-  Do NOT add extra sections beyond the mandatory ones.
-  Achieve this by:
-    Writing tight, efficient CSS (combine selectors, avoid redundancy)
-    Using concise JS (no verbose comments, no console.logs)
-    Seeding 3 data items max (not 6-8)
+  index.html rules:
+    No style tags anywhere — violation breaks the split
+    No JS comments — wastes lines
+    Seed 5 data items max
     One modal max, one toast max
-  A focused 800-line app beats a bloated 1500-line app every time.
-  Quality over quantity. Every line must earn its place.
+
+  style.css rules:
+    No comments — every line is a CSS rule
+    Define all variables at :root
+    Combine selectors aggressively
+    Write EVERY animation and depth effect you want — this is your canvas
+    Do NOT hold back on: glow effects, gradient borders, glass panels, keyframe animations, shimmer
+
+  Together 900 lines beats a cramped 500-line single file every time.
 
 FINAL CHECKLIST (MUST SATISFY BEFORE OUTPUT)
-  Looks premium even with ALL external images blocked
-  Hero has a strong visual composition (SVG/gradients)
-  Page feels complete and content-rich
-  At least one modal + one toast + loading + empty state
-  Responsive on mobile
-  All CSS variables used consistently
-  JSON schema exactly correct
+  Two files output: src/index.html + src/style.css
+  index.html has link rel stylesheet href ./style.css in head — NOT a style tag
+  index.html has zero CSS — all styles in style.css
+  style.css has :root with full variable set
+  style.css includes at least 4 depth effects (glow, glass, gradient border, shimmer)
+  style.css includes keyframe animations (page load fade, skeleton shimmer, chart draw)
+  Page feels complete and content-rich with realistic data
+  At least one modal + one toast + loading shimmer + empty state
+  Responsive on mobile (768px breakpoint)
+  JSON schema exactly correct — files array has exactly 2 entries
 
 Task is below. Produce only scaffolding files.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
