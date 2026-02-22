@@ -1,8 +1,7 @@
-﻿from __future__ import annotations
-
-import json
+﻿import json
 import os
 import re
+import urllib.request
 from pathlib import Path
 from typing import Any
 
@@ -24,7 +23,7 @@ def _repair_json_array(raw: str) -> list:
 class DesignAgent:
     """
     Generates images via DALL-E 3 based on PRD content.
-    Returns a list of {key, url, purpose} dicts for the Build Agent.
+    Returns a list of {key, url, local_path, purpose} dicts for the Build Agent.
     """
 
     def __init__(self, api_key: str | None = None):
@@ -32,18 +31,12 @@ class DesignAgent:
         if not self.api_key:
             raise ValueError("OPENAI_API_KEY required for DesignAgent")
 
-    def run(self, prd_dict: dict, max_images: int = 4) -> list[dict[str, Any]]:
-        """
-        Analyze PRD and generate images.
-        Returns list of {key, url, purpose, prompt} dicts.
-        """
+    def run(self, prd_dict: dict, max_images: int = 4, save_dir: Path | None = None) -> list[dict[str, Any]]:
         from openai import OpenAI
         client = OpenAI(api_key=self.api_key)
 
-        # Step 1: Ask GPT-4o-mini what images to generate
         prompt_template = (PROMPTS_DIR / "design_agent.txt").read_text(encoding="utf-8")
-
-        prd_summary = json.dumps(prd_dict, indent=2)[:3000]  # Trim to avoid token waste
+        prd_summary = json.dumps(prd_dict, indent=2)[:3000]
 
         response = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -56,15 +49,14 @@ class DesignAgent:
 
         raw = response.choices[0].message.content
         image_requests = _repair_json_array(raw)
-        image_requests = image_requests[:max_images]  # Enforce limit
+        image_requests = image_requests[:max_images]
 
         print(f"DesignAgent: Generating {len(image_requests)} images...")
 
-        # Step 2: Generate each image via DALL-E 3
         results = []
         for req in image_requests:
             try:
-                print(f"  → Generating: {req.get('key', 'unknown')} ({req.get('style', '')})")
+                print(f"  -> Generating: {req.get('key', 'unknown')} ({req.get('style', '')})")
                 img_response = client.images.generate(
                     model="dall-e-3",
                     prompt=req["prompt"],
@@ -73,16 +65,31 @@ class DesignAgent:
                     n=1,
                 )
                 url = img_response.data[0].url
+                print(f"  + {req['key']}: {url[:60]}...")
+
+                # Download image to disk so it doesn't expire
+                local_path = None
+                if save_dir:
+                    save_dir.mkdir(parents=True, exist_ok=True)
+                    img_filename = f"{req['key']}.png"
+                    img_dest = save_dir / img_filename
+                    try:
+                        urllib.request.urlretrieve(url, img_dest)
+                        local_path = str(img_dest)
+                        print(f"  saved -> {img_dest.name}")
+                    except Exception as dl_err:
+                        print(f"  download failed for {req['key']}: {dl_err}")
+
                 results.append({
                     "key": req["key"],
                     "url": url,
+                    "local_path": local_path,
                     "purpose": req.get("purpose", ""),
                     "prompt": req["prompt"],
                     "style": req.get("style", ""),
                 })
-                print(f"  ✓ {req['key']}: {url[:60]}...")
             except Exception as e:
-                print(f"  ✗ Failed to generate {req.get('key')}: {e}")
+                print(f"  x Failed to generate {req.get('key')}: {e}")
                 continue
 
         print(f"DesignAgent: {len(results)}/{len(image_requests)} images generated.")

@@ -285,7 +285,8 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
             from agents.design_agent import DesignAgent
             prd_data = read_json_file(version_dir / "last_prd.json") or {}
             design_agent = DesignAgent()
-            design_assets = design_agent.run(prd_data, max_images=6)
+            assets_dir = version_dir / "assets"
+            design_assets = design_agent.run(prd_data, max_images=6, save_dir=assets_dir)
             if design_assets:
                 write_json_file(version_dir / "last_design_assets.json", {"assets": design_assets})
                 add_log(f"Design Agent: {len(design_assets)} images ready.")
@@ -323,7 +324,9 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
         if design_assets:
             asset_lines = []
             for a in design_assets:
-                line = "  - " + a["key"] + " (" + a["purpose"] + "): " + a["url"]
+                # Use local served path if downloaded; fall back to Azure URL
+                img_url = f"/api/assets/{project_id}/{version}/{a['key']}.png" if a.get("local_path") else a["url"]
+                line = "  - " + a["key"] + " (" + a["purpose"] + "): " + img_url
                 asset_lines.append(line)
             design_context = "\n\nDESIGN ASSETS - USE THESE IMAGE URLs IN THE HTML:\n" + "\n".join(asset_lines) + "\nIMPORTANT: Use these exact URLs in <img> tags or CSS background-image. Do not use placeholder images.\n"
             task_description_with_assets = task_description + design_context
@@ -998,6 +1001,14 @@ def health():
     return jsonify({"status": "ok"}), 200
 
 
+@app.route("/api/assets/<int:project_id>/<int:version>/<filename>", methods=["GET"])
+def get_asset(project_id: int, version: int, filename: str):
+    asset_path = get_version_dir(project_id, version) / "assets" / filename
+    if not asset_path.exists():
+        return jsonify({"error": "Asset not found"}), 404
+    return send_file(asset_path, mimetype="image/png")
+
+
 if __name__ == "__main__":
     init_db()
     print(f"Flask server starting...")
@@ -1005,6 +1016,9 @@ if __name__ == "__main__":
     print(f"PUBLIC_DIR: {PUBLIC_DIR}")
     print(f"CORS enabled for: http://localhost:5173, http://localhost:3000")
     app.run(debug=True, port=5000)
+
+
+
 
 
 

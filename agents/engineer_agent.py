@@ -53,6 +53,8 @@ def _repair_json(raw: str) -> dict:
         )
     candidate = text[start : end + 1]
     candidate = re.sub(r"}\s*\n\s*{", "},\n{", candidate)
+    # Strip backtick-wrapped hex colors e.g. `#0a0e14` -> #0a0e14
+    candidate = re.sub(r"`(#[0-9a-fA-F]{3,8})`", r"\1", candidate)
     # Pass 1: strip invalid escapes
     try:
         return json.loads(re.sub(r'\\(?!["\\/bfnrtu])', "", candidate))
@@ -162,4 +164,5 @@ class EngineerAgent:
             raise RuntimeError("EngineerAgent: no API client available")
 
         return _run_gemini(self.client, contents)
+
 

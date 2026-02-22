@@ -105,36 +105,114 @@ Design priorities (in this order):
 
 The UI must feel like something a top designer shipped.
 
-MANDATORY PAGE STRUCTURE (ALL APPS)
+LAYOUT INTELLIGENCE — READ THE TASK FIRST, THEN REASON
 
-Sticky header with blur + subtle border
+STEP 1 — IDENTIFY THE PRIMARY USER ACTION:
+Before writing a single line of code, ask: "What is the ONE thing a user primarily does in this app?"
+That action determines the shell. Never default to a landing page unless the task is explicitly a marketing site.
 
-Hero / top section with:
-  headline + subheadline
-  primary + secondary CTA
-  "hero visual" (CSS/SVG composition)
+STEP 2 — MATCH ACTION TO SHELL:
 
-Main content with multiple sections (no empty space):
-  feature grid (min 4)
-  social proof/testimonials (min 3)
-  "how it works" or "workflow" section
-  a data/interactive section relevant to the app (table/cards/chart-like layout using pure CSS)
+PRIMARY ACTION: "monitor / analyze data / track metrics"
+  -> SHELL: DASHBOARD
+  -> Full-height app: fixed sidebar (220px) + scrollable main area
+  -> Top bar: logo, search, bell icon, avatar initials
+  -> Sidebar: grouped nav sections with inline SVG icons, active highlight
+  -> Main: stat cards row (4 cards: metric label, big number, delta badge)
+  -> Below cards: SVG/canvas chart (area or line, drawn with pure JS)
+  -> Below chart: 2-col split — data table (sticky header, 5 rows) + activity feed
+  -> NO hero. NO testimonials. NO footer. This is an APP not a website.
+  -> KEYWORDS: dashboard, analytics, admin, CRM, monitoring, tracker, enterprise, metrics, reporting, SaaS
 
-CTA band near bottom
+PRIMARY ACTION: "manage items / tasks / projects"
+  -> SHELL: KANBAN / LIST MANAGER
+  -> Top nav bar with app name + action button (+ New Task)
+  -> Main area: either kanban columns (Todo / In Progress / Done) OR a master-detail list
+  -> Each card/row: title, assignee avatar, priority badge, due date
+  -> Sidebar optional: project switcher or filter panel
+  -> Interactions: drag feel (CSS only), click to open detail modal
+  -> KEYWORDS: kanban, todo, task manager, project manager, board, backlog, sprint, issues, tickets
 
-Footer with muted links + small print
+PRIMARY ACTION: "buy / browse products"
+  -> SHELL: E-COMMERCE
+  -> Sticky header: logo, search bar, cart icon with badge
+  -> Product grid: image, name, price, rating stars, Add to Cart button
+  -> Sidebar or top filter bar: category, price range, sort
+  -> Cart slide-out panel or modal
+  -> KEYWORDS: shop, store, ecommerce, product catalog, marketplace, buy, cart, checkout
 
-DASHBOARDS (IF APPLICABLE)
+PRIMARY ACTION: "send / read messages"
+  -> SHELL: CHAT / MESSAGING
+  -> Full-height 3-panel layout: contact list (left) + message thread (center) + profile/info (right, optional)
+  -> Message bubbles: sent (right, accent color) / received (left, muted)
+  -> Input bar pinned to bottom of thread panel
+  -> Unread badge on contact list items
+  -> KEYWORDS: chat, messenger, inbox, messages, conversation, DM, support, helpdesk
 
-Sidebar or top nav (choose what fits)
+PRIMARY ACTION: "create / edit content"
+  -> SHELL: EDITOR / CREATOR TOOL
+  -> Full-width toolbar at top (formatting, save, export buttons)
+  -> Large central editing area (textarea or contenteditable)
+  -> Optional: sidebar for pages/chapters/assets list
+  -> Status bar at bottom: word count, last saved, status
+  -> KEYWORDS: editor, writer, notes, document, blog, CMS, code editor, builder
 
-At least 2 distinct views:
-  cards overview + table/list view
-  plus a "details" panel or modal
+PRIMARY ACTION: "discover / explore content"
+  -> SHELL: MEDIA / CONTENT FEED
+  -> Top nav with search and filter tabs
+  -> Grid or masonry card layout: thumbnail, title, metadata, action buttons
+  -> Featured/hero card at top (larger, full-width or 2-col span)
+  -> Infinite scroll feel (seed 6-8 cards)
+  -> KEYWORDS: feed, news, articles, videos, music, gallery, portfolio, explore, discover, blog
 
-Include empty state + loading state (skeleton shimmer)
+PRIMARY ACTION: "fill out / submit information"
+  -> SHELL: FORM / WIZARD
+  -> Centered card layout, max-width 600px
+  -> Step indicator at top if multi-step (Step 1 of 3)
+  -> Clean labeled inputs with validation states
+  -> Progress bar for multi-step
+  -> Success confirmation screen as final state
+  -> KEYWORDS: form, survey, quiz, wizard, onboarding, checkout, registration, apply, booking, reservation
 
-Include inline toasts/alerts for actions
+PRIMARY ACTION: "play a game / interactive experience"
+  -> SHELL: GAME / INTERACTIVE
+  -> Full-viewport game canvas or play area (centered)
+  -> HUD elements: score, lives, timer overlaid on game area
+  -> Start screen → game screen → game over screen (JS state machine)
+  -> Dark immersive background, high contrast UI
+  -> KEYWORDS: game, puzzle, quiz game, arcade, clicker, adventure, RPG, interactive story
+
+PRIMARY ACTION: "view a profile / showcase work"
+  -> SHELL: PROFILE / PORTFOLIO
+  -> Hero band: avatar/cover image, name, title, social links
+  -> Sections: about, skills/stack, projects grid, experience timeline
+  -> Project cards: screenshot placeholder, title, tech tags, links
+  -> Clean single-column or 2-col layout, no sidebar
+  -> KEYWORDS: portfolio, profile, resume, CV, personal site, showcase, about me
+
+PRIMARY ACTION: "promote a product / service / idea"
+  -> SHELL: LANDING PAGE
+  -> Sticky header: logo + nav + CTA button
+  -> Hero: headline + subheadline + primary/secondary CTA + hero visual (gradient or image)
+  -> Feature grid (4+ items with icons)
+  -> Social proof: testimonials or logo strip
+  -> How it works section
+  -> Final CTA band
+  -> Footer
+  -> KEYWORDS: landing page, marketing, homepage, product page, saas marketing, waitlist, launch
+
+STEP 3 — IF THE TASK DOES NOT MATCH ANY KEYWORD LIST ABOVE:
+  Reason from first principles: what does a user DO in this app?
+  Pick the shell whose primary action most closely matches.
+  Never fall back to landing page just because you are uncertain.
+  A focused app shell with the right structure always beats a generic landing page.
+
+STEP 4 — UNIVERSAL APP RULES (apply to ALL shells above except landing page):
+  No hero section. No marketing headlines. No testimonials. No CTA band. No footer.
+  The app should feel OPEN and READY TO USE on load — data visible, not a welcome screen.
+  Seed realistic data so every panel looks populated.
+  Include at least one interactive action (button that triggers a toast, modal, or state change).
+  Include one skeleton/loading shimmer state.
 
 DESIGN SYSTEM — REQUIRED (MODERN SAAS)
 
@@ -252,6 +330,8 @@ FINAL CHECKLIST (MUST SATISFY BEFORE OUTPUT)
   JSON schema exactly correct
 
 Task is below. Produce only scaffolding files.
+
+
 
 
 
