@@ -62,33 +62,30 @@ CRITICAL: Build the ACTUAL app the task describes.
   App title/features/content must match the request exactly
   Seed realistic sample data so the UI looks "shipped", not empty
 
-EMBED / LIVE PREVIEW IMAGE COMPATIBILITY
+DESIGN ASSETS — CRITICAL PRIORITY
 
-Use real imagery for premium visual quality. The preview iframe allows external images.
+If the task contains a "DESIGN ASSETS" section with image URLs, you MUST use every single one.
+These are real pre-generated images. Using them is MANDATORY — not optional.
 
-For hero and section visuals, use real Unsplash photo URLs:
+RULES FOR DESIGN ASSETS:
+- hero_background key -> use as CSS background-image on the hero/header section: background-image: url("URL_HERE"); background-size: cover; background-position: center;
+- feature_illustration_* keys -> use as <img src="URL"> in feature cards or section visuals
+- character_* keys -> use as <img src="URL"> in character cards, team sections, or profile displays
+- product_* keys -> use as <img src="URL"> in product cards or showcase sections
+- Always add a CSS gradient fallback alongside background-image in case of load failure
+- Set <img> tags to width:100%; height:auto; object-fit:cover; or object-fit:contain; as appropriate
+- NEVER replace provided asset URLs with Unsplash URLs or CSS blob shapes
+- NEVER skip an asset — if 3 assets are provided, all 3 must appear in the HTML
+
+FALLBACK IMAGES (only use if NO design assets are provided in the task):
+For hero visuals use Unsplash:
   Format: https://images.unsplash.com/photo-[ID]?w=1200&q=80&fit=crop&auto=format
+  Gaming: photo-1542751371-adc38448a05e, photo-1518709268805-4e9042af9f23
+  SaaS:   photo-1551288049-bebda4e38f71, photo-1497366216548-37526070297c
 
-GAMING / FANTASY theme — use these Unsplash photo IDs in <img> tags or CSS background-image:
-  Dark cityscape:     photo-1542751371-adc38448a05e
-  Fantasy landscape:  photo-1518709268805-4e9042af9f23
-  Neon city:          photo-1550745165-9bc0b252726f
-  Warrior silhouette: photo-1552664730-d307ca884978
-  Epic battle:        photo-1558618666-fcd25c85cd64
-  Sci-fi space:       photo-1462331940025-496dfbfc7564
-
-SAAS / DASHBOARD theme — use these IDs:
-  Team collaboration: photo-1522071820081-009f0129c71c
-  Data/charts:        photo-1551288049-bebda4e38f71
-  Office/work:        photo-1497366216548-37526070297c
-  Tech abstract:      photo-1518770660439-4636190af475
-
-Always pair <img> tags with a CSS gradient fallback background in case image fails.
-For weapon/item card images: use object-fit: contain, transparent or dark-matched background, no white box. Set the card background to match the image tone.
-
-For typography on creative/gaming apps, use Google Fonts:
+For typography on creative/gaming apps use Google Fonts:
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
-  For SaaS/dashboards use: Inter, Plus Jakarta Sans, or DM Sans from Google Fonts.
+  For SaaS/dashboards use: Inter, Plus Jakarta Sans, or DM Sans.
 
 For icons use inline SVG only. Do NOT use external icon libraries.
 
@@ -330,6 +327,7 @@ FINAL CHECKLIST (MUST SATISFY BEFORE OUTPUT)
   JSON schema exactly correct
 
 Task is below. Produce only scaffolding files.
+
 
 
 

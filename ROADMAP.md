@@ -1,4 +1,4 @@
-﻿# Archon â€” Execution Roadmap
+﻿# Archon — Execution Roadmap
 
 ## Purpose
 
@@ -8,9 +8,9 @@ and enterprises delivering client apps to non-technical clients.
 
 **Core value proposition:**
 - Every prompt creates a full artifact set: Brief + Plan + Code + live preview
-- Complete version history â€” every decision is auditable and reversible
+- Complete version history — every decision is auditable and reversible
 - Agencies can show clients exactly what was built and why, version by version
-- Business language UI â€” no developer jargon anywhere
+- Business language UI — no developer jargon anywhere
 
 **The MOAT:** The Versions page. Lovable/v0 show current state only.
 Archon shows complete decision history with artifacts and live preview per version.
@@ -20,7 +20,7 @@ Archon shows complete decision history with artifacts and live preview per versi
 ## Target User
 
 Non-technical agency owner or project lead who:
-- Cannot read code â€” needs to SEE the app running
+- Cannot read code — needs to SEE the app running
 - Needs to show clients every decision made during development
 - Needs business language, not developer jargon
 
@@ -31,85 +31,83 @@ Non-technical agency owner or project lead who:
 ## Architecture
 ```
 User Input (Chat Panel)
-    â†“
+    ↓
 Prompt History (context continuation)
-    â†“
-Requirements Agent (OpenAI GPT-4o) â†’ Brief artifact (versioned)
-    â†“
-Architecture Agent (Gemini)        â†’ Build Plan artifact (versioned)
-    â†“
-Build Agent (Claude Sonnet 4.5)    â†’ Code files (versioned)
-    â†“
-Execution Result â†’ Database + UI + Version Timeline + Live Preview
+    ↓
+Requirements Agent (OpenAI GPT-4o-mini) → Brief artifact (versioned)
+    ↓
+Architecture Agent (Gemini Flash)        → Build Plan artifact (versioned)
+    ↓
+Design Agent (GPT-4o-mini + DALL-E 3)   → Image assets (versioned, served locally)
+    ↓
+Build Agent (Claude Sonnet 4.5)          → Code files (versioned)
+    ↓
+Execution Result → Database + UI + Version Timeline + Live Preview
 ```
 
 ---
 
 ## Phased Execution Plan
 
-### Phase 1â€“6.4 (âœ… Completed)
+### Phase 1-6.4 (✅ Completed)
 Core pipeline, schemas, multi-agent coordination, SQLite persistence,
 enterprise UI (10 screens, light + dark mode, business language throughout).
 
-### Phase 7A â€” Iterative Pipeline & Version History (âœ… Completed)
-- Every prompt runs full pipeline â†’ versioned DB record
+### Phase 7A — Iterative Pipeline & Version History (✅ Completed)
+- Every prompt runs full pipeline → versioned DB record
 - Prompt history continuation across iterations
 - /iterate, /restore, /versions endpoints
 - sessionStorage caching, real log persistence per execution
 
-### Phase 7B â€” Live Preview (âœ… Completed)
+### Phase 7B — Live Preview (✅ Completed)
 - Build Agent: Claude Sonnet 4.5 (primary), Gemini fallback
-- Engineer prompt: self-contained HTML, 600-line limit, max_tokens 32000
+- Engineer prompt: self-contained HTML, 500-line limit, max_tokens 32000
 - /api/preview/<project_id>/<version> serving generated HTML
 - Live preview iframe in Versions + Artifacts pages
 - Desktop/mobile viewport toggle working
 - Agent card flash bug fixed
 
-### Phase 7C â€” Stability & State Fixes (âœ… Completed)
+### Phase 7C — Stability & State Fixes (✅ Completed)
 - Pipeline state restores from DB on page refresh
-- Build completion uses DB as ground truth (no silent "Building...")
+- Build completion uses DB as ground truth
 - Prompt history persisted to sessionStorage across iterations
-- Logs save by version number â€” Artifacts logs tab version-correct
+- Logs save by version number — Artifacts logs tab version-correct
 - Pipeline polling restarts when navigating back to mid-run build
 - Global block prevents concurrent project builds
-- isRunningRef set synchronously to prevent missed COMPLETED signals
 
-**Carried forward:**
-- Artifacts occasionally shows wrong version when nav from Versions page
-- Master log accumulation across versions (prep for chatbox)
+### Phase 7E — Output Quality (✅ Completed)
+- Design Agent built: GPT-4o-mini plans images → DALL-E 3 generates them
+- Images downloaded to disk, served via /api/assets/<project_id>/<version>/<file>
+- Design Agent skips image generation for dashboards/tools (cost saving)
+- Keyword check uses PRD title + overview only to avoid false positives
+- Engineer prompt: 10-shell layout intelligence system
+- Engineer prompt: DESIGN ASSETS section forces asset usage in HTML
+- JSON repair fix: backtick-wrapped hex colors stripped before parse
+- Engineer agent no longer produces landing pages for dashboard prompts
 
 ---
 
-### Phase 7D â€” UI Polish & Quick Wins (ðŸ”´ Current Sprint)
+### Phase 7D — UI Polish & Quick Wins (🔴 Current Sprint)
 
-- 7D.1 Navbar: real project name + version (replace mock "checkout-service > v14")
+- 7D.1 Navbar: real project name + version (replace hardcoded "checkout-service > v14")
 - 7D.2 Projects table: add Project ID column
-- 7D.3 Delete project + delete all projects
+- 7D.3 Delete project + delete all with confirmation modal
 - 7D.4 Avatar dropdown (v0-style: email, dark mode, credits, sign out)
-       + Upgrade/Feedback/Refer/Credits in navbar
 - 7D.5 Versions page live preview height increase
-- 7D.6 Verify + fix Artifacts version sync from Versions page nav
+- 7D.6 Artifacts version sync fix from Versions page nav
 
 ---
 
-### Phase 7E â€” Output Quality (â¬œ Planned)
-
-- Engineer prompt: default to dashboard/hero layouts, ban mascot SVGs
-- Richer visual output â€” real UI patterns, not toy examples
-- Design QA agent (optional 4th pipeline step)
-
----
-
-### Phase 7F â€” Chatbox Upgrades (â¬œ Planned)
+### Phase 7F — Chatbox Upgrades (⬜ Planned)
 
 - File and media upload with drag-and-drop
 - Agent reply for unsupported inputs (URLs, videos)
-- Master log accumulation across versions (chatbox history foundation)
-- Image upload â†’ agent uses as design reference
+- Master log accumulation across versions
+- Image upload → agent uses as design reference
 
 ---
 
-### Phase 8 â€” Client Deliverables (â¬œ Planned)
+### Phase 8 — Client Deliverables (⬜ Planned)
 
 - PDF export of full build history (client audit trail)
 - Client shareable read-only link
@@ -121,32 +119,33 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 
 | Feature | Lovable/v0 | Archon |
 |---------|-----------|--------|
-| Context continuation | âœ… | âœ… |
-| Full chain on every edit | âŒ | âœ… |
-| Artifact trail per version | âŒ | âœ… |
-| Restore previous version | âœ… | âœ… |
-| Live preview | âœ… | âœ… |
-| Version history with preview | âŒ | âœ… |
-| Auditable Brief per iteration | âŒ | âœ… |
-| File/media upload in chat | âœ… | ðŸš§ 7F |
-| Client PDF export | âŒ | ðŸš§ 8 |
-| Non-technical agency UI | âŒ | âœ… |
+| Context continuation | ✅ | ✅ |
+| Full chain on every edit | ❌ | ✅ |
+| Artifact trail per version | ❌ | ✅ |
+| Restore previous version | ✅ | ✅ |
+| Live preview | ✅ | ✅ |
+| Version history with preview | ❌ | ✅ |
+| Auditable Brief per iteration | ❌ | ✅ |
+| AI-generated design assets | ❌ | ✅ |
+| Smart layout detection (10 shells) | ❌ | ✅ |
+| File/media upload in chat | ✅ | 🚧 7F |
+| Client PDF export | ❌ | 🚧 8 |
+| Non-technical agency UI | ❌ | ✅ |
 
 ---
 
 ## Current State (Feb 2026)
 
-- âœ… Three-agent pipeline (Requirements â†’ Architecture â†’ Build)
-- âœ… Build Agent: Claude Sonnet 4.5 (primary), Gemini fallback
-- âœ… Flask backend, SQLite, full persistence
-- âœ… Enterprise UI â€” 10 screens, light + dark mode
-- âœ… Iterative pipeline with full version history
-- âœ… Live preview iframe (Versions + Artifacts pages)
-- âœ… State bugs fixed (refresh, completion signal, prompt history)
-- ðŸ”´ UI polish â€” navbar, Projects table, avatar dropdown (Phase 7D)
-- â¬œ Output quality (Phase 7E)
-- â¬œ Chatbox upgrades (Phase 7F)
-- â¬œ Client deliverables (Phase 8)
-
-
-
+- ✅ Four-agent pipeline (Requirements → Architecture → Design → Build)
+- ✅ Build Agent: Claude Sonnet 4.5 (primary), Gemini fallback
+- ✅ Flask backend, SQLite, full persistence
+- ✅ Enterprise UI — 10 screens, light + dark mode
+- ✅ Iterative pipeline with full version history
+- ✅ Live preview iframe (Versions + Artifacts pages)
+- ✅ State bugs fixed (refresh, completion signal, prompt history)
+- ✅ Design Agent — DALL-E 3 images, locally served, smart skip for dashboards
+- ✅ Engineer prompt — 10-shell layout intelligence, mandatory asset usage
+- ✅ JSON repair — backtick hex color fix
+- 🔴 UI polish — navbar, Projects table, avatar dropdown (Phase 7D)
+- ⬜ Chatbox upgrades (Phase 7F)
+- ⬜ Client deliverables (Phase 8)
