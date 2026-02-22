@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -91,11 +91,18 @@ export function Navbar() {
             )}
           </span>
         )}
-        <AvatarDropdown />
+        <div className="flex items-center gap-2">
+          <span className="hidden md:flex items-center gap-1 text-xs text-muted-foreground font-medium">
+            <span className="text-amber-500">🪙</span>
+            1,250
+          </span>
+          <AvatarDropdown />
+        </div>
       </div>
     </header>
   )
 }
+
 
 
 
