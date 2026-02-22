@@ -53,15 +53,58 @@ def _repair_json(raw: str) -> dict:
         )
     candidate = text[start : end + 1]
     candidate = re.sub(r"}\s*\n\s*{", "},\n{", candidate)
-    candidate = re.sub(r'\\(?!["\\/bfnrtu])', "", candidate)
+    # Pass 1: strip invalid escapes
     try:
-        return json.loads(candidate)
+        return json.loads(re.sub(r'\\(?!["\\/bfnrtu])', "", candidate))
+    except json.JSONDecodeError:
+        pass
+    # Pass 2: double them instead
+    try:
+        return json.loads(re.sub(r'\\(?!["\\/bfnrtu])', r"\\\\", candidate))
     except json.JSONDecodeError as e:
         raise RuntimeError(
             "EngineerAgent: JSON repair failed.\n\n"
             f"Parse error: {e}\n\n"
             f"Candidate JSON (first 2000 chars):\n{candidate[:2000]}"
         ) from e
+
+
+def _run_claude(contents: str) -> EngineeringResult:
+    """Call Claude Sonnet as the build agent."""
+    import anthropic
+    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    message = client.messages.create(
+        model="claude-sonnet-4-5",
+        max_tokens=16000,
+        messages=[{"role": "user", "content": contents}],
+    )
+    raw = message.content[0].text
+    data = _repair_json(raw)
+    result = EngineeringResult.model_validate(data)
+    result.files = _deduplicate_files(result.files)
+    return result
+
+
+def _run_gemini(client: genai.Client, contents: str) -> EngineeringResult:
+    """Call Gemini Flash as the build agent (fallback)."""
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=contents,
+        config={
+            "response_schema": EngineeringResult,
+            "temperature": 0.7,
+            "max_output_tokens": 65536,
+        },
+    )
+    if response.parsed is not None:
+        result = response.parsed
+        result.files = _deduplicate_files(result.files)
+        return result
+    raw = getattr(response, "text", "") or ""
+    data = _repair_json(raw)
+    result = EngineeringResult.model_validate(data)
+    result.files = _deduplicate_files(result.files)
+    return result
 
 
 class EngineerAgent:
@@ -78,9 +121,6 @@ class EngineerAgent:
         if _is_offline_mode() or str(task.id).startswith("OFFLINE-"):
             return _build_offline_engineering_result(task_id=str(task.id))
 
-        if self.client is None:
-            raise RuntimeError("EngineerAgent: client is None in ONLINE mode")
-
         prompt = (PROMPTS_DIR / "engineer.txt").read_text(encoding="utf-8")
 
         user_context = ""
@@ -91,9 +131,18 @@ class EngineerAgent:
                 f"--- END USER REQUEST ---\n\n"
             )
 
+        iteration_context = ""
+        if existing_code:
+            iteration_context = (
+                f"--- EXISTING CODE (iterate on this, do not rebuild from scratch) ---\n"
+                f"{existing_code}\n"
+                f"--- END EXISTING CODE ---\n\n"
+            )
+
         contents = (
             f"{prompt}\n\n"
             f"{user_context}"
+            f"{iteration_context}"
             f"--- TASK START ---\n"
             f"id: {task.id}\n"
             f"description: {task.description}\n"
@@ -104,25 +153,10 @@ class EngineerAgent:
             f"--- TASK END ---"
         )
 
-        response = self.client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=contents,
-            config={
-                "response_schema": EngineeringResult,
-                "temperature": 0.7,
-            },
-        )
+        if os.environ.get("ANTHROPIC_API_KEY"):
+            return _run_claude(contents)
 
-        if response.parsed is not None:
-            result = response.parsed
-            result.files = _deduplicate_files(result.files)
-            return result
+        if self.client is None:
+            raise RuntimeError("EngineerAgent: no API client available")
 
-        raw = getattr(response, "text", "") or ""
-        data = _repair_json(raw)
-        result = EngineeringResult.model_validate(data)
-        result.files = _deduplicate_files(result.files)
-        return result
-
-
-
+        return _run_gemini(self.client, contents)

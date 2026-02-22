@@ -3,11 +3,15 @@ from flask_cors import CORS
 import json
 import os
 import sys
+import warnings
 from pathlib import Path
 from typing import Any, Dict
 import threading
 import time
 from datetime import datetime, timezone
+
+# Suppress SQLAlchemy legacy Query.get() deprecation warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="sqlalchemy")
 
 from models import Project, Execution, get_session, init_db, get_next_version
 
@@ -24,6 +28,7 @@ execution_state = {
     "current_project_id": None,
     "current_execution_id": None,
     "logs": [],
+    "result_ready": False,
 }
 
 
@@ -141,7 +146,7 @@ def resolve_project_version(q_project_id=None, q_version=None):
         if execution_id:
             session = get_session()
             try:
-                execution = session.query(Execution).get(execution_id)
+                execution = session.get(Execution, execution_id)
                 if execution:
                     version = execution.version
             finally:
@@ -177,7 +182,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
 
     try:
         if execution_id:
-            execution = session.query(Execution).get(execution_id)
+            execution = session.get(Execution, execution_id)
             if execution:
                 execution.status = "running"
                 session.commit()
@@ -185,7 +190,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
         project_id = execution_state.get("current_project_id")
         version = None
         if execution_id:
-            execution = session.query(Execution).get(execution_id)
+            execution = session.get(Execution, execution_id)
             if execution:
                 version = execution.version
 
@@ -199,9 +204,9 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
         existing_code = None
         session_check = get_session()
         try:
-            current_exec = session_check.query(Execution).get(execution_id)
+            current_exec = session_check.get(Execution, execution_id)
             if current_exec and current_exec.parent_execution_id:
-                parent_exec = session_check.query(Execution).get(current_exec.parent_execution_id)
+                parent_exec = session_check.get(Execution, current_exec.parent_execution_id)
                 if parent_exec:
                     parent_dir = get_version_dir(project_id, parent_exec.version) / "code"
                     candidate = parent_dir / "src" / "index.html"
@@ -228,7 +233,12 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
             )
             context_input = f"Full conversation history:\n{history_text}\n\nLatest request: {task_description}"
         if existing_code:
-            context_input += f"\n\nNOTE: This is an iteration on an existing app. The current HTML is provided to the engineer. The PRD should reflect ONLY the changes requested, not rebuild from scratch."
+            # Extract app title from previous HTML to preserve it
+            import re as _re
+            title_match = _re.search(r"<title[^>]*>(.*?)</title>", existing_code, _re.IGNORECASE)
+            prev_title = title_match.group(1).strip() if title_match else None
+            title_note = f" The app is currently named \"{prev_title}\" — preserve this name unless the user explicitly asks to change it." if prev_title else ""
+            context_input += f"\n\nNOTE: This is an iteration on an existing app. The current HTML is provided to the engineer. The PRD should reflect ONLY the changes requested, not rebuild from scratch.{title_note}"
 
         prd_artifact = pm_agent.generate_prd(context_input)
 
@@ -306,10 +316,12 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
                 writes.append(rec)
                 add_log(f"Build Agent: Created {file_artifact.path}")
             except ValueError as skip_err:
-                add_log(f"Build Agent: Skipped {file_artifact.path} ({skip_err})")
+                print(f"Build Agent: Skipped {file_artifact.path} ({skip_err})")
                 print(f"Skipped file: {skip_err}")
 
         add_log("Build complete.")
+        execution_state["result_ready"] = True
+        execution_state["result_ready"] = True
 
         execution_result = {
             "kind": "execution_result",
@@ -344,7 +356,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
         print(f"Execution result saved: {len(writes)} files generated")
 
         if execution_id:
-            execution = session.query(Execution).get(execution_id)
+            execution = session.get(Execution, execution_id)
             if execution:
                 execution.status = "success"
                 execution.result_path = str(version_dir / "last_execution_result.json")
@@ -359,12 +371,14 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
 
     except Exception as e:
         error_msg = str(e)
-        add_log(f"Something went wrong: {error_msg}")
+        short_msg = error_msg.split("\n")[0][:200]
+        add_log(f"Something went wrong: {short_msg}")
+        execution_state["result_ready"] = True
         print(f"Pipeline error: {error_msg}")
 
         if execution_id:
             try:
-                execution = session.query(Execution).get(execution_id)
+                execution = session.get(Execution, execution_id)
                 if execution:
                     execution.status = "error"
                     execution.error_message = error_msg
@@ -431,7 +445,7 @@ def create_project():
 def get_project(project_id: int):
     session = get_session()
     try:
-        project = session.query(Project).get(project_id)
+        project = session.get(Project, project_id)
         if not project:
             return jsonify({"error": "Project not found"}), 404
         project_dict = project.to_dict()
@@ -445,7 +459,7 @@ def get_project(project_id: int):
 def delete_project(project_id: int):
     session = get_session()
     try:
-        project = session.query(Project).get(project_id)
+        project = session.get(Project, project_id)
         if not project:
             return jsonify({"error": "Project not found"}), 404
         session.delete(project)
@@ -463,7 +477,7 @@ def delete_project(project_id: int):
 def get_versions(project_id: int):
     session = get_session()
     try:
-        project = session.query(Project).get(project_id)
+        project = session.get(Project, project_id)
         if not project:
             return jsonify({"error": "Project not found"}), 404
         executions = (
@@ -503,7 +517,7 @@ def iterate_project(project_id: int):
         if not data or not data.get("prompt"):
             return jsonify({"error": "prompt is required"}), 400
 
-        project = session.query(Project).get(project_id)
+        project = session.get(Project, project_id)
         if not project:
             return jsonify({"error": f"Project {project_id} not found"}), 404
 
@@ -546,6 +560,7 @@ def iterate_project(project_id: int):
         execution_state["current_project_id"] = project_id
         execution_state["current_execution_id"] = execution.id
         execution_state["logs"] = []
+        execution_state["result_ready"] = False
 
         print(f"Starting iteration v{next_version} for project {project_id}: {prompt}")
         thread = threading.Thread(
@@ -574,7 +589,7 @@ def iterate_project(project_id: int):
 def restore_execution(execution_id: int):
     session = get_session()
     try:
-        execution = session.query(Execution).get(execution_id)
+        execution = session.get(Execution, execution_id)
         if not execution:
             return jsonify({"error": "Execution not found"}), 404
 
@@ -586,7 +601,7 @@ def restore_execution(execution_id: int):
 
         execution.is_active_head = True
 
-        project = session.query(Project).get(project_id)
+        project = session.get(Project, project_id)
         if project:
             project.updated_at = datetime.utcnow()
 
@@ -631,7 +646,7 @@ def execute_task():
             session.refresh(project)
             project_id = project.id
         else:
-            project = session.query(Project).get(project_id)
+            project = session.get(Project, project_id)
             if not project:
                 return jsonify({"error": f"Project {project_id} not found"}), 404
             project.status = "in_progress"
@@ -692,7 +707,7 @@ def execution_status():
     if execution_id:
         session = get_session()
         try:
-            execution = session.query(Execution).get(execution_id)
+            execution = session.get(Execution, execution_id)
             if execution:
                 version = execution.version
         finally:
@@ -714,6 +729,8 @@ def execution_status():
     current_stage = "pm"
     for log in reversed(logs):
         msg = log.get("message", "")
+        if "Loading previous version" in msg:
+            continue  # setup log, not a stage transition
         if "Build Agent" in msg:
             current_stage = "engineer"
             break
@@ -721,7 +738,7 @@ def execution_status():
             current_stage = "planner"
             break
 
-    if data is not None:
+    if data is not None and execution_state.get("result_ready", True):
         raw_status = str(data.get("status", "success")).lower()
         frontend_status = STATUS_MAP.get(raw_status, "COMPLETED")
         return jsonify({
@@ -762,7 +779,7 @@ def get_code():
     if execution_id:
         session = get_session()
         try:
-            execution = session.query(Execution).get(execution_id)
+            execution = session.get(Execution, execution_id)
             if execution:
                 version = execution.version
         finally:
@@ -937,6 +954,24 @@ if __name__ == "__main__":
     print(f"PUBLIC_DIR: {PUBLIC_DIR}")
     print(f"CORS enabled for: http://localhost:5173, http://localhost:3000")
     app.run(debug=True, port=5000)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -31,16 +31,14 @@ class PlannerAgent:
                 },
             )
         
-        response = call_with_retry(_call, max_retries=2)
-        
-        if response.parsed is None:
-            raw = getattr(response, "text", None)
-            raise RuntimeError(
-                "PlannerAgent: schema parse failed (response.parsed is None).\n\n"
-                f"Raw model output:\n{raw}"
-            )
-        
-        return response.parsed
+        for parse_attempt in range(3):
+            response = call_with_retry(_call, max_retries=2)
+            if response.parsed is not None:
+                return response.parsed
+            if parse_attempt < 2:
+                print(f"PlannerAgent: schema parse failed, retrying (attempt {parse_attempt + 1}/3)...")
+                import time; time.sleep(1)
+        raise RuntimeError("Architecture Agent could not produce a valid build plan after 3 attempts. Please try rephrasing your request.")
     
     def run_from_prd_artifact(self, prd_artifact_path: Path) -> Plan:
         """
@@ -111,3 +109,6 @@ class PlannerAgent:
     def run(self, prd_text: str) -> Plan:
         """Backward compatible method."""
         return self.run_from_prd_text(prd_text)
+
+
+

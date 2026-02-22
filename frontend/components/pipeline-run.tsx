@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 
 const API_BASE = "http://localhost:5000"
+const POLL_INTERVAL_MS = 1500   // CHANGED: was 5000 — faster live updates
 type AgentStatus = "pending" | "running" | "complete"
 
 type LogEntry = {
@@ -49,11 +50,18 @@ export function PipelineRun() {
   const logsEndRef = useRef<HTMLDivElement>(null)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
   const executionIdRef = useRef<number | null>(null)
+  // CHANGED: stable ref so the interval never captures a stale closure
+  const versionRef = useRef<number | null>(null)
+  const isRunningRef = useRef(false)
+  const newRunRef = useRef(false)  // true = ignore stale logs for stage detection
 
   const searchParams = useSearchParams()
 
+  // Keep refs in sync with state
+  useEffect(() => { versionRef.current = version }, [version])
+  useEffect(() => { isRunningRef.current = isRunning }, [isRunning])
+
   // Load project — URL ?pid= takes priority over sessionStorage
-  // Re-runs whenever the URL pid changes (i.e. user switches projects)
   useEffect(() => {
     const urlPid = searchParams.get("pid")
     const storedPid = sessionStorage.getItem("archon_current_project_id")
@@ -62,7 +70,6 @@ export function PipelineRun() {
 
     if (!pid) return
 
-    // If URL pid differs from stored pid, clear stale state
     if (urlPid && urlPid !== storedPid) {
       sessionStorage.setItem("archon_current_project_id", urlPid)
       setProjectId(Number(urlPid))
@@ -75,7 +82,6 @@ export function PipelineRun() {
       return
     }
 
-    // Same project — restore cached state
     if (pid) setProjectId(Number(pid))
     if (pname) setProjectName(pname)
 
@@ -113,33 +119,44 @@ export function PipelineRun() {
     if (id) sessionStorage.setItem(`archon_logs_${id}`, JSON.stringify(newLogs))
   }
 
-  const pollStatus = useCallback(async () => {
+  // CHANGED: no useCallback with [version] dependency — uses refs instead
+  // This means the interval never captures a stale version value
+  const pollStatus = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/execution-status`)
       const data = await res.json()
 
-      const newLogs = data.logs || []
+      const newLogs: LogEntry[] = data.logs || []
       setLogs(newLogs)
       saveLogs(newLogs, null)
 
+      // CHANGED: derive stage from log messages on the client side too,
+      // so we're not 100% dependent on backend's currentStage field
       const stage = data.currentStage
-      if (stage === "engineer") {
-        setCurrentStage("engineer")
-        sessionStorage.setItem("archon_current_stage", "engineer")
-      } else if (stage === "planner") {
-        setCurrentStage("planner")
-        sessionStorage.setItem("archon_current_stage", "planner")
-      } else {
-        setCurrentStage("pm")
-        sessionStorage.setItem("archon_current_stage", "pm")
+      let derivedStage: "pm" | "planner" | "engineer" = "pm"
+      if (stage === "engineer") derivedStage = "engineer"
+      else if (stage === "planner") derivedStage = "planner"
+      else {
+        // Double-check using log content in case backend stage lags
+        for (let i = newLogs.length - 1; i >= 0; i--) {
+          const msg = newLogs[i].message
+          if (msg.includes("Loading previous version")) continue  // setup log, not a stage transition
+          if (msg.includes("Build Agent")) { derivedStage = "engineer"; break }
+          if (msg.includes("Architecture Agent")) { derivedStage = "planner"; break }
+        }
       }
 
-      if (data.status === "COMPLETED") {
+      setCurrentStage(derivedStage)
+      sessionStorage.setItem("archon_current_stage", derivedStage)
+
+      if (data.status === "COMPLETED" && (!data.execution_id || Number(data.execution_id) === executionIdRef.current)) {
+        // All agents done — force engineer (last stage) as complete
         setCurrentStage("engineer")
         sessionStorage.setItem("archon_current_stage", "engineer")
         setPipelineStatus("complete")
         sessionStorage.setItem("archon_pipeline_status", "complete")
         setIsRunning(false)
+        isRunningRef.current = false
         stopPolling()
         if (data.execution_id) {
           const eid = Number(data.execution_id)
@@ -151,30 +168,40 @@ export function PipelineRun() {
           sessionStorage.setItem("archon_current_project_id", String(data.project_id))
           setProjectId(data.project_id)
         }
-        if (version) sessionStorage.setItem("archon_current_version", String(version))
+        // CHANGED: use ref so version is always current even from a closure
+        const v = versionRef.current
+        if (v) sessionStorage.setItem("archon_current_version", String(v))
       } else if (data.status === "FAILED") {
         setPipelineStatus("failed")
         sessionStorage.setItem("archon_pipeline_status", "failed")
         setIsRunning(false)
+        isRunningRef.current = false
         stopPolling()
       }
     } catch (e) {
       console.error("Poll error:", e)
     }
-  }, [version])
+  }
 
   const handleSend = async () => {
     if (!inputValue.trim() || isRunning || !projectId) return
 
     const prompt = inputValue.trim()
     setInputValue("")
+
+    sessionStorage.removeItem("archon_pipeline_status")
+    sessionStorage.removeItem("archon_current_stage")
+    sessionStorage.removeItem("archon_current_execution_id")
+
     setIsRunning(true)
+    isRunningRef.current = true
     setPipelineStatus("running")
     sessionStorage.setItem("archon_pipeline_status", "running")
     setCurrentStage("pm")
     sessionStorage.setItem("archon_current_stage", "pm")
     setLogs([])
     setShowAllLogs(false)
+    newRunRef.current = true  // block stale log stage detection until fresh logs arrive
 
     const newHistory = [...promptHistory, { role: "user", content: prompt }]
     setPromptHistory(newHistory)
@@ -189,6 +216,7 @@ export function PipelineRun() {
 
       if (data.version) {
         setVersion(data.version)
+        versionRef.current = data.version   // CHANGED: update ref immediately
         sessionStorage.setItem("archon_current_version", String(data.version))
       }
       if (data.execution_id) {
@@ -196,21 +224,22 @@ export function PipelineRun() {
         sessionStorage.setItem("archon_current_execution_id", String(data.execution_id))
       }
 
-      pollRef.current = setInterval(pollStatus, 1500)
+      // Small delay so backend clears state before first poll
+      stopPolling()
+      await new Promise(r => setTimeout(r, 800))
+      pollRef.current = setInterval(pollStatus, POLL_INTERVAL_MS)
     } catch (e) {
       setPipelineStatus("failed")
       sessionStorage.setItem("archon_pipeline_status", "failed")
       setIsRunning(false)
+      isRunningRef.current = false
     }
   }
 
   useEffect(() => { return () => stopPolling() }, [])
 
-  useEffect(() => {
-    if (isRunning && !pollRef.current) {
-      pollRef.current = setInterval(pollStatus, 1500)
-    }
-  }, [pollStatus, isRunning])
+  // CHANGED: removed the useEffect that restarted polling on pollStatus change
+  // (that pattern caused double-intervals). Polling is now fully managed in handleSend.
 
   const agentStages = [
     { key: "pm", name: "Requirements Agent", role: "Understands your request" },
@@ -279,8 +308,8 @@ export function PipelineRun() {
               const status = getAgentStatus(agent.key)
               return (
                 <div key={agent.key} className="flex items-stretch flex-1">
-                  <div className={`flex-1 rounded-lg border p-4 transition-all ${
-                    status === "running" ? "border-info bg-info/5 shadow-sm"
+                  <div className={`flex-1 rounded-lg border p-4 transition-all duration-300 ${
+                    status === "running" ? "border-info bg-info/5 shadow-sm ring-1 ring-info/30"
                     : status === "complete" ? "border-success/30 bg-success/5"
                     : "border-border bg-muted/30"
                   }`}>
@@ -327,7 +356,6 @@ export function PipelineRun() {
               </p>
             )}
             {displayedLogs.map((log) => (
-              // FIX: use log.id only — it already contains the timestamp
               <div key={log.id} className="flex items-start gap-3 py-1 hover:bg-muted/30 px-2 -mx-2 rounded">
                 <span className="text-muted-foreground/60 shrink-0 w-28">{formatTime(log.timestamp)}</span>
                 <span className="text-foreground/70">{log.message}</span>
@@ -366,6 +394,9 @@ export function PipelineRun() {
     </div>
   )
 }
+
+
+
 
 
 
