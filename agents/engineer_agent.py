@@ -75,7 +75,7 @@ def _run_claude(contents: str) -> EngineeringResult:
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     message = client.messages.create(
         model="claude-sonnet-4-5",
-        max_tokens=16000,
+        max_tokens=32000,
         messages=[{"role": "user", "content": contents}],
     )
     raw = message.content[0].text
