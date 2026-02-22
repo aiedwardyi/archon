@@ -398,7 +398,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
                 project = execution.project
                 if project:
                     project.status = "completed"
-                    project.updated_at = datetime.utcnow()
+                    project.updated_at = datetime.now(timezone.utc)
                     session.commit()
 
     except Exception as e:
@@ -418,7 +418,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
                     project = execution.project
                     if project:
                         project.status = "failed"
-                        project.updated_at = datetime.utcnow()
+                        project.updated_at = datetime.now(timezone.utc)
                         session.commit()
             except Exception:
                 pass
@@ -583,7 +583,7 @@ def iterate_project(project_id: int):
         session.add(execution)
 
         project.status = "in_progress"
-        project.updated_at = datetime.utcnow()
+        project.updated_at = datetime.now(timezone.utc)
         session.commit()
         session.refresh(execution)
 
@@ -635,7 +635,7 @@ def restore_execution(execution_id: int):
 
         project = session.get(Project, project_id)
         if project:
-            project.updated_at = datetime.utcnow()
+            project.updated_at = datetime.now(timezone.utc)
 
         session.commit()
 
@@ -682,7 +682,7 @@ def execute_task():
             if not project:
                 return jsonify({"error": f"Project {project_id} not found"}), 404
             project.status = "in_progress"
-            project.updated_at = datetime.utcnow()
+            project.updated_at = datetime.now(timezone.utc)
             session.commit()
 
         next_version = get_next_version(session, project_id)
@@ -1016,6 +1016,7 @@ if __name__ == "__main__":
     print(f"PUBLIC_DIR: {PUBLIC_DIR}")
     print(f"CORS enabled for: http://localhost:5173, http://localhost:3000")
     app.run(debug=True, port=5000)
+
 
 
 

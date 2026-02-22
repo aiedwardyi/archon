@@ -4,6 +4,12 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Literal
 
 
+class ArchetypeRules(BaseModel):
+    required_blocks: List[str] = Field(default_factory=list)
+    required_interactions: List[str] = Field(default_factory=list)
+    avoid: List[str] = Field(default_factory=list)
+
+
 class Task(BaseModel):
     id: str = Field(..., description="Unique task id like PLAN-1, BE-1, FE-3")
     description: str = Field(..., description="Concrete, executable task in one sentence")
@@ -22,12 +28,18 @@ class Task(BaseModel):
         default=None,
         description="Optional list of file paths Engineer should produce (constraints/testing)."
     )
+    ui_archetype: Optional[Literal["dashboard", "landing", "ecommerce", "kanban", "chat", "editor", "feed", "form", "game", "portfolio"]] = Field(
+        default=None,
+        description="UI shell the Engineer MUST use. Set by Planner on scaffold tasks only."
+    )
+    archetype_rules: Optional[ArchetypeRules] = Field(
+        default=None,
+        description="Required blocks, interactions, and elements to avoid. Enforced by Engineer."
+    )
 
     def model_post_init(self, __context) -> None:
-        # Safety rail: executable tasks must declare a type
         if self.execution_hint == "engineer" and self.task_type is None:
             raise ValueError("task_type must be set when execution_hint='engineer'")
-
 
 
 class Milestone(BaseModel):
