@@ -2,7 +2,6 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
 import {
   LayoutDashboard,
@@ -10,10 +9,9 @@ import {
   Clock,
   FileCode2,
   Hexagon,
-  Sun,
-  Moon,
   ChevronRight,
 } from "lucide-react"
+import { AvatarDropdown } from "@/components/avatar-dropdown"
 
 const navItems = [
   { href: "/", label: "Projects", icon: LayoutDashboard },
@@ -24,7 +22,6 @@ const navItems = [
 
 export function Navbar() {
   const pathname = usePathname()
-  const { resolvedTheme, setTheme } = useTheme()
   const [projectName, setProjectName] = useState<string | null>(null)
   const [version, setVersion] = useState<string | null>(null)
 
@@ -94,17 +91,11 @@ export function Navbar() {
             )}
           </span>
         )}
-        <button
-          onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-          className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-        >
-          <Sun className="h-4 w-4 hidden dark:block" />
-          <Moon className="h-4 w-4 block dark:hidden" />
-        </button>
-        <div className="h-7 w-7 rounded-full bg-primary flex items-center justify-center">
-          <span className="text-primary-foreground text-xs font-medium">JD</span>
-        </div>
+        <AvatarDropdown />
       </div>
     </header>
   )
 }
+
+
+

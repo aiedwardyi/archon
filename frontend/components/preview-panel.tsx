@@ -128,17 +128,18 @@ export function PreviewPanel({ projectId, version }: PreviewPanelProps) {
             </div>
           </div>
         ) : (
-          <div className="w-full h-full min-h-[400px]">
+          <div className="w-full" style={{ height: "700px" }}>
             {previewUrl ? (
               <iframe
                 key={key}
                 src={previewUrl}
-                className="w-full min-h-[400px] h-full border border-border rounded-lg bg-white"
+                className="w-full border border-border rounded-lg bg-white"
+                style={{ height: "700px" }}
                 title="Live preview (desktop)"
                 sandbox="allow-scripts allow-same-origin"
               />
             ) : (
-              <div className="border-2 border-dashed border-border rounded-lg flex items-center justify-center min-h-[400px]">
+              <div className="border-2 border-dashed border-border rounded-lg flex items-center justify-center" style={{ height: "700px" }}>
                 <p className="text-sm text-muted-foreground">
                   Live preview will appear here when your build is complete
                 </p>
@@ -150,3 +151,5 @@ export function PreviewPanel({ projectId, version }: PreviewPanelProps) {
     </div>
   )
 }
+
+

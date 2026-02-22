@@ -318,7 +318,7 @@ export function VersionTimeline() {
               <div className="px-4 py-3 border-b border-border">
                 <h3 className="text-sm font-semibold text-foreground">Live Preview</h3>
               </div>
-              <div className="min-h-[400px] flex flex-col">
+              <div className="flex flex-col">
                 <PreviewPanel projectId={projectId} version={selected.version} />
               </div>
             </div>
@@ -336,3 +336,5 @@ export function VersionTimeline() {
     </div>
   )
 }
+
+
