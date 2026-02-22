@@ -1,10 +1,10 @@
-# Current Sprint — Phase 7F: Chatbox Upgrades
+# Current Sprint — Phase 7G: Output Quality v2
 
 ## Sprint Goal
-Upgrade the chatbox to support file/media uploads, graceful error handling
-for unsupported inputs, and master log accumulation across versions.
+Improve generated app visual quality to Lovable/v0 level through deterministic
+UI geometry contracts, two-file CSS split, and premium CSS design seeds.
 
-## Previous Sprint Complete ✅
+## Previous Sprints Complete ✅
 
 ### Phase 7D — UI Polish
 - ✅ 7D.1 Navbar real project name + version
@@ -14,25 +14,47 @@ for unsupported inputs, and master log accumulation across versions.
 - ✅ 7D.5 Preview height increased to 700px
 - ✅ 7D.6 Artifacts version sync via custom event bus
 
-### Bonus wins this sprint
+### Phase 7F — Chatbox Upgrades
+- ✅ 7F.1 File + media upload with drag-and-drop
+- ✅ 7F.2 Graceful agent reply for unsupported inputs
+- ✅ 7F.3 Master log accumulation
+
+### Bonus wins
 - ✅ Parallel pipeline (Architecture + Design run simultaneously, ~30-40% faster)
 - ✅ DALL-E content filter fix (IP name sanitizer)
 
-## Phase 7F Work Items
+## Phase 7G — Output Quality v2
 
-### 7F.1 — File + Media Upload with Drag-and-Drop
-**Status:** 🔴 TODO
-Chatbox accepts image uploads. Agent uses image as design reference.
+### 7G.1 — UI Archetype Lock
+**Status:** ✅ Done
+Planner classifies ui_archetype, Engineer enforces it as hard constraint.
+ArchetypeRules typed model with required_blocks, required_interactions, avoid.
 
-### 7F.2 — Graceful Agent Reply for Unsupported Inputs
-**Status:** 🔴 TODO
-URLs, videos, and other unsupported inputs get a helpful agent response
-instead of silently failing.
+### 7G.2 — Layout + Content Contracts
+**Status:** ✅ Done
+layout_contract: deterministic geometry (regions, sidebar, topbar, main_grid, density).
+content_contract: kpi_labels, table_columns, seed_rows, required_states.
+All 10 archetypes have full contracts in planner.txt.
 
-### 7F.3 — Master Log Accumulation
+### 7G.3 — Two-File Output Split
+**Status:** ✅ Done
+Engineer outputs src/index.html (500 lines, structure+JS) + src/style.css (400 lines, all CSS).
+Preview base tag + static route added to serve CSS from src/ directory.
+
+### 7G.4 — Preview Inline CSS Stitching
 **Status:** 🔴 TODO
-Logs persist and append across versions rather than resetting per version.
-Foundation for chatbox history.
+Replace base tag approach with Flask stitching index.html + style.css into single blob.
+Fixes 404s on anchor href="#" links caused by base tag.
+
+### 7G.5 — CSS Design Seed
+**Status:** 🔴 TODO
+Inject mandatory CSS pattern examples into engineer.txt:
+glow effects, glass panels, gradient borders, shimmer keyframes, chart draw animation, stagger.
+
+### 7G.6 — Pipeline Real-Time Update Bug
+**Status:** 🔴 TODO
+Agent cards stuck on "Building..." after pipeline completes.
+Requires page navigation to refresh status.
 
 ## Working Directory
 C:\Users\mredw\Desktop\ai-dev-team\

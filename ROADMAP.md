@@ -107,6 +107,18 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 
 ---
 
+### Phase 7G — Output Quality v2 (🟡 In Progress)
+
+- ✅ UI archetype lock: Planner classifies archetype, Engineer enforces as hard constraint
+- ✅ ArchetypeRules typed model: layout_contract + content_contract
+- ✅ layout_contract: deterministic geometry per archetype (all 10 archetypes)
+- ✅ Two-file split: src/index.html (structure+JS) + src/style.css (design)
+- 🔴 Preview inline CSS stitching (replace base tag with srcdoc approach)
+- 🔴 CSS design seed: mandatory glow/glass/shimmer patterns in engineer.txt
+- 🔴 Pipeline real-time update bug fix
+
+---
+
 ### Phase 8 — Client Deliverables (⬜ Planned)
 
 - PDF export of full build history (client audit trail)
@@ -149,5 +161,6 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - 🟡 UI polish — 7D.1-7D.3 + 7D.6 done; avatar dropdown + preview height remain (Phase 7D)
 - ⬜ Chatbox upgrades (Phase 7F)
 - ⬜ Client deliverables (Phase 8)
+
 
 
