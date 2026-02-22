@@ -1,4 +1,4 @@
-﻿# Archon — Execution Roadmap
+# Archon — Execution Roadmap
 
 ## Purpose
 
@@ -98,7 +98,7 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 
 ---
 
-### Phase 7F — Chatbox Upgrades (⬜ Planned)
+### Phase 7F — Chatbox Upgrades (🔴 Current Sprint)
 
 - File and media upload with drag-and-drop
 - Agent reply for unsupported inputs (URLs, videos)
@@ -149,3 +149,5 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - 🟡 UI polish — 7D.1-7D.3 + 7D.6 done; avatar dropdown + preview height remain (Phase 7D)
 - ⬜ Chatbox upgrades (Phase 7F)
 - ⬜ Client deliverables (Phase 8)
+
+
