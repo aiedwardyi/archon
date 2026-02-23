@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect } from "react"
 import {
@@ -365,16 +365,28 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion 
               </span>
             )}
           </div>
-          <button
-            onClick={() => setShowRawJson(!showRawJson)}
-            className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border transition-colors ${
-              showRawJson
-                ? "bg-primary text-primary-foreground border-primary"
-                : "border-border text-muted-foreground hover:text-foreground hover:bg-muted"
-            }`}
-          >
-            <Braces className="h-3 w-3" />Raw Data
-          </button>
+          <div className="flex items-center gap-2">
+            {projectId && version && (
+              <a
+                href={`${API_BASE}/api/projects/${projectId}/versions/${version}/download`}
+                download
+                className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              >
+                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                Download Code
+              </a>
+            )}
+            <button
+              onClick={() => setShowRawJson(!showRawJson)}
+              className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border transition-colors ${
+                showRawJson
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-border text-muted-foreground hover:text-foreground hover:bg-muted"
+              }`}
+            >
+              <Braces className="h-3 w-3" />Raw Data
+            </button>
+          </div>
         </div>
       </div>
 
@@ -635,6 +647,7 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion 
     </div>
   )
 }
+
 
 
 
