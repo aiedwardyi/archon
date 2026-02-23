@@ -1,6 +1,6 @@
-﻿"use client"
+"use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import {
   CheckCircle2,
@@ -11,6 +11,8 @@ import {
   Terminal,
   ChevronDown,
   Zap,
+  Bot,
+  User,
 } from "lucide-react"
 
 const API_BASE = "http://localhost:5000"
@@ -22,6 +24,13 @@ type LogEntry = {
   timestamp: number
   message: string
   type: string
+}
+
+type ChatMessage = {
+  id: string
+  role: "user" | "archon"
+  content: string
+  timestamp: number
 }
 
 function AgentStatusIcon({ status }: { status: AgentStatus }) {
@@ -45,11 +54,13 @@ export function PipelineRun() {
   const [pipelineStatus, setPipelineStatus] = useState<"idle" | "running" | "complete" | "failed">("idle")
   const [currentStage, setCurrentStage] = useState<"pm" | "planner" | "engineer">("pm")
   const [logs, setLogs] = useState<LogEntry[]>([])
+  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [promptHistory, setPromptHistory] = useState<{ role: string; content: string }[]>([])
   const [showAllLogs, setShowAllLogs] = useState(false)
   const [globallyBlocked, setGloballyBlocked] = useState(false)
   const [blockingProjectId, setBlockingProjectId] = useState<number | null>(null)
   const logsEndRef = useRef<HTMLDivElement>(null)
+  const chatEndRef = useRef<HTMLDivElement>(null)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
   const executionIdRef = useRef<number | null>(null)
   const versionRef = useRef<number | null>(null)
@@ -61,14 +72,19 @@ export function PipelineRun() {
   useEffect(() => { versionRef.current = version }, [version])
   useEffect(() => { isRunningRef.current = isRunning }, [isRunning])
 
-  // 7C.3: persist prompt history whenever it changes
   useEffect(() => {
     if (promptHistory.length > 0) {
       sessionStorage.setItem("archon_prompt_history", JSON.stringify(promptHistory))
     }
   }, [promptHistory])
 
-  // Load project from URL or sessionStorage
+  useEffect(() => {
+    if (messages.length > 0) {
+      const pid = sessionStorage.getItem("archon_current_project_id")
+      if (pid) sessionStorage.setItem(`archon_messages_${pid}`, JSON.stringify(messages))
+    }
+  }, [messages])
+
   useEffect(() => {
     const urlPid = searchParams.get("pid")
     const storedPid = sessionStorage.getItem("archon_current_project_id")
@@ -77,13 +93,13 @@ export function PipelineRun() {
 
     if (!pid) return
 
-    // Switching projects — clear all state
     if (urlPid && urlPid !== storedPid) {
       sessionStorage.setItem("archon_current_project_id", urlPid)
       setProjectId(Number(urlPid))
       setProjectName(pname || "my-project")
       setVersion(null)
       setLogs([])
+      setMessages([])
       setPipelineStatus("idle")
       setCurrentStage("pm")
       executionIdRef.current = null
@@ -112,13 +128,18 @@ export function PipelineRun() {
     if (cachedStatus && cachedStatus !== "idle") setPipelineStatus(cachedStatus)
     if (cachedStage) setCurrentStage(cachedStage)
 
-    // 7C.3: restore prompt history
     const cachedHistory = sessionStorage.getItem("archon_prompt_history")
     if (cachedHistory) {
       try { setPromptHistory(JSON.parse(cachedHistory)) } catch {}
     }
 
-    // 7C.1: DB fallback — always sync version/execution from DB on mount
+    // Always clear messages first, then load only this project's messages
+    setMessages([])
+    const cachedMsgs = sessionStorage.getItem(`archon_messages_${pidNum}`)
+    if (cachedMsgs) {
+      try { setMessages(JSON.parse(cachedMsgs)) } catch {}
+    }
+
     if (!cachedStatus || cachedStatus === "idle" || cachedStatus === "complete") {
       fetch(`${API_BASE}/api/projects/${pidNum}`)
         .then(r => r.json())
@@ -137,7 +158,6 @@ export function PipelineRun() {
             setPipelineStatus(restored)
             sessionStorage.setItem("archon_pipeline_status", restored)
           }
-          // Always sync to the latest execution so logs key matches
           const resolvedEid = latest.id
           const resolvedVer = latest.version
           if (resolvedVer) {
@@ -148,7 +168,6 @@ export function PipelineRun() {
           if (resolvedEid) {
             executionIdRef.current = resolvedEid
             sessionStorage.setItem("archon_current_execution_id", String(resolvedEid))
-            // Load logs for this execution from cache
             const cachedLogs = sessionStorage.getItem(`archon_logs_${resolvedEid}`)
             if (cachedLogs) {
               try { setLogs(JSON.parse(cachedLogs)) } catch {}
@@ -158,7 +177,6 @@ export function PipelineRun() {
             setCurrentStage("engineer")
             sessionStorage.setItem("archon_current_stage", "engineer")
           }
-          // Restart polling if pipeline was mid-run when we navigated away
           if (restored === "running") {
             isRunningRef.current = true
             setIsRunning(true)
@@ -170,9 +188,7 @@ export function PipelineRun() {
     }
   }, [searchParams])
 
-  useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [logs])
+
 
   const stopPolling = () => {
     if (pollRef.current) {
@@ -184,7 +200,6 @@ export function PipelineRun() {
   const saveLogs = (newLogs: LogEntry[], eid: number | null) => {
     const id = eid ?? executionIdRef.current
     if (id) sessionStorage.setItem(`archon_logs_${id}`, JSON.stringify(newLogs))
-    // Also save by version so Artifacts page can retrieve without knowing execution ID
     const v = versionRef.current
     if (v) sessionStorage.setItem(`archon_logs_v${v}`, JSON.stringify(newLogs))
   }
@@ -214,7 +229,6 @@ export function PipelineRun() {
       setCurrentStage(derivedStage)
       sessionStorage.setItem("archon_current_stage", derivedStage)
 
-      // 7C.2: accept COMPLETED if we started this run OR backend says done
       if (data.status === "COMPLETED") {
         setCurrentStage("engineer")
         sessionStorage.setItem("archon_current_stage", "engineer")
@@ -253,25 +267,59 @@ export function PipelineRun() {
     const prompt = inputValue.trim()
     setInputValue("")
 
-    sessionStorage.removeItem("archon_pipeline_status")
-    sessionStorage.removeItem("archon_current_stage")
-    // Don't clear execution_id here — keep it until the new one arrives so saveLogs works
-
-    isRunningRef.current = true  // set ref synchronously before any async
-    setIsRunning(true)
-    setPipelineStatus("running")
-    sessionStorage.setItem("archon_pipeline_status", "running")
-    setCurrentStage("pm")
-    sessionStorage.setItem("archon_current_stage", "pm")
-    // Don't clear logs here — keep previous run visible until new logs stream in
-    setShowAllLogs(false)
-    newRunRef.current = true
-
-    const newHistory = [...promptHistory, { role: "user", content: prompt }]
-    setPromptHistory(newHistory)
-    sessionStorage.setItem("archon_prompt_history", JSON.stringify(newHistory))
+    const userMsg: ChatMessage = {
+      id: `msg-${Date.now()}-user`,
+      role: "user",
+      content: prompt,
+      timestamp: Date.now(),
+    }
+    setMessages(prev => [...prev, userMsg])
 
     try {
+      // Hit /chat first — fast classify, never touches DB or versions
+      const chatRes = await fetch(`${API_BASE}/api/projects/${projectId}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: prompt }),
+      })
+      const chatData = await chatRes.json()
+
+      if (chatData.response_type === "chat") {
+        const archonMsg: ChatMessage = {
+          id: `msg-${Date.now()}-archon`,
+          role: "archon",
+          content: chatData.message,
+          timestamp: Date.now(),
+        }
+        setMessages(prev => [...prev, archonMsg])
+        return  // Stop here — no pipeline, no version created
+      }
+
+      // It is a build — add a system message then call /iterate
+      const buildMsg: ChatMessage = {
+        id: `msg-${Date.now()}-archon`,
+        role: "archon",
+        content: "Got it! Starting the build now... ⚡",
+        timestamp: Date.now(),
+      }
+      setMessages(prev => [...prev, buildMsg])
+
+      const newHistory = [...promptHistory, { role: "user", content: prompt }]
+      setPromptHistory(newHistory)
+      sessionStorage.setItem("archon_prompt_history", JSON.stringify(newHistory))
+
+      sessionStorage.removeItem("archon_pipeline_status")
+      sessionStorage.removeItem("archon_current_stage")
+
+      isRunningRef.current = true
+      setIsRunning(true)
+      setPipelineStatus("running")
+      sessionStorage.setItem("archon_pipeline_status", "running")
+      setCurrentStage("pm")
+      sessionStorage.setItem("archon_current_stage", "pm")
+      setShowAllLogs(false)
+      newRunRef.current = true
+
       const res = await fetch(`${API_BASE}/api/projects/${projectId}/iterate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -292,6 +340,7 @@ export function PipelineRun() {
       stopPolling()
       await new Promise(r => setTimeout(r, 800))
       pollRef.current = setInterval(pollStatus, POLL_INTERVAL_MS)
+
     } catch (e) {
       setPipelineStatus("failed")
       sessionStorage.setItem("archon_pipeline_status", "failed")
@@ -302,13 +351,14 @@ export function PipelineRun() {
 
   useEffect(() => { return () => stopPolling() }, [])
 
-  // Re-sync pipeline state on every mount (handles Versions->Pipeline, Artifacts->Pipeline nav)
   useEffect(() => {
     const pid = sessionStorage.getItem("archon_current_project_id")
     if (!pid) return
     fetch(`${API_BASE}/api/execution-status`)
       .then(r => r.json())
       .then(data => {
+        // Only restore state if this pipeline belongs to THIS project
+        if (data.project_id && Number(data.project_id) !== Number(pid)) return
         if (data.status === "COMPLETED") {
           setCurrentStage("engineer")
           setPipelineStatus("complete")
@@ -332,7 +382,6 @@ export function PipelineRun() {
       .catch(() => {})
   }, [])
 
-  // Check if a different project is already building
   const checkGlobalBlock = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/execution-status`)
@@ -372,10 +421,7 @@ export function PipelineRun() {
 
   const formatTime = (ts: number) => {
     const d = new Date(ts)
-    return (
-      d.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" }) +
-      "." + String(d.getMilliseconds()).padStart(3, "0")
-    )
+    return d.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit" })
   }
 
   const statusLabel = {
@@ -406,7 +452,7 @@ export function PipelineRun() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col p-6 gap-6 overflow-auto">
+      <div className="flex-1 flex flex-col p-6 gap-4 overflow-auto">
         <div className="bg-card border border-border rounded-lg p-5">
           <div className="flex items-center gap-2 mb-4">
             <Zap className="h-4 w-4 text-primary" />
@@ -443,35 +489,71 @@ export function PipelineRun() {
         </div>
 
         <div className="flex-1 bg-card border border-border rounded-lg flex flex-col min-h-0">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-            <div className="flex items-center gap-2">
-              <Terminal className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-sm font-semibold text-foreground">LIVE OUTPUT</h3>
-              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                {logs.length} entries
-              </span>
-            </div>
-            {!showAllLogs && logs.length > 6 && (
-              <button onClick={() => setShowAllLogs(true)} className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors">
-                Show all <ChevronDown className="h-3 w-3" />
-              </button>
-            )}
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+            <Bot className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold text-foreground">Conversation</h3>
           </div>
-          <div className="flex-1 overflow-auto p-4 font-mono text-xs">
-            {logs.length === 0 && pipelineStatus === "idle" && (
-              <p className="text-muted-foreground italic">
-                {projectId ? "Type a prompt below to start building." : "Go to Projects and select or create a project first."}
+          <div className="flex-1 overflow-auto p-4 flex flex-col gap-3">
+            {messages.length === 0 && (
+              <p className="text-sm text-muted-foreground italic text-center mt-4">
+                {projectId ? "Ask a question or describe what you would like to build." : "Select a project to get started."}
               </p>
             )}
-            {displayedLogs.map((log) => (
-              <div key={log.id} className="flex items-start gap-3 py-1 hover:bg-muted/30 px-2 -mx-2 rounded">
-                <span className="text-muted-foreground/60 shrink-0 w-28">{formatTime(log.timestamp)}</span>
-                <span className="text-foreground/70">{log.message}</span>
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex items-start gap-2 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
+              >
+                <div className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center ${
+                  msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                }`}>
+                  {msg.role === "user" ? <User className="h-3.5 w-3.5" /> : <Bot className="h-3.5 w-3.5" />}
+                </div>
+                <div className={`max-w-[75%] rounded-xl px-4 py-2.5 text-sm ${
+                  msg.role === "user"
+                    ? "bg-primary text-primary-foreground rounded-tr-sm"
+                    : "bg-muted text-foreground rounded-tl-sm"
+                }`}>
+                  {msg.content}
+                  <div className={`text-xs mt-1 opacity-60 ${msg.role === "user" ? "text-right" : ""}`}>
+                    {formatTime(msg.timestamp)}
+                  </div>
+                </div>
               </div>
             ))}
-            <div ref={logsEndRef} />
+            <div ref={chatEndRef} />
           </div>
         </div>
+
+        {logs.length > 0 && (
+          <div className="bg-card border border-border rounded-lg flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <div className="flex items-center gap-2">
+                <Terminal className="h-4 w-4 text-muted-foreground" />
+                <h3 className="text-sm font-semibold text-foreground">LIVE OUTPUT</h3>
+                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                  {logs.length} entries
+                </span>
+              </div>
+              {!showAllLogs && logs.length > 6 && (
+                <button onClick={() => setShowAllLogs(true)} className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors">
+                  Show all <ChevronDown className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+            <div className="p-4 font-mono text-xs max-h-48 overflow-auto">
+              {displayedLogs.map((log) => (
+                <div key={log.id} className="flex items-start gap-3 py-1 hover:bg-muted/30 px-2 -mx-2 rounded">
+                  <span className="text-muted-foreground/60 shrink-0 w-14">
+                    {new Date(log.timestamp).toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                  </span>
+                  <span className="text-foreground/70">{log.message}</span>
+                </div>
+              ))}
+              <div ref={logsEndRef} />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="border-t border-border bg-card px-6 py-3">
@@ -486,6 +568,7 @@ export function PipelineRun() {
               placeholder={
                 !projectId ? "Select a project first..." :
                 globallyBlocked ? `Another project (ID: ${blockingProjectId}) is building. Wait for it to finish.` :
+                isRunning ? "Building..." :
                 "What would you like to build?"
               }
               disabled={!projectId || isRunning || globallyBlocked}
@@ -505,4 +588,9 @@ export function PipelineRun() {
     </div>
   )
 }
+
+
+
+
+
 

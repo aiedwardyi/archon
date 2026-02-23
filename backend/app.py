@@ -5,8 +5,6 @@ import os
 import sys
 import warnings
 from pathlib import Path
-import zipfile
-import io
 from typing import Any, Dict
 import threading
 import time
@@ -927,51 +925,6 @@ def get_version_files(project_id: int, version: int):
     return jsonify({"tree": tree, "code_dir": str(code_dir)}), 200
 
 
-
-
-# ============================================================================
-# DOWNLOAD ENDPOINT
-# ============================================================================
-
-@app.route("/api/projects/<int:project_id>/versions/<int:version>/download", methods=["GET"])
-def download_version_zip(project_id: int, version: int):
-    code_dir = get_version_dir(project_id, version) / "code"
-    if not code_dir.exists():
-        return jsonify({"error": "No code found for this version"}), 404
-
-    version_dir = get_version_dir(project_id, version)
-    assets_dir = version_dir / "assets"
-
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        # Add code files, rewriting asset URLs to relative paths
-        for file_path in code_dir.rglob("*"):
-            if file_path.is_file():
-                arcname = file_path.relative_to(code_dir)
-                if file_path.suffix in (".html", ".css"):
-                    text = file_path.read_text(encoding="utf-8", errors="replace")
-                    text = text.replace(
-                        f"/api/assets/{project_id}/{version}/",
-                        "../assets/"
-                    )
-                    zf.writestr(str(arcname).replace("\\", "/"), text)
-                else:
-                    zf.write(file_path, arcname)
-        # Add assets folder if it exists
-        if assets_dir.exists():
-            for asset_path in assets_dir.rglob("*"):
-                if asset_path.is_file():
-                    arcname = Path("assets") / asset_path.relative_to(assets_dir)
-                    zf.write(asset_path, arcname)
-    buf.seek(0)
-
-    zip_name = f"project_{project_id}_v{version}.zip"
-    return send_file(
-        buf,
-        mimetype="application/zip",
-        as_attachment=True,
-        download_name=zip_name,
-    )
 # ============================================================================
 # PREVIEW ENDPOINT (Phase 7B.2)
 # ============================================================================
@@ -1072,6 +1025,45 @@ def get_asset(project_id: int, version: int, filename: str):
     return send_file(asset_path, mimetype="image/png")
 
 
+@app.route("/api/projects/<int:project_id>/chat", methods=["POST"])
+def project_chat(project_id: int):
+    data = request.get_json()
+    if not data or not data.get("message"):
+        return jsonify({"error": "message is required"}), 400
+    try:
+        # Load PRD from active head version for context-aware replies
+        project_context = None
+        db = get_session()
+        try:
+            head = (
+                db.query(Execution)
+                .filter(Execution.project_id == project_id, Execution.is_active_head == True)
+                .first()
+            )
+            if head:
+                prd_path = get_version_dir(project_id, head.version) / "last_prd.json"
+                prd_data = read_json_file(prd_path)
+                if prd_data:
+                    prd = prd_data.get("prd", prd_data)
+                    title = prd.get("document_title", "Unknown")
+                    overview = prd.get("overview", "")
+                    features = ", ".join(prd.get("core_features_mvp", []))
+                    stack = ", ".join(prd.get("technical_stack_recommendation", []))
+                    project_context = f"Project: {title}\nOverview: {overview}\nFeatures: {features}\nStack: {stack}"
+        finally:
+            db.close()
+
+        from agents.pm_agent import PMAgent
+        pm = PMAgent()
+        intent = pm.classify_intent(data["message"], project_context=project_context)
+        if intent.get("type") == "chat":
+            return jsonify({"response_type": "chat", "message": intent["message"]}), 200
+        return jsonify({"response_type": "build"}), 200
+    except Exception as e:
+        print(f"Chat classify error: {e}")
+        return jsonify({"response_type": "build"}), 200
+
+
 if __name__ == "__main__":
     init_db()
     print(f"Flask server starting...")
@@ -1079,50 +1071,6 @@ if __name__ == "__main__":
     print(f"PUBLIC_DIR: {PUBLIC_DIR}")
     print(f"CORS enabled for: http://localhost:5173, http://localhost:3000")
     app.run(debug=True, port=5000)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
