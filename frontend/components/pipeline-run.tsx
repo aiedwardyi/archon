@@ -302,6 +302,36 @@ export function PipelineRun() {
 
   useEffect(() => { return () => stopPolling() }, [])
 
+  // Re-sync pipeline state on every mount (handles Versions->Pipeline, Artifacts->Pipeline nav)
+  useEffect(() => {
+    const pid = sessionStorage.getItem("archon_current_project_id")
+    if (!pid) return
+    fetch(`${API_BASE}/api/execution-status`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.status === "COMPLETED") {
+          setCurrentStage("engineer")
+          setPipelineStatus("complete")
+          sessionStorage.setItem("archon_pipeline_status", "complete")
+          sessionStorage.setItem("archon_current_stage", "engineer")
+          setIsRunning(false)
+          isRunningRef.current = false
+          stopPolling()
+        } else if (data.status === "RUNNING") {
+          setCurrentStage(data.currentStage || "pm")
+          setPipelineStatus("running")
+          sessionStorage.setItem("archon_pipeline_status", "running")
+          if (!pollRef.current) {
+            isRunningRef.current = true
+            setIsRunning(true)
+            pollRef.current = setInterval(pollStatus, POLL_INTERVAL_MS)
+          }
+        }
+        if (data.logs?.length) setLogs(data.logs)
+      })
+      .catch(() => {})
+  }, [])
+
   // Check if a different project is already building
   const checkGlobalBlock = async () => {
     try {

@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect } from "react"
 import { Monitor, Smartphone, ExternalLink, RefreshCw } from "lucide-react"
@@ -47,14 +47,13 @@ function ViewportToggle({
 
 export function PreviewPanel({ projectId, version }: PreviewPanelProps) {
   const [viewport, setViewport] = useState<"desktop" | "mobile">("desktop")
-  const [key, setKey] = useState(0) // increment to force iframe reload
+  const [key, setKey] = useState(0)
 
   const previewUrl =
     projectId && version
       ? `${API_BASE}/api/preview/${projectId}/${version}`
       : null
 
-  // Force reload when project/version changes
   useEffect(() => {
     setKey((k) => k + 1)
   }, [projectId, version])
@@ -66,6 +65,11 @@ export function PreviewPanel({ projectId, version }: PreviewPanelProps) {
   const handleRefresh = () => {
     setKey((k) => k + 1)
   }
+
+  const MOBILE_RENDER_WIDTH = 390
+  const MOBILE_DISPLAY_WIDTH = 268
+  const MOBILE_DISPLAY_HEIGHT = 520
+  const MOBILE_SCALE = MOBILE_DISPLAY_WIDTH / MOBILE_RENDER_WIDTH
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -98,22 +102,33 @@ export function PreviewPanel({ projectId, version }: PreviewPanelProps) {
       <div className="flex-1 flex items-center justify-center bg-muted/30 p-6">
         {viewport === "mobile" ? (
           <div className="relative w-[290px]">
-            {/* iPhone frame */}
             <div className="rounded-[2.5rem] border-[3px] border-foreground/20 bg-card p-2 shadow-lg">
               <div className="flex justify-center mb-2">
                 <div className="w-20 h-5 bg-foreground/20 rounded-full" />
               </div>
-              <div className="rounded-[2rem] overflow-hidden bg-muted/50 min-h-[520px] border border-border">
+              <div
+                className="rounded-[1.8rem] overflow-hidden"
+                style={{ width: `${MOBILE_DISPLAY_WIDTH}px`, height: `${MOBILE_DISPLAY_HEIGHT}px` }}
+              >
                 {previewUrl ? (
                   <iframe
                     key={key}
                     src={previewUrl}
-                    className="w-full h-full min-h-[520px] border-0"
+                    style={{
+                      width: `${MOBILE_RENDER_WIDTH}px`,
+                      height: `${Math.round(MOBILE_DISPLAY_HEIGHT / MOBILE_SCALE)}px`,
+                      border: "none",
+                      transformOrigin: "top left",
+                      transform: `scale(${MOBILE_SCALE})`,
+                    }}
                     title="Live preview (mobile)"
                     sandbox="allow-scripts allow-same-origin"
                   />
                 ) : (
-                  <div className="flex items-center justify-center min-h-[520px]">
+                  <div
+                    className="flex items-center justify-center"
+                    style={{ width: `${MOBILE_DISPLAY_WIDTH}px`, height: `${MOBILE_DISPLAY_HEIGHT}px` }}
+                  >
                     <p className="text-xs text-muted-foreground text-center px-4">
                       Live preview will appear here
                       <br />
@@ -151,5 +166,3 @@ export function PreviewPanel({ projectId, version }: PreviewPanelProps) {
     </div>
   )
 }
-
-
