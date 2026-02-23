@@ -155,3 +155,10 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - ✅ Design Agent — DALL-E 3 images, locally served
 - ✅ Engineer prompt — 10-shell layout intelligence, CSS design seed
 - 🔴 Publish + Client Deliverables (Phase 8)
+
+### Phase 9 — Pipeline Page & Classifier Improvements (⬜ Planned)
+- Classifier too sensitive — opinion questions ("do you think X?", "will it look better if?")
+  triggering builds instead of chat replies. Needs stricter CHAT classification rules.
+- Chat panel needs max-height + scrollable container (currently grows infinitely)
+- Consider split layout: agent pipeline fixed top, chat scrollable below
+- Overall pipeline page layout review for long sessions
