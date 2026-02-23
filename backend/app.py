@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file, Response
+﻿from flask import Flask, request, jsonify, send_file, Response
 from flask_cors import CORS
 import json
 import os
@@ -117,7 +117,7 @@ def get_language_from_ext(filename: str) -> str:
 def resolve_project_version(q_project_id=None, q_version=None):
     """
     Resolves (project_id, version) from:
-      1. Explicit query params (highest priority — user asked for a specific version)
+      1. Explicit query params (highest priority â€” user asked for a specific version)
       2. execution_state in-memory (current running/last run)
       3. DB lookup of active head if only project_id is known
     """
@@ -243,7 +243,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
             import re as _re
             title_match = _re.search(r"<title[^>]*>(.*?)</title>", existing_code, _re.IGNORECASE)
             prev_title = title_match.group(1).strip() if title_match else None
-            title_note = f" The app is currently named \"{prev_title}\" — preserve this name unless the user explicitly asks to change it." if prev_title else ""
+            title_note = f" The app is currently named \"{prev_title}\" â€” preserve this name unless the user explicitly asks to change it." if prev_title else ""
             context_input += f"\n\nNOTE: This is an iteration on an existing app. The current HTML is provided to the engineer. The PRD should reflect ONLY the changes requested, not rebuild from scratch.{title_note}"
 
         prd_artifact = pm_agent.generate_prd(context_input)
@@ -1032,6 +1032,11 @@ if __name__ == "__main__":
     print(f"PUBLIC_DIR: {PUBLIC_DIR}")
     print(f"CORS enabled for: http://localhost:5173, http://localhost:3000")
     app.run(debug=True, port=5000)
+
+
+
+
+
 
 
 

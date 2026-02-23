@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 from typing import List
 from pydantic import BaseModel, Field
 
@@ -22,6 +22,8 @@ class PRD(BaseModel):
     payments_security_compliance: List[str] = Field(..., description="Regulatory considerations")
     assumptions: List[str] = Field(..., description="Development constraints")
     open_questions: List[str] = Field(..., description="Client clarifications needed")
+    regenerate_images: bool = Field(default=True, description="Whether to generate new images for this build")
+    regenerate_images: bool = Field(default=True, description="Whether to generate new images for this build")
 
 
 class PRDArtifact(BaseModel):
@@ -32,3 +34,4 @@ class PRDArtifact(BaseModel):
     agent_role: str = Field(default="pm")
     prd: PRD
     created_at: str
+

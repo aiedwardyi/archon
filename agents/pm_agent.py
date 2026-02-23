@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 import os
 from datetime import datetime, timezone
 from openai import OpenAI
@@ -29,6 +29,14 @@ Output must include these sections:
 - open_questions: Client clarifications needed (5-10 questions)
 
 Be thorough, professional, and specific. Do NOT generate app content (e.g., meal plans). Only write requirements.
+
+For regenerate_images: set False when the request is about layout, text, spacing, functionality, or code only, or when the user says not to generate images. Set True when new visuals, new image sections, or a different visual theme are requested, or for first builds. Default to False on iterations unless visual changes are clearly needed.
+
+For the regenerate_images field:
+Set to FALSE when the user prompt is about layout, spacing, text, functionality, or code changes only.
+Set to FALSE when the user explicitly says not to generate images (e.g. "don't create more images").
+Set to TRUE when the user asks for new visuals, new sections with images, different themes, or this is a first build.
+Default to FALSE on iterations unless visual changes are clearly requested.
 """
 
 
@@ -78,3 +86,4 @@ class PMAgent:
             prd=prd,
             created_at=_utc_now_iso(),
         )
+
