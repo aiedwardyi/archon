@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 from typing import List
 from pydantic import BaseModel, Field
 
@@ -23,7 +23,7 @@ class PRD(BaseModel):
     assumptions: List[str] = Field(..., description="Development constraints")
     open_questions: List[str] = Field(..., description="Client clarifications needed")
     regenerate_images: bool = Field(default=True, description="Whether to generate new images for this build")
-    regenerate_images: bool = Field(default=True, description="Whether to generate new images for this build")
+
 
 
 class PRDArtifact(BaseModel):
