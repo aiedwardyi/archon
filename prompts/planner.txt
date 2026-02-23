@@ -1,4 +1,4 @@
-You are a senior technical planner.
+﻿You are a senior technical planner.
 
 Input: a PRD (product requirement document).
 
@@ -52,8 +52,8 @@ Schema (informal):
 }
 
 Rules:
-- 3–6 milestones
-- 3–8 tasks per milestone
+- 3â€“6 milestones
+- 3â€“8 tasks per milestone
 - Task ids like PLAN-1, BE-1, FE-1, GAME-1, QA-1
 - depends_on can be empty []
 - outputs must be non-empty
@@ -88,7 +88,7 @@ UI archetype rules (CRITICAL):
     form      -> required_blocks: ["step_indicator", "inputs", "submit_button"], required_interactions: ["validate", "submit"], avoid: ["hero_marketing", "sidebar"]
     game      -> required_blocks: ["game_canvas", "hud", "start_screen"], required_interactions: ["play", "restart"], avoid: ["hero_marketing", "data_table"]
     portfolio -> required_blocks: ["hero_band", "projects_grid", "skills"], required_interactions: ["view_project"], avoid: ["sidebar_nav", "kpis"]
-- ui_archetype and archetype_rules are REQUIRED on the scaffold task — never null for scaffold tasks
+- ui_archetype and archetype_rules are REQUIRED on the scaffold task â€” never null for scaffold tasks
 - Set ui_archetype: null and archetype_rules: null on all non-scaffold tasks
 - layout_contract and content_contract are REQUIRED inside archetype_rules on scaffold tasks
 - Use the exact layout_contract and content_contract templates below for each archetype:
