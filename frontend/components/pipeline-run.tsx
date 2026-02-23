@@ -215,7 +215,7 @@ export function PipelineRun() {
       sessionStorage.setItem("archon_current_stage", derivedStage)
 
       // 7C.2: accept COMPLETED if we started this run OR backend says done
-      if (data.status === "COMPLETED" && (isRunningRef.current || newRunRef.current)) {
+      if (data.status === "COMPLETED") {
         setCurrentStage("engineer")
         sessionStorage.setItem("archon_current_stage", "engineer")
         setPipelineStatus("complete")
@@ -475,3 +475,4 @@ export function PipelineRun() {
     </div>
   )
 }
+

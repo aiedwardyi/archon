@@ -174,3 +174,4 @@ class EngineerAgent:
             raise RuntimeError("EngineerAgent: no API client available")
 
         return _run_gemini(self.client, contents)
+
