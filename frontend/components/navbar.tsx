@@ -10,6 +10,7 @@ import {
   FileCode2,
   Hexagon,
   ChevronRight,
+  Coins,
 } from "lucide-react"
 import { AvatarDropdown } from "@/components/avatar-dropdown"
 
@@ -93,7 +94,7 @@ export function Navbar() {
         )}
         <div className="flex items-center gap-2">
           <span className="hidden md:flex items-center gap-1 text-xs text-muted-foreground font-medium">
-            <span className="text-amber-500">🪙</span>
+            <Coins className="h-3.5 w-3.5 text-amber-500" />
             1,250
           </span>
           <AvatarDropdown />
@@ -102,6 +103,7 @@ export function Navbar() {
     </header>
   )
 }
+
 
 
 

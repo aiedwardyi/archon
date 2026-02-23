@@ -974,30 +974,16 @@ def get_preview(project_id: int, version: int):
 
     if target:
         html = target.read_text(encoding="utf-8", errors="replace")
-        base = f"/api/preview/{project_id}/{version}/src/"
-        html = html.replace("<head>", f"<head><base href=\"{base}\">", 1)
+        css_file = target.parent / "style.css"
+        if css_file.exists():
+            css = css_file.read_text(encoding="utf-8", errors="replace")
+            html = html.replace(
+                '<link rel="stylesheet" href="./style.css">',
+                f'<style>{css}</style>'
+            )
         return Response(html, mimetype="text/html")
 
     return Response(PREVIEW_PLACEHOLDER, mimetype="text/html", status=200)
-
-
-@app.route("/api/preview/<int:project_id>/<int:version>/src/<path:filename>", methods=["GET"])
-def get_preview_static(project_id: int, version: int, filename: str):
-    src_dir = get_version_dir(project_id, version) / "code" / "src"
-    target = src_dir / filename
-    try:
-        target.resolve().relative_to(src_dir.resolve())
-    except ValueError:
-        return jsonify({"error": "Invalid path"}), 400
-    if not target.exists():
-        return jsonify({"error": "File not found"}), 404
-    ext_mime = {
-        ".css": "text/css", ".js": "application/javascript",
-        ".png": "image/png", ".jpg": "image/jpeg",
-        ".svg": "image/svg+xml",
-    }
-    mime = ext_mime.get(target.suffix.lower(), "application/octet-stream")
-    return send_file(target, mimetype=mime)
 
 
 @app.route("/api/projects/<int:project_id>/head", methods=["GET"])
