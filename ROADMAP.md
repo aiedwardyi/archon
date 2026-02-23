@@ -75,65 +75,49 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - Pipeline polling restarts when navigating back to mid-run build
 - Global block prevents concurrent project builds
 
+### Phase 7D — UI Polish & Quick Wins (✅ Completed)
+- ✅ 7D.1 Navbar real project name + version
+- ✅ 7D.2 Projects table: Project ID column added
+- ✅ 7D.3 Delete project + delete all with type-to-confirm modal
+- ✅ 7D.4 Avatar dropdown (v0-style: email, dark mode, credits, sign out)
+- ✅ 7D.5 Versions page live preview height increase
+- ✅ 7D.6 Artifacts + Navbar version sync fixed (custom event bus)
+
 ### Phase 7E — Output Quality (✅ Completed)
 - Design Agent built: GPT-4o-mini plans images → DALL-E 3 generates them
 - Images downloaded to disk, served via /api/assets/<project_id>/<version>/<file>
 - Design Agent skips image generation for dashboards/tools (cost saving)
-- Keyword check uses PRD title + overview only to avoid false positives
 - Engineer prompt: 10-shell layout intelligence system
-- Engineer prompt: DESIGN ASSETS section forces asset usage in HTML
 - JSON repair fix: backtick-wrapped hex colors stripped before parse
-- Engineer agent no longer produces landing pages for dashboard prompts
 
----
-
-### Phase 7D — UI Polish & Quick Wins (🟡 In Progress)
-
-- ✅ 7D.1 Navbar: real project name + version (live from sessionStorage)
-- ✅ 7D.2 Projects table: Project ID column added
-- ✅ 7D.3 Delete project + delete all with type-to-confirm modal
-- ✅ 7D.6 Artifacts + Navbar version sync fixed (custom event bus)
-- 🔴 7D.4 Avatar dropdown (v0-style: email, dark mode, credits, sign out)
-- 🔴 7D.5 Versions page live preview height increase
-
----
-
-### Phase 7F — Chatbox Upgrades (🔴 Current Sprint)
-
-- File and media upload with drag-and-drop
-- Agent reply for unsupported inputs (URLs, videos)
-- Master log accumulation across versions
-- Image upload → agent uses as design reference
-
----
+### Phase 7F — Chatbox Upgrades (✅ Completed)
+- ✅ 7F.1 File + media upload with drag-and-drop
+- ✅ 7F.2 Graceful agent reply for unsupported inputs
+- ✅ 7F.3 Master log accumulation across versions
 
 ### Phase 7G — Output Quality v2 (✅ Completed)
-
-- ✅ UI archetype lock: Planner classifies archetype, Engineer enforces as hard constraint
-- ✅ ArchetypeRules typed model: layout_contract + content_contract
-- ✅ layout_contract: deterministic geometry per archetype (all 10 archetypes)
-- ✅ Two-file split: src/index.html (structure+JS) + src/style.css (design)
-- 🔴 Preview inline CSS stitching (replace base tag with srcdoc approach)
-- 🔴 CSS design seed: mandatory glow/glass/shimmer patterns in engineer.txt
-- 🔴 Pipeline real-time update bug fix
-
----
+- ✅ UI archetype lock: Planner classifies, Engineer enforces as hard constraint
+- ✅ Layout + content contracts for all 10 archetypes
+- ✅ Two-file split: src/index.html + src/style.css
+- ✅ Preview inline CSS stitching
+- ✅ CSS design seed: glow/glass/shimmer in engineer.txt
+- ✅ Pipeline real-time update bug fix
+- ✅ Parallel pipeline (~30-40% faster)
+- ✅ DALL-E content filter fix
 
 ### Phase 7H — Conversational Chatbox (✅ Completed)
+- ✅ PM Agent classify_intent: routes build vs chat
+- ✅ /chat endpoint — no DB record, no version created for questions
+- ✅ Archon reply bubbles in chatbox UI
+- ✅ Chat history passed into build context
+- ✅ Context-aware replies using project PRD
+- ✅ Download project as zip (with assets)
 
-- Chatbox talks back like Lovable — not every message triggers a build
-- PM Agent returns response_type: `build` or `chat`
-- `build` → pipeline runs as normal
-- `chat` → Archon replies conversationally in the chatbox
-- Use cases: feature advice, clarifying questions, design suggestions
-
----
-
-### Phase 8 — Client Deliverables (⬜ Planned)
-
-- PDF export of full build history (client audit trail)
-- Client shareable read-only link
-- White-label option (agency branding)
+### Phase 8 — Publish + Client Deliverables (🔴 Current Sprint)
+- 🔴 8.1 One-click Publish — shareable hosted URL
+- 🔴 8.2 PDF export of full build history (client audit trail)
+- 🔴 8.3 Client shareable read-only link
+- 🔴 8.4 White-label option (agency branding)
 
 ---
 
@@ -150,7 +134,9 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 | Auditable Brief per iteration | ❌ | ✅ |
 | AI-generated design assets | ❌ | ✅ |
 | Smart layout detection (10 shells) | ❌ | ✅ |
-| File/media upload in chat | ✅ | 🚧 7F |
+| Conversational chatbox | ✅ | ✅ |
+| Download project as zip | ❌ | ✅ |
+| One-click publish | ✅ | 🚧 8 |
 | Client PDF export | ❌ | 🚧 8 |
 | Non-technical agency UI | ❌ | ✅ |
 
@@ -161,18 +147,11 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - ✅ Four-agent pipeline (Requirements → Architecture → Design → Build)
 - ✅ Build Agent: Claude Sonnet 4.5 (primary), Gemini fallback
 - ✅ Flask backend, SQLite, full persistence
-- ✅ Enterprise UI — 10 screens, light + dark mode
+- ✅ Enterprise UI — light + dark mode
 - ✅ Iterative pipeline with full version history
 - ✅ Live preview iframe (Versions + Artifacts pages)
-- ✅ State bugs fixed (refresh, completion signal, prompt history)
-- ✅ Design Agent — DALL-E 3 images, locally served, smart skip for dashboards
-- ✅ Engineer prompt — 10-shell layout intelligence, mandatory asset usage
-- ✅ JSON repair — backtick hex color fix
-- 🟡 UI polish — 7D.1-7D.3 + 7D.6 done; avatar dropdown + preview height remain (Phase 7D)
-- ⬜ Chatbox upgrades (Phase 7F)
-- ⬜ Client deliverables (Phase 8)
-
-
-
-
-
+- ✅ Conversational chatbox — Archon talks back, advises, routes build vs chat
+- ✅ Download project as zip with assets
+- ✅ Design Agent — DALL-E 3 images, locally served
+- ✅ Engineer prompt — 10-shell layout intelligence, CSS design seed
+- 🔴 Publish + Client Deliverables (Phase 8)
