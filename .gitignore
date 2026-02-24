@@ -36,3 +36,8 @@ published/
 
 # Generated artifacts (user-generated, not source code)
 generated/
+
+# Runtime data — never commit these
+generated/
+published/
+artifacts/
