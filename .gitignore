@@ -30,3 +30,9 @@ apps/offline-vite-react/public/*.ndjson
 # Generated output (active)
 generated/*
 !generated/.gitkeep
+
+# Published apps (user-generated, not source code)
+published/
+
+# Generated artifacts (user-generated, not source code)
+generated/
