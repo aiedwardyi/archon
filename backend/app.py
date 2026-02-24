@@ -1193,6 +1193,45 @@ def watson_stt():
         print(f"Watson STT error: {e}")
         return jsonify({"error": str(e)}), 500
 
+
+
+# ============================================================================
+# DOWNLOAD ENDPOINT (zip code folder)
+# ============================================================================
+
+@app.route("/api/projects/<int:project_id>/versions/<int:version>/download", methods=["GET"])
+def download_version(project_id: int, version: int):
+    import zipfile, io
+    code_dir = get_version_dir(project_id, version) / "code"
+    if not code_dir.exists():
+        return jsonify({"error": "No code found for this version"}), 404
+
+    assets_dir = get_version_dir(project_id, version) / "assets"
+
+    import re as _re
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for file_path in code_dir.rglob("*"):
+            if file_path.is_file():
+                if file_path.suffix.lower() in (".html", ".css"):
+                    raw = file_path.read_text(encoding="utf-8", errors="replace")
+                    fixed = _re.sub(
+                        r"/api/assets/[0-9]+/[0-9]+/([^ \"\'>]+)",
+                        r"../assets/\1",
+                        raw
+                    )
+                    zf.writestr(str(file_path.relative_to(code_dir)).replace("\\", "/"), fixed)
+                else:
+                    zf.write(file_path, file_path.relative_to(code_dir))
+        if assets_dir.exists():
+            for file_path in assets_dir.rglob("*"):
+                if file_path.is_file():
+                    zf.write(file_path, Path("assets") / file_path.relative_to(assets_dir))
+    buf.seek(0)
+
+    filename = f"project-{project_id}-v{version}.zip"
+    return send_file(buf, mimetype="application/zip", as_attachment=True, download_name=filename)
 if __name__ == "__main__":
     init_db()
     print(f"Flask server starting...")
