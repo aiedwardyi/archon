@@ -1232,6 +1232,37 @@ def download_version(project_id: int, version: int):
 
     filename = f"project-{project_id}-v{version}.zip"
     return send_file(buf, mimetype="application/zip", as_attachment=True, download_name=filename)
+# ============================================================================
+# WATSON TEXT TO SPEECH ENDPOINT (Phase 10.2)
+# ============================================================================
+
+@app.route("/api/watson/tts", methods=["POST"])
+def watson_tts():
+    """Accepts JSON text, calls IBM Watson TTS, returns audio/mp3."""
+    data = request.get_json()
+    if not data or not data.get("text"):
+        return jsonify({"error": "No text provided"}), 400
+    watson_url = os.getenv("WATSON_TTS_URL")
+    watson_key = os.getenv("WATSON_TTS_APIKEY")
+    if not watson_url or not watson_key:
+        return jsonify({"error": "Watson TTS credentials not configured"}), 500
+    try:
+        from ibm_watson import TextToSpeechV1
+        from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
+        authenticator = IAMAuthenticator(watson_key)
+        tts = TextToSpeechV1(authenticator=authenticator)
+        tts.set_service_url(watson_url)
+        response = tts.synthesize(
+            text=data["text"],
+            voice="en-US_AllisonV3Voice",
+            accept="audio/mp3",
+        ).get_result()
+        audio_bytes = response.content
+        return Response(audio_bytes, mimetype="audio/mp3")
+    except Exception as e:
+        print(f"Watson TTS error: {e}")
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     init_db()
     print(f"Flask server starting...")
@@ -1239,7 +1270,3 @@ if __name__ == "__main__":
     print(f"PUBLIC_DIR: {PUBLIC_DIR}")
     print(f"CORS enabled for: http://localhost:5173, http://localhost:3000")
     app.run(debug=True, port=5000)
-
-
-
-

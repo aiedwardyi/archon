@@ -71,4 +71,11 @@ enterprise-ui
 Mic button in chat input bar. Records voice via MediaRecorder API.
 Sends audio blob to POST /api/watson/stt (Flask + ibm-watson).
 Transcript auto-populates the input field for user to review and send.
-Uses WATSON_STT_URL + WATSON_STT_APIKEY env vars.
+Uses WATSON_STT_URL + WATSON_STT_APIKEY env vars.### 10.2 — Text to Speech on Archon Reply Bubbles
+**Status:** 🔧 In Progress
+Speaker button on every Archon reply bubble.
+POST /api/watson/tts → IBM Watson TTS → audio/mp3 → plays in browser.
+Volume2 (idle), Loader2 (loading), VolumeX (playing/stop).
+One audio at a time — clicking another stops current.
+Uses WATSON_TTS_URL + WATSON_TTS_APIKEY env vars, en-US_AllisonV3Voice.
+

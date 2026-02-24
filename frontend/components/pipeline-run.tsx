@@ -15,6 +15,8 @@ import {
   User,
   Mic,
   MicOff,
+  Volume2,
+  VolumeX,
 } from "lucide-react"
 
 const API_BASE = "http://localhost:5000"
@@ -62,6 +64,9 @@ export function PipelineRun() {
   const [micState, setMicState] = useState<"idle" | "recording" | "processing">("idle")
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
+  const [ttsState, setTtsState] = useState<Record<string, "idle" | "loading" | "playing">>({})
+  const ttsAudioRef = useRef<HTMLAudioElement | null>(null)
+  const ttsPlayingIdRef = useRef<string | null>(null)
   const [globallyBlocked, setGloballyBlocked] = useState(false)
   const [blockingProjectId, setBlockingProjectId] = useState<number | null>(null)
   const logsEndRef = useRef<HTMLDivElement>(null)
@@ -265,6 +270,47 @@ export function PipelineRun() {
       console.error("Poll error:", e)
     }
   }
+
+  const handleTts = async (msgId: string, text: string) => {
+    // Stop current playback if any
+    if (ttsAudioRef.current) {
+      ttsAudioRef.current.pause()
+      ttsAudioRef.current = null
+    }
+    const prevId = ttsPlayingIdRef.current
+    ttsPlayingIdRef.current = null
+    if (prevId) setTtsState(s => ({ ...s, [prevId]: "idle" }))
+
+    // If clicking the same message that was playing, just stop
+    if (prevId === msgId) return
+
+    setTtsState(s => ({ ...s, [msgId]: "loading" }))
+    try {
+      const res = await fetch(`${API_BASE}/api/watson/tts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      })
+      if (!res.ok) throw new Error("TTS request failed")
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const audio = new Audio(url)
+      ttsAudioRef.current = audio
+      ttsPlayingIdRef.current = msgId
+      setTtsState(s => ({ ...s, [msgId]: "playing" }))
+      audio.onended = () => {
+        ttsPlayingIdRef.current = null
+        ttsAudioRef.current = null
+        URL.revokeObjectURL(url)
+        setTtsState(s => ({ ...s, [msgId]: "idle" }))
+      }
+      audio.play()
+    } catch (e) {
+      console.error("TTS error:", e)
+      setTtsState(s => ({ ...s, [msgId]: "idle" }))
+    }
+  }
+
 
   const handleSend = async () => {
     if (!inputValue.trim() || isRunning || !projectId) return
@@ -558,8 +604,27 @@ export function PipelineRun() {
                     : "bg-muted text-foreground rounded-tl-sm"
                 }`}>
                   {msg.content}
-                  <div className={`text-xs mt-1 opacity-60 ${msg.role === "user" ? "text-right" : ""}`}>
-                    {formatTime(msg.timestamp)}
+                  <div className={`flex items-center justify-between mt-1 gap-2`}>
+                    <span className={`text-xs opacity-60`}>{formatTime(msg.timestamp)}</span>
+                    {msg.role === "archon" && (
+                      <button
+                        onClick={() => handleTts(msg.id, msg.content)}
+                        className={`p-1 rounded transition-colors ${
+                          ttsState[msg.id] === "playing"
+                            ? "text-primary"
+                            : "text-muted-foreground/50 hover:text-muted-foreground"
+                        }`}
+                        aria-label="Play message audio"
+                      >
+                        {ttsState[msg.id] === "loading" ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : ttsState[msg.id] === "playing" ? (
+                          <VolumeX className="h-3 w-3" />
+                        ) : (
+                          <Volume2 className="h-3 w-3" />
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
