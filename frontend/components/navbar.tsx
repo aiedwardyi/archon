@@ -80,9 +80,9 @@ export function Navbar() {
           })}
         </nav>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 min-w-0 shrink">
         {projectName && (
-          <span className="hidden md:flex items-center text-xs text-muted-foreground font-mono">
+          <span className="hidden md:flex items-center text-xs text-muted-foreground font-mono max-w-[160px] truncate">
             {projectName}
             {version && (
               <>

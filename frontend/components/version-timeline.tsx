@@ -131,7 +131,7 @@ export function VersionTimeline() {
     <div className="flex-1 flex overflow-hidden">
       {panelOpen && (
         <aside className="w-80 border-r border-border bg-card flex flex-col shrink-0">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border h-[49px]">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <h3 className="text-sm font-semibold text-foreground">Version History</h3>
@@ -173,7 +173,7 @@ export function VersionTimeline() {
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 shrink-0">
                           <span className={`text-xs font-mono font-semibold px-1.5 py-0.5 rounded ${
                             isActive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                           }`}>
@@ -197,121 +197,83 @@ export function VersionTimeline() {
       )}
 
       <div className="flex-1 flex flex-col overflow-auto">
-        {!panelOpen && (
-          <div className="px-6 pt-4">
-            <button onClick={() => setPanelOpen(true)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border hover:bg-muted">
-              <PanelLeft className="h-3.5 w-3.5" />
-              Show versions
-            </button>
-          </div>
-        )}
-
         {selected && (
-          <div className="flex-1 p-6 flex flex-col gap-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-sm font-mono font-bold bg-primary text-primary-foreground px-2 py-0.5 rounded">
-                    v{selected.version}
-                  </span>
+          <div className="flex-1 flex flex-col gap-6">
+            <div className="border-b border-border bg-card px-6 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-3 text-xs">
+              {!panelOpen && (
+                <button onClick={() => setPanelOpen(true)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border hover:bg-muted">
+                  <PanelLeft className="h-3.5 w-3.5" />
+                  Show versions
+                </button>
+              )}
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-primary/30 bg-primary/10 text-primary font-mono font-semibold">
+                  V{selected.version}
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-border text-muted-foreground">
                   <VersionStatusIcon status={selected.status} />
-                  <span className="text-sm text-muted-foreground">{selected.date} at {selected.timestamp}</span>
-                </div>
-                <h2 className="text-lg font-semibold text-foreground">{selected.prompt}</h2>
+                  <span className="capitalize ml-1">{selected.status}</span>
+                </span>
+                <span className="text-muted-foreground">{selected.date} at {selected.timestamp}</span>
               </div>
               <div className="flex items-center gap-2">
-                <button className="flex items-center gap-2 h-9 px-4 rounded-md border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors">
-                  <Download className="h-4 w-4" />
+                <button className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                  <Download className="h-3 w-3" />
                   Download Report
                 </button>
                 {selected.status !== "running" && headVersion && selected.id !== headVersion.id && (
                   <button
                     onClick={() => handleRestore(selected.id)}
                     disabled={restoring}
-                    className="flex items-center gap-2 h-9 px-4 rounded-md border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                    className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
                   >
-                    {restoring ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                    {restoring ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3" />}
                     Restore to this version
                   </button>
                 )}
               </div>
             </div>
+            <div className="px-6 flex flex-col gap-4">
 
-            <div className="bg-card border border-border rounded-lg">
-              <div className="px-4 py-3 border-b border-border">
-                <h3 className="text-sm font-semibold text-foreground">Prompt</h3>
+            {/* Prompt card */}
+            <div className="rounded-lg border-l-4 border-l-primary border border-border bg-card p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-primary">Prompt</span>
+                <span className="text-xs text-muted-foreground">{selected.timestamp}</span>
               </div>
-              <div className="p-4">
-                <div className="flex gap-3">
-                  <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0">
-                    <span className="text-xs font-medium text-muted-foreground">JD</span>
+              <p className="text-sm text-foreground leading-relaxed">{selected.prompt}</p>
+            </div>
+
+            {/* What was built card */}
+            <div className="rounded-lg border-l-4 border-l-info border border-border bg-card p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-info">What Was Built</span>
+                <span className="text-xs text-muted-foreground">{selected.timestamp}</span>
+              </div>
+              <p className="text-sm text-foreground/80 leading-relaxed">
+                Pipeline completed successfully. {selected.filesChanged > 0
+                  ? `${selected.filesChanged} file${selected.filesChanged !== 1 ? "s" : ""} were generated.`
+                  : "Check the artifacts for details."}
+              </p>
+            </div>
+
+            {/* Artifacts grid */}
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: "Brief", sub: "Requirements doc", icon: FileText, color: "text-primary", bg: "bg-primary/10", border: "border-l-primary" },
+                { label: "Build Plan", sub: "Architecture plan", icon: Map, color: "text-info", bg: "bg-info/10", border: "border-l-info" },
+                { label: "Code", sub: `${selected.filesChanged} files`, icon: Code2, color: "text-success", bg: "bg-success/10", border: "border-l-success" },
+              ].map((art) => (
+                <div key={art.label} className={`flex items-center gap-3 p-4 rounded-lg border-l-4 border border-border bg-card ${art.border}`}>
+                  <div className={`h-9 w-9 rounded-md ${art.bg} flex items-center justify-center shrink-0`}>
+                    <art.icon className={`h-4 w-4 ${art.color}`} />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium text-foreground">You</span>
-                      <span className="text-xs text-muted-foreground">{selected.timestamp}</span>
-                    </div>
-                    <p className="text-sm text-foreground/80 leading-relaxed">{selected.prompt}</p>
+                    <p className="text-sm font-medium text-foreground">{art.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{art.sub}</p>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="inline-flex items-center gap-2 bg-card border border-border rounded-lg px-4 py-2.5">
-                <VersionStatusIcon status={selected.status} />
-                <span className="text-sm text-foreground font-medium capitalize">{selected.status}</span>
-              </div>
-              <span className="text-xs text-muted-foreground">{selected.filesChanged} files changed</span>
-            </div>
-
-            <div className="bg-card border border-border rounded-lg">
-              <div className="px-4 py-3 border-b border-border">
-                <h3 className="text-sm font-semibold text-foreground">What Was Built</h3>
-              </div>
-              <div className="p-4">
-                <div className="flex gap-3">
-                  <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <ChevronRight className="h-3.5 w-3.5 text-primary" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium text-foreground">Archon</span>
-                      <span className="text-xs text-muted-foreground">{selected.timestamp}</span>
-                    </div>
-                    <p className="text-sm text-foreground/80 leading-relaxed">
-                      Pipeline completed successfully. {selected.filesChanged > 0
-                        ? `${selected.filesChanged} file${selected.filesChanged !== 1 ? "s" : ""} were generated.`
-                        : "Check the artifacts for details."}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-card border border-border rounded-lg">
-              <div className="px-4 py-3 border-b border-border">
-                <h3 className="text-sm font-semibold text-foreground">Build Artifacts</h3>
-              </div>
-              <div className="p-4">
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { label: "Brief", sub: "Requirements doc", icon: FileText, color: "text-primary", bg: "bg-primary/10" },
-                    { label: "Build Plan", sub: "Architecture plan", icon: Map, color: "text-info", bg: "bg-info/10" },
-                    { label: "Code", sub: `${selected.filesChanged} files`, icon: Code2, color: "text-success", bg: "bg-success/10" },
-                  ].map((art) => (
-                    <div key={art.label} className="flex items-center gap-3 p-4 rounded-lg border border-border bg-muted/20">
-                      <div className={`h-9 w-9 rounded-md ${art.bg} flex items-center justify-center shrink-0`}>
-                        <art.icon className={`h-4 w-4 ${art.color}`} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{art.label}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{art.sub}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              ))}
             </div>
 
             <div className="bg-card border border-border rounded-lg overflow-hidden">
@@ -322,6 +284,7 @@ export function VersionTimeline() {
                 <PreviewPanel projectId={projectId} version={selected.version} />
               </div>
             </div>
+          </div>
           </div>
         )}
 
