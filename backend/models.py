@@ -83,6 +83,9 @@ class Execution(Base):
     
     # Error message if execution failed
     error_message = Column(Text, nullable=True)
+
+    # Publish slug (Phase 8.1) -- set when this version is published
+    published_slug = Column(String(100), nullable=True)
     
     # Relationship: many executions belong to one project
     project = relationship("Project", back_populates="executions")
@@ -155,3 +158,4 @@ def init_db():
 def get_session():
     """Get a new database session. Remember to close it after use!"""
     return SessionLocal()
+

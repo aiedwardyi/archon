@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect } from "react"
 import {
@@ -137,6 +137,69 @@ function SyntaxHighlightedCode({ code }: { code: string }) {
         </div>
       ))}
     </div>
+  )
+}
+
+function PublishButton({ projectId, version }: { projectId: number; version: number }) {
+  const [state, setState] = useState<"idle" | "loading" | "done">("idle")
+  const [publishedUrl, setPublishedUrl] = useState("")
+  const [copied, setCopied] = useState(false)
+
+  const handlePublish = async () => {
+    setState("loading")
+    try {
+      const res = await fetch(`${API_BASE}/api/projects/${projectId}/versions/${version}/publish`, { method: "POST" })
+      const data = await res.json()
+      if (data.url) {
+        setPublishedUrl(`http://localhost:5000${data.url}`)
+        setState("done")
+      } else {
+        setState("idle")
+        alert("Publish failed: " + (data.error || "Unknown error"))
+      }
+    } catch {
+      setState("idle")
+      alert("Publish failed - check Flask server")
+    }
+  }
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(publishedUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  if (state === "done") {
+    return (
+      <div className="flex items-center gap-1.5">
+        <input
+          readOnly
+          value={publishedUrl}
+          className="text-xs px-2 py-1 rounded border border-success/40 bg-success/10 text-success font-mono w-64"
+        />
+        <button
+          onClick={handleCopy}
+          className="text-xs px-2.5 py-1 rounded border border-success/40 bg-success/10 text-success hover:bg-success/20 transition-colors"
+        >
+          {copied ? "Copied!" : "Copy"}
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <button
+      onClick={handlePublish}
+      disabled={state === "loading"}
+      className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 transition-colors disabled:opacity-50"
+    >
+      {state === "loading" ? (
+        <Loader2 className="h-3 w-3 animate-spin" />
+      ) : (
+        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" /></svg>
+      )}
+      {state === "loading" ? "Publishing..." : "Publish"}
+    </button>
   )
 }
 
@@ -367,14 +430,17 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion 
           </div>
           <div className="flex items-center gap-2">
             {projectId && version && (
-              <a
-                href={`${API_BASE}/api/projects/${projectId}/versions/${version}/download`}
-                download
-                className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              >
-                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                Download Code
-              </a>
+              <>
+                <PublishButton projectId={projectId} version={version} />
+                <a
+                  href={`${API_BASE}/api/projects/${projectId}/versions/${version}/download`}
+                  download
+                  className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                  Download Code
+                </a>
+              </>
             )}
             <button
               onClick={() => setShowRawJson(!showRawJson)}
@@ -414,7 +480,7 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion 
       {/* Tab content */}
       <div className="flex-1 overflow-hidden flex">
 
-        {/* ── BRIEF ─────────────────────────────────────────────────────── */}
+        {/* â”€â”€ BRIEF â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {activeTab === "brief" && (
           <div className="flex-1 overflow-auto p-6">
             {prdLoading && (
@@ -500,7 +566,7 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion 
           </div>
         )}
 
-        {/* ── PLAN ──────────────────────────────────────────────────────── */}
+        {/* â”€â”€ PLAN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {activeTab === "plan" && (
           <div className="flex-1 overflow-auto p-6">
             {planLoading && (
@@ -546,7 +612,7 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion 
           </div>
         )}
 
-        {/* ── CODE ──────────────────────────────────────────────────────── */}
+        {/* â”€â”€ CODE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {activeTab === "code" && (
           <>
             <aside className="w-56 border-r border-border bg-card overflow-auto py-2 shrink-0">
@@ -600,7 +666,7 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion 
           </>
         )}
 
-        {/* ── TASKS ─────────────────────────────────────────────────────── */}
+        {/* â”€â”€ TASKS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {activeTab === "tasks" && (
           <div className="flex-1 overflow-auto p-6">
             <div className="max-w-3xl">
@@ -612,13 +678,13 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion 
           </div>
         )}
 
-        {/* ── LOGS ──────────────────────────────────────────────────────── */}
+        {/* â”€â”€ LOGS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {activeTab === "logs" && (
           <div className="flex-1 overflow-auto p-6">
             <div className="bg-card border border-border rounded-lg overflow-hidden">
               <div className="px-4 py-3 border-b border-border flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-foreground">Pipeline Execution Logs</h3>
-                <span className="text-xs text-muted-foreground">{version ? `v${version}` : "—"}</span>
+                <span className="text-xs text-muted-foreground">{version ? `v${version}` : "â€”"}</span>
               </div>
               <div className="p-4 font-mono text-xs space-y-0.5">
                 {(() => {
@@ -638,7 +704,7 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion 
           </div>
         )}
 
-        {/* ── PREVIEW ───────────────────────────────────────────────────── */}
+        {/* â”€â”€ PREVIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {activeTab === "preview" && (
           <PreviewPanel projectId={projectId} version={version} />
         )}
@@ -647,6 +713,9 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion 
     </div>
   )
 }
+
+
+
 
 
 

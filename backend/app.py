@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file, Response
+﻿from flask import Flask, request, jsonify, send_file, Response
 from flask_cors import CORS
 import json
 import os
@@ -117,7 +117,7 @@ def get_language_from_ext(filename: str) -> str:
 def resolve_project_version(q_project_id=None, q_version=None):
     """
     Resolves (project_id, version) from:
-      1. Explicit query params (highest priority â€” user asked for a specific version)
+      1. Explicit query params (highest priority Ã¢â‚¬â€ user asked for a specific version)
       2. execution_state in-memory (current running/last run)
       3. DB lookup of active head if only project_id is known
     """
@@ -243,7 +243,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
             import re as _re
             title_match = _re.search(r"<title[^>]*>(.*?)</title>", existing_code, _re.IGNORECASE)
             prev_title = title_match.group(1).strip() if title_match else None
-            title_note = f" The app is currently named \"{prev_title}\" â€” preserve this name unless the user explicitly asks to change it." if prev_title else ""
+            title_note = f" The app is currently named \"{prev_title}\" Ã¢â‚¬â€ preserve this name unless the user explicitly asks to change it." if prev_title else ""
             context_input += f"\n\nNOTE: This is an iteration on an existing app. The current HTML is provided to the engineer. The PRD should reflect ONLY the changes requested, not rebuild from scratch.{title_note}"
 
         prd_artifact = pm_agent.generate_prd(context_input)
@@ -1064,6 +1064,83 @@ def project_chat(project_id: int):
         return jsonify({"response_type": "build"}), 200
 
 
+
+# ============================================================================
+# PUBLISH ENDPOINTS (Phase 8.1)
+# ============================================================================
+
+import random, string, shutil
+
+def generate_slug(project_name: str, version: int) -> str:
+    safe = "".join(c if c.isalnum() else "-" for c in project_name.lower()).strip("-")
+    safe = "-".join(p for p in safe.split("-") if p)[:30]
+    suffix = "".join(random.choices(string.ascii_lowercase + string.digits, k=4))
+    return f"{safe}-v{version}-{suffix}"
+
+
+@app.route("/api/projects/<int:project_id>/versions/<int:version>/publish", methods=["POST"])
+def publish_version(project_id: int, version: int):
+    session = get_session()
+    try:
+        execution = (
+            session.query(Execution)
+            .filter(Execution.project_id == project_id, Execution.version == version)
+            .first()
+        )
+        if not execution:
+            return jsonify({"error": "Version not found"}), 404
+
+        if execution.published_slug:
+            slug = execution.published_slug
+        else:
+            project = session.get(Project, project_id)
+            slug = generate_slug(project.name if project else "app", version)
+
+            code_dir = get_version_dir(project_id, version) / "code"
+            if not code_dir.exists():
+                return jsonify({"error": "No code generated for this version"}), 404
+
+            published_dir = REPO_ROOT / "published" / slug
+            published_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(code_dir, published_dir, dirs_exist_ok=True)
+
+            execution.published_slug = slug
+            session.commit()
+
+        return jsonify({"url": f"/published/{slug}", "slug": slug}), 200
+    except Exception as e:
+        print(f"Publish error: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
+
+
+@app.route("/published/<slug>", methods=["GET"])
+def serve_published(slug: str):
+    if not all(c.isalnum() or c in "-_" for c in slug):
+        return "Invalid slug", 400
+
+    published_dir = REPO_ROOT / "published" / slug
+    html_file = published_dir / "src" / "index.html"
+
+    if not html_file.exists():
+        html_files = list(published_dir.rglob("*.html"))
+        html_file = html_files[0] if html_files else None
+
+    if not html_file:
+        return "Published app not found", 404
+
+    html = Path(html_file).read_text(encoding="utf-8", errors="replace")
+    css_file = Path(html_file).parent / "style.css"
+    if css_file.exists():
+        css = css_file.read_text(encoding="utf-8", errors="replace")
+        html = html.replace(
+            '<link rel="stylesheet" href="./style.css">',
+            f"<style>{css}</style>"
+        )
+    return Response(html, mimetype="text/html")
+
+
 if __name__ == "__main__":
     init_db()
     print(f"Flask server starting...")
@@ -1071,6 +1148,7 @@ if __name__ == "__main__":
     print(f"PUBLIC_DIR: {PUBLIC_DIR}")
     print(f"CORS enabled for: http://localhost:5173, http://localhost:3000")
     app.run(debug=True, port=5000)
+
 
 
 
