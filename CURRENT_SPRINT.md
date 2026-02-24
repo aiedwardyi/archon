@@ -18,7 +18,7 @@ Agencies need to send clients a URL, not a zip file.
 ## Phase 8 — Publish + Client Deliverables
 
 ### 8.1 — One-Click Publish
-**Status:** 🔴 TODO
+**Status:** ✅ Done
 POST /api/projects/<id>/versions/<version>/publish
 Copies code to published/<slug>/, stitches CSS inline, returns shareable URL.
 GET /published/<slug> serves the app.

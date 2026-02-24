@@ -114,7 +114,7 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - ✅ Download project as zip (with assets)
 
 ### Phase 8 — Publish + Client Deliverables (🔴 Current Sprint)
-- 🔴 8.1 One-click Publish — shareable hosted URL
+- ✅ 8.1 One-click Publish — shareable hosted URL
 - 🔴 8.2 PDF export of full build history (client audit trail)
 - 🔴 8.3 Client shareable read-only link
 - 🔴 8.4 White-label option (agency branding)
