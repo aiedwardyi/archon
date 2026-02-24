@@ -62,3 +62,13 @@ C:\Users\mredw\OneDrive\Desktop\ai-dev-team\
 
 ## Branch
 enterprise-ui
+
+
+## Phase 10 — IBM Watson Integration (🔧 In Progress)
+
+### 10.1 — Speech to Text in Chatbox
+**Status:** ✅ Done
+Mic button in chat input bar. Records voice via MediaRecorder API.
+Sends audio blob to POST /api/watson/stt (Flask + ibm-watson).
+Transcript auto-populates the input field for user to review and send.
+Uses WATSON_STT_URL + WATSON_STT_APIKEY env vars.

@@ -1141,6 +1141,58 @@ def serve_published(slug: str):
     return Response(html, mimetype="text/html")
 
 
+
+
+# ============================================================================
+# WATSON SPEECH TO TEXT ENDPOINT (Phase 10.1)
+# ============================================================================
+
+@app.route("/api/watson/stt", methods=["POST"])
+def watson_stt():
+    """Accepts audio upload, calls IBM Watson STT, returns transcript."""
+    if "audio" not in request.files:
+        return jsonify({"error": "No audio file provided"}), 400
+
+    audio_file = request.files["audio"]
+    watson_url = os.getenv("WATSON_STT_URL")
+    watson_key = os.getenv("WATSON_STT_APIKEY")
+
+    if not watson_url or not watson_key:
+        return jsonify({"error": "Watson STT credentials not configured"}), 500
+
+    try:
+        from ibm_watson import SpeechToTextV1
+        from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
+
+        authenticator = IAMAuthenticator(watson_key)
+        stt = SpeechToTextV1(authenticator=authenticator)
+        stt.set_service_url(watson_url)
+
+        audio_bytes = audio_file.read()
+        content_type = audio_file.content_type or "audio/webm"
+
+        result = stt.recognize(
+            audio=audio_bytes,
+            content_type=content_type,
+            model="en-US_BroadbandModel",
+        ).get_result()
+
+        results = result.get("results", [])
+        if not results:
+            return jsonify({"transcript": ""}), 200
+
+        transcript = " ".join(
+            r["alternatives"][0]["transcript"]
+            for r in results
+            if r.get("alternatives")
+        ).strip()
+
+        return jsonify({"transcript": transcript}), 200
+
+    except Exception as e:
+        print(f"Watson STT error: {e}")
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     init_db()
     print(f"Flask server starting...")

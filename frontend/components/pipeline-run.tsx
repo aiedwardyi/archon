@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useRef, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
@@ -13,6 +13,8 @@ import {
   Zap,
   Bot,
   User,
+  Mic,
+  MicOff,
 } from "lucide-react"
 
 const API_BASE = "http://localhost:5000"
@@ -57,6 +59,9 @@ export function PipelineRun() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [promptHistory, setPromptHistory] = useState<{ role: string; content: string }[]>([])
   const [showAllLogs, setShowAllLogs] = useState(false)
+  const [micState, setMicState] = useState<"idle" | "recording" | "processing">("idle")
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
   const [globallyBlocked, setGloballyBlocked] = useState(false)
   const [blockingProjectId, setBlockingProjectId] = useState<number | null>(null)
   const logsEndRef = useRef<HTMLDivElement>(null)
@@ -349,6 +354,44 @@ export function PipelineRun() {
     }
   }
 
+  const handleMic = async () => {
+    if (micState === "idle") {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        const recorder = new MediaRecorder(stream)
+        audioChunksRef.current = []
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) audioChunksRef.current.push(e.data)
+        }
+        recorder.onstop = async () => {
+          stream.getTracks().forEach(t => t.stop())
+          setMicState("processing")
+          const blob = new Blob(audioChunksRef.current, { type: "audio/webm" })
+          const formData = new FormData()
+          formData.append("audio", blob, "recording.webm")
+          try {
+            const res = await fetch(`${API_BASE}/api/watson/stt`, {
+              method: "POST",
+              body: formData,
+            })
+            const data = await res.json()
+            if (data.transcript) setInputValue(data.transcript)
+          } catch (err) {
+            console.error("STT error:", err)
+          }
+          setMicState("idle")
+        }
+        recorder.start()
+        mediaRecorderRef.current = recorder
+        setMicState("recording")
+      } catch (err) {
+        console.error("Mic access denied:", err)
+      }
+    } else if (micState === "recording") {
+      mediaRecorderRef.current?.stop()
+    }
+  }
+
   useEffect(() => { return () => stopPolling() }, [])
 
   useEffect(() => {
@@ -572,16 +615,36 @@ export function PipelineRun() {
                 "What would you like to build?"
               }
               disabled={!projectId || isRunning || globallyBlocked}
-              className="w-full h-9 rounded-md border border-input bg-background pl-3 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring font-mono disabled:opacity-50"
+              className="w-full h-9 rounded-md border border-input bg-background pl-3 pr-20 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring font-mono disabled:opacity-50"
             />
-            <button
-              onClick={handleSend}
-              disabled={!inputValue.trim() || isRunning || !projectId || globallyBlocked}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40"
-              aria-label="Send message"
-            >
-              <Send className="h-3.5 w-3.5" />
-            </button>
+            <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              <button
+                onClick={handleMic}
+                disabled={isRunning || !projectId || micState === "processing"}
+                className={`p-1.5 rounded transition-colors disabled:opacity-40 ${
+                  micState === "recording"
+                    ? "bg-destructive text-destructive-foreground animate-pulse"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+                aria-label={micState === "recording" ? "Stop recording" : "Start voice input"}
+              >
+                {micState === "processing" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : micState === "recording" ? (
+                  <MicOff className="h-3.5 w-3.5" />
+                ) : (
+                  <Mic className="h-3.5 w-3.5" />
+                )}
+              </button>
+              <button
+                onClick={handleSend}
+                disabled={!inputValue.trim() || isRunning || !projectId || globallyBlocked}
+                className="p-1.5 rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40"
+                aria-label="Send message"
+              >
+                <Send className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

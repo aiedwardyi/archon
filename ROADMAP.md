@@ -168,8 +168,8 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - Chat panel needs max-height + scrollable container
 - Consider split layout: agent pipeline fixed top, chat scrollable below
 
-### Phase 10 — IBM Watson Integration (⬜ Planned)
-- Speech to Text: user speaks prompts instead of typing
+### Phase 10 — IBM Watson Integration (🔧 In Progress)
+- ✅ Speech to Text: user speaks prompts instead of typing
 - Text to Speech: Archon reads replies aloud
 - Watson Assistant: power conversational chatbox natively
 - AI Factsheets / governance: model monitoring for enterprise credibility
