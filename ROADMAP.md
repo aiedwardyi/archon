@@ -162,3 +162,20 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - Chat panel needs max-height + scrollable container (currently grows infinitely)
 - Consider split layout: agent pipeline fixed top, chat scrollable below
 - Overall pipeline page layout review for long sessions
+
+### Phase 10 — IBM Watson Integration (⬜ Planned)
+- Speech to Text: user speaks prompts instead of typing
+- Text to Speech: Archon reads replies aloud
+- Watson Assistant: power conversational chatbox natively
+- AI Factsheets / governance: model monitoring for enterprise credibility
+- Natural Language Understanding: analyze prompt intent before pipeline routing
+- Goal: IBM AI Engineer application showcase + $200 cloud credit usage
+
+### Phase 11 — Pipeline Page Redesign (⬜ Planned)
+- Three-panel layout for large screens:
+  Left: conversation/chat (scrollable)
+  Top right: agent pipeline status cards
+  Bottom right: live preview iframe
+- Enterprise/agency target — assumes large monitor
+- Classifier sensitivity fix: opinion questions never trigger builds
+- Chat panel max-height with internal scroll
