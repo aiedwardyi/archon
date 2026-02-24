@@ -184,3 +184,14 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - Enterprise/agency target — assumes large monitor
 - Classifier sensitivity fix: opinion questions never trigger builds
 - Chat panel max-height with internal scroll
+
+### Phase 12 — Output Domain Personality (⬜ Planned)
+- Generated apps reuse same shell structure regardless of domain
+- "Uber clone" produces generic dashboard instead of ride-sharing UI
+- Root cause: archetype lock picks shell correctly but injects no domain aesthetics
+- Fix: engineer prompt needs domain context injection — color palette, component vocabulary, visual metaphors per industry
+- Examples: ride-sharing = map tiles, driver cards, live ping aesthetic
+-           fintech = green/red tickers, candlestick feel, data density
+-           gaming = dark immersive, HUD elements, particle effects
+- Approach: planner agent injects domain_personality block into engineer task
+- This is the main quality gap vs Lovable/v0
