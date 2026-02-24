@@ -195,3 +195,10 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 -           gaming = dark immersive, HUD elements, particle effects
 - Approach: planner agent injects domain_personality block into engineer task
 - This is the main quality gap vs Lovable/v0
+
+### Phase 12.1 — Domain Personality Upgrade (✅ Completed Feb 2026)
+- Injected Tailwind CDN + Alpine.js for visual pages
+- 18 archetypes with domain-specific palettes, fonts, and components
+- pollinations.ai for fictional character/game asset generation
+- Anti-patterns list to prevent generic AI output
+- Result: FF7 fan page output matches Lovable quality
