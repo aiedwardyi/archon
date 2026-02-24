@@ -1,4 +1,4 @@
-# Archon — Execution Roadmap
+﻿# Archon — Execution Roadmap
 
 ## Purpose
 
@@ -113,8 +113,10 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - ✅ Context-aware replies using project PRD
 - ✅ Download project as zip (with assets)
 
-### Phase 8 — Publish + Client Deliverables (🔴 Current Sprint)
+### Phase 8 — Publish + Client Deliverables (🔧 In Progress)
 - ✅ 8.1 One-click Publish — shareable hosted URL
+- ✅ 8.UI.1 Artifact cards link to Artifacts page with tab pre-selection
+- ✅ 8.UI.2 Account modals — Profile, Settings, Pricing, Documentation
 - 🔴 8.2 PDF export of full build history (client audit trail)
 - 🔴 8.3 Client shareable read-only link
 - 🔴 8.4 White-label option (agency branding)
@@ -136,7 +138,9 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 | Smart layout detection (10 shells) | ❌ | ✅ |
 | Conversational chatbox | ✅ | ✅ |
 | Download project as zip | ❌ | ✅ |
-| One-click publish | ✅ | 🚧 8 |
+| One-click publish | ✅ | ✅ |
+| Artifact cards → tab navigation | ❌ | ✅ |
+| Account modals (Profile/Settings/Pricing) | ✅ | ✅ |
 | Client PDF export | ❌ | 🚧 8 |
 | Non-technical agency UI | ❌ | ✅ |
 
@@ -154,14 +158,15 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - ✅ Download project as zip with assets
 - ✅ Design Agent — DALL-E 3 images, locally served
 - ✅ Engineer prompt — 10-shell layout intelligence, CSS design seed
-- 🔴 Publish + Client Deliverables (Phase 8)
+- ✅ One-click publish — shareable hosted URL
+- ✅ Artifact cards link to Artifacts page with tab pre-selection
+- ✅ Account modals — Profile, Settings, Pricing, Documentation
+- 🔴 PDF Export + Client Read-Only Link (Phase 8 remaining)
 
 ### Phase 9 — Pipeline Page & Classifier Improvements (⬜ Planned)
-- Classifier too sensitive — opinion questions ("do you think X?", "will it look better if?")
-  triggering builds instead of chat replies. Needs stricter CHAT classification rules.
-- Chat panel needs max-height + scrollable container (currently grows infinitely)
+- Classifier too sensitive — opinion questions triggering builds
+- Chat panel needs max-height + scrollable container
 - Consider split layout: agent pipeline fixed top, chat scrollable below
-- Overall pipeline page layout review for long sessions
 
 ### Phase 10 — IBM Watson Integration (⬜ Planned)
 - Speech to Text: user speaks prompts instead of typing

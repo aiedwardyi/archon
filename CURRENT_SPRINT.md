@@ -1,4 +1,4 @@
-# Current Sprint — Phase 8: Publish + Client Deliverables
+﻿# Current Sprint — Phase 8: Publish + Client Deliverables
 
 ## Sprint Goal
 Make Archon's output shareable and client-ready.
@@ -38,8 +38,27 @@ No login required. Shows all versions, artifacts, previews.
 **Status:** 🔴 TODO
 Agency branding on client-facing views.
 
+## Phase 8 UI Polish (✅ Done this session)
+
+### 8.UI.1 — Artifact Cards Link to Artifacts Page
+**Status:** ✅ Done
+Brief, Build Plan, and Code cards on Versions page are now clickable buttons.
+Each saves archon_selected_version to sessionStorage and navigates to
+/artifacts?tab=brief|plan|code. ArtifactViewer reads initialTab prop and
+sets the active tab on mount. artifacts/page.tsx reads ?tab query param via useSearchParams.
+
+### 8.UI.2 — Account Modals (Profile, Settings, Pricing)
+**Status:** ✅ Done
+Avatar dropdown Profile, Settings, Pricing items now open modal overlays.
+- Profile: mock user info (name, email, avatar initials, member since)
+- Settings: masked API key inputs (OpenAI, Gemini, Anthropic) with save button
+- Pricing: Free vs Pro plan cards with feature lists and Upgrade button
+- Documentation: opens https://docs.archon.dev in new tab
+- Upgrade to Pro button in dropdown also opens Pricing modal
+New file: frontend/components/account-modals.tsx
+
 ## Working Directory
-C:\Users\mredw\Desktop\ai-dev-team\
+C:\Users\mredw\OneDrive\Desktop\ai-dev-team\
 
 ## Branch
 enterprise-ui
