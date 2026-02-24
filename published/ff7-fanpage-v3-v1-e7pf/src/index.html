@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Final Fantasy VII - Midgar Archives</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+<div class="topbar-content">
+<div class="logo">
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M16 2L4 9v14l12 7 12-7V9L16 2z" stroke="currentColor" stroke-width="2" fill="none"/>
+<path d="M16 16l-8-4.5M16 16l8-4.5M16 16v9" stroke="currentColor" stroke-width="2"/>
+</svg>
+<span>MIDGAR ARCHIVES</span>
+</div>
+<div class="search-container">
+<svg class="search-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
+<circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
+<path d="M12.5 12.5l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+</svg>
+<input type="text" id="searchInput" class="search-input" placeholder="Search characters, weapons, locations...">
+</div>
+<nav class="filter-tabs">
+<button class="tab-btn active" data-filter="all">All</button>
+<button class="tab-btn" data-filter="characters">Characters</button>
+<button class="tab-btn" data-filter="weapons">Weapons</button>
+<button class="tab-btn" data-filter="locations">Locations</button>
+</nav>
+</div>
+</header>
+<main class="main-content">
+<section class="featured-hero" data-category="featured">
+<div class="hero-content">
+<div class="hero-badge">REMAKE EDITION</div>
+<h1 class="hero-title">The Legacy Continues</h1>
+<p class="hero-subtitle">Explore the world of Final Fantasy VII, from the streets of Midgar to the depths of the Northern Crater. Discover legendary heroes, iconic weapons, and the vast world map.</p>
+<div class="hero-actions">
+<button class="btn-primary">Explore Archives</button>
+<button class="btn-secondary">Watch Trailer</button>
+</div>
+</div>
+</section>
+<div class="section-header">
+<h2>Featured Content</h2>
+<div class="view-toggle">
+<button class="view-btn active" data-view="grid">
+<svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
+<rect x="2" y="2" width="6" height="6" rx="1"/>
+<rect x="10" y="2" width="6" height="6" rx="1"/>
+<rect x="2" y="10" width="6" height="6" rx="1"/>
+<rect x="10" y="10" width="6" height="6" rx="1"/>
+</svg>
+</button>
+<button class="view-btn" data-view="list">
+<svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
+<rect x="2" y="3" width="14" height="2" rx="1"/>
+<rect x="2" y="8" width="14" height="2" rx="1"/>
+<rect x="2" y="13" width="14" height="2" rx="1"/>
+</svg>
+</button>
+</div>
+</div>
+<div class="card-grid" id="cardGrid">
+<article class="content-card" data-category="characters" data-title="Cloud Strife" data-tags="soldier, protagonist, buster sword">
+<div class="card-image-wrapper">
+<img src="/api/assets/38/1/character_cloud.png" alt="Cloud Strife" class="card-image">
+<div class="card-badge">PROTAGONIST</div>
+</div>
+<div class="card-content">
+<h3 class="card-title">Cloud Strife</h3>
+<p class="card-author">Ex-SOLDIER 1st Class</p>
+<p class="card-description">A former member of SOLDIER who joins the eco-terrorist group AVALANCHE. Wielding the massive Buster Sword, Cloud is a skilled fighter haunted by his past.</p>
+<div class="card-meta">
+<span class="card-date">Age: 21</span>
+<div class="card-tags">
+<span class="tag">SOLDIER</span>
+<span class="tag">Swordsman</span>
+<span class="tag">Hero</span>
+</div>
+</div>
+</div>
+</article>
+<article class="content-card" data-category="characters" data-title="Barret Wallace" data-tags="avalanche, leader, gunner">
+<div class="card-image-wrapper">
+<img src="/api/assets/38/1/character_barret.png" alt="Barret Wallace" class="card-image">
+<div class="card-badge">AVALANCHE</div>
+</div>
+<div class="card-content">
+<h3 class="card-title">Barret Wallace</h3>
+<p class="card-author">Leader of AVALANCHE</p>
+<p class="card-description">The passionate leader of the rebel group AVALANCHE fighting against Shinra. His gun-arm and fierce determination make him a formidable ally in battle.</p>
+<div class="card-meta">
+<span class="card-date">Age: 35</span>
+<div class="card-tags">
+<span class="tag">Leader</span>
+<span class="tag">Gunner</span>
+<span class="tag">Rebel</span>
+</div>
+</div>
+</div>
+</article>
+<article class="content-card" data-category="characters" data-title="Tifa Lockhart" data-tags="martial artist, childhood friend, seventh heaven">
+<div class="card-image-wrapper">
+<img src="/api/assets/38/1/character_tifa.png" alt="Tifa Lockhart" class="card-image">
+<div class="card-badge">MARTIAL ARTIST</div>
+</div>
+<div class="card-content">
+<h3 class="card-title">Tifa Lockhart</h3>
+<p class="card-author">Seventh Heaven Proprietor</p>
+<p class="card-description">Cloud's childhood friend and a skilled martial artist. She runs Seventh Heaven bar in Sector 7 slums while secretly supporting AVALANCHE's mission.</p>
+<div class="card-meta">
+<span class="card-date">Age: 20</span>
+<div class="card-tags">
+<span class="tag">Fighter</span>
+<span class="tag">AVALANCHE</span>
+<span class="tag">Nibelheim</span>
+</div>
+</div>
+</div>
+</article>
+<article class="content-card" data-category="weapons" data-title="Legendary Weapons" data-tags="buster sword, gun arm, premium heart">
+<div class="card-image-wrapper">
+<img src="/api/assets/38/1/weapons_collection.png" alt="Legendary Weapons" class="card-image">
+<div class="card-badge">EQUIPMENT</div>
+</div>
+<div class="card-content">
+<h3 class="card-title">Legendary Weapons</h3>
+<p class="card-author">Arsenal Collection</p>
+<p class="card-description">Discover the iconic weapons wielded by heroes: the Buster Sword, Barret's Gun-Arm variants, Tifa's Premium Heart gloves, and ultimate weapons hidden across Gaia.</p>
+<div class="card-meta">
+<span class="card-date">12 Items</span>
+<div class="card-tags">
+<span class="tag">Buster Sword</span>
+<span class="tag">Materia</span>
+<span class="tag">Limit Break</span>
+</div>
+</div>
+</div>
+</article>
+<article class="content-card" data-category="locations" data-title="World Map" data-tags="midgar, nibelheim, gold saucer">
+<div class="card-image-wrapper">
+<img src="/api/assets/38/1/interactive_map.png" alt="World Map of Gaia" class="card-image">
+<div class="card-badge">EXPLORATION</div>
+</div>
+<div class="card-content">
+<h3 class="card-title">World Map of Gaia</h3>
+<p class="card-author">Interactive Atlas</p>
+<p class="card-description">Explore the entire world of Final Fantasy VII from Midgar's towering reactors to the Northern Crater. Visit iconic locations like Gold Saucer, Cosmo Canyon, and more.</p>
+<div class="card-meta">
+<span class="card-date">50+ Locations</span>
+<div class="card-tags">
+<span class="tag">Midgar</span>
+<span class="tag">Gold Saucer</span>
+<span class="tag">Northern Crater</span>
+</div>
+</div>
+</div>
+</article>
+<article class="content-card" data-category="weapons" data-title="Materia System" data-tags="magic, summons, abilities">
+<div class="card-image-wrapper">
+<div class="placeholder-image materia-placeholder">
+<svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+<circle cx="40" cy="40" r="30" fill="url(#materia-grad)" opacity="0.3"/>
+<circle cx="40" cy="40" r="20" fill="url(#materia-grad)" opacity="0.5"/>
+<circle cx="40" cy="40" r="10" fill="url(#materia-grad)"/>
+<defs>
+<linearGradient id="materia-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" style="stop-color:#10b981"/>
+<stop offset="100%" style="stop-color:#3b82f6"/>
+</linearGradient>
+</defs>
+</svg>
+</div>
+<div class="card-badge">ABILITIES</div>
+</div>
+<div class="card-content">
+<h3 class="card-title">Materia System</h3>
+<p class="card-author">Magic & Abilities</p>
+<p class="card-description">Harness the power of Materia to cast magic, summon legendary beings, and enhance your combat abilities. Combine and level up Materia for ultimate power.</p>
+<div class="card-meta">
+<span class="card-date">5 Types</span>
+<div class="card-tags">
+<span class="tag">Magic</span>
+<span class="tag">Summon</span>
+<span class="tag">Support</span>
+</div>
+</div>
+</div>
+</article>
+</div>
+<div class="empty-state" id="emptyState" style="display:none;">
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none">
+<circle cx="60" cy="60" r="50" stroke="currentColor" stroke-width="2" opacity="0.2"/>
+<path d="M45 52c0-3 2-5 5-5s5 2 5 5M65 52c0-3 2-5 5-5s5 2 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+<path d="M45 75c5 5 15 5 20 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+</svg>
+<h3>No Results Found</h3>
+<p>Try adjusting your search or filter to find what you're looking for.</p>
+<button class="btn-secondary" onclick="resetFilters()">Clear Filters</button>
+</div>
+<div class="loading-state" id="loadingState" style="display:none;">
+<div class="skeleton-grid">
+<div class="skeleton-card">
+<div class="skeleton-image"></div>
+<div class="skeleton-content">
+<div class="skeleton-line skeleton-title"></div>
+<div class="skeleton-line skeleton-subtitle"></div>
+<div class="skeleton-line"></div>
+<div class="skeleton-line"></div>
+</div>
+</div>
+<div class="skeleton-card">
+<div class="skeleton-image"></div>
+<div class="skeleton-content">
+<div class="skeleton-line skeleton-title"></div>
+<div class="skeleton-line skeleton-subtitle"></div>
+<div class="skeleton-line"></div>
+<div class="skeleton-line"></div>
+</div>
+</div>
+<div class="skeleton-card">
+<div class="skeleton-image"></div>
+<div class="skeleton-content">
+<div class="skeleton-line skeleton-title"></div>
+<div class="skeleton-line skeleton-subtitle"></div>
+<div class="skeleton-line"></div>
+<div class="skeleton-line"></div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<div class="toast" id="toast">
+<svg class="toast-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+<circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.5"/>
+<path d="M6 10l3 3 5-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+<span class="toast-message"></span>
+</div>
+<div class="modal" id="modal">
+<div class="modal-overlay"></div>
+<div class="modal-content">
+<button class="modal-close" onclick="closeModal()">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+<path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+</svg>
+</button>
+<div class="modal-header">
+<h2 id="modalTitle">Details</h2>
+</div>
+<div class="modal-body" id="modalBody">
+<p>Content loading...</p>
+</div>
+</div>
+</div>
+<script>
+const state = {activeFilter: 'all', searchQuery: '', view: 'grid'};
+const cards = Array.from(document.querySelectorAll('.content-card'));
+const emptyState = document.getElementById('emptyState');
+const loadingState = document.getElementById('loadingState');
+const cardGrid = document.getElementById('cardGrid');
+const searchInput = document.getElementById('searchInput');
+const tabBtns = document.querySelectorAll('.tab-btn');
+const viewBtns = document.querySelectorAll('.view-btn');
+function filterCards() {
+const filtered = cards.filter(card => {
+const category = card.dataset.category;
+const title = card.dataset.title.toLowerCase();
+const tags = card.dataset.tags.toLowerCase();
+const matchesFilter = state.activeFilter === 'all' || category === state.activeFilter;
+const matchesSearch = state.searchQuery === '' || title.includes(state.searchQuery) || tags.includes(state.searchQuery);
+return matchesFilter && matchesSearch;
+});
+cards.forEach(card => card.style.display = 'none');
+filtered.forEach(card => card.style.display = 'flex');
+if (filtered.length === 0) {
+cardGrid.style.display = 'none';
+emptyState.style.display = 'flex';
+} else {
+cardGrid.style.display = 'grid';
+emptyState.style.display = 'none';
+}
+}
+function showLoading() {
+cardGrid.style.display = 'none';
+emptyState.style.display = 'none';
+loadingState.style.display = 'block';
+setTimeout(() => {
+loadingState.style.display = 'none';
+filterCards();
+}, 800);
+}
+tabBtns.forEach(btn => {
+btn.addEventListener('click', () => {
+tabBtns.forEach(b => b.classList.remove('active'));
+btn.classList.add('active');
+state.activeFilter = btn.dataset.filter;
+showLoading();
+});
+});
+searchInput.addEventListener('input', (e) => {
+state.searchQuery = e.target.value.toLowerCase();
+filterCards();
+});
+viewBtns.forEach(btn => {
+btn.addEventListener('click', () => {
+viewBtns.forEach(b => b.classList.remove('active'));
+btn.classList.add('active');
+state.view = btn.dataset.view;
+cardGrid.classList.toggle('list-view', state.view === 'list');
+showToast(state.view === 'list' ? 'Switched to list view' : 'Switched to grid view');
+});
+});
+function resetFilters() {
+state.activeFilter = 'all';
+state.searchQuery = '';
+searchInput.value = '';
+tabBtns.forEach(b => b.classList.remove('active'));
+tabBtns[0].classList.add('active');
+filterCards();
+showToast('Filters reset');
+}
+function showToast(message) {
+const toast = document.getElementById('toast');
+const toastMessage = toast.querySelector('.toast-message');
+toastMessage.textContent = message;
+toast.classList.add('show');
+setTimeout(() => {
+toast.classList.remove('show');
+}, 3000);
+}
+function openModal(title, content) {
+const modal = document.getElementById('modal');
+const modalTitle = document.getElementById('modalTitle');
+const modalBody = document.getElementById('modalBody');
+modalTitle.textContent = title;
+modalBody.innerHTML = content;
+modal.classList.add('show');
+document.body.style.overflow = 'hidden';
+}
+function closeModal() {
+const modal = document.getElementById('modal');
+modal.classList.remove('show');
+document.body.style.overflow = '';
+}
+document.getElementById('modal').querySelector('.modal-overlay').addEventListener('click', closeModal);
+document.addEventListener('keydown', (e) => {
+if (e.key === 'Escape') closeModal();
+});
+document.querySelectorAll('.content-card').forEach(card => {
+card.addEventListener('click', () => {
+const title = card.dataset.title;
+const category = card.dataset.category;
+const description = card.querySelector('.card-description').textContent;
+const tags = card.dataset.tags.split(',').map(t => `<span class="tag">${t.trim()}</span>`).join('');
+const content = `
+<p style="margin-bottom: 16px;">${description}</p>
+<div style="margin-bottom: 16px;"><strong>Category:</strong> ${category}</div>
+<div style="margin-bottom: 16px;"><strong>Tags:</strong><br><div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">${tags}</div></div>
+<button class="btn-primary" style="width: 100%; margin-top: 16px;" onclick="closeModal(); showToast('Added to favorites');">Add to Favorites</button>
+`;
+openModal(title, content);
+});
+});
+document.querySelectorAll('.btn-primary, .btn-secondary').forEach(btn => {
+if (!btn.hasAttribute('onclick')) {
+btn.addEventListener('click', (e) => {
+if (btn.textContent.includes('Explore')) {
+showToast('Exploring archives...');
+} else if (btn.textContent.includes('Trailer')) {
+showToast('Opening trailer...');
+}
+});
+}
+});
+window.addEventListener('load', () => {
+document.body.classList.add('loaded');
+});
+</script>
+</body>
+</html>
