@@ -208,8 +208,8 @@ interface ArtifactViewerProps {
   version?: number | null
 }
 
-export function ArtifactViewer({ projectId: propProjectId, version: propVersion }: ArtifactViewerProps = {}) {
-  const [activeTab, setActiveTab] = useState("brief")
+export function ArtifactViewer({ projectId: propProjectId, version: propVersion, initialTab }: ArtifactViewerProps = {}) {
+  const [activeTab, setActiveTab] = useState(initialTab ?? "brief")
   const [selectedFilePath, setSelectedFilePath] = useState("")
   const [selectedFileName, setSelectedFileName] = useState("")
   const [showRawJson, setShowRawJson] = useState(false)

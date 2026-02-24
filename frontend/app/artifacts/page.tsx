@@ -1,11 +1,15 @@
 ﻿"use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { ArtifactViewer } from "@/components/artifact-viewer"
 
 const API_BASE = "http://localhost:5000"
 
-export default function ArtifactsPage() {
+function ArtifactsInner() {
+  const searchParams = useSearchParams()
+  const initialTab = searchParams.get("tab") || undefined
+
   const [projectId, setProjectId] = useState<number | null>(null)
   const [version, setVersion] = useState<number | null>(null)
   const [ready, setReady] = useState(false)
@@ -17,11 +21,9 @@ export default function ArtifactsPage() {
     if (pid) {
       setProjectId(Number(pid))
       if (selectedVer) {
-        // User clicked a specific version on the Versions page — use it
         setVersion(Number(selectedVer))
         setReady(true)
       } else {
-        // No selection — default to head
         fetch(`${API_BASE}/api/projects/${pid}/head`)
           .then(r => r.json())
           .then(data => {
@@ -31,7 +33,6 @@ export default function ArtifactsPage() {
           .catch(() => setReady(true))
       }
     } else {
-      // No session at all — load most recent project + its head
       fetch(`${API_BASE}/api/projects`)
         .then(r => r.json())
         .then(projects => {
@@ -50,7 +51,13 @@ export default function ArtifactsPage() {
 
   if (!ready) return null
 
-  return <ArtifactViewer projectId={projectId} version={version} />
+  return <ArtifactViewer projectId={projectId} version={version} initialTab={initialTab} />
 }
 
-
+export default function ArtifactsPage() {
+  return (
+    <Suspense>
+      <ArtifactsInner />
+    </Suspense>
+  )
+}

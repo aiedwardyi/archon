@@ -260,11 +260,18 @@ export function VersionTimeline() {
             {/* Artifacts grid */}
             <div className="grid grid-cols-3 gap-3">
               {[
-                { label: "Brief", sub: "Requirements doc", icon: FileText, color: "text-primary", bg: "bg-primary/10", border: "border-l-primary" },
-                { label: "Build Plan", sub: "Architecture plan", icon: Map, color: "text-info", bg: "bg-info/10", border: "border-l-info" },
-                { label: "Code", sub: `${selected.filesChanged} files`, icon: Code2, color: "text-success", bg: "bg-success/10", border: "border-l-success" },
+                { label: "Brief", sub: "Requirements doc", icon: FileText, color: "text-primary", bg: "bg-primary/10", border: "border-l-primary", tab: "brief" },
+                { label: "Build Plan", sub: "Architecture plan", icon: Map, color: "text-info", bg: "bg-info/10", border: "border-l-info", tab: "plan" },
+                { label: "Code", sub: `${selected.filesChanged} files`, icon: Code2, color: "text-success", bg: "bg-success/10", border: "border-l-success", tab: "code" },
               ].map((art) => (
-                <div key={art.label} className={`flex items-center gap-3 p-4 rounded-lg border-l-4 border border-border bg-card ${art.border}`}>
+                <button
+                  key={art.label}
+                  onClick={() => {
+                    sessionStorage.setItem("archon_selected_version", String(selected.version))
+                    window.location.href = `/artifacts?tab=${art.tab}`
+                  }}
+                  className={`flex items-center gap-3 p-4 rounded-lg border-l-4 border border-border bg-card hover:bg-accent transition-colors cursor-pointer text-left w-full ${art.border}`}
+                >
                   <div className={`h-9 w-9 rounded-md ${art.bg} flex items-center justify-center shrink-0`}>
                     <art.icon className={`h-4 w-4 ${art.color}`} />
                   </div>
@@ -272,7 +279,7 @@ export function VersionTimeline() {
                     <p className="text-sm font-medium text-foreground">{art.label}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">{art.sub}</p>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
 
