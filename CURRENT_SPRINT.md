@@ -57,6 +57,23 @@ Avatar dropdown Profile, Settings, Pricing items now open modal overlays.
 - Upgrade to Pro button in dropdown also opens Pricing modal
 New file: frontend/components/account-modals.tsx
 
+## Phase 9 — Pipeline Page & Classifier Stability
+
+### 9.1 — Classifier Determinism Fix
+**Status:** ✅ Completed (Phase 10.3)
+
+- Errors NEVER default to build
+- JSON parse failures default to chat
+- Strict JSON-only classifier system prompt
+- Explicit “When in doubt → CHAT”
+- response_format={"type":"json_object"} enforced
+- Debug logging added ([CLASSIFY] Input + Raw response)
+- sys.path fix for PM agent import in /chat endpoint
+
+Result:
+No question triggers build.
+Only clear imperatives trigger build.
+
 ## Working Directory
 C:\Users\mredw\OneDrive\Desktop\ai-dev-team\
 
@@ -71,8 +88,10 @@ enterprise-ui
 Mic button in chat input bar. Records voice via MediaRecorder API.
 Sends audio blob to POST /api/watson/stt (Flask + ibm-watson).
 Transcript auto-populates the input field for user to review and send.
-Uses WATSON_STT_URL + WATSON_STT_APIKEY env vars.### 10.2 — Text to Speech on Archon Reply Bubbles
-**Status:** 🔧 In Progress
+Uses WATSON_STT_URL + WATSON_STT_APIKEY env vars.
+
+### 10.2 — Text to Speech on Archon Reply Bubbles
+**Status:** ✅ Done
 Speaker button on every Archon reply bubble.
 POST /api/watson/tts → IBM Watson TTS → audio/mp3 → plays in browser.
 Volume2 (idle), Loader2 (loading), VolumeX (playing/stop).

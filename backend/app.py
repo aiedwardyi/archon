@@ -230,7 +230,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
 
         add_log("Starting pipeline...")
         add_log("Requirements Agent: Analyzing your request...")
-
+        sys.path.insert(0, str(REPO_ROOT))
         from agents.pm_agent import PMAgent
         pm_agent = PMAgent()
 
@@ -1056,6 +1056,8 @@ def project_chat(project_id: int):
         finally:
             db.close()
 
+        sys.path.insert(0, str(REPO_ROOT))
+
         from agents.pm_agent import PMAgent
         pm = PMAgent()
         intent = pm.classify_intent(data["message"], project_context=project_context)
@@ -1064,7 +1066,10 @@ def project_chat(project_id: int):
         return jsonify({"response_type": "build"}), 200
     except Exception as e:
         print(f"Chat classify error: {e}")
-        return jsonify({"response_type": "build"}), 200
+        return jsonify({
+            "response_type": "chat",
+            "message": "I'm having trouble connecting right now. Could you rephrase that or try again?"
+        }), 200
 
 
 
@@ -1273,5 +1278,6 @@ if __name__ == "__main__":
     print(f"PUBLIC_DIR: {PUBLIC_DIR}")
     print(f"CORS enabled for: http://localhost:5173, http://localhost:3000")
     app.run(debug=True, port=5000)
+
 
 
