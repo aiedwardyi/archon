@@ -604,29 +604,29 @@ export function PipelineRun() {
                     : "bg-muted text-foreground rounded-tl-sm"
                 }`}>
                   {msg.content}
-                  <div className={`flex items-center justify-between mt-1 gap-2`}>
-                    <span className={`text-xs opacity-60`}>{formatTime(msg.timestamp)}</span>
-                    {msg.role === "archon" && (
-                      <button
-                        onClick={() => handleTts(msg.id, msg.content)}
-                        className={`p-1 rounded transition-colors ${
-                          ttsState[msg.id] === "playing"
-                            ? "text-primary"
-                            : "text-muted-foreground/50 hover:text-muted-foreground"
-                        }`}
-                        aria-label="Play message audio"
-                      >
-                        {ttsState[msg.id] === "loading" ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : ttsState[msg.id] === "playing" ? (
-                          <VolumeX className="h-3 w-3" />
-                        ) : (
-                          <Volume2 className="h-3 w-3" />
-                        )}
-                      </button>
-                    )}
+                  <div className="text-xs mt-1 opacity-60">
+                    {formatTime(msg.timestamp)}
                   </div>
                 </div>
+                {msg.role === "archon" && (
+                  <button
+                    onClick={() => handleTts(msg.id, msg.content)}
+                    className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 ${
+                      ttsState[msg.id] === "playing"
+                        ? "bg-primary text-primary-foreground shadow-md scale-110"
+                        : "bg-muted/60 text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:scale-110"
+                    }`}
+                    aria-label="Play message audio"
+                  >
+                    {ttsState[msg.id] === "loading" ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : ttsState[msg.id] === "playing" ? (
+                      <VolumeX className="h-3.5 w-3.5" />
+                    ) : (
+                      <Volume2 className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                )}
               </div>
             ))}
             <div ref={chatEndRef} />
@@ -716,6 +716,7 @@ export function PipelineRun() {
     </div>
   )
 }
+
 
 
 

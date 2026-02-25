@@ -1257,7 +1257,7 @@ def watson_tts():
         tts.set_service_url(watson_url)
         response = tts.synthesize(
             text=data["text"],
-            voice="en-US_AllisonV3Voice",
+            voice="en-US_AllisonExpressive",
             accept="audio/mp3",
         ).get_result()
         audio_bytes = response.content
