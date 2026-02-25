@@ -41,3 +41,6 @@ generated/
 generated/
 published/
 artifacts/
+
+# Environment variables (never commit)
+.env
