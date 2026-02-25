@@ -60,6 +60,10 @@ cd ..
 $env:OPENAI_API_KEY = "sk-proj-..."
 $env:ANTHROPIC_API_KEY = "sk-ant-..."
 $env:GENAI_API_KEY = "your_gemini_key"
+$env:WATSON_TTS_URL = "https://..."
+$env:WATSON_TTS_APIKEY = "your_api_key"
+$env:WATSON_STT_URL = "https://..."
+$env:WATSON_STT_APIKEY = "your_api_key"
 ```
 
 ### 3. Checkout active branch
