@@ -98,7 +98,16 @@ Volume2 (idle), Loader2 (loading), VolumeX (playing/stop).
 One audio at a time — clicking another stops current.
 Uses WATSON_TTS_URL + WATSON_TTS_APIKEY env vars, en-US_AllisonV3Voice.
 
-
+## 10.4 App Type Lock
+**Status:** ✅ Done
+- Implemented project-level `locked_ui_archetype`.
+- Lock is set after first successful build (v1).
+- Iterations now preserve app type deterministically.
+- Explicit archetype change requests are blocked and routed to chat.
+- Manual tests confirmed:
+  - v1 landing build → lock set
+  - UI refinement iterations remain landing
+  - “Turn this into a dashboard” → suggests new project (no build)
 
 ## Phase 13 -- Chat Persistence + User Model Foundation
 

@@ -177,6 +177,18 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - Natural Language Understanding: analyze prompt intent before pipeline routing
 - Goal: IBM AI Engineer application showcase + $200 cloud credit usage
 
+### 10.4 App Type Lock (Archetype Guardrail) ✅
+- Added `locked_ui_archetype` at the Project level.
+- First successful build persists the detected `ui_archetype`.
+- All subsequent iterations must reuse the locked archetype.
+- Planner receives locked archetype context and cannot reclassify.
+- Backend overrides planner output if archetype differs.
+- Explicit app-type change requests return a chat response suggesting a new project.
+- Preserves full Brief / Plan / Code artifact trail per version.
+Impact:
+- Prevents unintended app-type mutation (e.g., landing → dashboard).
+- Enables stable, Lovable-style iteration while maintaining audit trail moat.
+
 ### Phase 11 — Pipeline Page Redesign (⬜ Planned)
 - Three-panel layout for large screens:
   Left: conversation/chat (scrollable)
