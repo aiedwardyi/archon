@@ -7,7 +7,7 @@ Tables:
 - Execution: Individual task executions linked to projects
 """
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text, Boolean, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text, Boolean, ForeignKey, text
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from pathlib import Path
 
@@ -39,6 +39,7 @@ class Project(Base):
     status = Column(String(50), nullable=False, default="pending")
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    locked_ui_archetype = Column(String(50), nullable=True)
 
     # Owner FK (Phase 13) -- nullable, no breaking change
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
@@ -149,6 +150,15 @@ SessionLocal = sessionmaker(bind=engine)
 def init_db():
     """Initialize database tables. Safe to call multiple times."""
     Base.metadata.create_all(engine)
+    # Lightweight migration: add locked_ui_archetype column if missing
+    try:
+        with engine.connect() as conn:
+            cols = [row[1] for row in conn.execute(text("PRAGMA table_info(projects)")).fetchall()]
+            if "locked_ui_archetype" not in cols:
+                conn.execute(text("ALTER TABLE projects ADD COLUMN locked_ui_archetype VARCHAR(50)"))
+                conn.commit()
+    except Exception as e:
+        print(f"Warning: could not ensure locked_ui_archetype column: {e}")
     print(f"Database initialized at: {DB_PATH}")
 
 

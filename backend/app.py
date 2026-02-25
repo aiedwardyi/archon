@@ -7,6 +7,7 @@ import json
 import os
 import sys
 import warnings
+import re
 from pathlib import Path
 from typing import Any, Dict
 import threading
@@ -117,6 +118,35 @@ def get_language_from_ext(filename: str) -> str:
     return ext_map.get(ext, "text")
 
 
+ARCHETYPES = [
+    "dashboard", "landing", "ecommerce", "kanban", "chat",
+    "editor", "feed", "form", "game", "portfolio",
+]
+
+
+_ARCHETYPE_VERB_RE = re.compile(r"\b(turn|make|convert|change|redesign|rebuild|switch)\b", re.IGNORECASE)
+
+
+def detect_requested_archetype(message: str) -> str | None:
+    if not message:
+        return None
+    text = message.lower()
+    if not _ARCHETYPE_VERB_RE.search(text):
+        return None
+    for archetype in ARCHETYPES:
+        if re.search(rf"\b{re.escape(archetype)}\b", text):
+            return archetype
+    return None
+
+
+def get_plan_ui_archetype(plan) -> str | None:
+    for ms in plan.milestones:
+        for t in ms.tasks:
+            if getattr(t, "execution_hint", None) == "engineer" and getattr(t, "task_type", None) == "scaffold":
+                return t.ui_archetype
+    return None
+
+
 def resolve_project_version(q_project_id=None, q_version=None):
     """
     Resolves (project_id, version) from:
@@ -182,6 +212,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
 
     session = get_session()
     execution_id = execution_state.get("current_execution_id")
+    locked_ui_archetype = None
 
     try:
         if execution_id:
@@ -196,6 +227,10 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
             execution = session.get(Execution, execution_id)
             if execution:
                 version = execution.version
+                if execution.project_id:
+                    project = session.get(Project, execution.project_id)
+                    if project:
+                        locked_ui_archetype = project.locked_ui_archetype
 
         if project_id and version:
             version_dir = get_version_dir(project_id, version)
@@ -269,7 +304,10 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
 
         genai_client = genai.Client(api_key=genai_key)
         planner = PlannerAgent(genai_client)
-        plan = planner.run_from_prd_artifact(version_dir / "last_prd.json")
+        plan = planner.run_from_prd_artifact(
+            version_dir / "last_prd.json",
+            locked_ui_archetype=locked_ui_archetype,
+        )
 
         plan_dict = {
             "kind": "plan_artifact",
@@ -403,6 +441,13 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
                 execution.result_path = str(version_dir / "last_execution_result.json")
                 execution.prd_path = str(version_dir / "last_prd.json")
                 execution.plan_path = str(version_dir / "last_plan.json")
+                if (
+                    execution.version == 1
+                    and not project.locked_ui_archetype
+                ):
+                    locked = get_plan_ui_archetype(plan)
+                    if locked:
+                        project.locked_ui_archetype = locked
                 session.commit()
                 project = execution.project
                 if project:
@@ -567,6 +612,20 @@ def iterate_project(project_id: int):
         if not prompt_history:
             prompt_history = [{"role": "user", "content": prompt}]
 
+        requested_archetype = detect_requested_archetype(prompt)
+        if (
+            project.locked_ui_archetype
+            and requested_archetype
+            and requested_archetype != project.locked_ui_archetype
+        ):
+            return jsonify({
+                "response_type": "chat",
+                "message": (
+                    f"That would change the app type from {project.locked_ui_archetype} to "
+                    f"{requested_archetype}. To switch app types, please start a new project."
+                ),
+            }), 200
+
         current_head = (
             session.query(Execution)
             .filter(
@@ -696,6 +755,19 @@ def execute_task():
 
         next_version = get_next_version(session, project_id)
         task_description = project.description or project.name
+        requested_archetype = detect_requested_archetype(task_description)
+        if (
+            project.locked_ui_archetype
+            and requested_archetype
+            and requested_archetype != project.locked_ui_archetype
+        ):
+            return jsonify({
+                "response_type": "chat",
+                "message": (
+                    f"That would change the app type from {project.locked_ui_archetype} to "
+                    f"{requested_archetype}. To switch app types, please start a new project."
+                ),
+            }), 200
         initial_history = [{"role": "user", "content": task_description}]
 
         execution = Execution(
@@ -1034,10 +1106,26 @@ def project_chat(project_id: int):
     if not data or not data.get("message"):
         return jsonify({"error": "message is required"}), 400
     try:
+        requested_archetype = detect_requested_archetype(data["message"])
         # Load PRD from active head version for context-aware replies
         project_context = None
         db = get_session()
         try:
+            project = db.get(Project, project_id)
+            if (
+                project
+                and project.locked_ui_archetype
+                and requested_archetype
+                and requested_archetype != project.locked_ui_archetype
+            ):
+                return jsonify({
+                    "response_type": "chat",
+                    "message": (
+                        f"That would change the app type from {project.locked_ui_archetype} to "
+                        f"{requested_archetype}. To switch app types, please start a new project."
+                    ),
+                }), 200
+
             head = (
                 db.query(Execution)
                 .filter(Execution.project_id == project_id, Execution.is_active_head == True)
