@@ -67,16 +67,6 @@ def safe_write_text(
     if rel.is_absolute() or str(rel).startswith(("\\\\", "/")):
         raise ValueError(f"Unsafe path (absolute): {relative_path}")
 
-    # Disallow bare root-level filenames (e.g. "README.md" with no parent dir).
-    # The engineer prompt requires a directory prefix (src/README.md, docs/X.md).
-    # A path with no parent parts is just a filename sitting at drive root after
-    # resolution — reject it early before even joining.
-    if len(rel.parts) == 1:
-        raise ValueError(
-            f"Unsafe path (no directory prefix): '{relative_path}'. "
-            f"All generated files must be inside a subdirectory (e.g. src/{relative_path})."
-        )
-
     # Anchor target to allowlist_dir — resolve from here so CWD doesn't matter
     target = (allowlist_dir / rel).resolve()
 
@@ -106,5 +96,22 @@ def safe_write_text(
     tmp.replace(target)
 
     return WriteRecord(path=str(target), sha256=digest, bytes=len(data))
+
+
+def enforce_iteration_scope(allowed_files: Iterable[str], outputs) -> None:
+    allowed = {str(p).replace("\\", "/").strip() for p in allowed_files if p}
+    if not allowed:
+        return
+    offending = []
+    for f in outputs:
+        path = f.path.replace("\\", "/").strip()
+        if path not in allowed:
+            offending.append(path)
+    if offending:
+        raise ValueError(
+            "Engineer output includes files outside allowed scope: "
+            + ", ".join(offending)
+        )
+
 
 

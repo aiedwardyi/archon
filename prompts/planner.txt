@@ -74,6 +74,12 @@ Execution rules (CRITICAL):
 - Do NOT pick a config, README, or setup task as the scaffold task
 - The scaffold task is ALWAYS the most important visual/functional output
 
+Iteration scope rules (CRITICAL):
+- If this is an iteration (v2+), the engineer task MUST include a minimal, non-empty output_files list
+- output_files must list ONLY the files to modify (repo-relative paths like src/index.html)
+- Do NOT include unrelated files; only expand scope if the user explicitly requests a broad refactor
+- In iteration mode, output_files may exclude src/index.html if it is not being modified
+
 UI archetype rules (CRITICAL):
 - Before writing the scaffold task description, classify the app type from the PRD title and overview
 - Set ui_archetype to exactly one value: dashboard | landing | ecommerce | kanban | chat | editor | feed | form | game | portfolio

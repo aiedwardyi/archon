@@ -13,7 +13,12 @@ class PlannerAgent:
     def __init__(self, client: genai.Client):
         self.client = client
     
-    def run_from_prd_text(self, prd_text: str, locked_ui_archetype: str | None = None) -> Plan:
+    def run_from_prd_text(
+        self,
+        prd_text: str,
+        locked_ui_archetype: str | None = None,
+        is_iteration: bool = False,
+    ) -> Plan:
         """
         Legacy method: Generate plan from PRD text.
         Kept for backward compatibility.
@@ -27,7 +32,15 @@ class PlannerAgent:
                 "- Do not choose any other archetype\n"
                 "- Ensure archetype_rules match the locked archetype\n"
             )
-        contents = f"{prompt}{lock_note}\n\n--- PRD START ---\n{prd_text}\n--- PRD END ---"
+        iteration_note = ""
+        if is_iteration:
+            iteration_note = (
+                "\n\nITERATION MODE:\n"
+                "- This is v2+ (an iteration). The engineer task must include a minimal, non-empty output_files scope\n"
+                "- output_files must list ONLY the files to modify (repo-relative, e.g. src/index.html)\n"
+                "- Do NOT include unrelated files. Only expand scope if the user explicitly requests a broad refactor\n"
+            )
+        contents = f"{prompt}{lock_note}{iteration_note}\n\n--- PRD START ---\n{prd_text}\n--- PRD END ---"
         
         def _call():
             return self.client.models.generate_content(
@@ -48,7 +61,12 @@ class PlannerAgent:
                 import time; time.sleep(1)
         raise RuntimeError("Architecture Agent could not produce a valid build plan after 3 attempts. Please try rephrasing your request.")
     
-    def run_from_prd_artifact(self, prd_artifact_path: Path, locked_ui_archetype: str | None = None) -> Plan:
+    def run_from_prd_artifact(
+        self,
+        prd_artifact_path: Path,
+        locked_ui_archetype: str | None = None,
+        is_iteration: bool = False,
+    ) -> Plan:
         """
         Phase 5: Generate plan from PRD artifact.
         This is the new multi-agent handoff method.
@@ -68,7 +86,11 @@ class PlannerAgent:
         prd = prd_artifact.prd
         prd_text = self._format_prd_as_text(prd)
         
-        return self.run_from_prd_text(prd_text, locked_ui_archetype=locked_ui_archetype)
+        return self.run_from_prd_text(
+            prd_text,
+            locked_ui_archetype=locked_ui_archetype,
+            is_iteration=is_iteration,
+        )
     
     def _format_prd_as_text(self, prd) -> str:
         return f"""# {prd.document_title}
@@ -114,9 +136,18 @@ class PlannerAgent:
             return "- (none)"
         return "\n".join([f"- {item}" for item in items])
     
-    def run(self, prd_text: str, locked_ui_archetype: str | None = None) -> Plan:
+    def run(
+        self,
+        prd_text: str,
+        locked_ui_archetype: str | None = None,
+        is_iteration: bool = False,
+    ) -> Plan:
         """Backward compatible method."""
-        return self.run_from_prd_text(prd_text, locked_ui_archetype=locked_ui_archetype)
+        return self.run_from_prd_text(
+            prd_text,
+            locked_ui_archetype=locked_ui_archetype,
+            is_iteration=is_iteration,
+        )
 
 
 

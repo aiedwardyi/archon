@@ -49,6 +49,21 @@ class ExecutorWritesTests(unittest.TestCase):
             # content stable
             self.assertEqual(note_path.read_text(encoding="utf-8"), "hello deterministic world\n")
 
+    def test_iteration_scope_enforced(self):
+        from scripts.safe_write import enforce_iteration_scope
+
+        class _F:
+            def __init__(self, path: str):
+                self.path = path
+
+        allowed = ["src/style.css"]
+        outputs = [_F("src/style.css"), _F("src/index.html")]
+
+        with self.assertRaises(ValueError) as ctx:
+            enforce_iteration_scope(allowed, outputs)
+
+        self.assertIn("src/index.html", str(ctx.exception))
+
 
 if __name__ == "__main__":
     unittest.main()

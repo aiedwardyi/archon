@@ -231,6 +231,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
                     project = session.get(Project, execution.project_id)
                     if project:
                         locked_ui_archetype = project.locked_ui_archetype
+        is_iteration = bool(version and version > 1)
 
         if project_id and version:
             version_dir = get_version_dir(project_id, version)
@@ -307,6 +308,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
         plan = planner.run_from_prd_artifact(
             version_dir / "last_prd.json",
             locked_ui_archetype=locked_ui_archetype,
+            is_iteration=is_iteration,
         )
 
         plan_dict = {
@@ -382,9 +384,11 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
 
         result = engineer.run(engineer_task, user_prompt=task_description_with_assets, existing_code=existing_code)
 
-        from scripts.safe_write import safe_write_text
+        from scripts.safe_write import safe_write_text, enforce_iteration_scope
         allow_dir = version_dir / "code"
         writes = []
+        if is_iteration and engineer_task.output_files:
+            enforce_iteration_scope(engineer_task.output_files, result.files)
         for file_artifact in result.files:
             try:
                 rec = safe_write_text(
@@ -395,9 +399,11 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
                 writes.append(rec)
                 add_log(f"Build Agent: Created {file_artifact.path}")
             except ValueError as skip_err:
-                print(f"Build Agent: Skipped {file_artifact.path} ({skip_err})")
-                print(f"Skipped file: {skip_err}")
-
+    # In iteration mode, fail hard to keep behavior deterministic and auditable.
+    if is_iteration:
+        raise
+    print(f"Build Agent: Skipped {file_artifact.path} ({skip_err})")
+    print(f"Skipped file: {skip_err}")
         add_log("Build complete.")
         execution_state["result_ready"] = True
         execution_state["result_ready"] = True
@@ -1366,6 +1372,7 @@ if __name__ == "__main__":
     print(f"PUBLIC_DIR: {PUBLIC_DIR}")
     print(f"CORS enabled for: http://localhost:5173, http://localhost:3000")
     app.run(debug=True, port=5000)
+
 
 
 
