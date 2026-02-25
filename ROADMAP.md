@@ -139,6 +139,7 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 | Conversational chatbox | ✅ | ✅ |
 | Download project as zip | ❌ | ✅ |
 | One-click publish | ✅ | ✅ |
+| Persistent chat history (DB) | ❌ | ✅ |
 | Artifact cards → tab navigation | ❌ | ✅ |
 | Account modals (Profile/Settings/Pricing) | ✅ | ✅ |
 | Client PDF export | ❌ | 🚧 8 |
@@ -202,3 +203,5 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - pollinations.ai for fictional character/game asset generation
 - Anti-patterns list to prevent generic AI output
 - Result: FF7 fan page output matches Lovable quality
+
+

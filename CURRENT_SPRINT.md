@@ -79,3 +79,21 @@ Volume2 (idle), Loader2 (loading), VolumeX (playing/stop).
 One audio at a time — clicking another stops current.
 Uses WATSON_TTS_URL + WATSON_TTS_APIKEY env vars, en-US_AllisonV3Voice.
 
+
+
+## Phase 13 -- Chat Persistence + User Model Foundation
+
+### 13.1 -- Persist Chat Messages to DB
+**Status:** ✅ Done
+Added chat_messages TEXT column to executions table (JSON array of {role, content, timestamp}).
+POST /api/projects/<id>/chat saves both user message and Archon reply to active head execution.
+GET /api/projects/<id>/chat-history returns messages from active head.
+Frontend fetches chat history on mount -- restores conversation across refreshes and machines.
+sessionStorage kept as fallback. Log refetch from Flask added for frontend-restart recovery.
+
+### 13.2 -- User Model + owner_id Foundation
+**Status:** ✅ Done
+Added users table: id, email, name, created_at.
+Added owner_id FK to projects (nullable -- no breaking change).
+No login UI yet -- DB foundation ready for future auth.
+
