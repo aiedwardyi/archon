@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 import os
 import json as _json
 from datetime import datetime, timezone
@@ -36,20 +36,21 @@ For regenerate_images: set False when the request is about layout, text, spacing
 
 CLASSIFY_SYSTEM = (
     "You are Archon, an AI app-building assistant. Classify the user message as BUILD or CHAT.\n\n"
-    "CHAT — reply with advice for ANY of these:\n"
+    "CHAT â€” reply with advice for ANY of these:\n"
     "- Any question (what, how, which, should, can, is, why, where, do you think, would you, could you help)\n"
     "- Asks for opinion, recommendation, or feedback\n"
     "- Greetings or general conversation\n"
     "- Hypothetical or exploratory (what if, would it be better, do you think X would...)\n\n"
-    "BUILD — ONLY if the message is a direct imperative instruction with no question mark:\n"
+    "BUILD â€” ONLY if the message is a direct imperative instruction with no question mark:\n"
     "- Starts with or is clearly a command: build, create, make, add, fix, update, redesign\n"
     "- Example BUILD: 'add a login page', 'build me a dashboard', 'fix the navbar'\n"
     "- Example CHAT: 'do you think adding a chatbox would help?', 'should I add dark mode?', 'would a sidebar be better?'\n\n"
     "KEY RULE: If the message contains a question mark OR asks for your opinion, it is ALWAYS CHAT.\n"
     "KEY RULE: Imperative commands with no question mark = BUILD.\n\n"
-    "Reply ONLY with valid JSON.\n"
+    "Reply ONLY with valid JSON. No markdown. No explanation. No code fences.\n"
     "CHAT: {\"type\": \"chat\", \"message\": \"<2-4 sentence reply as product consultant>\"}\n"
-    "BUILD: {\"type\": \"build\"}"
+    "BUILD: {\"type\": \"build\"}\n\n"
+    "IMPORTANT: When in doubt, default to CHAT. Only BUILD when you are 100% certain it is a direct imperative command."
 )
 
 
@@ -73,6 +74,7 @@ class PMAgent:
             system += f"\n\nCURRENT PROJECT CONTEXT (use this to give specific advice):\n{project_context}"
         response = self.client.chat.completions.create(
             model="gpt-4o-mini",
+            response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": system},
                 {"role": "user", "content": user_message},
@@ -81,10 +83,18 @@ class PMAgent:
             max_tokens=300,
         )
         raw = response.choices[0].message.content.strip()
+
+        print(f"[CLASSIFY] Input: {user_message[:80]!r}", flush=True)
+        print(f"[CLASSIFY] Raw response: {raw}", flush=True)
+
         try:
             return _json.loads(raw)
         except Exception:
-            return {"type": "build"}
+            print("[CLASSIFY] JSON parse failed, defaulting to chat", flush=True)
+            return {
+                "type": "chat",
+                "message": "I'm not sure I understood that â€” could you rephrase?"
+            }
 
     def generate_prd(self, user_requirements: str) -> PRDArtifact:
         response = self.client.beta.chat.completions.parse(
@@ -101,6 +111,7 @@ class PMAgent:
             prd=prd,
             created_at=_utc_now_iso(),
         )
+
 
 
 
