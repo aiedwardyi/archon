@@ -1071,13 +1071,22 @@ def get_preview(project_id: int, version: int):
 
     if target:
         html = target.read_text(encoding="utf-8", errors="replace")
-        css_file = target.parent / "style.css"
-        if css_file.exists():
-            css = css_file.read_text(encoding="utf-8", errors="replace")
-            html = html.replace(
-                '<link rel="stylesheet" href="./style.css">',
-                f'<style>{css}</style>'
-            )
+        src_dir = code_dir / "src"
+        if src_dir.exists():
+            for css_path in sorted(src_dir.glob("*.css")):
+                css = css_path.read_text(encoding="utf-8", errors="replace")
+                link_tag = f'<link rel="stylesheet" href="./{css_path.name}">'
+                if link_tag in html:
+                    html = html.replace(link_tag, f"<style>{css}</style>")
+                elif "</head>" in html:
+                    html = html.replace("</head>", f"<style>{css}</style>\n</head>")
+            for js_path in sorted(src_dir.glob("*.js")):
+                js = js_path.read_text(encoding="utf-8", errors="replace")
+                script_tag = f'<script src="./{js_path.name}">'
+                if script_tag in html:
+                    html = html.replace(f'{script_tag}</script>', f"<script>{js}</script>")
+                elif "</body>" in html:
+                    html = html.replace("</body>", f"<script>{js}</script>\n</body>")
         return Response(html, mimetype="text/html")
 
     return Response(PREVIEW_PLACEHOLDER, mimetype="text/html", status=200)
