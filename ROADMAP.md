@@ -151,17 +151,21 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 
 - ✅ Four-agent pipeline (Requirements → Architecture → Design → Build)
 - ✅ Build Agent: Claude Sonnet 4.5 (primary), Gemini fallback
-- ✅ Flask backend, SQLite, full persistence
-- ✅ Enterprise UI — light + dark mode
+- ✅ Flask backend (port 5000), SQLite, full persistence
+- ✅ Enterprise UI — frontend/ (port 3000), light + dark mode
+- ✅ Consumer UI — frontend-consumer2/ (port 3002), Korean/English i18n
 - ✅ Iterative pipeline with full version history
+- ✅ Iteration mode hardened (scope enforcement, ancestor chain walk, asset reuse)
 - ✅ Live preview iframe (Versions + Artifacts pages)
 - ✅ Conversational chatbox — Archon talks back, advises, routes build vs chat
 - ✅ Download project as zip with assets
-- ✅ Design Agent — DALL-E 3 images, locally served
+- ✅ Design Agent — DALL-E 3 images, locally served, reused on iterations
 - ✅ Engineer prompt — 10-shell layout intelligence, CSS design seed
 - ✅ One-click publish — shareable hosted URL
 - ✅ Artifact cards link to Artifacts page with tab pre-selection
 - ✅ Account modals — Profile, Settings, Pricing, Documentation
+- ✅ Chat message persistence (DB-backed, survives refresh)
+- ✅ Consumer Versions page — timeline + split panel + preview per version (THE MOAT)
 - 🔴 PDF Export + Client Read-Only Link (Phase 8 remaining)
 
 ### Phase 9 — Pipeline Page & Classifier Improvements (⬜ Planned)
@@ -216,4 +220,36 @@ Impact:
 - Anti-patterns list to prevent generic AI output
 - Result: FF7 fan page output matches Lovable quality
 
+### Phase 13.1 — Chat Message Persistence (✅ Completed)
+- chat_messages TEXT column on executions table (JSON array)
+- POST /api/projects/:id/chat saves user + Archon messages to active head
+- GET /api/projects/:id/chat-history returns full conversation
+- Frontend restores chat across refreshes and machines
+
+### Phase 14 — Iteration Mode Fixes (✅ Completed Feb 2026)
+- Scope enforcement path normalization (safe_write.py `_tail_after_code()`)
+- Archetype lock conversion phrase detection (prevent false positives like "add a mini game")
+- Ancestor chain traversal for failed versions (walk up to 5 hops to find last successful code)
+- Design asset reuse on iterations (skip DALL-E regeneration, reuse ancestor's last_design_assets.json)
+- Asset URL version extraction from local_path (correct /api/assets/{pid}/{version}/ URL)
+- Planner iteration file constraints (force output_files to src/index.html + src/style.css only)
+- Preview endpoint CSS/JS inlining (inline all *.css and *.js files from code/src/)
+- Strengthen iteration_context in engineer prompt (5 strict surgical edit rules, placed before main prompt)
+
+### Phase 15 — Consumer Frontend v2 (✅ Completed Feb 2026)
+- Copied and wired Projects/frontend to repo as frontend-consumer2 (port 3002)
+- Connected to Flask backend via orchestrator.ts service layer
+- Real iframe preview with desktop/mobile viewport toggle
+- **Versions page (THE MOAT)** — timeline + split panel + live preview per version
+- Restore version functionality from versions timeline
+- File viewer (Code tab) wired to real /api/projects/:id/versions/:v/files
+- Non-technical wording pass (Brief, Build Plan, What Was Built, Publish)
+- Korean/English language toggle with i18n.ts translation system (30+ keys)
+- CORS allowlist updated for ports 3001 and 3002
+
+### Phase 15.1 — Repo Cleanup (✅ Completed Feb 2026)
+- Removed apps/offline-vite-react (unused old frontend)
+- Added node_modules/, dist/, .venv/, .claude/ to .gitignore
+- Merged enterprise-ui branch into main
+- Deleted enterprise-ui local branch
 

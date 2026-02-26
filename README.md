@@ -9,6 +9,7 @@ client apps to non-technical clients.
 - Complete version history — every decision is auditable and reversible
 - Agencies can show clients exactly what was built and why, version by version
 - Business language UI — no developer jargon anywhere
+- Korean/English language support
 
 **The MOAT:** The Versions page. Lovable/v0 show current state only.
 Archon shows complete decision history with artifacts and live preview per version.
@@ -24,6 +25,8 @@ Prompt History (context continuation)
 Requirements Agent (OpenAI GPT-4o)  → Brief artifact (versioned)
     ↓
 Architecture Agent (Gemini)         → Build Plan artifact (versioned)
+    ↓
+Design Agent (GPT-4o-mini + DALL-E) → Image assets (versioned, reused on iterations)
     ↓
 Build Agent (Claude Sonnet 4.5)     → Code files (versioned)
     ↓
@@ -52,6 +55,8 @@ pip install -r requirements.txt
 
 cd frontend
 npm install
+cd ../frontend-consumer2
+npm install
 cd ..
 ```
 
@@ -66,35 +71,37 @@ $env:WATSON_STT_URL = "https://..."
 $env:WATSON_STT_APIKEY = "your_api_key"
 ```
 
-### 3. Checkout active branch
-```powershell
-git checkout enterprise-ui
-```
-
-### 4. Start the servers
+### 3. Start the servers
 ```powershell
 # Terminal 1 — Flask backend (port 5000)
 .\venv\Scripts\Activate
 python backend/app.py
 
-# Terminal 2 — React frontend (port 3000)
+# Terminal 2 — Enterprise frontend (port 3000)
 cd frontend
+npm run dev
+
+# Terminal 3 — Consumer frontend (port 3002)
+cd frontend-consumer2
 npm run dev
 ```
 
-### 5. Open the app
+### 4. Open the app
 ```
-http://localhost:3000
+Enterprise UI:  http://localhost:3000
+Consumer UI:    http://localhost:3002
 ```
 
 ---
 
-## Branches
+## Frontends
 
-| Branch | Description |
-|--------|-------------|
-| `main` | Stable baseline (Phase 6.3) |
-| `enterprise-ui` | **Active branch** — all current development |
+| Frontend | Port | Description |
+|----------|------|-------------|
+| `frontend/` | 3000 | Enterprise UI — full admin dashboard, 10 screens, light + dark mode |
+| `frontend-consumer2/` | 3002 | Consumer UI — chat-first interface, Versions page, Korean/English toggle |
+
+Both connect to the same Flask backend on port 5000.
 
 ---
 
@@ -104,25 +111,34 @@ ai-dev-team/
 ├── agents/
 │   ├── pm_agent.py           # Requirements Agent (OpenAI GPT-4o)
 │   ├── planner_agent.py      # Architecture Agent (Gemini)
+│   ├── design_agent.py       # Design Agent (GPT-4o-mini + DALL-E 3)
 │   └── engineer_agent.py     # Build Agent (Claude Sonnet 4.5, Gemini fallback)
 ├── backend/
 │   ├── app.py                # Flask API (port 5000)
-│   ├── models.py             # SQLAlchemy models
+│   ├── models.py             # SQLAlchemy models (Project, Execution, User)
 │   └── database.py           # DB init
-├── frontend/
+├── frontend/                 # Enterprise UI (port 3000)
 │   ├── components/
-│   │   ├── pipeline-run.tsx  # Agent cards + live logs + chat panel
+│   │   ├── pipeline-run.tsx
 │   │   ├── artifact-viewer.tsx
+│   │   ├── account-modals.tsx
 │   │   └── navbar.tsx
+│   └── pages/
+│       ├── projects-page.tsx
+│       ├── versions-page.tsx
+│       └── artifacts-page.tsx
+├── frontend-consumer2/       # Consumer UI (port 3002)
 │   ├── pages/
-│   │   ├── projects-page.tsx
-│   │   ├── versions-page.tsx
-│   │   └── artifacts-page.tsx
+│   │   ├── ProjectsPage.tsx  # Chat-first project creation
+│   │   └── ProjectDetailPage.tsx  # Preview, Versions, Code, Brief, Logs
+│   ├── i18n.ts               # Korean/English translations
+│   └── services/
+│       └── orchestrator.ts   # Backend API client
 ├── prompts/
-│   └── engineer.txt          # Build Agent system prompt (600-line limit)
+│   └── engineer.txt          # Build Agent system prompt
 ├── schemas/
 ├── scripts/
-│   └── safe_write.py
+│   └── safe_write.py         # Iteration scope enforcement
 ├── ROADMAP.md
 └── CURRENT_SPRINT.md
 ```
@@ -140,28 +156,35 @@ ai-dev-team/
 | DELETE | `/api/projects/:id` | Delete project |
 | POST | `/api/projects/:id/iterate` | Run pipeline iteration |
 | GET | `/api/projects/:id/versions` | Full version history |
+| GET | `/api/projects/:id/versions/:v/files` | Get code files for a version |
+| GET | `/api/projects/:id/head` | Get active head version |
+| POST | `/api/projects/:id/chat` | Send chat message (no build) |
+| GET | `/api/projects/:id/chat-history` | Get persisted chat messages |
 | POST | `/api/executions/:id/restore` | Restore version as active HEAD |
 | GET | `/api/execution-status` | Poll live execution status |
 | GET | `/api/preview/:project_id/:version` | Serve generated HTML preview |
+| POST | `/api/projects/:id/versions/:v/publish` | Publish version to shareable URL |
 | GET | `/api/prd` | Latest Brief artifact |
 | GET | `/api/plan` | Latest Build Plan artifact |
 | GET | `/api/code` | Latest execution result |
+| GET | `/api/assets/:pid/:version/:file` | Serve design assets |
+| POST | `/api/watson/stt` | Speech to text (IBM Watson) |
+| POST | `/api/watson/tts` | Text to speech (IBM Watson) |
 
 ---
 
-## UI Screens
+## Key Features
 
-| Screen | Description |
-|--------|-------------|
-| Projects | Table with status, versions, last run, Project ID |
-| Pipeline | Agent cards + live logs + iterative chat panel |
-| Versions | Timeline + detail panel with prompt + artifacts + live preview |
-| Artifacts / Brief | Requirements + success criteria |
-| Artifacts / Plan | Architecture overview + file list |
-| Artifacts / Code | File tree + code viewer |
-| Artifacts / Tasks | Build task list |
-| Artifacts / Logs | Plain English pipeline log |
-| Artifacts / Preview | Live iframe, desktop/mobile toggle |
+| Feature | Description |
+|---------|-------------|
+| Versions Page (MOAT) | Timeline + split panel with live preview per version |
+| Iteration Mode | Surgical edits with scope enforcement, ancestor chain walk |
+| Design Assets | DALL-E 3 images, reused on iterations (no regeneration) |
+| Archetype Lock | App type locked after v1, prevents unintended mutations |
+| Korean/English | Full i18n support with KO/EN toggle in consumer UI |
+| Chat Persistence | Messages saved to DB, survive refresh and machine changes |
+| One-Click Publish | Shareable hosted URL for any version |
+| Watson STT/TTS | Voice input and audio playback in enterprise UI |
 
 ---
 
@@ -170,12 +193,16 @@ ai-dev-team/
 | Phase | Status | Description |
 |-------|--------|-------------|
 | 1–6.4 | ✅ | Core pipeline, UI, enterprise design |
-| 7A | ✅ | Iterative pipeline, version history |
-| 7B | ✅ | Live preview iframe, Claude Build Agent |
-| 7C | 🔴 | Stability bugs + UI polish (current) |
-| 7D | ⬜ | Output quality — Lovable parity |
-| 7E | ⬜ | Chatbox file upload + agent replies |
-| 8 | ⬜ | Client deliverables — PDF, sharing |
+| 7A-7H | ✅ | Iterative pipeline, live preview, stability, output quality, chatbox |
+| 8.1 | ✅ | One-click publish |
+| 10.1-10.2 | ✅ | Watson STT/TTS |
+| 10.4 | ✅ | App type lock (archetype guardrail) |
+| 12.1 | ✅ | Domain personality upgrade |
+| 13 | ✅ | Chat persistence + user model |
+| 14 | ✅ | Iteration mode fixes |
+| 15 | ✅ | Consumer frontend v2 |
+| 8.3 | 🔴 | Client shareable read-only link |
+| 8.2 | 🔴 | PDF export |
 
 ---
 

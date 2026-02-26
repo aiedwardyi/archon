@@ -1,127 +1,84 @@
-﻿# Current Sprint — Phase 8: Publish + Client Deliverables
+# Current Sprint — Phase 15: Consumer Frontend v2 + Iteration Hardening
 
 ## Sprint Goal
-Make Archon's output shareable and client-ready.
-Agencies need to send clients a URL, not a zip file.
-
-## Previous Sprints Complete ✅
-
-### Phase 7D — UI Polish ✅
-### Phase 7F — Chatbox Upgrades ✅
-### Phase 7G — Output Quality v2 ✅
-### Phase 7H — Conversational Chatbox ✅
-- PM Agent routes build vs chat
-- Archon reply bubbles in chatbox
-- Chat history passed into build context
-- Download project as zip with assets
-
-## Phase 8 — Publish + Client Deliverables
-
-### 8.1 — One-Click Publish
-**Status:** ✅ Done
-POST /api/projects/<id>/versions/<version>/publish
-Copies code to published/<slug>/, stitches CSS inline, returns shareable URL.
-GET /published/<slug> serves the app.
-Publish button in Artifacts page with copy-to-clipboard URL.
-
-### 8.2 — PDF Export
-**Status:** 🔴 TODO
-Export full build history as PDF — Brief + Plan + Code summary per version.
-Client audit trail deliverable.
-
-### 8.3 — Client Shareable Read-Only Link
-**Status:** 🔴 TODO
-Read-only view of Versions page for a specific project.
-No login required. Shows all versions, artifacts, previews.
-
-### 8.4 — White-Label Option
-**Status:** 🔴 TODO
-Agency branding on client-facing views.
-
-## Phase 8 UI Polish (✅ Done this session)
-
-### 8.UI.1 — Artifact Cards Link to Artifacts Page
-**Status:** ✅ Done
-Brief, Build Plan, and Code cards on Versions page are now clickable buttons.
-Each saves archon_selected_version to sessionStorage and navigates to
-/artifacts?tab=brief|plan|code. ArtifactViewer reads initialTab prop and
-sets the active tab on mount. artifacts/page.tsx reads ?tab query param via useSearchParams.
-
-### 8.UI.2 — Account Modals (Profile, Settings, Pricing)
-**Status:** ✅ Done
-Avatar dropdown Profile, Settings, Pricing items now open modal overlays.
-- Profile: mock user info (name, email, avatar initials, member since)
-- Settings: masked API key inputs (OpenAI, Gemini, Anthropic) with save button
-- Pricing: Free vs Pro plan cards with feature lists and Upgrade button
-- Documentation: opens https://docs.archon.dev in new tab
-- Upgrade to Pro button in dropdown also opens Pricing modal
-New file: frontend/components/account-modals.tsx
-
-## Phase 9 — Pipeline Page & Classifier Stability
-
-### 9.1 — Classifier Determinism Fix
-**Status:** ✅ Completed (Phase 10.3)
-
-- Errors NEVER default to build
-- JSON parse failures default to chat
-- Strict JSON-only classifier system prompt
-- Explicit “When in doubt → CHAT”
-- response_format={"type":"json_object"} enforced
-- Debug logging added ([CLASSIFY] Input + Raw response)
-- sys.path fix for PM agent import in /chat endpoint
-
-Result:
-No question triggers build.
-Only clear imperatives trigger build.
+Ship a consumer-facing frontend with the Versions page as the core moat feature.
+Harden iteration mode so edits are surgical, not full redesigns.
 
 ## Working Directory
 C:\Users\mredw\OneDrive\Desktop\ai-dev-team\
 
 ## Branch
-enterprise-ui
+main (enterprise-ui merged and deleted)
 
+---
 
-## Phase 10 — IBM Watson Integration (🔧 In Progress)
+## Completed This Sprint ✅
 
-### 10.1 — Speech to Text in Chatbox
-**Status:** ✅ Done
-Mic button in chat input bar. Records voice via MediaRecorder API.
-Sends audio blob to POST /api/watson/stt (Flask + ibm-watson).
-Transcript auto-populates the input field for user to review and send.
-Uses WATSON_STT_URL + WATSON_STT_APIKEY env vars.
+### Phase 14 — Iteration Mode Fixes ✅
+- Scope enforcement path normalization (`safe_write.py` `_tail_after_code()`)
+- Archetype lock conversion phrase detection (prevent false positives like "add a mini game")
+- Ancestor chain traversal for failed versions (walk up to 5 hops to find last successful code)
+- Design asset reuse on iterations (skip DALL-E regeneration, reuse ancestor's `last_design_assets.json`)
+- Asset URL version extraction from `local_path` (correct `/api/assets/{pid}/{version}/` URL)
+- Planner iteration file constraints (force `output_files` to `src/index.html` + `src/style.css` only)
+- Preview endpoint CSS/JS inlining (inline all `*.css` and `*.js` files from `code/src/`)
+- Strengthened `iteration_context` in engineer prompt (5 strict surgical edit rules, placed before main prompt)
 
-### 10.2 — Text to Speech on Archon Reply Bubbles
-**Status:** ✅ Done
-Speaker button on every Archon reply bubble.
-POST /api/watson/tts → IBM Watson TTS → audio/mp3 → plays in browser.
-Volume2 (idle), Loader2 (loading), VolumeX (playing/stop).
-One audio at a time — clicking another stops current.
-Uses WATSON_TTS_URL + WATSON_TTS_APIKEY env vars, en-US_AllisonV3Voice.
+### Phase 15 — Consumer Frontend v2 ✅
+- Copied and wired Projects/frontend to repo as `frontend-consumer2/` (port 3002)
+- Connected to Flask backend via `orchestrator.ts` service layer
+- Real iframe preview with desktop/mobile viewport toggle
+- **Versions page (THE MOAT)** — timeline + split panel + live preview per version
+- Restore version functionality from versions timeline
+- File viewer (Code tab) wired to real `/api/projects/:id/versions/:v/files`
+- Non-technical wording pass (Brief, Build Plan, What Was Built, Publish)
+- Korean/English language toggle with `i18n.ts` translation system (30+ keys)
+- CORS allowlist updated for ports 3001 and 3002
+- Fixed versions preview URL bug (`version` field vs `version_number`)
+- Complete Korean translation coverage for all UI strings
 
-## 10.4 App Type Lock
-**Status:** ✅ Done
-- Implemented project-level `locked_ui_archetype`.
-- Lock is set after first successful build (v1).
-- Iterations now preserve app type deterministically.
-- Explicit archetype change requests are blocked and routed to chat.
-- Manual tests confirmed:
-  - v1 landing build → lock set
-  - UI refinement iterations remain landing
-  - “Turn this into a dashboard” → suggests new project (no build)
+### Phase 15.1 — Repo Cleanup ✅
+- Removed `apps/offline-vite-react` (unused old frontend)
+- Added `node_modules/`, `dist/`, `.venv/`, `.claude/` to `.gitignore`
+- Merged `enterprise-ui` branch into `main`
+- Deleted `enterprise-ui` local branch
 
-## Phase 13 -- Chat Persistence + User Model Foundation
+### Previously Completed ✅
+- Phase 13.1 — Chat message persistence (DB-backed)
+- Phase 13.2 — User model + owner_id foundation
+- Phase 10.4 — App type lock (archetype guardrail)
+- Phase 10.1-10.2 — Watson STT/TTS integration
+- Phase 8.1 — One-click publish
+- Phase 8.UI.1-2 — Artifact card linking + account modals
 
-### 13.1 -- Persist Chat Messages to DB
-**Status:** ✅ Done
-Added chat_messages TEXT column to executions table (JSON array of {role, content, timestamp}).
-POST /api/projects/<id>/chat saves both user message and Archon reply to active head execution.
-GET /api/projects/<id>/chat-history returns messages from active head.
-Frontend fetches chat history on mount -- restores conversation across refreshes and machines.
-sessionStorage kept as fallback. Log refetch from Flask added for frontend-restart recovery.
+---
 
-### 13.2 -- User Model + owner_id Foundation
-**Status:** ✅ Done
-Added users table: id, email, name, created_at.
-Added owner_id FK to projects (nullable -- no breaking change).
-No login UI yet -- DB foundation ready for future auth.
+## What's Next
 
+### Versions Page Visual Polish
+- Card readability improvements (font weight, contrast)
+- Glow effects matching Brief tab style
+- Active version highlight animation
+
+### Complete Korean Translation Coverage
+- Sidebar labels in enterprise frontend
+- Dynamic project names (leave untranslated)
+- Error messages and edge case strings
+
+### Frontend Cleanup
+- Decide between `frontend-consumer/` (port 3001) and `frontend-consumer2/` (port 3002)
+- Remove the one we don't keep
+- Single consumer frontend going forward
+
+### Phase 8.3 — Client Share Link
+- Read-only shareable URL for client deliverables
+- No login required
+- Shows all versions, artifacts, and previews
+
+### Watson STT/TTS in Consumer Frontend
+- Wire mic button + speaker button into `frontend-consumer2`
+- Same Watson endpoints already working in enterprise frontend
+
+### Image Generation Fix
+- Character portrait blending in hero section
+- DALL-E content filter edge cases
