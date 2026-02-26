@@ -251,6 +251,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
 
         # Load existing code from nearest ancestor that has code on disk
         existing_code = None
+        ancestor_version_dir = None
         session_check = get_session()
         try:
             current_exec = session_check.get(Execution, execution_id)
@@ -273,6 +274,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
                         existing_code = f"<!-- src/index.html -->\n{html_content}\n\n/* src/style.css */\n{css_content}"
                     else:
                         existing_code = html_content
+                    ancestor_version_dir = get_version_dir(project_id, ancestor_exec.version)
                     add_log(f"Build Agent: Loading v{ancestor_exec.version} for context...")
                     break
                 ancestor_id = ancestor_exec.parent_execution_id
@@ -343,23 +345,36 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
         task_count = sum(len(m.tasks) for m in plan.milestones)
         print(f"Plan saved: {milestone_count} milestones, {task_count} tasks")
 
-        add_log("Design Agent: Generating visuals...")
-
         design_assets = []
-        try:
-            from agents.design_agent import DesignAgent
-            prd_data = read_json_file(version_dir / "last_prd.json") or {}
-            design_agent = DesignAgent()
-            assets_dir = version_dir / "assets"
-            design_assets = design_agent.run(prd_data, max_images=6, save_dir=assets_dir)
-            if design_assets:
-                write_json_file(version_dir / "last_design_assets.json", {"assets": design_assets})
-                add_log(f"Design Agent: {len(design_assets)} images ready.")
+        if is_iteration and ancestor_version_dir:
+            ancestor_assets_file = ancestor_version_dir / "last_design_assets.json"
+            if ancestor_assets_file.exists():
+                try:
+                    ancestor_assets_data = read_json_file(ancestor_assets_file) or {}
+                    design_assets = ancestor_assets_data.get("assets", [])
+                    write_json_file(version_dir / "last_design_assets.json", {"assets": design_assets})
+                    add_log(f"Design Agent: Reusing {len(design_assets)} images from previous version.")
+                except Exception as e:
+                    print(f"Failed to load ancestor design assets (non-fatal): {e}")
+                    add_log("Design Agent: Could not load previous images, continuing...")
             else:
-                add_log("Design Agent: No images generated, continuing...")
-        except Exception as design_err:
-            print(f"DesignAgent failed (non-fatal): {design_err}")
-            add_log("Design Agent: Skipped, continuing with build...")
+                add_log("Design Agent: No previous images found, skipping.")
+        else:
+            add_log("Design Agent: Generating visuals...")
+            try:
+                from agents.design_agent import DesignAgent
+                prd_data = read_json_file(version_dir / "last_prd.json") or {}
+                design_agent = DesignAgent()
+                assets_dir = version_dir / "assets"
+                design_assets = design_agent.run(prd_data, max_images=6, save_dir=assets_dir)
+                if design_assets:
+                    write_json_file(version_dir / "last_design_assets.json", {"assets": design_assets})
+                    add_log(f"Design Agent: {len(design_assets)} images ready.")
+                else:
+                    add_log("Design Agent: No images generated, continuing...")
+            except Exception as design_err:
+                print(f"DesignAgent failed (non-fatal): {design_err}")
+                add_log("Design Agent: Skipped, continuing with build...")
 
         add_log("Build Agent: Writing your code...")
 
