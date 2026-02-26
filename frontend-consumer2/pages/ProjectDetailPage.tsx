@@ -358,27 +358,30 @@ const VersionsTab: React.FC<{ projectId: string; lang: Lang }> = ({ projectId, l
             <button
               key={v.id}
               onClick={() => setSelectedVersion(v)}
-              className={`w-full text-left p-3.5 rounded-2xl border transition-all cursor-pointer ${
+              className={`w-full text-left p-3.5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden ${
                 selectedVersion?.id === v.id
-                  ? 'bg-white dark:bg-white/[0.06] border-indigo-500/30 shadow-md shadow-indigo-500/10'
-                  : 'bg-white dark:bg-white/[0.02] border-slate-200 dark:border-white/5 hover:border-indigo-500/20 hover:bg-white dark:hover:bg-white/[0.04]'
+                  ? 'bg-white dark:bg-[#131825] border-indigo-500/40 shadow-lg shadow-indigo-500/15 ring-1 ring-indigo-500/20'
+                  : 'bg-white dark:bg-[#0e1119] border-slate-200 dark:border-white/[0.08] hover:border-indigo-500/30 hover:shadow-md hover:shadow-indigo-500/10 hover:bg-slate-50 dark:hover:bg-[#131825]'
               }`}
             >
-              <div className="flex items-center justify-between mb-1.5">
+              {selectedVersion?.id === v.id && (
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/[0.04] to-violet-500/[0.04] pointer-events-none"></div>
+              )}
+              <div className="flex items-center justify-between mb-1.5 relative">
                 <div className="flex items-center gap-2">
                   <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/10 uppercase tracking-widest">
                     V{v.version}
                   </span>
                   <div className={`w-2 h-2 rounded-full ${getStatusDot(v.status)}`}></div>
                 </div>
-                <span className="text-[8px] text-slate-400 dark:text-indigo-400/40 font-mono">
+                <span className="text-[8px] text-slate-500 dark:text-indigo-300/50 font-mono">
                   {new Date(v.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                 </span>
               </div>
-              <p className="text-[10px] text-slate-600 dark:text-indigo-100/50 font-bold leading-relaxed line-clamp-2">
+              <p className="text-[10px] text-slate-700 dark:text-indigo-100/70 font-bold leading-relaxed line-clamp-2 relative">
                 {getPromptPreview(v)}
               </p>
-              <div className="mt-1.5 text-[8px] text-slate-400 dark:text-indigo-400/30 font-mono uppercase tracking-widest">
+              <div className="mt-1.5 text-[8px] text-slate-500 dark:text-indigo-300/40 font-mono uppercase tracking-widest relative">
                 {new Date(v.created_at).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' })}
                 {' · '}
                 <span className={v.status === 'success' || v.status === 'completed' ? 'text-emerald-500' : v.status === 'error' || v.status === 'failed' ? 'text-red-400' : 'text-blue-400'}>
@@ -428,46 +431,46 @@ const VersionsTab: React.FC<{ projectId: string; lang: Lang }> = ({ projectId, l
           {/* Artifact cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Brief */}
-            <div className="bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 rounded-2xl p-4">
+            <div className="bg-white dark:bg-[#0e1119] border border-slate-200 dark:border-indigo-500/10 rounded-2xl p-4 shadow-sm shadow-indigo-500/5 hover:shadow-md hover:shadow-indigo-500/10 transition-all">
               <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-[0.2em] text-[9px] mb-3">
                 <BookOpen size={12} />
                 {t(lang, 'brief')}
               </div>
               {selectedVersion.artifacts?.brief ? (
-                <p className="text-[10px] text-slate-600 dark:text-indigo-100/50 font-bold leading-relaxed line-clamp-4">
+                <p className="text-[10px] text-slate-700 dark:text-indigo-100/70 font-bold leading-relaxed line-clamp-4">
                   {typeof selectedVersion.artifacts.brief === 'string'
                     ? selectedVersion.artifacts.brief
                     : selectedVersion.artifacts.brief.summary || JSON.stringify(selectedVersion.artifacts.brief).slice(0, 120)}
                 </p>
               ) : (
-                <p className="text-[10px] text-slate-300 dark:text-indigo-900 font-bold italic">{t(lang, 'notAvailable')}</p>
+                <p className="text-[10px] text-slate-400 dark:text-indigo-400/30 font-bold italic">{t(lang, 'notAvailable')}</p>
               )}
             </div>
 
             {/* Build Plan */}
-            <div className="bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 rounded-2xl p-4">
+            <div className="bg-white dark:bg-[#0e1119] border border-slate-200 dark:border-violet-500/10 rounded-2xl p-4 shadow-sm shadow-violet-500/5 hover:shadow-md hover:shadow-violet-500/10 transition-all">
               <div className="flex items-center gap-2 text-violet-600 dark:text-violet-400 font-bold uppercase tracking-[0.2em] text-[9px] mb-3">
                 <Milestone size={12} />
                 {t(lang, 'buildPlan')}
               </div>
               {selectedVersion.artifacts?.plan ? (
-                <p className="text-[10px] text-slate-600 dark:text-indigo-100/50 font-bold leading-relaxed line-clamp-4">
+                <p className="text-[10px] text-slate-700 dark:text-indigo-100/70 font-bold leading-relaxed line-clamp-4">
                   {typeof selectedVersion.artifacts.plan === 'string'
                     ? selectedVersion.artifacts.plan
                     : (selectedVersion.artifacts.plan.phases?.[0]?.description || JSON.stringify(selectedVersion.artifacts.plan).slice(0, 120))}
                 </p>
               ) : (
-                <p className="text-[10px] text-slate-300 dark:text-indigo-900 font-bold italic">{t(lang, 'notAvailable')}</p>
+                <p className="text-[10px] text-slate-400 dark:text-indigo-400/30 font-bold italic">{t(lang, 'notAvailable')}</p>
               )}
             </div>
 
             {/* Live Preview card */}
-            <div className="bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 rounded-2xl p-4">
+            <div className="bg-white dark:bg-[#0e1119] border border-slate-200 dark:border-emerald-500/10 rounded-2xl p-4 shadow-sm shadow-emerald-500/5 hover:shadow-md hover:shadow-emerald-500/10 transition-all">
               <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-[0.2em] text-[9px] mb-3">
                 <Monitor size={12} />
                 {t(lang, 'livePreview')}
               </div>
-              <p className="text-[10px] text-slate-400 dark:text-indigo-400/40 font-bold">
+              <p className="text-[10px] text-slate-500 dark:text-indigo-300/50 font-bold">
                 V{selectedVersion.version}
               </p>
             </div>
