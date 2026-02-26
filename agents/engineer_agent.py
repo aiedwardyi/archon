@@ -133,7 +133,18 @@ class EngineerAgent:
         iteration_context = ""
         if existing_code:
             iteration_context = (
-                f"--- EXISTING CODE (iterate on this, do not rebuild from scratch) ---\n"
+                f"=== ITERATION MODE — STRICT SURGICAL EDIT RULES ===\n"
+                f"You are modifying an EXISTING application. Follow these rules:\n"
+                f"1. START from the existing code below. Do NOT generate from scratch.\n"
+                f"2. PRESERVE everything not explicitly mentioned in the change request.\n"
+                f"3. Do NOT redesign layout, colors, fonts, spacing, or structure\n"
+                f"   unless the user specifically asked for that change.\n"
+                f"4. The output must be RECOGNIZABLY THE SAME APP with only the\n"
+                f"   requested changes applied.\n"
+                f"5. If the change request is ambiguous, make the smallest edit that\n"
+                f"   satisfies the intent.\n"
+                f"=== END ITERATION RULES ===\n\n"
+                f"--- EXISTING CODE (base to iterate on) ---\n"
                 f"{existing_code}\n"
                 f"--- END EXISTING CODE ---\n\n"
             )
@@ -153,9 +164,9 @@ class EngineerAgent:
             archetype_block = f"ui_archetype: {task.ui_archetype}\narchetype_rules:{rules_str}\n"
 
         contents = (
+            f"{iteration_context}"
             f"{prompt}\n\n"
             f"{user_context}"
-            f"{iteration_context}"
             f"--- TASK START ---\n"
             f"id: {task.id}\n"
             f"description: {task.description}\n"
