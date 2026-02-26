@@ -652,30 +652,47 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
     return unsubscribe;
   }, [projectId]);
 
-  // Fetch head version on mount and on COMPLETED
+  // Fetch head version on mount and on COMPLETED (with retry)
   const prevStatusRef = useRef<string | undefined>(undefined);
   useEffect(() => {
     if (!project) return;
     const statusJustCompleted = prevStatusRef.current === 'RUNNING' && project.status === 'COMPLETED';
     prevStatusRef.current = project.status;
 
-    const fetchHead = () => {
+    let cancelled = false;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+
+    const fetchHead = (retryMs?: number) => {
       fetch(`http://localhost:5000/api/projects/${projectId}/head`)
         .then(r => r.json())
         .then(data => {
+          if (cancelled) return;
           const v = data?.version ?? data?.version_number ?? data?.id ?? null;
-          if (v !== null) setPreviewVersion(Number(v));
+          if (v !== null) {
+            setPreviewVersion(Number(v));
+          } else if (retryMs) {
+            // Version not ready yet — schedule retry
+            timers.push(setTimeout(() => fetchHead(), retryMs));
+          }
         })
-        .catch(() => {});
+        .catch(() => {
+          if (!cancelled && retryMs) {
+            timers.push(setTimeout(() => fetchHead(), retryMs));
+          }
+        });
     };
 
     if (statusJustCompleted) {
-      // Delay to let backend finalize the new version
-      const timer = setTimeout(fetchHead, 500);
-      return () => clearTimeout(timer);
+      // Delay to let backend finalize, then retry once more at 1s if still null
+      timers.push(setTimeout(() => fetchHead(1000), 500));
     } else if (project.status === 'COMPLETED' || previewVersion === null) {
       fetchHead();
     }
+
+    return () => {
+      cancelled = true;
+      timers.forEach(t => clearTimeout(t));
+    };
   }, [project?.status, projectId]);
 
   // Fetch artifacts directly from API when orchestrator cache is empty (survives Flask restarts)
