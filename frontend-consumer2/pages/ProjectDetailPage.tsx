@@ -781,7 +781,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
 
   const handleSendChat = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!chatInput.trim()) return;
+    if (!chatInput.trim() || project.status === 'RUNNING') return;
     backend.addLog(projectId, `User: ${chatInput}`, 'info');
     setChatInput('');
   };
@@ -1010,7 +1010,12 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
                 <button
                   key={idx}
                   onClick={() => setChatInput(t(lang, s.key))}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 text-[9px] font-bold text-slate-600 dark:text-indigo-100/40 whitespace-nowrap hover:bg-indigo-50 dark:hover:bg-white/10 hover:text-indigo-600 dark:hover:text-indigo-300 transition-all uppercase tracking-tighter cursor-pointer"
+                  disabled={project.status === 'RUNNING'}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 text-[9px] font-bold text-slate-600 dark:text-indigo-100/40 whitespace-nowrap transition-all uppercase tracking-tighter ${
+                    project.status === 'RUNNING'
+                      ? 'opacity-40 cursor-not-allowed'
+                      : 'hover:bg-indigo-50 dark:hover:bg-white/10 hover:text-indigo-600 dark:hover:text-indigo-300 cursor-pointer'
+                  }`}
                 >
                   <s.icon size={11} className="text-indigo-500/50" />
                   {t(lang, s.key)}
@@ -1023,8 +1028,13 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
               <textarea
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                placeholder={t(lang, 'askForChanges')}
-                className="w-full bg-slate-50 dark:bg-[#121620] border border-slate-200 dark:border-white/10 rounded-2xl pl-4 pr-12 py-3.5 text-[11px] text-slate-900 dark:text-indigo-50 focus:outline-none focus:border-indigo-500/40 focus:ring-4 focus:ring-indigo-500/5 focus:bg-white dark:focus:bg-[#1a1f2e] min-h-[48px] max-h-[160px] resize-none font-bold placeholder:text-slate-400 dark:placeholder:text-indigo-400/30 shadow-inner transition-all overflow-y-auto custom-scrollbar relative z-10"
+                disabled={project.status === 'RUNNING'}
+                placeholder={project.status === 'RUNNING' ? t(lang, 'buildInProgress') : t(lang, 'askForChanges')}
+                className={`w-full border rounded-2xl pl-4 pr-12 py-3.5 text-[11px] min-h-[48px] max-h-[160px] resize-none font-bold shadow-inner transition-all overflow-y-auto custom-scrollbar relative z-10 ${
+                  project.status === 'RUNNING'
+                    ? 'bg-slate-100 dark:bg-[#0e1119] border-slate-200 dark:border-white/5 text-slate-400 dark:text-indigo-400/30 cursor-not-allowed placeholder:text-slate-400 dark:placeholder:text-indigo-400/30'
+                    : 'bg-slate-50 dark:bg-[#121620] border-slate-200 dark:border-white/10 text-slate-900 dark:text-indigo-50 focus:outline-none focus:border-indigo-500/40 focus:ring-4 focus:ring-indigo-500/5 focus:bg-white dark:focus:bg-[#1a1f2e] placeholder:text-slate-400 dark:placeholder:text-indigo-400/30'
+                }`}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -1032,13 +1042,19 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
                   }
                 }}
               />
-              <button
-                type="submit"
-                disabled={!chatInput.trim()}
-                className="absolute right-3.5 bottom-3.5 p-1.5 text-indigo-500 hover:text-indigo-700 dark:hover:text-white transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 z-20 hover:scale-110 active:scale-90"
-              >
-                <Send size={18} />
-              </button>
+              {project.status === 'RUNNING' ? (
+                <div className="absolute right-3.5 bottom-3.5 p-1.5 z-20">
+                  <Loader2 size={18} className="text-indigo-500/50 animate-spin" />
+                </div>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={!chatInput.trim()}
+                  className="absolute right-3.5 bottom-3.5 p-1.5 text-indigo-500 hover:text-indigo-700 dark:hover:text-white transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 z-20 hover:scale-110 active:scale-90"
+                >
+                  <Send size={18} />
+                </button>
+              )}
             </form>
           </div>
         </div>
