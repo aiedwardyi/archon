@@ -168,6 +168,7 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - ✅ Chat message persistence (DB-backed, survives refresh)
 - ✅ Consumer Versions page — timeline + split panel + preview per version (THE MOAT)
 - ✅ Consumer frontend polished — Archon branding, newest-first timeline, glow effects, full Korean i18n
+- ✅ Consumer UX bug fixes — stale state, iframe visibility, progress persistence, tech map colors, mock data
 - 🔴 PDF Export + Client Read-Only Link (Phase 8 remaining)
 
 ### Phase 9 — Pipeline Page & Classifier Improvements (⬜ Planned)
@@ -264,4 +265,12 @@ Impact:
 - Logo split corrected: "Arch" + "on" with violet accent
 - Full Korean i18n coverage: sidebar (9 strings), logs tab, status badges, agent messages, chat suggestions
 - Fixed versions preview URL bug (version field vs version_number mismatch with API)
+
+### Phase 15.3 — Consumer UX Bug Fixes (✅ Completed Feb 2026)
+- Reset localPrd/localPlan/localTasks/previewVersion on projectId change (stale data across project switches)
+- Removed opacity-0/opacity-100 transition on workspace div (iframe invisible after build completes)
+- Progress bar persisted to sessionStorage (survives navigate-away-and-back during builds)
+- Expanded getTechColor to match 7 keyword categories (frontend/backend/database/state/ml/hosting/styling)
+- Tech map rendering handles no-colon entries (natural-language PRD format)
+- Engineer prompt: added MOCK DATA REQUIREMENT block (no more empty-state generated apps)
 

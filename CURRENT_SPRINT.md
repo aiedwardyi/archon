@@ -47,6 +47,15 @@ main (enterprise-ui merged and deleted)
 - Korean translations wired to Sidebar (9 strings via `t()`)
 - Korean translations wired to Logs tab (`runtimeLogs`, `simulateFault`)
 
+### Phase 15.3 — Consumer UX Bug Fixes ✅
+- Reset `localPrd`/`localPlan`/`localTasks`/`previewVersion` on `projectId` change (stale data across project switches)
+- Removed `opacity-0`/`opacity-100` transition on workspace div (iframe invisible after build completes)
+- Progress bar persisted to `sessionStorage` (survives navigate-away-and-back during builds)
+- Expanded `getTechColor` to match 7 keyword categories (frontend/backend/database/state/ml/hosting/styling)
+- Tech map rendering handles no-colon entries (natural-language PRD format)
+- Engineer prompt: added MOCK DATA REQUIREMENT block (no more empty-state generated apps)
+- Added bell notification instruction to CLAUDE.md
+
 ### Phase 15.1 — Repo Cleanup ✅
 - Removed `apps/offline-vite-react` (unused old frontend)
 - Added `node_modules/`, `dist/`, `.venv/`, `.claude/` to `.gitignore`

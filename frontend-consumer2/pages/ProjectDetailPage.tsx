@@ -621,7 +621,17 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [activeTab, setActiveTab] = useState<'preview' | 'brief' | 'architecture' | 'code' | 'tasks' | 'terminal' | 'versions'>('preview');
   const [chatInput, setChatInput] = useState('');
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState<number>(() => {
+    const saved = sessionStorage.getItem(`progress-${projectId}`);
+    return saved ? parseFloat(saved) : 0;
+  });
+  const updateProgress = (val: number | ((prev: number) => number)) => {
+    setProgress(prev => {
+      const next = typeof val === 'function' ? val(prev) : val;
+      sessionStorage.setItem(`progress-${projectId}`, String(next));
+      return next;
+    });
+  };
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [lang, setLangState] = useState<Lang>(getLang());
@@ -631,6 +641,14 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
   const [localPlan, setLocalPlan] = useState<Artifact | null>(null);
   const [localTasks, setLocalTasks] = useState<EngineerTask[]>([]);
   const logsEndRef = useRef<HTMLDivElement>(null);
+
+  // Reset local state when switching projects
+  useEffect(() => {
+    setLocalPrd(null);
+    setLocalPlan(null);
+    setLocalTasks([]);
+    setPreviewVersion(null);
+  }, [projectId]);
 
   // Language toggle
   const handleLangToggle = () => {
@@ -742,12 +760,13 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
   // Progress bar
   useEffect(() => {
     if (project?.status !== 'RUNNING') {
-      setProgress(0);
+      updateProgress(0);
+      sessionStorage.removeItem(`progress-${projectId}`);
       return;
     }
 
     const interval = setInterval(() => {
-      setProgress(prev => {
+      updateProgress(prev => {
         let target = 0;
         switch (project.currentStage) {
           case 'pm': target = 33; break;
@@ -835,11 +854,13 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
 
   const getTechColor = (tech: string) => {
     const lower = tech.toLowerCase();
-    if (lower.includes('frontend')) return 'text-blue-600 dark:text-blue-400';
-    if (lower.includes('styling')) return 'text-pink-600 dark:text-pink-400';
-    if (lower.includes('backend')) return 'text-emerald-600 dark:text-emerald-400';
-    if (lower.includes('database')) return 'text-amber-600 dark:text-amber-400';
-    if (lower.includes('state')) return 'text-violet-600 dark:text-violet-400';
+    if (lower.includes('frontend') || lower.includes('react') || lower.includes('vue') || lower.includes('javascript') || lower.includes('html') || lower.includes('css') || lower.includes('tailwind') || lower.includes('next')) return 'text-blue-600 dark:text-blue-400';
+    if (lower.includes('styling') || lower.includes('sass') || lower.includes('animation')) return 'text-pink-600 dark:text-pink-400';
+    if (lower.includes('backend') || lower.includes('node') || lower.includes('express') || lower.includes('flask') || lower.includes('django') || lower.includes('python') || lower.includes('server')) return 'text-emerald-600 dark:text-emerald-400';
+    if (lower.includes('database') || lower.includes('sql') || lower.includes('postgres') || lower.includes('mongo') || lower.includes('redis') || lower.includes('sqlite')) return 'text-amber-600 dark:text-amber-400';
+    if (lower.includes('state') || lower.includes('redux') || lower.includes('auth') || lower.includes('oauth') || lower.includes('jwt')) return 'text-violet-600 dark:text-violet-400';
+    if (lower.includes('ml') || lower.includes('ai') || lower.includes('tensorflow') || lower.includes('pytorch') || lower.includes('machine learning')) return 'text-rose-600 dark:text-rose-400';
+    if (lower.includes('hosting') || lower.includes('aws') || lower.includes('cloud') || lower.includes('deploy') || lower.includes('docker')) return 'text-cyan-600 dark:text-cyan-400';
     return 'text-indigo-600 dark:text-indigo-400';
   };
 
@@ -1108,7 +1129,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
             </div>
           )}
 
-          <div className={`flex-1 p-4 md:p-6 overflow-hidden transition-opacity duration-500 ${project.status === 'RUNNING' && activeTab !== 'tasks' && activeTab !== 'terminal' ? 'opacity-0' : 'opacity-100'}`}>
+          <div className={`flex-1 p-4 md:p-6 overflow-hidden`}>
 
             {/* PREVIEW TAB with real iframe */}
             {activeTab === 'preview' && (
@@ -1223,12 +1244,12 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
                               <div key={i} className="py-3.5 first:pt-0 last:pb-0 text-[11px] flex items-center justify-between font-bold group">
                                 {(() => {
                                   const colonIdx = tech.indexOf(':');
-                                  const label = colonIdx > -1 ? tech.slice(0, colonIdx).trim() : tech.trim();
-                                  const value = colonIdx > -1 ? tech.slice(colonIdx + 1).trim() : '';
+                                  const label = colonIdx > -1 ? tech.slice(0, colonIdx).trim() : null;
+                                  const value = colonIdx > -1 ? tech.slice(colonIdx + 1).trim() : tech.trim();
                                   return (
                                     <>
-                                      <span className="text-slate-500 dark:text-indigo-200/40 uppercase tracking-tighter group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{label}</span>
-                                      {value && <span className={`text-[10px] font-mono ${getTechColor(label)} group-hover:brightness-125 transition-all`}>{value}</span>}
+                                      {label && <span className="text-slate-500 dark:text-indigo-200/40 uppercase tracking-tighter group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{label}</span>}
+                                      <span className={`text-[10px] font-mono ${getTechColor(tech)} group-hover:brightness-125 transition-all ${!label ? 'text-left w-full' : ''}`}>{value}</span>
                                     </>
                                   );
                                 })()}

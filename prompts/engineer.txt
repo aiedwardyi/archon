@@ -704,4 +704,13 @@ function countUp(el,target,duration=1200){const start=performance.now();const up
 document.addEventListener('DOMContentLoaded',()=>document.querySelectorAll('[data-count]').forEach(el=>countUp(el,+el.dataset.count)));
 Add data-count="12400" attribute to KPI number elements in HTML.
 
+MOCK DATA REQUIREMENT: Every generated application MUST include realistic hardcoded mock data appropriate to the domain.
+- Dashboards: include 5-10 rows of sample records (customers, orders, transactions, users)
+- Analytics: include chart data arrays with 6-12 data points over realistic time ranges
+- CRM/SaaS: include named fictional users, realistic statuses, dollar amounts, timestamps
+- Social apps: include sample posts, profiles, comments with plausible content
+- E-commerce: include product listings with names, prices, placeholder image URLs, ratings
+NEVER generate an empty state UI. If the app has tables, charts, or lists they must have data on first load.
+Do NOT use Lorem ipsum — use domain-appropriate realistic content.
+
 Task is below. Produce only scaffolding files.
