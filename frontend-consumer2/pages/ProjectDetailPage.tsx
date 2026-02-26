@@ -477,7 +477,7 @@ const VersionsTab: React.FC<{ projectId: string; lang: Lang }> = ({ projectId, l
           </div>
 
           {/* Version preview iframe */}
-          <div className="bg-white dark:bg-[#080a0f] border border-slate-200 dark:border-white/5 rounded-3xl overflow-hidden">
+          <div className="bg-white dark:bg-[#080a0f] border border-slate-200 dark:border-indigo-500/10 rounded-3xl overflow-hidden shadow-lg shadow-indigo-500/5 hover:shadow-xl hover:shadow-indigo-500/10 transition-all">
             {/* browser chrome */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#0a0d14]">
               <div className="flex items-center gap-1.5">
