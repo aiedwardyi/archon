@@ -285,7 +285,7 @@ const VersionsTab: React.FC<{ projectId: string; lang: Lang }> = ({ projectId, l
       .then(data => {
         const list: VersionRecord[] = Array.isArray(data) ? data : (data.versions || []);
         setVersions(list);
-        if (list.length > 0) setSelectedVersion(list[list.length - 1]);
+        if (list.length > 0) setSelectedVersion(list[0]);
       })
       .catch(() => setVersions([]))
       .finally(() => setLoading(false));
@@ -354,7 +354,7 @@ const VersionsTab: React.FC<{ projectId: string; lang: Lang }> = ({ projectId, l
           </div>
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
-          {versions.slice().reverse().map((v) => (
+          {versions.map((v) => (
             <button
               key={v.id}
               onClick={() => setSelectedVersion(v)}
