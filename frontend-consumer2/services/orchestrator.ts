@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 const API_BASE = 'http://localhost:5000/api';
 
-function normalizePrd(raw: any) {
+export function normalizePrd(raw: any) {
   const prd = raw?.prd || raw;
   return {
     title: prd.document_title || prd.title || 'Product Requirements Document',
@@ -14,7 +14,7 @@ function normalizePrd(raw: any) {
   };
 }
 
-function normalizePlan(raw: any) {
+export function normalizePlan(raw: any) {
   // Handle both flat { milestones } and wrapped { plan: { milestones } } shapes
   const milestones = raw?.milestones || raw?.plan?.milestones || raw?.phases || [];
   return {
@@ -72,7 +72,7 @@ function normalizeProject(raw: any): Project {
   };
 }
 
-function buildTasksFromResult(raw: any): EngineerTask[] {
+export function buildTasksFromResult(raw: any): EngineerTask[] {
   const writes = raw?.outputs?.writes || [];
   const producedAt = raw?._meta?.produced_at ? new Date(raw._meta.produced_at).getTime() : Date.now();
   return writes.map((w: any, i: number) => {

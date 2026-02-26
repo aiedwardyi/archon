@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { backend } from '../services/orchestrator';
+import { backend, normalizePrd, normalizePlan, buildTasksFromResult } from '../services/orchestrator';
 import { Project, Artifact, LogEntry, EngineerTask } from '../types';
 import ArtifactViewer from '../components/ArtifactViewer';
 import { t, getLang, setLang, Lang } from '../i18n';
@@ -627,6 +627,9 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
   const [lang, setLangState] = useState<Lang>(getLang());
   const [previewVersion, setPreviewVersion] = useState<number | null>(null);
   const [previewViewport, setPreviewViewport] = useState<'desktop' | 'mobile'>('desktop');
+  const [localPrd, setLocalPrd] = useState<any>(null);
+  const [localPlan, setLocalPlan] = useState<Artifact | null>(null);
+  const [localTasks, setLocalTasks] = useState<EngineerTask[]>([]);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   // Language toggle
@@ -675,6 +678,50 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
     }
   }, [project?.status, projectId]);
 
+  // Fetch artifacts directly from API when orchestrator cache is empty (survives Flask restarts)
+  useEffect(() => {
+    if (!previewVersion || !projectId) return;
+    const prdArt = artifacts.find(a => a.type === 'PRD');
+    const planArt = artifacts.find(a => a.type === 'PLAN');
+    const hasTasks = (project?.engineerTasks?.length ?? 0) > 0;
+
+    if (!prdArt && !localPrd) {
+      fetch(`http://localhost:5000/api/prd?project_id=${projectId}&version=${previewVersion}`)
+        .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+        .then(data => setLocalPrd(normalizePrd(data)))
+        .catch(() => {});
+    }
+
+    if (!planArt && !localPlan) {
+      fetch(`http://localhost:5000/api/plan?project_id=${projectId}&version=${previewVersion}`)
+        .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+        .then(data => {
+          const normalized = normalizePlan(data);
+          setLocalPlan({
+            id: 'local-plan',
+            projectId,
+            type: 'PLAN',
+            title: 'Execution Plan',
+            content: normalized,
+            createdAt: Date.now(),
+            agent: 'Planner Agent',
+          });
+        })
+        .catch(() => {});
+    }
+
+    if (!hasTasks && localTasks.length === 0) {
+      fetch(`http://localhost:5000/api/code?project_id=${projectId}&version=${previewVersion}`)
+        .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+        .then(data => {
+          if (data && !data.error) {
+            setLocalTasks(buildTasksFromResult(data));
+          }
+        })
+        .catch(() => {});
+    }
+  }, [previewVersion, projectId, artifacts.length, project?.engineerTasks?.length]);
+
   // Progress bar
   useEffect(() => {
     if (project?.status !== 'RUNNING') {
@@ -717,6 +764,11 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
   const planArtifact = artifacts.find(a => a.type === 'PLAN');
   const codeArtifact = artifacts.find(a => a.type === 'CODE');
   const errorCount = logs.filter(l => l.type === 'error').length;
+
+  // Fallback: use locally-fetched data when orchestrator cache is empty
+  const effectivePrd = prdArtifact?.content || localPrd;
+  const effectivePlan = planArtifact || localPlan;
+  const effectiveTasks = (project.engineerTasks?.length ?? 0) > 0 ? project.engineerTasks! : localTasks;
 
   const getStatusText = () => {
     switch (project.currentStage) {
@@ -1089,10 +1141,10 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
             {activeTab === 'brief' && (
               <div className="h-full overflow-y-auto custom-scrollbar animate-fade-in">
                 <div className="max-w-4xl mx-auto py-2 md:py-6">
-                  {prdArtifact ? (
+                  {effectivePrd ? (
                     <div className="space-y-12">
                       <div className="text-center space-y-3 mb-16">
-                        <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{prdArtifact.content.title}</h2>
+                        <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{effectivePrd.title}</h2>
                         <div className="flex items-center justify-center gap-3 text-slate-400 dark:text-indigo-400/40 text-[9px] font-mono uppercase tracking-[0.2em]">
                           <span>Status: Finalized</span>
                           <span className="w-1 h-1 bg-slate-300 dark:bg-indigo-900 rounded-full"></span>
@@ -1106,7 +1158,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
                           Overview
                         </div>
                         <div className="text-base text-slate-800 dark:text-indigo-50 leading-relaxed font-bold bg-white dark:bg-white/[0.01] border border-slate-200 dark:border-white/5 p-8 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-indigo-500/5">
-                          {prdArtifact.content.summary}
+                          {effectivePrd.summary}
                         </div>
                       </section>
 
@@ -1117,7 +1169,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
                             Key Components
                           </div>
                           <div className="space-y-2.5">
-                            {prdArtifact.content.features.map((f: string, i: number) => (
+                            {(effectivePrd.features || []).map((f: string, i: number) => (
                               <div key={i} className="flex gap-3.5 p-4 rounded-2xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 group hover:border-indigo-500/20 transition-all cursor-default shadow-sm hover:shadow-md">
                                 <div className="w-6 h-6 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[9px] font-black shrink-0">
                                   {i + 1}
@@ -1134,7 +1186,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
                             Technology Map
                           </div>
                           <div className="bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 rounded-3xl p-6 divide-y divide-slate-100 dark:divide-white/5 shadow-sm">
-                            {prdArtifact.content.techStackRecommendation.map((tech: string, i: number) => (
+                            {(effectivePrd.techStackRecommendation || []).map((tech: string, i: number) => (
                               <div key={i} className="py-3.5 first:pt-0 last:pb-0 text-[11px] flex items-center justify-between font-bold group">
                                 {(() => {
                                   const colonIdx = tech.indexOf(':');
@@ -1167,8 +1219,8 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
             {activeTab === 'architecture' && (
               <div className="h-full animate-fade-in pr-2">
                 <div className="max-w-4xl mx-auto py-2 h-full">
-                  {planArtifact ? (
-                    <ArtifactViewer artifact={planArtifact} />
+                  {effectivePlan ? (
+                    <ArtifactViewer artifact={effectivePlan} />
                   ) : (
                     <div className="h-full flex flex-col items-center justify-center text-slate-300 dark:text-indigo-900 font-mono gap-3 uppercase tracking-[0.2em] text-[9px] min-h-[300px] font-bold">
                       <Milestone size={24} className="opacity-20" />
@@ -1189,7 +1241,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
             {/* TASKS / WHAT WAS BUILT TAB */}
             {activeTab === 'tasks' && (
               <div className="h-full overflow-y-auto custom-scrollbar animate-fade-in">
-                <TaskHistoryView tasks={project.engineerTasks || []} lang={lang} />
+                <TaskHistoryView tasks={effectiveTasks} lang={lang} />
               </div>
             )}
 
