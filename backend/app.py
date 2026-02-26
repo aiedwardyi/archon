@@ -405,7 +405,16 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
             asset_lines = []
             for a in design_assets:
                 # Use local served path if downloaded; fall back to Azure URL
-                img_url = f"/api/assets/{project_id}/{version}/{a['key']}.png" if a.get("local_path") else a["url"]
+                # Extract actual version from local_path (may point to ancestor)
+                asset_version = version
+                if a.get("local_path"):
+                    lp = a["local_path"].replace("\\", "/")
+                    parts = lp.split("/")
+                    for i, part in enumerate(parts):
+                        if part.startswith("v") and part[1:].isdigit():
+                            asset_version = int(part[1:])
+                            break
+                img_url = f"/api/assets/{project_id}/{asset_version}/{a['key']}.png" if a.get("local_path") else a["url"]
                 line = "  - " + a["key"] + " (" + a["purpose"] + "): " + img_url
                 asset_lines.append(line)
             design_context = "\n\nDESIGN ASSETS - USE THESE IMAGE URLs IN THE HTML:\n" + "\n".join(asset_lines) + "\nIMPORTANT: Use these exact URLs in <img> tags or CSS background-image. Do not use placeholder images.\n"
