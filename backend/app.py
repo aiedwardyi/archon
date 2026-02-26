@@ -942,29 +942,14 @@ def execution_status():
 
 @app.route("/api/code", methods=["GET"])
 def get_code():
-    project_id = execution_state.get("current_project_id")
-    execution_id = execution_state.get("current_execution_id")
-    version = None
-
-    if execution_id:
-        session = get_session()
-        try:
-            execution = session.get(Execution, execution_id)
-            if execution:
-                version = execution.version
-                # 7C.2: DB is ground truth when pipeline not actively running
-                if not execution_state["running"] and execution.status in ("success", "error"):
-                    db_status = "COMPLETED" if execution.status == "success" else "FAILED"
-                    return jsonify({
-                        "status": db_status,
-                        "currentStage": "engineer",
-                        "logs": execution_state.get("logs", []),
-                        "engineerTasks": [],
-                        "project_id": project_id,
-                        "execution_id": execution_id,
-                    }), 200
-        finally:
-            session.close()
+    """
+    Returns the execution result / code artifact. Survives backend restarts via query params.
+    Priority: in-memory state -> ?project_id&version -> DB active head
+    """
+    project_id, version = resolve_project_version(
+        request.args.get("project_id"),
+        request.args.get("version"),
+    )
 
     if project_id and version:
         result_file = get_version_dir(project_id, version) / "last_execution_result.json"
