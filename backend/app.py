@@ -399,11 +399,11 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
                 writes.append(rec)
                 add_log(f"Build Agent: Created {file_artifact.path}")
             except ValueError as skip_err:
-    # In iteration mode, fail hard to keep behavior deterministic and auditable.
-    if is_iteration:
-        raise
-    print(f"Build Agent: Skipped {file_artifact.path} ({skip_err})")
-    print(f"Skipped file: {skip_err}")
+                # In iteration mode, fail hard to keep behavior deterministic and auditable.
+                if is_iteration:
+                    raise
+                print(f"Build Agent: Skipped {file_artifact.path} ({skip_err})")
+                print(f"Skipped file: {skip_err}")
         add_log("Build complete.")
         execution_state["result_ready"] = True
         execution_state["result_ready"] = True
