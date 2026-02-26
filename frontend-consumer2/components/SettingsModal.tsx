@@ -46,7 +46,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate, onClo
         <div className="p-5 md:p-8 border-b border-slate-200 dark:border-white/5 flex items-center justify-between shrink-0">
           <div>
             <h2 className="text-lg md:text-xl font-black text-slate-900 dark:text-white tracking-tight uppercase">Settings</h2>
-            <p className="text-[10px] text-slate-400 dark:text-indigo-400/40 font-black uppercase tracking-[0.2em] mt-1">Personalize how you interact with ai-dev-team</p>
+            <p className="text-[10px] text-slate-400 dark:text-indigo-400/40 font-black uppercase tracking-[0.2em] mt-1">Personalize how you interact with Archon</p>
           </div>
           <button 
             onClick={onClose}
@@ -120,7 +120,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate, onClo
             <div className="flex items-center justify-between">
               <span className={labelClasses}>Profile</span>
               <button className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer">
-                Open profile on ai-dev-team.app/{localSettings.username}
+                Open profile on archon.app/{localSettings.username}
                 <ExternalLink size={10} />
               </button>
             </div>

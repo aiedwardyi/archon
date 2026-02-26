@@ -25,7 +25,7 @@ const App: React.FC = () => {
           model: parsed.model || 'Gemini 3 Pro',
           theme: parsed.theme || 'dark',
           username: parsed.username || 'AgentUser_01',
-          email: parsed.email === 'user@devagents.app' ? 'user@ai-dev-team.app' : (parsed.email || 'user@ai-dev-team.app'),
+          email: parsed.email === 'user@devagents.app' ? 'user@archon.app' : (parsed.email || 'user@archon.app'),
           vibeLevel: parsed.vibeLevel !== undefined ? parsed.vibeLevel : 65,
           chatSuggestions: parsed.chatSuggestions !== undefined ? parsed.chatSuggestions : true,
           completionSound: parsed.completionSound || 'first'
@@ -38,7 +38,7 @@ const App: React.FC = () => {
       model: 'Gemini 3 Pro',
       theme: 'dark',
       username: 'AgentUser_01',
-      email: 'user@ai-dev-team.app',
+      email: 'user@archon.app',
       vibeLevel: 65,
       chatSuggestions: true,
       completionSound: 'first'
@@ -139,7 +139,7 @@ const App: React.FC = () => {
           >
             <Menu size={20} />
           </button>
-          <span className="ml-2 font-bold text-sm text-slate-900 dark:text-white">ai-dev-team</span>
+          <span className="ml-2 font-bold text-sm text-slate-900 dark:text-white">Archon</span>
         </div>
 
         {currentProjectId ? (

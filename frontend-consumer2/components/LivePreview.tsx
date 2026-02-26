@@ -55,7 +55,7 @@ const LivePreview: React.FC<LivePreviewProps> = ({ code, projectName }) => {
           </div>
           <div className="flex items-center bg-slate-100 dark:bg-[#151b28] border border-slate-200 dark:border-white/5 px-3 py-1.5 rounded-xl gap-2 min-w-0 flex-1 sm:flex-none sm:min-w-[300px]">
             <Lock size={10} className="text-slate-400 dark:text-slate-500 shrink-0" />
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono tracking-tight truncate font-bold">{slugifiedName}.ai-dev-team.app</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono tracking-tight truncate font-bold">{slugifiedName}.archon.app</span>
           </div>
           <button className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-white transition-colors shrink-0">
             <RotateCw size={14} />

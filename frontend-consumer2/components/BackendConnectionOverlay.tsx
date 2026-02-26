@@ -48,7 +48,7 @@ const BackendConnectionOverlay: React.FC<BackendConnectionOverlayProps> = ({ onC
             Backend Required
           </h1>
           <div className="text-[12px] md:text-[13px] text-slate-400 font-bold leading-relaxed max-w-[340px] mx-auto space-y-1">
-            <p>The Flask server is not connected. To use the Multi-Agent Platform, please start the backend at</p>
+            <p>The Flask server is not connected. To use Archon, please start the backend at</p>
             <p className="text-red-500 font-black text-sm md:text-base">http://localhost:5000</p>
           </div>
         </div>
@@ -63,7 +63,7 @@ const BackendConnectionOverlay: React.FC<BackendConnectionOverlayProps> = ({ onC
           <div className="font-mono text-[10px] md:text-[11px] leading-relaxed space-y-3">
             <div className="flex gap-2 md:gap-3">
               <span className="text-slate-700 shrink-0">1.</span>
-              <span className="text-slate-400 break-all">cd ai-dev-team</span>
+              <span className="text-slate-400 break-all">cd archon</span>
             </div>
             <div className="flex gap-2 md:gap-3">
               <span className="text-slate-700 shrink-0">2.</span>

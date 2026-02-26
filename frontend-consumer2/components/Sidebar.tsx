@@ -72,7 +72,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 group-hover:scale-110 transition-transform">
               <Zap size={16} fill="currentColor" />
             </div>
-            <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-white">ai-dev-<span className="text-indigo-600 dark:text-indigo-400">team</span></span>
+            <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-white">Arc<span className="text-indigo-600 dark:text-indigo-400">hon</span></span>
           </div>
           {/* Mobile Close Button */}
           <button 
