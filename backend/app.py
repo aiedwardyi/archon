@@ -249,28 +249,34 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
             version_dir = PUBLIC_DIR / "shared"
         version_dir.mkdir(parents=True, exist_ok=True)
 
-        # Load existing code from parent version for iteration context
+        # Load existing code from nearest ancestor that has code on disk
         existing_code = None
         session_check = get_session()
         try:
             current_exec = session_check.get(Execution, execution_id)
-            if current_exec and current_exec.parent_execution_id:
-                parent_exec = session_check.get(Execution, current_exec.parent_execution_id)
-                if parent_exec:
-                    parent_dir = get_version_dir(project_id, parent_exec.version) / "code"
-                    candidate = parent_dir / "src" / "index.html"
-                    if not candidate.exists():
-                        html_files = list(parent_dir.rglob("*.html"))
-                        candidate = html_files[0] if html_files else None
-                    if candidate and Path(candidate).exists():
-                        html_content = Path(candidate).read_text(encoding="utf-8", errors="replace")
-                        css_candidate = parent_dir / "src" / "style.css"
-                        if css_candidate.exists():
-                            css_content = css_candidate.read_text(encoding="utf-8", errors="replace")
-                            existing_code = f"<!-- src/index.html -->\n{html_content}\n\n/* src/style.css */\n{css_content}"
-                        else:
-                            existing_code = html_content
-                        add_log("Build Agent: Loading previous version for context...")
+            ancestor_id = current_exec.parent_execution_id if current_exec else None
+            hops = 0
+            while ancestor_id and hops < 5:
+                ancestor_exec = session_check.get(Execution, ancestor_id)
+                if not ancestor_exec:
+                    break
+                ancestor_dir = get_version_dir(project_id, ancestor_exec.version) / "code"
+                candidate = ancestor_dir / "src" / "index.html"
+                if not candidate.exists():
+                    html_files = list(ancestor_dir.rglob("*.html"))
+                    candidate = html_files[0] if html_files else None
+                if candidate and Path(candidate).exists():
+                    html_content = Path(candidate).read_text(encoding="utf-8", errors="replace")
+                    css_candidate = ancestor_dir / "src" / "style.css"
+                    if css_candidate.exists():
+                        css_content = css_candidate.read_text(encoding="utf-8", errors="replace")
+                        existing_code = f"<!-- src/index.html -->\n{html_content}\n\n/* src/style.css */\n{css_content}"
+                    else:
+                        existing_code = html_content
+                    add_log(f"Build Agent: Loading v{ancestor_exec.version} for context...")
+                    break
+                ancestor_id = ancestor_exec.parent_execution_id
+                hops += 1
         finally:
             session_check.close()
 
