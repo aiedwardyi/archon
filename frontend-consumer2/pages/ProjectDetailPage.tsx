@@ -291,6 +291,8 @@ const VersionsTab: React.FC<{ projectId: string; lang: Lang }> = ({ projectId, l
       .finally(() => setLoading(false));
   }, [projectId]);
 
+  const maxVersion = versions.length > 0 ? Math.max(...versions.map(v => v.version)) : 0;
+
   const getStatusDot = (status: string) => {
     if (status === 'success' || status === 'completed') return 'bg-emerald-500';
     if (status === 'error' || status === 'failed') return 'bg-red-500';
@@ -407,18 +409,20 @@ const VersionsTab: React.FC<{ projectId: string; lang: Lang }> = ({ projectId, l
                 {new Date(selectedVersion.created_at).toLocaleString()}
               </p>
             </div>
-            <button
-              onClick={handleRestore}
-              disabled={restoring}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg cursor-pointer ${
-                restoring
-                  ? 'bg-slate-500/20 text-slate-400 cursor-not-allowed'
-                  : 'bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-indigo-500/20 hover:brightness-110 active:scale-95'
-              }`}
-            >
-              {restoring ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-              {t(lang, 'restoreVersion')}
-            </button>
+            {selectedVersion.version < maxVersion && (
+              <button
+                onClick={handleRestore}
+                disabled={restoring}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg cursor-pointer ${
+                  restoring
+                    ? 'bg-slate-500/20 text-slate-400 cursor-not-allowed'
+                    : 'bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-indigo-500/20 hover:brightness-110 active:scale-95'
+                }`}
+              >
+                {restoring ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                {t(lang, 'restoreVersion')}
+              </button>
+            )}
           </div>
 
           {/* Artifact cards */}
