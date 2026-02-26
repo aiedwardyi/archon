@@ -1185,7 +1185,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
                 <div className="p-3 bg-white dark:bg-[#111] border-b border-slate-200 dark:border-white/5 text-[9px] text-indigo-600 dark:text-indigo-800 uppercase tracking-widest font-black flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Terminal size={14} />
-                    Runtime Environment Logs
+                    {t(lang, 'runtimeLogs')}
                   </div>
                   <div className="flex items-center gap-4">
                     {errorCount > 0 && (
@@ -1207,7 +1207,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
                       ) : (
                         <Bug size={12} className="group-hover:rotate-12 transition-transform" />
                       )}
-                      <span className="hidden sm:inline">Simulate Fault</span>
+                      <span className="hidden sm:inline">{t(lang, 'simulateFault')}</span>
                       <span className="sm:hidden">Fault</span>
                     </button>
                   </div>
