@@ -650,9 +650,13 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
   }, [projectId]);
 
   // Fetch head version on mount and on COMPLETED
+  const prevStatusRef = useRef<string | undefined>(undefined);
   useEffect(() => {
     if (!project) return;
-    if (project.status === 'COMPLETED' || previewVersion === null) {
+    const statusJustCompleted = prevStatusRef.current === 'RUNNING' && project.status === 'COMPLETED';
+    prevStatusRef.current = project.status;
+
+    const fetchHead = () => {
       fetch(`http://localhost:5000/api/projects/${projectId}/head`)
         .then(r => r.json())
         .then(data => {
@@ -660,6 +664,14 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
           if (v !== null) setPreviewVersion(Number(v));
         })
         .catch(() => {});
+    };
+
+    if (statusJustCompleted) {
+      // Delay to let backend finalize the new version
+      const timer = setTimeout(fetchHead, 500);
+      return () => clearTimeout(timer);
+    } else if (project.status === 'COMPLETED' || previewVersion === null) {
+      fetchHead();
     }
   }, [project?.status, projectId]);
 
@@ -1047,6 +1059,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
                     <div className="flex-1 bg-slate-100 dark:bg-[#0b0e14] flex items-start justify-center overflow-hidden p-4">
                       {previewViewport === 'desktop' ? (
                         <iframe
+                          key={`preview-desktop-${previewVersion}`}
                           src={`http://localhost:5000/api/preview/${projectId}/${previewVersion}`}
                           className="w-full h-full border-0 rounded-2xl"
                           title="Live Preview"
@@ -1054,6 +1067,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
                       ) : (
                         <div className="relative w-[375px] h-full border-4 border-slate-300 dark:border-white/10 rounded-[2rem] overflow-hidden shadow-2xl bg-white dark:bg-black">
                           <iframe
+                            key={`preview-mobile-${previewVersion}`}
                             src={`http://localhost:5000/api/preview/${projectId}/${previewVersion}`}
                             className="w-full h-full border-0"
                             title="Live Preview (Mobile)"
