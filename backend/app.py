@@ -124,17 +124,27 @@ ARCHETYPES = [
 ]
 
 
-_ARCHETYPE_VERB_RE = re.compile(r"\b(turn|make|convert|change|redesign|rebuild|switch)\b", re.IGNORECASE)
+_ARCHETYPE_CHANGE_RE = re.compile(
+    r"\b(?:turn\s+(?:it\s+)?into|convert\s+(?:it\s+)?(?:to|into)"
+    r"|make\s+(?:it\s+)?(?:a|an|into)\s"
+    r"|redesign\s+(?:it\s+)?as"
+    r"|switch\s+(?:it\s+)?to"
+    r"|rebuild\s+(?:it\s+)?as"
+    r"|change\s+(?:it\s+)?(?:to|into))\b",
+    re.IGNORECASE,
+)
 
 
 def detect_requested_archetype(message: str) -> str | None:
     if not message:
         return None
     text = message.lower()
-    if not _ARCHETYPE_VERB_RE.search(text):
+    match = _ARCHETYPE_CHANGE_RE.search(text)
+    if not match:
         return None
+    after = text[match.end():]
     for archetype in ARCHETYPES:
-        if re.search(rf"\b{re.escape(archetype)}\b", text):
+        if re.search(rf"\b{re.escape(archetype)}\b", after):
             return archetype
     return None
 

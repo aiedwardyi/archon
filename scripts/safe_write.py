@@ -98,15 +98,25 @@ def safe_write_text(
     return WriteRecord(path=str(target), sha256=digest, bytes=len(data))
 
 
+def _tail_after_code(path: str) -> str:
+    """Extract the relative portion after a 'code/' or 'code\\' segment."""
+    normalized = path.replace("\\", "/").strip()
+    marker = "/code/"
+    idx = normalized.rfind(marker)
+    if idx != -1:
+        return normalized[idx + len(marker):]
+    return normalized
+
+
 def enforce_iteration_scope(allowed_files: Iterable[str], outputs) -> None:
-    allowed = {str(p).replace("\\", "/").strip() for p in allowed_files if p}
+    allowed = {_tail_after_code(str(p)) for p in allowed_files if p}
     if not allowed:
         return
     offending = []
     for f in outputs:
-        path = f.path.replace("\\", "/").strip()
-        if path not in allowed:
-            offending.append(path)
+        tail = _tail_after_code(f.path)
+        if tail not in allowed:
+            offending.append(f.path)
     if offending:
         raise ValueError(
             "Engineer output includes files outside allowed scope: "
