@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { Project } from '../types';
 import { Plus, LayoutGrid, Search, Zap, Moon, Sun, Trash2, X, AlertCircle, Settings, Server, ServerOff } from 'lucide-react';
 import { backend } from '../services/orchestrator';
+import { t, getLang, Lang } from '../i18n';
 
 interface SidebarProps {
   projects: Project[];
@@ -33,6 +34,12 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [isConnected, setIsConnected] = useState(true);
+  const [lang, setLangState] = useState<Lang>(getLang());
+
+  useEffect(() => {
+    const interval = setInterval(() => setLangState(getLang()), 500);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const update = () => setIsConnected(backend.getIsConnected());
@@ -92,9 +99,9 @@ const Sidebar: React.FC<SidebarProps> = ({
           }`}>
             <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
             {isConnected ? (
-              <span className="flex items-center gap-1.5"><Server size={10} /> Backend online</span>
+              <span className="flex items-center gap-1.5"><Server size={10} /> {t(lang, 'backendOnline')}</span>
             ) : (
-              <span className="flex items-center gap-1.5"><ServerOff size={10} /> Backend offline</span>
+              <span className="flex items-center gap-1.5"><ServerOff size={10} /> {t(lang, 'backendOffline')}</span>
             )}
           </div>
         </div>
@@ -103,28 +110,28 @@ const Sidebar: React.FC<SidebarProps> = ({
           onClick={onNewProject}
           className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 border border-slate-200 dark:border-white/5 transition-all text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-indigo-200/60 hover:text-indigo-600 dark:hover:text-white"
         >
-          <span>New Project</span>
+          <span>{t(lang, 'newProject')}</span>
           <Plus size={14} />
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 space-y-8 custom-scrollbar">
         <div>
-          <h3 className="px-4 text-[10px] font-bold text-slate-400 dark:text-indigo-400/60 uppercase tracking-[0.2em] mb-4">Navigation</h3>
+          <h3 className="px-4 text-[10px] font-bold text-slate-400 dark:text-indigo-400/60 uppercase tracking-[0.2em] mb-4">{t(lang, 'navigation')}</h3>
           <nav className="space-y-1">
             <button className="w-full flex items-center gap-3 px-4 py-2 rounded-lg bg-indigo-600/10 dark:bg-indigo-600/20 text-indigo-700 dark:text-indigo-100 text-sm font-bold border border-indigo-500/20 shadow-lg shadow-indigo-500/5 transition-all">
               <LayoutGrid size={16} className="text-indigo-600 dark:text-indigo-400" />
-              Dashboard
+              {t(lang, 'dashboard')}
             </button>
             <button className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-slate-400 dark:text-indigo-200/50 hover:text-indigo-600 dark:hover:text-indigo-100 text-sm font-bold transition-colors">
               <Search size={16} />
-              Browse
+              {t(lang, 'browse')}
             </button>
           </nav>
         </div>
 
         <div>
-          <h3 className="px-4 text-[10px] font-bold text-slate-400 dark:text-indigo-400/60 uppercase tracking-[0.2em] mb-4">Recent Projects</h3>
+          <h3 className="px-4 text-[10px] font-bold text-slate-400 dark:text-indigo-400/60 uppercase tracking-[0.2em] mb-4">{t(lang, 'recentProjects')}</h3>
           <div className="space-y-1">
             {projects.slice(0, 20).map((project) => (
               <button
@@ -164,14 +171,14 @@ const Sidebar: React.FC<SidebarProps> = ({
           className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-slate-400 dark:text-indigo-200/50 hover:text-indigo-600 dark:hover:text-indigo-100 text-sm transition-all font-bold group"
         >
           {theme === 'dark' ? <Sun size={16} className="group-hover:rotate-45 transition-transform" /> : <Moon size={16} className="group-hover:-rotate-12 transition-transform" />}
-          <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+          <span>{theme === 'dark' ? t(lang, 'lightMode') : t(lang, 'darkMode')}</span>
         </button>
         <button 
           onClick={onOpenSettings}
           className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-slate-400 dark:text-indigo-200/50 hover:text-indigo-600 dark:hover:text-indigo-100 text-sm transition-colors font-bold group"
         >
           <Settings size={16} className="group-hover:rotate-90 transition-transform" />
-          Settings
+          {t(lang, 'settings')}
         </button>
       </div>
 
