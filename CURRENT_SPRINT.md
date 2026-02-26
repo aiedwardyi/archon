@@ -37,6 +37,16 @@ main (enterprise-ui merged and deleted)
 - Fixed versions preview URL bug (`version` field vs `version_number`)
 - Complete Korean translation coverage for all UI strings
 
+### Phase 15.2 — Consumer Frontend Polish ✅
+- Renamed all "ai-dev-team" references to "Archon" across 8 files
+- Versions timeline displays newest first (matches API DESC order)
+- Versions right panel iframe glow effect (indigo shadow + hover)
+- Hide restore button on current/latest version (`maxVersion` guard)
+- Version card glow/contrast polish (darker bg, indigo ring, gradient overlay)
+- Logo split corrected: "Arch" + "on" (violet accent on "on")
+- Korean translations wired to Sidebar (9 strings via `t()`)
+- Korean translations wired to Logs tab (`runtimeLogs`, `simulateFault`)
+
 ### Phase 15.1 — Repo Cleanup ✅
 - Removed `apps/offline-vite-react` (unused old frontend)
 - Added `node_modules/`, `dist/`, `.venv/`, `.claude/` to `.gitignore`
@@ -55,16 +65,6 @@ main (enterprise-ui merged and deleted)
 
 ## What's Next
 
-### Versions Page Visual Polish
-- Card readability improvements (font weight, contrast)
-- Glow effects matching Brief tab style
-- Active version highlight animation
-
-### Complete Korean Translation Coverage
-- Sidebar labels in enterprise frontend
-- Dynamic project names (leave untranslated)
-- Error messages and edge case strings
-
 ### Frontend Cleanup
 - Decide between `frontend-consumer/` (port 3001) and `frontend-consumer2/` (port 3002)
 - Remove the one we don't keep
@@ -82,3 +82,8 @@ main (enterprise-ui merged and deleted)
 ### Image Generation Fix
 - Character portrait blending in hero section
 - DALL-E content filter edge cases
+
+### Korean Translation — Remaining
+- Delete confirmation modal strings
+- Error messages and edge case strings
+- Dynamic project names (leave untranslated)

@@ -144,6 +144,7 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 | Account modals (Profile/Settings/Pricing) | ✅ | ✅ |
 | Client PDF export | ❌ | 🚧 8 |
 | Non-technical agency UI | ❌ | ✅ |
+| Korean/English i18n | ❌ | ✅ |
 
 ---
 
@@ -166,6 +167,7 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - ✅ Account modals — Profile, Settings, Pricing, Documentation
 - ✅ Chat message persistence (DB-backed, survives refresh)
 - ✅ Consumer Versions page — timeline + split panel + preview per version (THE MOAT)
+- ✅ Consumer frontend polished — Archon branding, newest-first timeline, glow effects, full Korean i18n
 - 🔴 PDF Export + Client Read-Only Link (Phase 8 remaining)
 
 ### Phase 9 — Pipeline Page & Classifier Improvements (⬜ Planned)
@@ -252,4 +254,14 @@ Impact:
 - Added node_modules/, dist/, .venv/, .claude/ to .gitignore
 - Merged enterprise-ui branch into main
 - Deleted enterprise-ui local branch
+
+### Phase 15.2 — Consumer Frontend Polish (✅ Completed Feb 2026)
+- Renamed all "ai-dev-team" references to "Archon" (package.json, metadata, HTML, overlays)
+- Versions timeline newest first (removed incorrect reverse, matching API DESC order)
+- Versions right panel glow effect on iframe container
+- Hide restore button on current/latest version (maxVersion guard)
+- Version card glow/contrast polish (darker bg, indigo ring, gradient overlay on selected)
+- Logo split corrected: "Arch" + "on" with violet accent
+- Full Korean i18n coverage: sidebar (9 strings), logs tab, status badges, agent messages, chat suggestions
+- Fixed versions preview URL bug (version field vs version_number mismatch with API)
 
