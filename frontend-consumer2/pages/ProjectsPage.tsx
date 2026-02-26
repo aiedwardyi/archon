@@ -56,7 +56,7 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({ onCreateProject }) => {
         <div className="text-center mb-8 md:mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold uppercase tracking-widest mb-6 animate-pulse-glow">
             < Zap size={10} fill="currentColor" />
-            Next-Gen Multi-Agent Swarm
+            {t(lang, 'multiAgentSwarm')}
           </div>
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tighter mb-4 leading-none">
             {lang === 'ko' ? (
@@ -66,7 +66,7 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({ onCreateProject }) => {
             )}
           </h1>
           <p className="text-slate-500 dark:text-indigo-200/60 text-base md:text-lg font-bold px-4 md:px-0">
-            Describe your application. Our agent swarm handles the PRD, Architecture, and Code.
+            {t(lang, 'describeApp')}
           </p>
         </div>
 
@@ -119,12 +119,12 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({ onCreateProject }) => {
       <div className="md:absolute bottom-8 md:bottom-12 left-0 right-0 flex justify-center items-center gap-8 text-slate-400 dark:text-slate-500 mt-8 md:mt-0">
         <div className="flex items-center gap-2 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-default group">
           <Github size={16} className="group-hover:scale-110 transition-transform" />
-          <span className="text-xs font-black uppercase tracking-widest">Source</span>
+          <span className="text-xs font-black uppercase tracking-widest">{t(lang, 'source')}</span>
         </div>
         <div className="h-4 w-[1px] bg-slate-200 dark:bg-white/10"></div>
         <div className="flex items-center gap-2 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-default group">
           <Sparkles size={16} className="group-hover:scale-110 transition-transform" />
-          <span className="text-xs font-black uppercase tracking-widest">Pro Features</span>
+          <span className="text-xs font-black uppercase tracking-widest">{t(lang, 'proFeatures')}</span>
         </div>
       </div>
     </div>

@@ -18,7 +18,7 @@ interface ProjectDetailPageProps {
 // ─── Version types ─────────────────────────────────────────────────────────
 interface VersionRecord {
   id: string;
-  version_number: number;
+  version: number;
   status: string;
   created_at: string;
   prompt_history?: Array<{ role: string; content: string }>;
@@ -80,7 +80,7 @@ const TaskHistoryView: React.FC<{ tasks: EngineerTask[]; lang: Lang }> = ({ task
             <div className="flex-1 bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 rounded-3xl p-5 hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-all shadow-sm hover:shadow-md min-w-0">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-xs font-black text-slate-900 dark:text-white font-mono tracking-tight truncate mr-2">{task.filename}</h4>
-                <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10 uppercase tracking-widest shrink-0">Completed</span>
+                <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10 uppercase tracking-widest shrink-0">{t(lang, 'completed')}</span>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-indigo-100/40 font-bold leading-relaxed">{task.description}</p>
             </div>
@@ -169,20 +169,20 @@ const FaultMonitor: React.FC<{ logs: LogEntry[]; projectId: string; onDismiss: (
 };
 
 // ─── AgentStatusMessage ─────────────────────────────────────────────────────
-const AgentStatusMessage: React.FC<{ project: Project; name: string }> = ({ project, name }) => {
+const AgentStatusMessage: React.FC<{ project: Project; name: string; lang: Lang }> = ({ project, name, lang }) => {
   const [textIndex, setTextIndex] = useState(0);
-  const statuses = [
-    "Analyzing requirements...",
-    "Planning architecture...",
-    "Generating components...",
-    "Writing business logic...",
-    "Assembling preview..."
+  const statusKeys = [
+    'analyzingRequirements' as const,
+    'planningArchitecture' as const,
+    'generatingComponents' as const,
+    'writingBusinessLogic' as const,
+    'assemblingPreview' as const,
   ];
 
   useEffect(() => {
     if (project.status === 'RUNNING') {
       const interval = setInterval(() => {
-        setTextIndex((prev) => (prev + 1) % statuses.length);
+        setTextIndex((prev) => (prev + 1) % statusKeys.length);
       }, 2500);
       return () => clearInterval(interval);
     }
@@ -197,7 +197,7 @@ const AgentStatusMessage: React.FC<{ project: Project; name: string }> = ({ proj
         <div className="bg-white dark:bg-[#121620] border border-slate-200 dark:border-white/5 rounded-2xl px-5 py-3 flex items-center gap-3 min-w-[200px] shadow-sm">
           <div className="w-4 h-4 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin shrink-0"></div>
           <span key={textIndex} className="text-[11px] text-slate-800 dark:text-indigo-100 font-bold animate-fade-in">
-            {statuses[textIndex]}
+            {t(lang, statusKeys[textIndex])}
           </span>
         </div>
       </div>
@@ -216,10 +216,10 @@ const AgentStatusMessage: React.FC<{ project: Project; name: string }> = ({ proj
           </div>
           <div className="h-[1px] bg-slate-100 dark:bg-white/5 w-full"></div>
           <div className="space-y-2">
-            {statuses.map((s, i) => (
+            {statusKeys.map((key, i) => (
               <div key={i} className="flex items-center gap-2.5 text-[10px] text-slate-600 dark:text-indigo-200 font-bold animate-fade-in">
                 <Check size={12} className="text-indigo-600 dark:text-indigo-400" />
-                <span>{s}</span>
+                <span>{t(lang, key)}</span>
               </div>
             ))}
           </div>
@@ -232,11 +232,11 @@ const AgentStatusMessage: React.FC<{ project: Project; name: string }> = ({ proj
 };
 
 // ─── Chat suggestions ───────────────────────────────────────────────────────
-const chatSuggestions = [
-  { label: 'Add dark mode', icon: Activity },
-  { label: 'Improve UI', icon: Palette },
-  { label: 'Add charts', icon: Activity },
-  { label: 'Mobile fix', icon: Smartphone }
+const chatSuggestionKeys = [
+  { key: 'addDarkMode' as const, icon: Activity },
+  { key: 'improveUI' as const, icon: Palette },
+  { key: 'addCharts' as const, icon: Activity },
+  { key: 'mobileFix' as const, icon: Smartphone }
 ];
 
 // ─── ChatMessage ────────────────────────────────────────────────────────────
@@ -298,16 +298,17 @@ const VersionsTab: React.FC<{ projectId: string; lang: Lang }> = ({ projectId, l
   };
 
   const getStatusLabel = (status: string) => {
-    if (status === 'success') return 'completed';
-    if (status === 'error') return 'failed';
+    if (status === 'success' || status === 'completed') return t(lang, 'statusCompleted');
+    if (status === 'error' || status === 'failed') return t(lang, 'statusFailed');
+    if (status === 'running') return t(lang, 'statusRunning');
     return status;
   };
 
   const getPromptPreview = (v: VersionRecord) => {
-    if (!v.prompt_history || v.prompt_history.length === 0) return 'No prompt';
+    if (!v.prompt_history || v.prompt_history.length === 0) return t(lang, 'noPrompt');
     const userMsgs = v.prompt_history.filter(m => m.role === 'user');
     const last = userMsgs[userMsgs.length - 1];
-    if (!last) return 'No prompt';
+    if (!last) return t(lang, 'noPrompt');
     return last.content.length > 60 ? last.content.slice(0, 60) + '...' : last.content;
   };
 
@@ -326,7 +327,7 @@ const VersionsTab: React.FC<{ projectId: string; lang: Lang }> = ({ projectId, l
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center text-indigo-500 font-mono text-xs animate-pulse font-bold uppercase tracking-widest">
-        Loading versions...
+        {t(lang, 'loadingVersions')}
       </div>
     );
   }
@@ -364,7 +365,7 @@ const VersionsTab: React.FC<{ projectId: string; lang: Lang }> = ({ projectId, l
               <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-2">
                   <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/10 uppercase tracking-widest">
-                    V{v.version_number}
+                    V{v.version}
                   </span>
                   <div className={`w-2 h-2 rounded-full ${getStatusDot(v.status)}`}></div>
                 </div>
@@ -378,7 +379,7 @@ const VersionsTab: React.FC<{ projectId: string; lang: Lang }> = ({ projectId, l
               <div className="mt-1.5 text-[8px] text-slate-400 dark:text-indigo-400/30 font-mono uppercase tracking-widest">
                 {new Date(v.created_at).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' })}
                 {' · '}
-                <span className={getStatusLabel(v.status) === 'completed' ? 'text-emerald-500' : getStatusLabel(v.status) === 'failed' ? 'text-red-400' : 'text-blue-400'}>
+                <span className={v.status === 'success' || v.status === 'completed' ? 'text-emerald-500' : v.status === 'error' || v.status === 'failed' ? 'text-red-400' : 'text-blue-400'}>
                   {getStatusLabel(v.status)}
                 </span>
               </div>
@@ -395,7 +396,7 @@ const VersionsTab: React.FC<{ projectId: string; lang: Lang }> = ({ projectId, l
             <div>
               <div className="flex items-center gap-3 mb-1">
                 <span className="text-[10px] font-black px-3 py-1 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 uppercase tracking-widest">
-                  V{selectedVersion.version_number}
+                  V{selectedVersion.version}
                 </span>
                 <div className={`w-2 h-2 rounded-full ${getStatusDot(selectedVersion.status)}`}></div>
                 <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-indigo-400/40">
@@ -435,7 +436,7 @@ const VersionsTab: React.FC<{ projectId: string; lang: Lang }> = ({ projectId, l
                     : selectedVersion.artifacts.brief.summary || JSON.stringify(selectedVersion.artifacts.brief).slice(0, 120)}
                 </p>
               ) : (
-                <p className="text-[10px] text-slate-300 dark:text-indigo-900 font-bold italic">Not available</p>
+                <p className="text-[10px] text-slate-300 dark:text-indigo-900 font-bold italic">{t(lang, 'notAvailable')}</p>
               )}
             </div>
 
@@ -452,7 +453,7 @@ const VersionsTab: React.FC<{ projectId: string; lang: Lang }> = ({ projectId, l
                     : (selectedVersion.artifacts.plan.phases?.[0]?.description || JSON.stringify(selectedVersion.artifacts.plan).slice(0, 120))}
                 </p>
               ) : (
-                <p className="text-[10px] text-slate-300 dark:text-indigo-900 font-bold italic">Not available</p>
+                <p className="text-[10px] text-slate-300 dark:text-indigo-900 font-bold italic">{t(lang, 'notAvailable')}</p>
               )}
             </div>
 
@@ -463,7 +464,7 @@ const VersionsTab: React.FC<{ projectId: string; lang: Lang }> = ({ projectId, l
                 {t(lang, 'livePreview')}
               </div>
               <p className="text-[10px] text-slate-400 dark:text-indigo-400/40 font-bold">
-                V{selectedVersion.version_number}
+                V{selectedVersion.version}
               </p>
             </div>
           </div>
@@ -478,7 +479,7 @@ const VersionsTab: React.FC<{ projectId: string; lang: Lang }> = ({ projectId, l
                 <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
               </div>
               <div className="flex-1 mx-4 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-1 text-[9px] font-mono text-slate-400 dark:text-indigo-400/40 truncate">
-                {`http://localhost:5000/api/preview/${projectId}/${selectedVersion.version_number}`}
+                {`http://localhost:5000/api/preview/${projectId}/${selectedVersion.version}`}
               </div>
               <div className="flex items-center gap-1.5">
                 <button
@@ -498,16 +499,16 @@ const VersionsTab: React.FC<{ projectId: string; lang: Lang }> = ({ projectId, l
             <div className="h-[500px] bg-slate-100 dark:bg-[#0b0e14] flex items-start justify-center overflow-hidden p-4">
               {versionViewport === 'desktop' ? (
                 <iframe
-                  src={`http://localhost:5000/api/preview/${projectId}/${selectedVersion.version_number}`}
+                  src={`http://localhost:5000/api/preview/${projectId}/${selectedVersion.version}`}
                   className="w-full h-full border-0 rounded-2xl"
-                  title={`Version ${selectedVersion.version_number} Preview`}
+                  title={`Version ${selectedVersion.version} Preview`}
                 />
               ) : (
                 <div className="relative w-[375px] h-full border-4 border-slate-300 dark:border-white/10 rounded-[2rem] overflow-hidden shadow-2xl bg-white dark:bg-black">
                   <iframe
-                    src={`http://localhost:5000/api/preview/${projectId}/${selectedVersion.version_number}`}
+                    src={`http://localhost:5000/api/preview/${projectId}/${selectedVersion.version}`}
                     className="w-full h-full border-0"
-                    title={`Version ${selectedVersion.version_number} Preview (Mobile)`}
+                    title={`Version ${selectedVersion.version} Preview (Mobile)`}
                   />
                 </div>
               )}
@@ -516,7 +517,7 @@ const VersionsTab: React.FC<{ projectId: string; lang: Lang }> = ({ projectId, l
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center text-slate-300 dark:text-indigo-900 font-mono text-[9px] uppercase tracking-widest font-bold">
-          Select a version
+          {t(lang, 'selectVersion')}
         </div>
       )}
     </div>
@@ -570,7 +571,7 @@ const CodeTab: React.FC<{ projectId: string; previewVersion: number | null; lang
         <div className="p-3 border-b border-slate-200 dark:border-white/5">
           <div className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-indigo-400/40 flex items-center gap-1.5">
             <FileCode size={11} />
-            Files
+            {t(lang, 'files')}
           </div>
         </div>
         <div className="p-2 space-y-0.5">
@@ -769,13 +770,13 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
       <header className="h-14 border-b border-slate-200 dark:border-white/5 flex items-center justify-between px-3 md:px-5 bg-white/80 dark:bg-[#080a0f]/80 backdrop-blur-xl relative z-[60] shrink-0">
         <div className="flex items-center gap-3 overflow-hidden">
           <div className="text-[11px] font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2 truncate">
-            <span className="text-slate-400 dark:text-indigo-400/60 font-bold uppercase text-[9px] pt-0.5 hidden sm:inline">{t(lang, 'projects')} /</span>
+            <span className="text-slate-400 dark:text-indigo-400/60 font-bold uppercase text-[9px] pt-0.5 hidden sm:inline">{t(lang, 'projectsBreadcrumb')}</span>
             <span className="truncate">{project.name}</span>
           </div>
           <div className={`px-2 py-0.5 rounded-lg text-[8px] uppercase tracking-widest font-black border shrink-0 ${
             project.status === 'RUNNING' ? 'border-indigo-500/40 text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 animate-pulse' : 'border-slate-200 dark:border-slate-800 text-slate-400'
           }`}>
-            {project.status}
+            {project.status === 'COMPLETED' ? t(lang, 'statusCompleted') : project.status === 'FAILED' ? t(lang, 'statusFailed') : project.status === 'RUNNING' ? t(lang, 'statusRunning') : t(lang, 'statusIdle')}
           </div>
         </div>
 
@@ -910,7 +911,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
             <div className="bg-white dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 rounded-2xl p-4 text-[11px] leading-relaxed text-slate-800 dark:text-indigo-50 font-bold shadow-sm">
               <div className="text-indigo-600 dark:text-indigo-400 font-black mb-2 uppercase tracking-widest flex items-center gap-1.5 text-[9px]">
                 <Sparkles size={11} />
-                PROMPT
+                {t(lang, 'prompt')}
               </div>
               {project.description}
             </div>
@@ -921,7 +922,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
               ))}
 
               {(project.status === 'RUNNING' || project.status === 'COMPLETED') && (
-                <AgentStatusMessage project={project} name={project.name} />
+                <AgentStatusMessage project={project} name={project.name} lang={lang} />
               )}
 
               {followUpLogs.map(log => (
@@ -934,14 +935,14 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
 
           <div className="p-4 bg-white dark:bg-[#0a0d14] border-t border-slate-200 dark:border-white/5 space-y-3">
             <div className="flex gap-2 overflow-x-auto custom-scrollbar no-scrollbar pb-1">
-              {chatSuggestions.map((s, idx) => (
+              {chatSuggestionKeys.map((s, idx) => (
                 <button
                   key={idx}
-                  onClick={() => setChatInput(s.label)}
+                  onClick={() => setChatInput(t(lang, s.key))}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 text-[9px] font-bold text-slate-600 dark:text-indigo-100/40 whitespace-nowrap hover:bg-indigo-50 dark:hover:bg-white/10 hover:text-indigo-600 dark:hover:text-indigo-300 transition-all uppercase tracking-tighter cursor-pointer"
                 >
                   <s.icon size={11} className="text-indigo-500/50" />
-                  {s.label}
+                  {t(lang, s.key)}
                 </button>
               ))}
             </div>
