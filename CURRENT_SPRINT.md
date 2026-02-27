@@ -47,14 +47,16 @@ main (enterprise-ui merged and deleted)
 - Korean translations wired to Sidebar (9 strings via `t()`)
 - Korean translations wired to Logs tab (`runtimeLogs`, `simulateFault`)
 
-### Phase 15.3 — Consumer UX Bug Fixes ✅
+### Phase 15.3 — Consumer UX Bug Fixes (🔧 Partially Complete)
 - Reset `localPrd`/`localPlan`/`localTasks`/`previewVersion` on `projectId` change (stale data across project switches)
 - Removed `opacity-0`/`opacity-100` transition on workspace div (iframe invisible after build completes)
-- Progress bar persisted to `sessionStorage` (survives navigate-away-and-back during builds)
+- Progress bar restored to smooth sessionStorage animation (survives navigate-away during builds — still resets on some rapid navigation edge cases, revisit later)
 - Expanded `getTechColor` to match 7 keyword categories (frontend/backend/database/state/ml/hosting/styling)
 - Tech map rendering handles no-colon entries (natural-language PRD format)
 - Engineer prompt: added MOCK DATA REQUIREMENT block (no more empty-state generated apps)
-- Added bell notification instruction to CLAUDE.md
+- Failed projects no longer show progress bar overlay ✅
+- Code tab now shows real generated files (fixed wrong API key `data.files` → `data.tree`) ✅
+- ❌ Preview iframe sometimes reverts to "Live Preview Will Appear Here" after build completes — revisit
 
 ### Phase 15.1 — Repo Cleanup ✅
 - Removed `apps/offline-vite-react` (unused old frontend)
@@ -73,6 +75,13 @@ main (enterprise-ui merged and deleted)
 ---
 
 ## What's Next
+
+### Phase 15.4 — Enterprise Theme Switcher (🔧 Up Next)
+- Add 3-option theme switcher to enterprise frontend (frontend/)
+- Dark (current default), Light (current light mode), Enterprise (new: neutral grays, tighter density, Inter/IBM Plex Sans, Bloomberg/Notion/Linear aesthetic)
+- Lovable designs the Enterprise theme CSS tokens + components
+- Claude Code wires switcher into navbar with localStorage persistence and data-theme="enterprise" attribute
+- Keep all existing dark/light modes intact
 
 ### Frontend Cleanup
 - Decide between `frontend-consumer/` (port 3001) and `frontend-consumer2/` (port 3002)

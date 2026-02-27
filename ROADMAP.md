@@ -168,7 +168,8 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - ✅ Chat message persistence (DB-backed, survives refresh)
 - ✅ Consumer Versions page — timeline + split panel + preview per version (THE MOAT)
 - ✅ Consumer frontend polished — Archon branding, newest-first timeline, glow effects, full Korean i18n
-- ✅ Consumer UX bug fixes — stale state, iframe visibility, progress persistence, tech map colors, mock data
+- 🔧 Consumer UX bug fixes — stale state, code tab fixed, failed overlay fixed, progress bar restored (smooth animation, minor edge cases remain), preview iframe regression pending fix
+- ⬜ Phase 15.4 — Enterprise theme switcher (Dark / Light / Enterprise) — Lovable design + Claude Code wiring
 - 🔴 PDF Export + Client Read-Only Link (Phase 8 remaining)
 
 ### Phase 9 — Pipeline Page & Classifier Improvements (⬜ Planned)
@@ -266,11 +267,14 @@ Impact:
 - Full Korean i18n coverage: sidebar (9 strings), logs tab, status badges, agent messages, chat suggestions
 - Fixed versions preview URL bug (version field vs version_number mismatch with API)
 
-### Phase 15.3 — Consumer UX Bug Fixes (✅ Completed Feb 2026)
+### Phase 15.3 — Consumer UX Bug Fixes (🔧 Partially Complete Feb 2026)
 - Reset localPrd/localPlan/localTasks/previewVersion on projectId change (stale data across project switches)
 - Removed opacity-0/opacity-100 transition on workspace div (iframe invisible after build completes)
-- Progress bar persisted to sessionStorage (survives navigate-away-and-back during builds)
+- Progress bar restored to smooth sessionStorage animation (minor rapid-navigation edge cases remain)
 - Expanded getTechColor to match 7 keyword categories (frontend/backend/database/state/ml/hosting/styling)
 - Tech map rendering handles no-colon entries (natural-language PRD format)
 - Engineer prompt: added MOCK DATA REQUIREMENT block (no more empty-state generated apps)
+- Failed projects no longer show progress bar overlay
+- Code tab fixed: reads data.tree from /files endpoint (was reading data.files)
+- Preview iframe regression: sometimes reverts to placeholder after build — pending fix
 

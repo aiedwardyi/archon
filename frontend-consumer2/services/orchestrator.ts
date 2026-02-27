@@ -112,6 +112,11 @@ class BackendService {
       const response = await fetch(`${API_BASE}/projects`);
       if (response.ok) {
         this.projects = (await response.json()).map(normalizeProject);
+        this.projects.forEach(p => {
+          if (p.status !== 'RUNNING') {
+            sessionStorage.removeItem(`progress-${p.id}`);
+          }
+        });
         this.isConnected = true;
       } else {
         this.isConnected = false;
@@ -128,6 +133,11 @@ class BackendService {
       const response = await fetch(`${API_BASE}/projects`);
       if (!response.ok) throw new Error("API Error");
       this.projects = (await response.json()).map(normalizeProject);
+      this.projects.forEach(p => {
+        if (p.status !== 'RUNNING') {
+          sessionStorage.removeItem(`progress-${p.id}`);
+        }
+      });
       this.isConnected = true;
       this.notify();
     } catch {

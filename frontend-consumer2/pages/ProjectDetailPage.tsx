@@ -537,25 +537,81 @@ const CodeTab: React.FC<{ projectId: string; previewVersion: number | null; lang
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const flattenTree = (nodes: any[]): string[] => {
+    const paths: string[] = [];
+    for (const node of nodes) {
+      if (node.type === 'file') {
+        paths.push(node.path);
+      } else if (node.type === 'folder' && node.children) {
+        paths.push(...flattenTree(node.children));
+      }
+    }
+    return paths;
+  };
+
   useEffect(() => {
+    setFiles([]);
+    setSelectedFile(null);
     if (!previewVersion) return;
     setLoading(true);
-    fetch(`http://localhost:5000/api/projects/${projectId}/versions/${previewVersion}/files`)
-      .then(r => r.json())
-      .then(data => {
-        const list = Array.isArray(data) ? data : (data.files || []);
-        setFiles(list);
-        if (list.length > 0) setSelectedFile(list[0].filename);
+
+    const base = `http://localhost:5000/api/projects/${projectId}/versions/${previewVersion}/files`;
+
+    fetch(base)
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(async data => {
+        console.log('[CodeTab] tree response:', data);
+        const tree = data.tree || [];
+        const filePaths = flattenTree(tree);
+
+        if (filePaths.length === 0) {
+          setFiles([]);
+          setLoading(false);
+          return;
+        }
+
+        const fetched = await Promise.all(
+          filePaths.map(async (path) => {
+            try {
+              const res = await fetch(`${base}?path=${encodeURIComponent(path)}`);
+              if (!res.ok) return null;
+              const fileData = await res.json();
+              return {
+                filename: path,
+                content: fileData.content || '',
+                language: fileData.language || 'text',
+              };
+            } catch {
+              return null;
+            }
+          })
+        );
+
+        const validFiles = fetched.filter(Boolean) as Array<{ filename: string; content: string; language: string }>;
+        setFiles(validFiles);
+        if (validFiles.length > 0) setSelectedFile(validFiles[0].filename);
       })
-      .catch(() => setFiles([]))
+      .catch(err => {
+        console.error('[CodeTab] fetch failed:', err);
+        setFiles([]);
+      })
       .finally(() => setLoading(false));
   }, [projectId, previewVersion]);
 
   if (!previewVersion || loading) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-slate-300 dark:text-indigo-900 font-mono gap-3 uppercase tracking-[0.2em] text-[9px] min-h-[300px] font-bold">
-        <Code2 size={24} className="opacity-20" />
-        {loading ? t(lang, 'writingCode') : t(lang, 'buildInProgress')}
+        {loading || !previewVersion ? (
+          <>
+            <Loader2 size={24} className="opacity-40 animate-spin" />
+            {loading ? t(lang, 'writingCode') : 'Loading files...'}
+          </>
+        ) : (
+          <>
+            <Code2 size={24} className="opacity-20" />
+            {t(lang, 'buildInProgress')}
+          </>
+        )}
       </div>
     );
   }
@@ -573,7 +629,6 @@ const CodeTab: React.FC<{ projectId: string; previewVersion: number | null; lang
 
   return (
     <div className="h-full flex gap-0 overflow-hidden animate-fade-in">
-      {/* File tree */}
       <div className="w-56 shrink-0 border-r border-slate-200 dark:border-white/5 overflow-y-auto custom-scrollbar bg-slate-50 dark:bg-[#080a0f]">
         <div className="p-3 border-b border-slate-200 dark:border-white/5">
           <div className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-indigo-400/40 flex items-center gap-1.5">
@@ -597,8 +652,6 @@ const CodeTab: React.FC<{ projectId: string; previewVersion: number | null; lang
           ))}
         </div>
       </div>
-
-      {/* Code content */}
       <div className="flex-1 overflow-auto custom-scrollbar bg-white dark:bg-[#080a0f]">
         {activeFile ? (
           <pre className="p-6 text-[11px] font-mono text-slate-700 dark:text-indigo-100/70 leading-relaxed whitespace-pre-wrap break-words">
@@ -625,6 +678,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
     const saved = sessionStorage.getItem(`progress-${projectId}`);
     return saved ? parseFloat(saved) : 0;
   });
+
   const updateProgress = (val: number | ((prev: number) => number)) => {
     setProgress(prev => {
       const next = typeof val === 'function' ? val(prev) : val;
@@ -641,6 +695,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
   const [localPlan, setLocalPlan] = useState<Artifact | null>(null);
   const [localTasks, setLocalTasks] = useState<EngineerTask[]>([]);
   const logsEndRef = useRef<HTMLDivElement>(null);
+  const progressInitializedRef = useRef<string | null>(null);
 
   // Reset local state when switching projects
   useEffect(() => {
@@ -648,7 +703,29 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
     setLocalPlan(null);
     setLocalTasks([]);
     setPreviewVersion(null);
+    const p = backend.getProject(projectId);
+    if (!p || p.status !== 'RUNNING') {
+      setProgress(0);
+      sessionStorage.removeItem(`progress-${projectId}`);
+    }
   }, [projectId]);
+
+  useEffect(() => {
+    progressInitializedRef.current = null;
+  }, [projectId]);
+
+  useEffect(() => {
+    if (progressInitializedRef.current === projectId) return;
+    progressInitializedRef.current = projectId;
+    const p = backend.getProject(projectId);
+    if (p && p.status === 'RUNNING') {
+      const saved = sessionStorage.getItem(`progress-${projectId}`);
+      setProgress(saved ? parseFloat(saved) : 0);
+    } else {
+      setProgress(0);
+      sessionStorage.removeItem(`progress-${projectId}`);
+    }
+  }, [projectId, project]);
 
   // Language toggle
   const handleLangToggle = () => {
@@ -703,7 +780,8 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
     if (statusJustCompleted) {
       // Delay to let backend finalize, then retry once more at 1s if still null
       timers.push(setTimeout(() => fetchHead(1000), 500));
-    } else if (project.status === 'COMPLETED' || previewVersion === null) {
+    } else if (previewVersion === null || project.status === 'COMPLETED') {
+      // Bug C fix: always fetch head when previewVersion is null (e.g. after projectId change)
       fetchHead();
     }
 
@@ -759,9 +837,20 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
 
   // Progress bar
   useEffect(() => {
-    if (project?.status !== 'RUNNING') {
-      updateProgress(0);
+    if (project?.status === 'FAILED' || project?.status === 'IDLE') {
+      setProgress(0);
       sessionStorage.removeItem(`progress-${projectId}`);
+      return;
+    }
+    if (project?.status === 'COMPLETED') {
+      updateProgress(100);
+      setTimeout(() => {
+        setProgress(0);
+        sessionStorage.removeItem(`progress-${projectId}`);
+      }, 1500);
+      return;
+    }
+    if (project?.status !== 'RUNNING') {
       return;
     }
 
@@ -1099,7 +1188,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
 
         {/* Main Workspace */}
         <div className={`${showMobileChat ? 'hidden' : 'flex'} lg:flex flex-1 relative overflow-hidden flex-col bg-slate-100 dark:bg-[#0b0e14]`}>
-          {project.status === 'RUNNING' && activeTab !== 'tasks' && activeTab !== 'terminal' && (
+          {project.status === 'RUNNING' && progress > 0 && activeTab !== 'tasks' && activeTab !== 'terminal' && (
             <div className="absolute inset-0 z-40 bg-slate-50 dark:bg-[#0b0e14] flex flex-col items-center justify-center animate-fade-in p-10 text-center">
               <div className="w-full max-w-4xl flex flex-col items-center gap-8">
                 <div className="relative w-24 h-24 flex items-center justify-center">
@@ -1184,8 +1273,17 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
                   </div>
                 ) : (
                   <div className="h-full flex flex-col items-center justify-center text-slate-300 dark:text-indigo-900 font-mono gap-3 uppercase tracking-[0.2em] text-[9px] min-h-[300px] font-bold">
-                    <Monitor size={24} className="opacity-20" />
-                    {t(lang, 'noPreview')}
+                    {project.status === 'COMPLETED' ? (
+                      <>
+                        <Loader2 size={24} className="opacity-40 animate-spin" />
+                        <span>Loading preview...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Monitor size={24} className="opacity-20" />
+                        {t(lang, 'noPreview')}
+                      </>
+                    )}
                   </div>
                 )}
               </div>
