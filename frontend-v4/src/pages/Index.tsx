@@ -32,6 +32,16 @@ const Index = () => {
   const { t } = useLanguage();
   const { projects, loading, error, stats: projectStats } = useProjects();
 
+  // Restore active tab from URL query param (set by Studio when switching)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabFromUrl = params.get('tab');
+    if (tabFromUrl) {
+      setActiveTab(tabFromUrl);
+      window.history.replaceState({}, '', '/');
+    }
+  }, []);
+
   // Pipeline state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");

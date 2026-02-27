@@ -157,7 +157,11 @@ export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectNam
                     <Building2 className="h-3.5 w-3.5" /> {t("enterprise")}
                   </button>
                   <button
-                    onClick={() => { window.location.href = 'http://localhost:3000'; }}
+                    onClick={() => {
+                      const tab = activeTab || 'projects';
+                      console.log('[v4] switching to studio, activeTab:', tab);
+                      window.location.href = `http://localhost:3000/${tab === 'projects' ? '' : tab}`;
+                    }}
                     className="flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs rounded-md transition-colors text-foreground hover:bg-secondary border border-border"
                   >
                     <Pencil className="h-3.5 w-3.5" /> {t("studio")}

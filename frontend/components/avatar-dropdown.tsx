@@ -1,6 +1,7 @@
 ﻿"use client"
 
 import { useState, useRef, useEffect } from "react"
+import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
 import {
   Sun, Moon, LogOut, Settings, BookOpen,
@@ -13,6 +14,7 @@ export function AvatarDropdown() {
   const [open, setOpen] = useState(false)
   const [modal, setModal] = useState<"profile" | "settings" | "pricing" | null>(null)
   const { resolvedTheme, setTheme } = useTheme()
+  const pathname = usePathname()
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -115,7 +117,13 @@ export function AvatarDropdown() {
               <p className="text-xs text-muted-foreground mb-2 font-medium">Design</p>
               <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
                 <button
-                  onClick={() => { window.location.href = 'http://localhost:8080'; }}
+                  onClick={() => {
+                    console.log('[studio] raw pathname:', pathname);
+                    const pathToTab: Record<string, string> = { '/': 'projects', '/pipeline': 'pipeline', '/versions': 'versions', '/artifacts': 'artifacts' };
+                    const tab = pathToTab[pathname] || 'projects';
+                    console.log('[studio] switching to enterprise, pathname:', pathname, 'mapped tab:', tab);
+                    window.location.href = `http://localhost:8080?tab=${tab}`;
+                  }}
                   className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all text-muted-foreground hover:text-foreground"
                 >
                   <Building2 className="h-3.5 w-3.5" />
