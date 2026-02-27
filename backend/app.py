@@ -223,6 +223,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
     session = get_session()
     execution_id = execution_state.get("current_execution_id")
     locked_ui_archetype = None
+    pipeline_start_time = time.time()
 
     try:
         if execution_id:
@@ -471,6 +472,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
             },
             "error": None,
             "_agent_sequence": ["pm", "planner", "engineer"],
+            "logs": list(execution_state.get("logs", [])),
             "_meta": {
                 "produced_at": datetime.now(timezone.utc).isoformat(),
                 "consumer_version": "v4",
@@ -487,6 +489,13 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
                 execution.result_path = str(version_dir / "last_execution_result.json")
                 execution.prd_path = str(version_dir / "last_prd.json")
                 execution.plan_path = str(version_dir / "last_plan.json")
+                # Build metrics
+                execution.duration_seconds = round(time.time() - pipeline_start_time, 2)
+                execution.model_used = "Claude Sonnet 4.5"
+                if hasattr(result, "usage") and result.usage:
+                    execution.tokens_used = getattr(result.usage, "total_tokens", None)
+                    if execution.tokens_used:
+                        execution.estimated_cost = round(execution.tokens_used * 0.000003, 4)
                 if (
                     execution.version == 1
                     and not project.locked_ui_archetype
@@ -549,6 +558,83 @@ def list_projects():
     try:
         projects = session.query(Project).order_by(Project.updated_at.desc()).all()
         return jsonify([p.to_dict() for p in projects]), 200
+    finally:
+        session.close()
+
+
+@app.route("/api/stats", methods=["GET"])
+def get_stats():
+    from sqlalchemy import func
+    session = get_session()
+    try:
+        # versions_shipped: sum of max version per project
+        version_counts = (
+            session.query(Execution.project_id, func.max(Execution.version))
+            .group_by(Execution.project_id)
+            .all()
+        )
+        versions_shipped = sum(v for _, v in version_counts)
+
+        # avg_build_time_seconds from completed executions that have duration
+        avg_row = (
+            session.query(func.avg(Execution.duration_seconds))
+            .filter(Execution.status == "success", Execution.duration_seconds.isnot(None))
+            .scalar()
+        )
+        avg_build_time_seconds = round(avg_row, 1) if avg_row else 0
+
+        # lines_generated: walk all version code dirs and count lines
+        total_lines = 0
+        all_execs = session.query(Execution.project_id, Execution.version).filter(Execution.status == "success").all()
+        for pid, ver in all_execs:
+            code_dir = get_version_dir(pid, ver) / "code"
+            if code_dir.exists():
+                for f in code_dir.rglob("*"):
+                    if f.is_file() and f.suffix in (".html", ".css", ".js", ".ts", ".tsx", ".jsx", ".py", ".json"):
+                        try:
+                            total_lines += f.read_text(encoding="utf-8", errors="ignore").count("\n") + 1
+                        except Exception:
+                            pass
+
+        # pipelines_today: executions created today
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        pipelines_today = (
+            session.query(func.count(Execution.id))
+            .filter(Execution.created_at >= today_start)
+            .scalar() or 0
+        )
+
+        return jsonify({
+            "versions_shipped": versions_shipped,
+            "avg_build_time_seconds": avg_build_time_seconds,
+            "lines_generated": total_lines,
+            "pipelines_today": pipelines_today,
+        }), 200
+    finally:
+        session.close()
+
+
+@app.route("/api/activity", methods=["GET"])
+def get_activity():
+    session = get_session()
+    try:
+        recent = (
+            session.query(Execution)
+            .order_by(Execution.created_at.desc())
+            .limit(6)
+            .all()
+        )
+        items = []
+        for e in recent:
+            project = session.get(Project, e.project_id)
+            items.append({
+                "project_name": project.name if project else "Unknown",
+                "project_id": e.project_id,
+                "status": e.status,
+                "version": e.version,
+                "created_at": e.created_at.isoformat() if e.created_at else None,
+            })
+        return jsonify(items), 200
     finally:
         session.close()
 
@@ -632,6 +718,49 @@ def get_versions(project_id: int):
             "project_name": project.name,
             "versions": versions_list,
         }), 200
+    finally:
+        session.close()
+
+
+@app.route("/api/projects/<int:project_id>/versions/<int:version>/logs", methods=["GET"])
+def get_version_logs(project_id: int, version: int):
+    session = get_session()
+    try:
+        execution = (
+            session.query(Execution)
+            .filter(Execution.project_id == project_id, Execution.version == version)
+            .first()
+        )
+        if not execution:
+            return jsonify({"error": "Version not found"}), 404
+
+        logs = []
+
+        # Try to read logs from the execution result JSON
+        result_path = get_version_dir(project_id, version) / "last_execution_result.json"
+        result_data = read_json_file(result_path)
+        if result_data and "logs" in result_data and isinstance(result_data["logs"], list):
+            logs = result_data["logs"]
+
+        # If no logs in result, check for a dedicated logs file
+        if not logs:
+            logs_path = get_version_dir(project_id, version) / "execution_logs.json"
+            logs_data = read_json_file(logs_path)
+            if logs_data and isinstance(logs_data, list):
+                logs = logs_data
+
+        # For failed executions with no logs, synthesize a failure entry
+        if execution.status in ("error", "failed"):
+            if not logs:
+                logs = [{"timestamp": int(execution.created_at.timestamp() * 1000) if execution.created_at else None,
+                         "message": "Pipeline started."}]
+            logs.append({
+                "timestamp": int(execution.created_at.timestamp() * 1000) if execution.created_at else None,
+                "message": f"Pipeline failed: {execution.error_message or 'Unknown error'}",
+                "type": "error",
+            })
+
+        return jsonify(logs), 200
     finally:
         session.close()
 

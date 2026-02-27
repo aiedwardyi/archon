@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { PipelineStatus } from "@/components/PipelineStatus";
+import { BuildDetailsCard } from "@/components/BuildDetailsCard";
 import { StatsBar } from "@/components/StatsBar";
 import { ProjectTable } from "@/components/ProjectTable";
 import { WelcomeBanner } from "@/components/WelcomeBanner";
@@ -185,24 +186,7 @@ const Index = () => {
                 </div>
 
                 {/* Build Info */}
-                <div className="border border-border rounded-md bg-card">
-                  <div className="px-3 py-2 border-b border-border">
-                    <h3 className="text-xs font-semibold text-foreground tracking-wide uppercase">{t("buildDetails")}</h3>
-                  </div>
-                  <div className="divide-y divide-border">
-                    {[
-                      { label: t("model"), value: "GPT-4o" },
-                      { label: t("tokensUsed"), value: "12,480" },
-                      { label: t("estCost"), value: "$0.04" },
-                      { label: t("duration"), value: "1m 38s" },
-                    ].map(({ label, value }) => (
-                      <div key={label} className="px-3 py-2 flex items-center justify-between">
-                        <span className="text-[11px] text-muted-foreground">{label}</span>
-                        <span className="text-xs font-medium text-foreground">{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <BuildDetailsCard projectId={selectedProjectId} version={selectedVersion ?? (projects.find(p => p.id === selectedProjectId) ? parseInt(projects.find(p => p.id === selectedProjectId)!.versions.replace("v", "")) : null)} />
               </div>
             </div>
           </>

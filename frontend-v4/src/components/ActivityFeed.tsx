@@ -1,17 +1,38 @@
 import { CheckCircle2, XCircle, Play, GitBranch, Clock } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useActivity } from "@/services/api";
 
-const activities = [
-  { icon: CheckCircle2, iconClass: "text-emerald-500", text: "Project #55 completed successfully", time: "2m ago" },
-  { icon: Play, iconClass: "text-blue-500", text: "Pipeline started for Project #58", time: "5m ago" },
-  { icon: GitBranch, iconClass: "text-muted-foreground", text: "Version v2 created for Project #58", time: "8m ago" },
-  { icon: XCircle, iconClass: "text-destructive", text: "Project #54 build failed — timeout", time: "12m ago" },
-  { icon: CheckCircle2, iconClass: "text-emerald-500", text: "Project #56 deployed to production", time: "1h ago" },
-  { icon: Play, iconClass: "text-blue-500", text: "Pipeline started for Project #52", time: "2h ago" },
-];
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const secs = Math.floor(diff / 1000);
+  if (secs < 60) return `${secs}s ago`;
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
+function statusIcon(status: string) {
+  const s = status.toUpperCase();
+  if (s === "SUCCESS" || s === "COMPLETED") return { icon: CheckCircle2, iconClass: "text-emerald-500" };
+  if (s === "FAILED" || s === "ERROR") return { icon: XCircle, iconClass: "text-destructive" };
+  if (s === "RUNNING" || s === "IN_PROGRESS") return { icon: Play, iconClass: "text-blue-500" };
+  return { icon: GitBranch, iconClass: "text-muted-foreground" };
+}
+
+function statusText(item: { project_name: string; project_id: number; status: string; version: number }): string {
+  const s = item.status.toUpperCase();
+  if (s === "SUCCESS" || s === "COMPLETED") return `${item.project_name} v${item.version} completed`;
+  if (s === "FAILED" || s === "ERROR") return `${item.project_name} v${item.version} build failed`;
+  if (s === "RUNNING" || s === "IN_PROGRESS") return `Pipeline started for ${item.project_name}`;
+  return `Version v${item.version} created for ${item.project_name}`;
+}
 
 export const ActivityFeed = () => {
   const { t } = useLanguage();
+  const items = useActivity();
 
   return (
     <div className="border border-border rounded-md bg-card">
@@ -23,14 +44,17 @@ export const ActivityFeed = () => {
         <span className="text-[10px] text-muted-foreground">{t("live")}</span>
       </div>
       <div className="divide-y divide-border">
-        {activities.map((a, i) => {
-          const Icon = a.icon;
+        {items.length === 0 && (
+          <div className="px-3 py-4 text-xs text-muted-foreground text-center">No recent activity</div>
+        )}
+        {items.map((a, i) => {
+          const { icon: Icon, iconClass } = statusIcon(a.status);
           return (
             <div key={i} className="px-3 py-2.5 flex items-start gap-2.5 hover:bg-secondary/40 transition-colors">
-              <Icon className={`h-3.5 w-3.5 mt-0.5 flex-shrink-0 ${a.iconClass}`} />
+              <Icon className={`h-3.5 w-3.5 mt-0.5 flex-shrink-0 ${iconClass}`} />
               <div className="min-w-0 flex-1">
-                <div className="text-xs text-foreground leading-snug">{a.text}</div>
-                <div className="text-[10px] text-muted-foreground mt-0.5">{a.time}</div>
+                <div className="text-xs text-foreground leading-snug">{statusText(a)}</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">{a.created_at ? relativeTime(a.created_at) : "—"}</div>
               </div>
             </div>
           );

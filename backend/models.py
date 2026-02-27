@@ -7,7 +7,7 @@ Tables:
 - Execution: Individual task executions linked to projects
 """
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text, Boolean, ForeignKey, text
+from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime, Text, Boolean, ForeignKey, text
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from pathlib import Path
 
@@ -102,6 +102,12 @@ class Execution(Base):
     # Chat messages (Phase 13) -- JSON array of {role, content, timestamp}
     chat_messages = Column(Text, nullable=True)
 
+    # Build metrics
+    tokens_used = Column(Integer, nullable=True)
+    estimated_cost = Column(Float, nullable=True)
+    duration_seconds = Column(Float, nullable=True)
+    model_used = Column(String(100), nullable=True)
+
     # Relationships
     project = relationship("Project", back_populates="executions")
     parent = relationship("Execution", remote_side=[id], foreign_keys=[parent_execution_id])
@@ -129,6 +135,10 @@ class Execution(Base):
             "request_path": self.request_path,
             "result_path": self.result_path,
             "error_message": self.error_message,
+            "tokens_used": self.tokens_used,
+            "estimated_cost": self.estimated_cost,
+            "duration_seconds": self.duration_seconds,
+            "model_used": self.model_used,
         }
 
 
@@ -161,6 +171,21 @@ def init_db():
                 conn.commit()
     except Exception as e:
         print(f"Warning: could not ensure locked_ui_archetype column: {e}")
+    # Lightweight migration: add build metrics columns if missing
+    try:
+        with engine.connect() as conn:
+            cols = [row[1] for row in conn.execute(text("PRAGMA table_info(executions)")).fetchall()]
+            for col_name, col_type in [
+                ("tokens_used", "INTEGER"),
+                ("estimated_cost", "REAL"),
+                ("duration_seconds", "REAL"),
+                ("model_used", "VARCHAR(100)"),
+            ]:
+                if col_name not in cols:
+                    conn.execute(text(f"ALTER TABLE executions ADD COLUMN {col_name} {col_type}"))
+            conn.commit()
+    except Exception as e:
+        print(f"Warning: could not ensure build metrics columns: {e}")
     print(f"Database initialized at: {DB_PATH}")
 
 

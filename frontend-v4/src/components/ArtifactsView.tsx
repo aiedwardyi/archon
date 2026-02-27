@@ -3,9 +3,9 @@ import {
   FileText, Target, Code2, ListChecks, ScrollText, Eye,
   Monitor, Smartphone, ChevronRight, Download, Upload,
   Braces, FolderOpen, FileCode, CheckCircle2, Circle, Clock,
-  AlertCircle, Loader2,
+  AlertCircle, Loader2, Copy, Check, ExternalLink,
 } from "lucide-react";
-import { fetchProjectHead, fetchPrd, fetchPlan, fetchCodeFiles, fetchVersions } from "@/services/api";
+import { fetchProjectHead, fetchPrd, fetchPlan, fetchCodeFiles, fetchLogs } from "@/services/api";
 
 type ArtifactTab = "brief" | "plan" | "code" | "tasks" | "logs" | "preview";
 
@@ -65,6 +65,9 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect }: A
   const [codeFiles, setCodeFiles] = useState<CodeFile[]>([]);
   const [logsData, setLogsData] = useState<LogEntry[]>([]);
   const [tasksData, setTasksData] = useState<Array<{ id: string; title: string; status: "done" | "running" | "pending" | "failed"; assignee: string }>>([]);
+  const [publishState, setPublishState] = useState<"idle" | "loading" | "done">("idle");
+  const [publishedUrl, setPublishedUrl] = useState("");
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!projectId) return;
@@ -85,11 +88,11 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect }: A
       setHeadVersion(ver);
       if (!ver) { setLoading(false); return; }
 
-      const [prdRaw, planRaw, filesRaw, versionsRaw] = await Promise.all([
+      const [prdRaw, planRaw, filesRaw, logsRaw] = await Promise.all([
         fetchPrd(projectId, ver),
         fetchPlan(projectId, ver),
         fetchCodeFiles(projectId, ver),
-        fetchVersions(projectId),
+        fetchLogs(projectId, ver),
       ]);
       if (cancelled) return;
 
@@ -129,22 +132,16 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect }: A
       setCodeFiles(filesRaw.map(f => ({ path: f.filename, language: f.language, content: f.content })));
       setSelectedFile(0);
 
-      // Map logs — extract from versions data, fall back to placeholder
-      const placeholderLogs: LogEntry[] = [
-        { time: "—", message: "Starting pipeline..." },
-        { time: "—", message: "Requirements Agent: Brief created." },
-        { time: "—", message: "Architecture Agent: Build plan ready." },
-        { time: "—", message: "Build Agent: Writing your code..." },
-        { time: "—", message: "Build complete." },
-      ];
-      const matchingVersion = versionsRaw.find((v: any) => v.version === ver);
-      if (matchingVersion?.execution_logs && Array.isArray(matchingVersion.execution_logs) && matchingVersion.execution_logs.length > 0) {
-        setLogsData(matchingVersion.execution_logs.map((l: any) => ({
-          time: l.timestamp ? new Date(l.timestamp).toLocaleTimeString([], { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "—",
-          message: l.message || String(l),
-        })));
+      // Map logs — fetched from per-version /logs endpoint
+      if (logsRaw.length > 0) {
+        setLogsData(logsRaw.map((line: string) => {
+          const spaceIdx = line.indexOf(" ");
+          const timePart = spaceIdx > 0 ? line.slice(0, spaceIdx) : "—";
+          const msgPart = spaceIdx > 0 ? line.slice(spaceIdx + 1) : line;
+          return { time: timePart || "—", message: msgPart };
+        }));
       } else {
-        setLogsData(placeholderLogs);
+        setLogsData([{ time: "—", message: "No logs available for this version." }]);
       }
 
       setLoading(false);
@@ -194,12 +191,60 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect }: A
           <span className="text-[10px] font-bold bg-secondary text-muted-foreground px-1.5 py-0.5 rounded">{headVersion ? `V${headVersion}` : "V?"}</span>
         </div>
         <div className="flex items-center gap-2">
-          <button className="h-8 px-3 text-xs font-semibold bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity flex items-center gap-1.5">
-            <Upload className="h-3.5 w-3.5" /> Publish
-          </button>
-          <button className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5">
+          {publishState === "done" ? (
+            <div className="flex items-center gap-1.5">
+              <input
+                readOnly
+                value={publishedUrl}
+                className="h-8 text-xs px-2.5 rounded-md border border-emerald-300 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-mono w-60"
+              />
+              <button
+                onClick={() => { navigator.clipboard.writeText(publishedUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                className="h-8 px-2.5 text-xs font-medium border border-emerald-300 dark:border-emerald-500/40 rounded-md bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors flex items-center gap-1"
+              >
+                {copied ? <><Check className="h-3 w-3" /> Copied!</> : <><Copy className="h-3 w-3" /> Copy</>}
+              </button>
+              <a
+                href={publishedUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-8 w-8 flex items-center justify-center border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            </div>
+          ) : (
+            <button
+              onClick={async () => {
+                if (!projectId || !headVersion) return;
+                setPublishState("loading");
+                try {
+                  const res = await fetch(`http://localhost:5000/api/projects/${projectId}/versions/${headVersion}/publish`, { method: "POST" });
+                  const data = await res.json();
+                  if (data.url) {
+                    setPublishedUrl(`http://localhost:5000${data.url}`);
+                    setPublishState("done");
+                  } else {
+                    setPublishState("idle");
+                  }
+                } catch {
+                  setPublishState("idle");
+                }
+              }}
+              disabled={publishState === "loading"}
+              className="h-8 px-3 text-xs font-semibold bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity flex items-center gap-1.5 disabled:opacity-50"
+            >
+              {publishState === "loading" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+              {publishState === "loading" ? "Publishing..." : "Publish"}
+            </button>
+          )}
+          <a
+            href={projectId && headVersion ? `http://localhost:5000/api/projects/${projectId}/versions/${headVersion}/download` : "#"}
+            download
+            className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5 no-underline"
+          >
             <Download className="h-3.5 w-3.5" /> Download Code
-          </button>
+          </a>
           <button
             onClick={() => rawDataAvailable && setShowRawData(!showRawData)}
             className={`h-8 px-3 text-xs font-medium border border-border rounded-md transition-colors flex items-center gap-1.5 ${

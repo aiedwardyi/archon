@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { MoreHorizontal, FolderOpen, Download, ChevronUp, ChevronDown, ArrowUpDown } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { DeleteProjectModal } from "@/components/DeleteProjectModal";
 
 type ProjectStatus = "Running" | "Completed" | "Failed" | "Idle";
 
@@ -35,6 +36,7 @@ export const ProjectTable = ({ projects, onProjectSelect }: ProjectTableProps) =
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [sortKey, setSortKey] = useState<SortKey>("id");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const { t } = useLanguage();
 
   const columns: { key: SortKey; label: string; sortable: boolean }[] = [
@@ -90,7 +92,10 @@ export const ProjectTable = ({ projects, onProjectSelect }: ProjectTableProps) =
             <button className="text-xs font-medium text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-secondary transition-colors">
               {t("export_")}
             </button>
-            <button className="text-xs font-medium text-destructive hover:text-destructive/80 px-2 py-1 rounded hover:bg-destructive/5 transition-colors">
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="text-xs font-medium text-destructive hover:text-destructive/80 px-2 py-1 rounded hover:bg-destructive/5 transition-colors"
+            >
               {t("delete_")}
             </button>
           </div>
@@ -134,11 +139,11 @@ export const ProjectTable = ({ projects, onProjectSelect }: ProjectTableProps) =
                 isSelected ? "bg-primary/5" : "hover:bg-secondary/40"
               }`}
             >
-              <div className="flex items-center justify-center">
+              <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
                 <input
                   type="checkbox"
                   checked={isSelected}
-                  onChange={() => toggle(p.id)}
+                  onChange={(e) => { e.stopPropagation(); toggle(p.id); }}
                   className="h-3.5 w-3.5 rounded border-border accent-primary cursor-pointer"
                 />
               </div>
@@ -196,6 +201,21 @@ export const ProjectTable = ({ projects, onProjectSelect }: ProjectTableProps) =
           </button>
         </div>
       </div>
+
+      <DeleteProjectModal
+        open={showDeleteModal}
+        projectCount={selected.size}
+        projectNames={projects.filter(p => selected.has(p.id)).map(p => p.name)}
+        onConfirm={async () => {
+          const ids = Array.from(selected);
+          await Promise.all(ids.map(id =>
+            fetch(`http://localhost:5000/api/projects/${id}`, { method: "DELETE" })
+          ));
+          setSelected(new Set());
+          setShowDeleteModal(false);
+        }}
+        onClose={() => setShowDeleteModal(false)}
+      />
     </div>
   );
 };
