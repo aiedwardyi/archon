@@ -103,6 +103,13 @@ const Index = () => {
     setSelectedVersion(null);
   }, [selectedProjectId]);
 
+  // Scroll to top when switching to Pipeline tab
+  useEffect(() => {
+    if (activeTab === "pipeline") {
+      window.scrollTo(0, 0);
+    }
+  }, [activeTab]);
+
   const handleSend = useCallback(async () => {
     if (!chatInput.trim() || !selectedProjectId || sending) return;
     const prompt = chatInput.trim();

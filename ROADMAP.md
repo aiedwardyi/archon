@@ -327,11 +327,12 @@ Impact:
 - ✅ Logs saved for successful builds (backend app.py)
 - ✅ Backend health indicator — red dot + "Backend offline" when Flask unreachable
 - ✅ Status badge colors — green/red/blue pills in Pipeline header and Projects table
+- ✅ Search filter on Projects page — client-side case-insensitive name filtering
+- ✅ Red dot pulse animation on "Backend offline" indicator (WelcomeBanner)
+- ✅ Removed Description field from New Project modal (name only, sends empty string)
+- ✅ Pipeline tab no longer auto-scrolls to bottom on initial load (guarded by ref + timer)
 
 ### Remaining work
-- 🔧 Search filter on Projects page (in progress)
-- 🔧 Remove Description from New Project modal (in progress)
-- 🔧 Pipeline tab auto-scrolls to bottom on load — remove
 - 🔴 Live output + agent pipeline bleeds across projects (check frontend/ for fix)
 - 🔴 Chat messages disappear when navigating away during build (check frontend/ for fix)
 - 🔴 JSON repair bug — intermittent EngineerAgent \escape error (prompts/engineer.txt fix)
