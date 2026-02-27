@@ -12,7 +12,7 @@ and enterprises delivering client apps to non-technical clients.
 - Agencies can show clients exactly what was built and why, version by version
 - Business language UI — no developer jargon anywhere
 
-**The MOAT:** The Versions page. Lovable/v0 show current state only.
+**The MOAT:** The Versions page. Competitors show current state only.
 Archon shows complete decision history with artifacts and live preview per version.
 
 ---
@@ -79,7 +79,7 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - ✅ 7D.1 Navbar real project name + version
 - ✅ 7D.2 Projects table: Project ID column added
 - ✅ 7D.3 Delete project + delete all with type-to-confirm modal
-- ✅ 7D.4 Avatar dropdown (v0-style: email, dark mode, credits, sign out)
+- ✅ 7D.4 Avatar dropdown (email, dark mode, credits, sign out)
 - ✅ 7D.5 Versions page live preview height increase
 - ✅ 7D.6 Artifacts + Navbar version sync fixed (custom event bus)
 
@@ -125,7 +125,7 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 
 ## Competitive Positioning
 
-| Feature | Lovable/v0 | Archon |
+| Feature | Competitors | Archon |
 |---------|-----------|--------|
 | Context continuation | ✅ | ✅ |
 | Full chain on every edit | ❌ | ✅ |
@@ -197,7 +197,7 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - Preserves full Brief / Plan / Code artifact trail per version.
 Impact:
 - Prevents unintended app-type mutation (e.g., landing → dashboard).
-- Enables stable, Lovable-style iteration while maintaining audit trail moat.
+- Enables stable iteration while maintaining audit trail moat.
 
 ### Phase 11 — Pipeline Page Redesign (⬜ Planned)
 - Three-panel layout for large screens:
@@ -217,14 +217,14 @@ Impact:
 -           fintech = green/red tickers, candlestick feel, data density
 -           gaming = dark immersive, HUD elements, particle effects
 - Approach: planner agent injects domain_personality block into engineer task
-- This is the main quality gap vs Lovable/v0
+- This is the main quality gap vs Competitors
 
 ### Phase 12.1 — Domain Personality Upgrade (✅ Completed Feb 2026)
 - Injected Tailwind CDN + Alpine.js for visual pages
 - 18 archetypes with domain-specific palettes, fonts, and components
 - pollinations.ai for fictional character/game asset generation
 - Anti-patterns list to prevent generic AI output
-- Result: FF7 fan page output matches Lovable quality
+- Result: FF7 fan page output matches premium quality
 
 ### Phase 13.1 — Chat Message Persistence (✅ Completed)
 - chat_messages TEXT column on executions table (JSON array)
@@ -284,7 +284,7 @@ Impact:
 ## Phase 15.4 - Enterprise UI (frontend-v4) COMPLETED Feb 27, 2026
 
 ### What was built
-- Copied Lovable-generated Enterprise design (archon-v4) to frontend-v4/
+- Copied Enterprise design (archon-v4) to frontend-v4/
 - Vite + React + TypeScript + Tailwind + shadcn/ui running on port 8080
 - 4-theme system foundation (Enterprise Light/Dark, Studio Light/Dark)
 - Korean/English language toggle with localStorage persistence

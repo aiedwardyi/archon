@@ -121,7 +121,7 @@ Each archetype has:
 
 **The Versions page is Archon's #1 differentiator.**
 
-Lovable/v0 show current state only.
+Competitors show current state only.
 Archon shows complete decision history:
 - Every prompt creates a full artifact set
 - Every version has live preview

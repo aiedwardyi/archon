@@ -35,7 +35,7 @@ def build_vite_react_ts_scaffold(app_dir: str = "apps/offline-vite-react") -> Of
             "```\n\n"
             "## Why this exists\n"
             "- Demonstrates deterministic orchestration + safe file writes\n"
-            "- Provides a real front-end scaffold you can extend into the Lovable-style experience\n"
+            "- Provides a real front-end scaffold you can extend into a premium experience\n"
         ),
         f"{base}/.gitignore": (
             "node_modules\n"

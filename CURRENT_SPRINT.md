@@ -80,7 +80,7 @@ main (enterprise-ui merged and deleted)
 ---
 
 ### Phase 15.4 — Enterprise UI (frontend-v4) ✅
-- Copied Lovable-generated Enterprise design (archon-v4) to `frontend-v4/`
+- Copied Enterprise design (archon-v4) to `frontend-v4/`
 - Vite + React + TypeScript + Tailwind + shadcn/ui running on port 8080
 - 4-theme system foundation (Enterprise Light/Dark, Studio Light/Dark)
 - Korean/English language toggle with localStorage persistence

@@ -4,14 +4,14 @@ A multi-agent platform that converts product ideas into auditable web applicatio
 with full version history. Built for digital agencies and enterprises delivering
 client apps to non-technical clients.
 
-**What makes Archon different from Lovable/v0:**
+**What makes Archon different:**
 - Every prompt creates a full artifact set: Brief + Plan + Code + live preview
 - Complete version history — every decision is auditable and reversible
 - Agencies can show clients exactly what was built and why, version by version
 - Business language UI — no developer jargon anywhere
 - Korean/English language support
 
-**The MOAT:** The Versions page. Lovable/v0 show current state only.
+**The MOAT:** The Versions page. Competitors show current state only.
 Archon shows complete decision history with artifacts and live preview per version.
 
 ---
