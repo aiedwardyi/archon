@@ -336,7 +336,7 @@ Impact:
 - ✅ Live output + agent pipeline no longer bleeds across projects (pipeline state resets on project switch)
 - ✅ Chat messages persist via sessionStorage keyed by project ID (survives tab/project switching)
 - ✅ Pipeline tab scroll-to-top fixed (container ref + triple scroll target)
-- 🔴 JSON repair bug — intermittent EngineerAgent \escape error (prompts/engineer.txt fix)
+- ✅ JSON repair bug — _repair_json strips fences, fixes bare backslashes, logs on failure
 - ✅ Delete modal — type "DELETE" to confirm + shutil.rmtree disk cleanup
 - ✅ Build Details card — tokens_used, estimated_cost, duration, model wired from DB
 - 🔴 Studio theme CSS variables in frontend-v4
