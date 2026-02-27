@@ -51,11 +51,17 @@ interface ArtifactsViewProps {
   projectId: number | null;
   selectedVersion: number | null;
   onVersionSelect: (v: number) => void;
+  initialTab?: "brief" | "plan" | "code";
 }
 
-export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect }: ArtifactsViewProps) => {
-  const [activeTab, setActiveTab] = useState<ArtifactTab>("brief");
+export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, initialTab }: ArtifactsViewProps) => {
+  const [activeTab, setActiveTab] = useState<ArtifactTab>(initialTab || "brief");
   const [showRawData, setShowRawData] = useState(false);
+
+  // Sync when navigating from VersionsView artifact cards
+  useEffect(() => {
+    if (initialTab) setActiveTab(initialTab);
+  }, [initialTab]);
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "mobile">("desktop");
   const [selectedFile, setSelectedFile] = useState(0);
   const [loading, setLoading] = useState(false);

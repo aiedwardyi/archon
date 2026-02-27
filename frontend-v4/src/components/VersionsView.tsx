@@ -27,9 +27,10 @@ interface VersionsViewProps {
   projectId: number | null;
   selectedVersion: number | null;
   onVersionSelect: (v: number) => void;
+  onArtifactNavigate?: (tab: "brief" | "plan" | "code") => void;
 }
 
-export const VersionsView = ({ projectId, selectedVersion, onVersionSelect }: VersionsViewProps) => {
+export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onArtifactNavigate }: VersionsViewProps) => {
   const selected = selectedVersion;
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "mobile">("desktop");
   const [collapsed, setCollapsed] = useState(false);
@@ -210,13 +211,14 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect }: Ve
 
           {/* Artifacts Row */}
           <div className="grid grid-cols-3 gap-0 border border-border rounded-md overflow-hidden bg-card">
-            {[
-              { icon: FileText, title: t("brief"), subtitle: t("requirementsDoc") },
-              { icon: Blocks, title: t("buildPlan"), subtitle: t("architecturePlan") },
-              { icon: Code2, title: t("code"), subtitle: `${version.filesGenerated ?? 0} ${t("files")}` },
-            ].map(({ icon: Icon, title, subtitle }, i) => (
+            {([
+              { icon: FileText, title: t("brief"), subtitle: t("requirementsDoc"), tab: "brief" as const },
+              { icon: Blocks, title: t("buildPlan"), subtitle: t("architecturePlan"), tab: "plan" as const },
+              { icon: Code2, title: t("code"), subtitle: `${version.filesGenerated ?? 0} ${t("files")}`, tab: "code" as const },
+            ]).map(({ icon: Icon, title, subtitle, tab }, i) => (
               <button
                 key={title}
+                onClick={() => onArtifactNavigate?.(tab)}
                 className={`flex items-center gap-3 px-4 py-3.5 text-left hover:bg-secondary/40 transition-colors ${
                   i < 2 ? "border-r border-border" : ""
                 }`}

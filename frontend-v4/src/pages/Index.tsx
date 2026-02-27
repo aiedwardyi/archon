@@ -25,6 +25,7 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("projects");
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
+  const [artifactTab, setArtifactTab] = useState<"brief" | "plan" | "code">("brief");
   const [showNewProject, setShowNewProject] = useState(false);
   const { t } = useLanguage();
   const { projects, loading, error, stats: projectStats } = useProjects();
@@ -418,9 +419,16 @@ const Index = () => {
           </>
         )}
 
-        {activeTab === "versions" && <VersionsView projectId={selectedProjectId} selectedVersion={selectedVersion} onVersionSelect={setSelectedVersion} />}
+        {activeTab === "versions" && (
+          <VersionsView
+            projectId={selectedProjectId}
+            selectedVersion={selectedVersion}
+            onVersionSelect={setSelectedVersion}
+            onArtifactNavigate={(tab) => { setArtifactTab(tab); setActiveTab("artifacts"); }}
+          />
+        )}
 
-        {activeTab === "artifacts" && <ArtifactsView projectId={selectedProjectId} selectedVersion={selectedVersion} onVersionSelect={setSelectedVersion} />}
+        {activeTab === "artifacts" && <ArtifactsView projectId={selectedProjectId} selectedVersion={selectedVersion} onVersionSelect={setSelectedVersion} initialTab={artifactTab} />}
       </main>
     </div>
   );
