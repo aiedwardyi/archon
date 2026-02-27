@@ -20,7 +20,6 @@ interface NavbarProps {
 export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectName, selectedProjectVersion }: NavbarProps) => {
   const [open, setOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<"profile" | "settings" | "pricing" | null>(null);
-  const [designStyle, setDesignStyle] = useState<"studio" | "enterprise">("enterprise");
   const menuRef = useRef<HTMLDivElement>(null);
   const { colorMode, setColorMode } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
@@ -151,22 +150,18 @@ export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectNam
               <div className="border-t border-border px-4 py-3">
                 <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t("design")}</div>
                 <div className="grid grid-cols-2 gap-1">
-                  {([
-                    { value: "enterprise" as const, label: t("enterprise"), icon: Building2 },
-                    { value: "studio" as const, label: t("studio"), icon: Pencil },
-                  ]).map(({ value, label, icon: Icon }) => (
-                    <button
-                      key={value}
-                      onClick={() => setDesignStyle(value)}
-                      className={`flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs rounded-md transition-colors ${
-                        designStyle === value
-                          ? "bg-primary text-primary-foreground font-medium"
-                          : "text-foreground hover:bg-secondary border border-border"
-                      }`}
-                    >
-                      <Icon className="h-3.5 w-3.5" /> {label}
-                    </button>
-                  ))}
+                  <button
+                    onClick={() => { window.location.href = 'http://localhost:8080'; }}
+                    className="flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs rounded-md transition-colors bg-primary text-primary-foreground font-medium"
+                  >
+                    <Building2 className="h-3.5 w-3.5" /> {t("enterprise")}
+                  </button>
+                  <button
+                    onClick={() => { window.open('http://localhost:3000', '_blank'); }}
+                    className="flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs rounded-md transition-colors text-foreground hover:bg-secondary border border-border"
+                  >
+                    <Pencil className="h-3.5 w-3.5" /> {t("studio")}
+                  </button>
                 </div>
               </div>
 
