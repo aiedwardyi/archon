@@ -682,6 +682,13 @@ def delete_project(project_id: int):
             return jsonify({"error": "Project not found"}), 404
         session.delete(project)
         session.commit()
+        # Clean up generated files on disk
+        project_dir = PUBLIC_DIR / str(project_id)
+        try:
+            import shutil as _shutil
+            _shutil.rmtree(project_dir)
+        except FileNotFoundError:
+            pass
         return jsonify({"message": "Project deleted"}), 200
     finally:
         session.close()

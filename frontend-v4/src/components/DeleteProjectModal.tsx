@@ -15,7 +15,7 @@ export const DeleteProjectModal = ({ open, projectCount, projectNames, onConfirm
 
   if (!open) return null;
 
-  const canConfirm = confirmText === "delete";
+  const canConfirm = confirmText === "DELETE";
 
   const handleConfirm = async () => {
     if (!canConfirm) return;
@@ -62,13 +62,13 @@ export const DeleteProjectModal = ({ open, projectCount, projectNames, onConfirm
             ))}
           </div>
           <div className="text-xs text-muted-foreground">
-            Type <span className="font-mono font-semibold text-destructive">delete</span> to confirm:
+            Type <span className="font-mono font-semibold text-destructive">DELETE</span> to confirm:
           </div>
           <input
             type="text"
             value={confirmText}
             onChange={(e) => setConfirmText(e.target.value)}
-            placeholder="delete"
+            placeholder="DELETE"
             autoFocus
             className="w-full h-8 px-3 text-sm border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-destructive"
           />
