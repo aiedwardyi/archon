@@ -319,8 +319,22 @@ Impact:
 - ✅ ArtifactsView Code tab — fixed height, independent scroll for file tree and code viewer
 - ✅ WelcomeBanner — live backend health check (green/red dot with 10s polling)
 - ✅ i18n keys added: backendOffline, projectName, projectDescription, creating, create, cancel
+- ✅ Artifact cards (Brief/Plan/Code) in VersionsView navigate to Artifacts tab with correct sub-tab pre-selected
+- ✅ Code tab scrollbars fixed — outer grid overflow:hidden with calc height, pre overflow:auto, minWidth:0
+- ✅ Renamed "Running" → "Building" (EN) / "빌딩 중" (KO) across i18n and ProjectTable
+- ✅ Pipeline header status badge — colored rounded-full pills (blue/building, emerald/completed, red/failed, gray/idle)
+- ✅ Agent pipeline status persists after reload — reads DB status (success/failed/running)
+- ✅ Logs saved for successful builds (backend app.py)
+- ✅ Backend health indicator — red dot + "Backend offline" when Flask unreachable
+- ✅ Status badge colors — green/red/blue pills in Pipeline header and Projects table
 
 ### Remaining work
-- Delete selected projects modal (type "delete" to confirm)
-- Studio theme CSS variables in frontend-v4
-- Retire frontend/ and frontend-consumer2/ (Phase 15.6)
+- 🔧 Search filter on Projects page (in progress)
+- 🔧 Remove Description from New Project modal (in progress)
+- 🔧 Pipeline tab auto-scrolls to bottom on load — remove
+- 🔴 Live output + agent pipeline bleeds across projects (check frontend/ for fix)
+- 🔴 Chat messages disappear when navigating away during build (check frontend/ for fix)
+- 🔴 JSON repair bug — intermittent EngineerAgent \escape error (prompts/engineer.txt fix)
+- 🔴 Delete modal — type "delete" to confirm + shutil.rmtree disk cleanup
+- 🔴 Build Details card — wire tokens_used, estimated_cost to DB (model + duration already working)
+- 🔴 Studio theme CSS variables in frontend-v4

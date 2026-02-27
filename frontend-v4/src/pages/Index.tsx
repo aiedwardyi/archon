@@ -27,6 +27,7 @@ const Index = () => {
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
   const [artifactTab, setArtifactTab] = useState<"brief" | "plan" | "code">("brief");
   const [showNewProject, setShowNewProject] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const { t } = useLanguage();
   const { projects, loading, error, stats: projectStats } = useProjects();
 
@@ -64,10 +65,19 @@ const Index = () => {
     return () => { cancelled = true; };
   }, [selectedProjectId]);
 
-  // Auto-scroll chat
+  // Auto-scroll chat — only when user sends a message (not on initial load)
+  const chatScrollEnabled = useRef(false);
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (chatScrollEnabled.current) {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [chatMessages]);
+  useEffect(() => {
+    // Enable scroll after first render so initial load doesn't jump
+    chatScrollEnabled.current = false;
+    const timer = setTimeout(() => { chatScrollEnabled.current = true; }, 500);
+    return () => clearTimeout(timer);
+  }, [selectedProjectId, activeTab]);
 
   // Auto-scroll live output
   useEffect(() => {
@@ -378,6 +388,8 @@ const Index = () => {
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <input
                     type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={t("searchProjects")}
                     className="h-8 pl-8 pr-3 text-sm border border-border rounded-md bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring w-56"
                   />
@@ -403,7 +415,7 @@ const Index = () => {
                   <span className="ml-2 text-sm text-muted-foreground">Loading projects...</span>
                 </div>
               ) : (
-                <ProjectTable projects={projects} onProjectSelect={(id) => { setSelectedProjectId(id); setActiveTab("pipeline"); }} />
+                <ProjectTable projects={searchQuery.trim() ? projects.filter(p => p.name.toLowerCase().includes(searchQuery.trim().toLowerCase())) : projects} onProjectSelect={(id) => { setSelectedProjectId(id); setActiveTab("pipeline"); }} />
               )}
               <ActivityFeed />
             </div>

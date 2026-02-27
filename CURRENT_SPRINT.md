@@ -108,18 +108,32 @@ main (enterprise-ui merged and deleted)
 - ✅ Code tab scrollbars fixed — outer grid overflow:hidden with calc height, `<pre>` overflow:auto, minWidth:0 on right panel
 - ✅ Renamed "Running" → "Building" (EN) / "빌딩 중" (KO) across i18n and ProjectTable
 - ✅ Pipeline header status badge — colored rounded-full pills (blue/building, emerald/completed, red/failed, gray/idle)
+- ✅ Agent pipeline status persists after reload — reads DB status (success/failed/running)
+- ✅ Logs saved for successful builds (backend app.py)
+- ✅ "What Was Built" summary — shows "2 code files · 2 images generated"
+- ✅ Backend health indicator — red dot + "Backend offline" when Flask unreachable
+- ✅ Status badge colors — green/red/blue pills in Pipeline header and Projects table
+- ✅ Search filter on Projects page — client-side case-insensitive name filtering
+- ✅ Red dot pulse animation on "Backend offline" indicator (WelcomeBanner)
+- ✅ Removed Description field from New Project modal (name only, sends empty string)
+- ✅ Pipeline tab no longer auto-scrolls to bottom on initial load (guarded by ref + timer)
 
 ---
 
 ## What's Next
 
 ### Phase 15.5 — Remaining
-- Delete selected projects modal (type "delete" to confirm)
-- Studio theme CSS variables in frontend-v4
+- 🔴 Live output + agent pipeline bleeds across projects (check frontend/ for fix)
+- 🔴 Chat messages disappear when navigating away during build (check frontend/ for fix)
+- 🔴 JSON repair bug — intermittent EngineerAgent \escape error (prompts/engineer.txt fix)
+- 🔴 Delete modal — type "delete" to confirm + shutil.rmtree disk cleanup
+- 🔴 Build Details card — wire tokens_used, estimated_cost to DB (model + duration already working)
+- 🔴 Studio theme CSS variables in frontend-v4
 
 ### Phase 15.6 — Frontend Cleanup
 - Retire `frontend/` and `frontend-consumer2/` once frontend-v4 is feature-complete
-- Single frontend going forward
+- Studio button in avatar dropdown → switch to `frontend/` (Next.js, port 3000) design
+- Enterprise button → frontend-v4
 
 ### Phase 8.3 — Client Share Link
 - Read-only shareable URL for client deliverables

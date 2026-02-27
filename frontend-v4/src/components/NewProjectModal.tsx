@@ -19,7 +19,6 @@ interface NewProjectModalProps {
 
 export const NewProjectModal = ({ open, onClose, onCreated }: NewProjectModalProps) => {
   const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { t } = useLanguage();
@@ -30,9 +29,8 @@ export const NewProjectModal = ({ open, onClose, onCreated }: NewProjectModalPro
     setError(null);
     setCreating(true);
     try {
-      const project = await createProject(name.trim(), description.trim());
+      const project = await createProject(name.trim(), "");
       setName("");
-      setDescription("");
       onCreated(project.id);
     } catch (err: any) {
       setError(err.message || "Failed to create project");
@@ -44,7 +42,6 @@ export const NewProjectModal = ({ open, onClose, onCreated }: NewProjectModalPro
   const handleClose = () => {
     if (creating) return;
     setName("");
-    setDescription("");
     setError(null);
     onClose();
   };
@@ -70,17 +67,6 @@ export const NewProjectModal = ({ open, onClose, onCreated }: NewProjectModalPro
               autoFocus
               required
               className="w-full h-8 px-3 text-sm border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-foreground">
-              {t("projectDescription")}
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
             />
           </div>
           {error && (

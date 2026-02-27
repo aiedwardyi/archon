@@ -65,7 +65,7 @@ export const WelcomeBanner = ({ stats }: WelcomeBannerProps) => {
           </p>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className={`inline-block h-2 w-2 rounded-full ${backendUp ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`} />
+          <span className={`inline-block h-2 w-2 rounded-full ${backendUp ? "bg-emerald-500 animate-pulse" : "bg-red-500 animate-pulse"}`} />
           <span className={`text-[11px] font-medium ${backendUp ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
             {backendUp ? t("allSystemsOperational") : t("backendOffline")}
           </span>
