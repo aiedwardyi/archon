@@ -117,14 +117,16 @@ main (enterprise-ui merged and deleted)
 - ✅ Red dot pulse animation on "Backend offline" indicator (WelcomeBanner)
 - ✅ Removed Description field from New Project modal (name only, sends empty string)
 - ✅ Pipeline tab no longer auto-scrolls to bottom on initial load (guarded by ref + timer)
+- ✅ Pipeline tab scrolls to top on load — `window.scrollTo(0, 0)` when activeTab === "pipeline"
 
 ---
 
 ## What's Next
 
 ### Phase 15.5 — Remaining
-- 🔴 Live output + agent pipeline bleeds across projects (check frontend/ for fix)
-- 🔴 Chat messages disappear when navigating away during build (check frontend/ for fix)
+- ✅ Live output + agent pipeline no longer bleeds across projects (pipeline state resets on project switch)
+- ✅ Chat messages persist via sessionStorage keyed by project ID (survives tab/project switching)
+- ✅ Pipeline tab scroll-to-top fixed (container ref + triple scroll target)
 - 🔴 JSON repair bug — intermittent EngineerAgent \escape error (prompts/engineer.txt fix)
 - 🔴 Delete modal — type "delete" to confirm + shutil.rmtree disk cleanup
 - 🔴 Build Details card — wire tokens_used, estimated_cost to DB (model + duration already working)

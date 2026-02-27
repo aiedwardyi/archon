@@ -436,6 +436,19 @@ export function usePipelineStatus(projectId: number | null, enabled: boolean) {
     }
   }, []);
 
+  // Reset pipeline state when project changes
+  useEffect(() => {
+    stopPolling();
+    setState({
+      running: false,
+      stage: "idle",
+      status: "IDLE",
+      logs: [],
+      projectId: null,
+      executionId: null,
+    });
+  }, [projectId]);
+
   // Auto-poll when enabled
   useEffect(() => {
     if (enabled && projectId) {

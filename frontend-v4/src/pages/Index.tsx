@@ -17,6 +17,7 @@ import {
   iterateProject,
   fetchChatHistory,
   fetchVersions,
+  fetchLogs,
   type ChatMessage,
 } from "@/services/api";
 import { Search, Plus, Trash2, Zap, Mic, Send, Volume2, Filter, Loader2, AlertCircle } from "lucide-react";
@@ -38,31 +39,63 @@ const Index = () => {
   const [pipelineError, setPipelineError] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const logContainerRef = useRef<HTMLDivElement>(null);
+  const activeProjectRef = useRef<number | null>(null);
   const pipeline = usePipelineStatus(selectedProjectId, activeTab === "pipeline" && sending);
 
   // Restore pipeline card state from DB when no live build is running
   const [historicalStatus, setHistoricalStatus] = useState<string | null>(null);
+  const [historicalLogs, setHistoricalLogs] = useState<Array<{ id: string; timestamp: number; message: string }>>([]);
 
   useEffect(() => {
-    if (!selectedProjectId) { setHistoricalStatus(null); return; }
+    setHistoricalStatus(null); // reset synchronously BEFORE async fetch to prevent bleed
+    setHistoricalLogs([]); // reset logs too
+    if (!selectedProjectId) return;
     let cancelled = false;
     fetchVersions(selectedProjectId).then((versions) => {
       if (cancelled || versions.length === 0) return;
       // versions are returned newest-first from API
       const latest = versions[0];
       setHistoricalStatus(latest.status?.toUpperCase() || null);
+      // Load historical logs for completed/failed projects (not currently building)
+      if (!pipeline.running) {
+        fetchLogs(selectedProjectId, latest.version).then((logStrings) => {
+          if (cancelled) return;
+          setHistoricalLogs(logStrings.map((msg, i) => ({
+            id: `hist-${i}`,
+            timestamp: Date.now(),
+            message: msg,
+          })));
+        });
+      }
     });
     return () => { cancelled = true; };
   }, [selectedProjectId]);
 
-  // Load chat history when project changes
+  // Save chat messages to sessionStorage whenever they change
   useEffect(() => {
-    if (!selectedProjectId) { setChatMessages([]); return; }
-    let cancelled = false;
+    if (selectedProjectId && chatMessages.length > 0 && activeProjectRef.current === selectedProjectId) {
+      sessionStorage.setItem(`archon_messages_${selectedProjectId}`, JSON.stringify(chatMessages));
+    }
+  }, [chatMessages, selectedProjectId]);
+
+  // Load chat history when project changes — sessionStorage first, then DB fallback
+  useEffect(() => {
+    if (!selectedProjectId) { setChatMessages([]); activeProjectRef.current = null; return; }
+    activeProjectRef.current = selectedProjectId;
+    setChatMessages([]); // clear immediately
+
+    const cached = sessionStorage.getItem(`archon_messages_${selectedProjectId}`);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed.length > 0) { setChatMessages(parsed); return; } // early return — no DB call
+      } catch {}
+    }
+
+    // Only hit DB if no sessionStorage cache
     fetchChatHistory(selectedProjectId).then((msgs) => {
-      if (!cancelled) setChatMessages(msgs);
+      if (activeProjectRef.current === selectedProjectId) setChatMessages(msgs);
     });
-    return () => { cancelled = true; };
   }, [selectedProjectId]);
 
   // Auto-scroll chat — only when user sends a message (not on initial load)
@@ -104,9 +137,13 @@ const Index = () => {
   }, [selectedProjectId]);
 
   // Scroll to top when switching to Pipeline tab
+  const mainContainerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (activeTab === "pipeline") {
-      window.scrollTo(0, 0);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+      }, 0);
     }
   }, [activeTab]);
 
@@ -196,7 +233,7 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div ref={mainContainerRef} className="min-h-screen bg-background">
       <Navbar
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -357,21 +394,24 @@ const Index = () => {
                         <h3 className="text-xs font-semibold text-foreground tracking-wide uppercase flex items-center gap-1.5">
                           {">_"} {t("liveOutput")}
                         </h3>
-                        <span className="text-[10px] text-muted-foreground">{pipeline.logs.length} {t("entries")}</span>
+                        <span className="text-[10px] text-muted-foreground">{(pipeline.logs.length > 0 ? pipeline.logs.length : historicalLogs.length)} {t("entries")}</span>
                       </div>
                       <div ref={logContainerRef} className="p-3 font-mono text-[11px] text-muted-foreground space-y-1.5 max-h-48 overflow-y-auto">
-                        {pipeline.logs.length === 0 ? (
-                          <div className="text-center py-3 text-muted-foreground">—</div>
-                        ) : (
-                          pipeline.logs.map((log) => (
-                            <div key={log.id} className="flex gap-2">
-                              <span className="text-foreground flex-shrink-0">
-                                {new Date(log.timestamp).toLocaleTimeString([], { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                              </span>
-                              <span>{log.message}</span>
-                            </div>
-                          ))
-                        )}
+                        {(() => {
+                          const displayLogs = pipeline.logs.length > 0 ? pipeline.logs : historicalLogs;
+                          return displayLogs.length === 0 ? (
+                            <div className="text-center py-3 text-muted-foreground">—</div>
+                          ) : (
+                            displayLogs.map((log) => (
+                              <div key={log.id} className="flex gap-2">
+                                <span className="text-foreground flex-shrink-0">
+                                  {new Date(log.timestamp).toLocaleTimeString([], { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                                </span>
+                                <span>{log.message}</span>
+                              </div>
+                            ))
+                          );
+                        })()}
                       </div>
                     </div>
 
