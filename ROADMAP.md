@@ -278,3 +278,32 @@ Impact:
 - Code tab fixed: reads data.tree from /files endpoint (was reading data.files)
 - Preview iframe regression: sometimes reverts to placeholder after build — pending fix
 
+
+## Phase 15.4 - Enterprise UI (frontend-v4) COMPLETED Feb 27, 2026
+
+### What was built
+- Copied Lovable-generated Enterprise design (archon-v4) to frontend-v4/
+- Vite + React + TypeScript + Tailwind + shadcn/ui running on port 8080
+- 4-theme system foundation (Enterprise Light/Dark, Studio Light/Dark)
+- Korean/English language toggle with localStorage persistence
+
+### API Wiring Completed
+- Projects page connected to real Flask API with 3s polling
+- Fixed N+1 query - added version_count to Project.to_dict() in models.py
+- Project row selection with shared selectedProjectId state
+- Shared selectedVersion state flows between Versions, Artifacts, Navbar
+- VersionsView: real versions list + real iframe preview per version
+- ArtifactsView: real Brief (PRD), Plan, Code, Tasks, Logs
+- Navbar: real project name + version in breadcrumb
+- Favicon: lightning bolt SVG + Archon - Enterprise Build title
+
+## Phase 15.5 - Enterprise UI Polish (IN PROGRESS)
+
+### Remaining work
+- Checkbox fix - should not trigger navigation
+- New Project modal (Name + Description -> POST /api/projects)
+- Delete selected projects modal (type delete to confirm)
+- Files changed count in VersionsView (show real files_generated)
+- Pipeline tab - wire to real execution/chat
+- Studio theme CSS variables in frontend-v4
+- Retire frontend/ and frontend-consumer2/ (Phase 15.6)
