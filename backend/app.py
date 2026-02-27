@@ -581,7 +581,7 @@ def get_stats():
             .filter(Execution.status == "success", Execution.duration_seconds.isnot(None))
             .scalar()
         )
-        avg_build_time_seconds = round(avg_row, 1) if avg_row else 0
+        avg_build_time_seconds = round(avg_row, 1) if avg_row else None
 
         # lines_generated: walk all version code dirs and count lines
         total_lines = 0

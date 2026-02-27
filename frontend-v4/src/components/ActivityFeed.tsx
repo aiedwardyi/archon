@@ -1,6 +1,9 @@
-import { CheckCircle2, XCircle, Play, GitBranch, Clock } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle2, XCircle, Play, GitBranch, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useActivity } from "@/services/api";
+
+const COLLAPSED_COUNT = 4;
 
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -33,6 +36,10 @@ function statusText(item: { project_name: string; project_id: number; status: st
 export const ActivityFeed = () => {
   const { t } = useLanguage();
   const items = useActivity();
+  const [expanded, setExpanded] = useState(false);
+
+  const canExpand = items.length > COLLAPSED_COUNT;
+  const visible = expanded ? items : items.slice(0, COLLAPSED_COUNT);
 
   return (
     <div className="border border-border rounded-md bg-card">
@@ -47,7 +54,7 @@ export const ActivityFeed = () => {
         {items.length === 0 && (
           <div className="px-3 py-4 text-xs text-muted-foreground text-center">No recent activity</div>
         )}
-        {items.map((a, i) => {
+        {visible.map((a, i) => {
           const { icon: Icon, iconClass } = statusIcon(a.status);
           return (
             <div key={i} className="px-3 py-2.5 flex items-start gap-2.5 hover:bg-secondary/40 transition-colors">
@@ -60,6 +67,18 @@ export const ActivityFeed = () => {
           );
         })}
       </div>
+      {canExpand && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="w-full px-3 py-2 border-t border-border text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors flex items-center justify-center gap-1"
+        >
+          {expanded ? (
+            <><ChevronUp className="h-3 w-3" /> Show less</>
+          ) : (
+            <><ChevronDown className="h-3 w-3" /> Show more ({items.length - COLLAPSED_COUNT})</>
+          )}
+        </button>
+      )}
     </div>
   );
 };

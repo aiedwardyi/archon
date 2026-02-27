@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { MoreHorizontal, FolderOpen, Download, ChevronUp, ChevronDown, ArrowUpDown } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { DeleteProjectModal } from "@/components/DeleteProjectModal";
+
+const STORAGE_KEY = "archon_selected_projects";
 
 type ProjectStatus = "Running" | "Completed" | "Failed" | "Idle";
 
@@ -33,11 +35,21 @@ const statusStyles: Record<ProjectStatus, { dot: string; text: string; bg: strin
 };
 
 export const ProjectTable = ({ projects, onProjectSelect }: ProjectTableProps) => {
-  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [selected, setSelected] = useState<Set<number>>(() => {
+    try {
+      const stored = sessionStorage.getItem(STORAGE_KEY);
+      return stored ? new Set(JSON.parse(stored) as number[]) : new Set();
+    } catch { return new Set(); }
+  });
   const [sortKey, setSortKey] = useState<SortKey>("id");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const { t } = useLanguage();
+
+  const persistSelected = useCallback((next: Set<number>) => {
+    setSelected(next);
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify([...next]));
+  }, []);
 
   const columns: { key: SortKey; label: string; sortable: boolean }[] = [
     { key: "name", label: t("project"), sortable: true },
@@ -52,15 +64,15 @@ export const ProjectTable = ({ projects, onProjectSelect }: ProjectTableProps) =
   const someSelected = selected.size > 0 && !allSelected;
 
   const toggleAll = () => {
-    if (allSelected) setSelected(new Set());
-    else setSelected(new Set(projects.map((p) => p.id)));
+    if (allSelected) persistSelected(new Set());
+    else persistSelected(new Set(projects.map((p) => p.id)));
   };
 
   const toggle = (id: number) => {
     const next = new Set(selected);
     if (next.has(id)) next.delete(id);
     else next.add(id);
-    setSelected(next);
+    persistSelected(next);
   };
 
   const handleSort = (key: SortKey) => {
@@ -135,20 +147,23 @@ export const ProjectTable = ({ projects, onProjectSelect }: ProjectTableProps) =
             <div
               key={p.id}
               onClick={() => onProjectSelect?.(p.id)}
-              className={`grid grid-cols-[40px_1fr_70px_110px_120px_80px_110px_80px] px-2 py-2.5 items-center transition-colors cursor-pointer ${
+              className={`grid grid-cols-[40px_1fr_70px_110px_120px_80px_110px_80px] px-2 items-center transition-colors ${
                 isSelected ? "bg-primary/5" : "hover:bg-secondary/40"
               }`}
             >
-              <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+              <div
+                className="flex items-center justify-center h-full cursor-default py-2.5"
+                onClick={(e) => { e.stopPropagation(); toggle(p.id); }}
+              >
                 <input
                   type="checkbox"
                   checked={isSelected}
-                  onChange={(e) => { e.stopPropagation(); toggle(p.id); }}
-                  className="h-3.5 w-3.5 rounded border-border accent-primary cursor-pointer"
+                  onChange={() => {}}
+                  className="h-3.5 w-3.5 rounded border-border accent-primary cursor-pointer pointer-events-none"
                 />
               </div>
 
-              <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex items-center gap-2.5 min-w-0 cursor-pointer py-2.5">
                 <div className="h-8 w-8 rounded-md bg-secondary flex items-center justify-center flex-shrink-0">
                   <FolderOpen className="h-4 w-4 text-muted-foreground" />
                 </div>
@@ -158,20 +173,20 @@ export const ProjectTable = ({ projects, onProjectSelect }: ProjectTableProps) =
                 </div>
               </div>
 
-              <div className="text-xs text-muted-foreground font-mono">#{p.id}</div>
+              <div className="text-xs text-muted-foreground font-mono cursor-pointer py-2.5">#{p.id}</div>
 
-              <div>
+              <div className="cursor-pointer py-2.5">
                 <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full ${style.text} ${style.bg}`}>
                   <span className={`inline-block h-1.5 w-1.5 rounded-full ${style.dot} ${p.status === "Running" ? "animate-pulse" : ""}`} />
                   {p.status}
                 </span>
               </div>
 
-              <div className="text-xs text-muted-foreground">{p.lastRun}</div>
-              <div className="text-xs text-muted-foreground">{p.versions}</div>
-              <div className="text-xs text-muted-foreground">{p.created}</div>
+              <div className="text-xs text-muted-foreground cursor-pointer py-2.5">{p.lastRun}</div>
+              <div className="text-xs text-muted-foreground cursor-pointer py-2.5">{p.versions}</div>
+              <div className="text-xs text-muted-foreground cursor-pointer py-2.5">{p.created}</div>
 
-              <div className="flex items-center justify-end gap-1">
+              <div className="flex items-center justify-end gap-1 py-2.5">
                 <button className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors" title="Download">
                   <Download className="h-3.5 w-3.5" />
                 </button>
@@ -211,7 +226,7 @@ export const ProjectTable = ({ projects, onProjectSelect }: ProjectTableProps) =
           await Promise.all(ids.map(id =>
             fetch(`http://localhost:5000/api/projects/${id}`, { method: "DELETE" })
           ));
-          setSelected(new Set());
+          persistSelected(new Set());
           setShowDeleteModal(false);
         }}
         onClose={() => setShowDeleteModal(false)}
