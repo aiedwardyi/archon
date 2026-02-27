@@ -1,7 +1,7 @@
-import { CheckCircle2, Circle, Loader2, Zap } from "lucide-react";
+import { AlertCircle, CheckCircle2, Circle, Loader2, Zap } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-type AgentStatus = "done" | "running" | "pending";
+type AgentStatus = "done" | "running" | "pending" | "failed";
 
 interface AgentStep {
   name: string;
@@ -19,6 +19,7 @@ export const PipelineStatus = ({ agents }: PipelineStatusProps) => {
   const statusConfig: Record<AgentStatus, { icon: typeof CheckCircle2; className: string; label: string; bgClass: string }> = {
     done: { icon: CheckCircle2, className: "text-success", label: t("done"), bgClass: "bg-green-500/10 border-green-500/25" },
     running: { icon: Loader2, className: "text-blue-500 animate-spin", label: t("building"), bgClass: "bg-blue-500/10 border-blue-500/30" },
+    failed: { icon: AlertCircle, className: "text-destructive", label: t("failed"), bgClass: "bg-red-500/10 border-red-500/25" },
     pending: { icon: Circle, className: "text-muted-foreground", label: t("pending"), bgClass: "bg-muted/50 border-border" },
   };
 
@@ -50,7 +51,8 @@ export const PipelineStatus = ({ agents }: PipelineStatusProps) => {
                   {agent.description}
                   <span className={`font-medium ${
                     agent.status === "done" ? "text-success" :
-                    agent.status === "running" ? "text-blue-500" : "text-muted-foreground"
+                    agent.status === "running" ? "text-blue-500" :
+                    agent.status === "failed" ? "text-destructive" : "text-muted-foreground"
                   }`}>
                     · {config.label}
                   </span>

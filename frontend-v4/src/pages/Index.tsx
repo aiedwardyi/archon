@@ -16,6 +16,7 @@ import {
   projectChat,
   iterateProject,
   fetchChatHistory,
+  fetchVersions,
   type ChatMessage,
 } from "@/services/api";
 import { Search, Plus, Trash2, Zap, Mic, Send, Volume2, Filter, Loader2, AlertCircle } from "lucide-react";
@@ -36,6 +37,21 @@ const Index = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const logContainerRef = useRef<HTMLDivElement>(null);
   const pipeline = usePipelineStatus(selectedProjectId, activeTab === "pipeline" && sending);
+
+  // Restore pipeline card state from DB when no live build is running
+  const [historicalStatus, setHistoricalStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedProjectId) { setHistoricalStatus(null); return; }
+    let cancelled = false;
+    fetchVersions(selectedProjectId).then((versions) => {
+      if (cancelled || versions.length === 0) return;
+      // versions are returned newest-first from API
+      const latest = versions[0];
+      setHistoricalStatus(latest.status?.toUpperCase() || null);
+    });
+    return () => { cancelled = true; };
+  }, [selectedProjectId]);
 
   // Load chat history when project changes
   useEffect(() => {
@@ -120,16 +136,37 @@ const Index = () => {
     { label: t("failed"), value: projectStats.failed, color: "text-destructive" },
   ];
 
-  // Derive agent card statuses from pipeline stage
-  const deriveAgentStatus = (agentStage: string): "done" | "running" | "pending" => {
+  // Derive agent card statuses from pipeline stage (live) or DB status (historical)
+  const deriveAgentStatus = (agentStage: string): "done" | "running" | "pending" | "failed" => {
     const stageOrder = ["pm", "planner", "engineer"];
-    const currentIdx = stageOrder.indexOf(pipeline.stage);
     const agentIdx = stageOrder.indexOf(agentStage);
-    if (!pipeline.running && pipeline.status === "IDLE") return "pending";
+
+    // Live build in progress — use real-time polling data
+    if (pipeline.running) {
+      const currentIdx = stageOrder.indexOf(pipeline.stage);
+      if (agentIdx < currentIdx) return "done";
+      if (agentIdx === currentIdx) return "running";
+      return "pending";
+    }
+
+    // Live build just finished this session
     if (pipeline.status === "COMPLETED") return "done";
-    if (pipeline.status === "FAILED") return agentIdx <= currentIdx ? (agentIdx < currentIdx ? "done" : "running") : "pending";
-    if (agentIdx < currentIdx) return "done";
-    if (agentIdx === currentIdx) return "running";
+    if (pipeline.status === "FAILED") {
+      const currentIdx = stageOrder.indexOf(pipeline.stage);
+      return agentIdx < currentIdx ? "done" : agentIdx === currentIdx ? "failed" : "pending";
+    }
+
+    // No live build — restore from DB
+    if (historicalStatus === "SUCCESS" || historicalStatus === "COMPLETED") return "done";
+    if (historicalStatus === "FAILED" || historicalStatus === "ERROR") {
+      // Requirements + Architecture + Design completed, Build failed
+      return agentStage === "engineer" ? "failed" : "done";
+    }
+    if (historicalStatus === "RUNNING" || historicalStatus === "IN_PROGRESS") {
+      // Stale running state (server died mid-build) — show as pending
+      return "pending";
+    }
+
     return "pending";
   };
 
