@@ -1,10 +1,16 @@
-# Current Sprint — Phase 15.4-15.5: Enterprise UI (frontend-v4)
+# Current Sprint — Phase 15.6: Frontend Cleanup & Tab Sync
 
 ## Sprint Goal
-Ship enterprise frontend-v4 with real API wiring, Pipeline tab chat UI, and full project management features.
+Unify navigation between Enterprise (frontend-v4) and Studio (frontend) designs, clean up deprecated frontends.
+
+## Port Reference
+- **backend**: port 5000 (Flask)
+- **frontend-v4**: port 8080 (Enterprise, Vite)
+- **frontend**: port 3000 (Studio, Next.js)
+- **frontend-consumer2**: port 3002 (Consumer, Vite)
 
 ## Working Directory
-C:\Users\mredw\OneDrive\Desktop\ai-dev-team\
+C:\Users\mredw\Desktop\ai-dev-team\
 
 ## Branch
 main (enterprise-ui merged and deleted)
@@ -106,13 +112,19 @@ main (enterprise-ui merged and deleted)
 
 ---
 
-## What's Next
+### Phase 15.6 — Frontend Cleanup & Tab Sync (🔧 In Progress)
+- ✅ Wire Studio button in frontend-v4 navbar (opens Studio in same tab)
+- ✅ Add Enterprise/Studio design switcher to frontend/ navbar
+- ✅ Sync active tab between Enterprise and Studio on switch (URL query param approach)
+- ✅ Remove deprecated frontend-consumer/ folder
+- 🔴 Studio Tasks tab empty — wire real task data same way as frontend-v4
+- 🔴 Minor Studio polish touches
+- 🔴 Retire frontend-consumer2/ once consumer features confirmed complete (future)
+- 🔴 Next.js → Vite migration for frontend/ (deferred to end of all phases)
 
-### Phase 15.6 — Frontend Cleanup
-- Retire `frontend/` and `frontend-consumer2/` once frontend-v4 is feature-complete
-- Studio theme CSS variables in frontend-v4
-- Studio button in avatar dropdown → switch to `frontend/` (Next.js, port 3000) design
-- Enterprise button → frontend-v4
+---
+
+## What's Next
 
 ### Phase 8.3 — Client Share Link
 - Read-only shareable URL for client deliverables

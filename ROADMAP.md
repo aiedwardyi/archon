@@ -171,6 +171,7 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - 🔧 Consumer UX bug fixes — stale state, code tab fixed, failed overlay fixed, progress bar restored (smooth animation, minor edge cases remain), preview iframe regression pending fix
 - ✅ Phase 15.4 — Enterprise UI (frontend-v4) — Vite + React + shadcn/ui on port 8080, real API wiring, 4-theme foundation
 - ✅ Phase 15.5 — Enterprise UI polish complete — Pipeline chat UI, delete modal, build details, JSON repair, all state bugs fixed
+- 🔧 Phase 15.6 — Frontend cleanup & tab sync in progress — Studio/Enterprise switcher, tab sync via URL query params, deprecated frontend-consumer removed
 - 🔴 PDF Export + Client Read-Only Link (Phase 8 remaining)
 
 ### Phase 9 — Pipeline Page & Classifier Improvements (⬜ Planned)
@@ -317,3 +318,13 @@ Impact:
 - JSON repair bug fixed — _repair_json strips fences, fixes bare backslashes
 - Delete modal — type "DELETE" to confirm + shutil.rmtree disk cleanup
 - Build Details card — tokens_used, estimated_cost, duration, model wired from DB
+
+## Phase 15.6 — Frontend Cleanup & Tab Sync (🔧 In Progress Feb 2026)
+- ✅ Wire Studio button in frontend-v4 navbar (opens Studio in same tab)
+- ✅ Add Enterprise/Studio design switcher to frontend/ navbar
+- ✅ Sync active tab between Enterprise and Studio on switch (URL query param approach)
+- ✅ Remove deprecated frontend-consumer/ folder
+- 🔴 Studio Tasks tab empty — wire real task data same way as frontend-v4
+- 🔴 Minor Studio polish touches
+- 🔴 Retire frontend-consumer2/ once consumer features confirmed complete (future)
+- 🔴 Next.js → Vite migration for frontend/ (deferred to end of all phases)
