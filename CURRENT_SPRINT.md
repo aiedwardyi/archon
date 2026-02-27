@@ -105,6 +105,9 @@ main (enterprise-ui merged and deleted)
 - ✅ WelcomeBanner — live backend health check (green/red dot with 10s polling)
 - ✅ i18n keys added: backendOffline, projectName, projectDescription, creating, create, cancel
 - ✅ Artifact cards (Brief/Plan/Code) in VersionsView navigate to Artifacts tab with correct sub-tab pre-selected
+- ✅ Code tab scrollbars fixed — outer grid overflow:hidden with calc height, `<pre>` overflow:auto, minWidth:0 on right panel
+- ✅ Renamed "Running" → "Building" (EN) / "빌딩 중" (KO) across i18n and ProjectTable
+- ✅ Pipeline header status badge — colored rounded-full pills (blue/building, emerald/completed, red/failed, gray/idle)
 
 ---
 
