@@ -337,6 +337,6 @@ Impact:
 - ✅ Chat messages persist via sessionStorage keyed by project ID (survives tab/project switching)
 - ✅ Pipeline tab scroll-to-top fixed (container ref + triple scroll target)
 - 🔴 JSON repair bug — intermittent EngineerAgent \escape error (prompts/engineer.txt fix)
-- 🔴 Delete modal — type "delete" to confirm + shutil.rmtree disk cleanup
-- 🔴 Build Details card — wire tokens_used, estimated_cost to DB (model + duration already working)
+- ✅ Delete modal — type "DELETE" to confirm + shutil.rmtree disk cleanup
+- ✅ Build Details card — tokens_used, estimated_cost, duration, model wired from DB
 - 🔴 Studio theme CSS variables in frontend-v4
