@@ -5,6 +5,7 @@ import { useTheme } from "next-themes"
 import {
   Sun, Moon, LogOut, Settings, BookOpen,
   User, DollarSign, Coins, Zap, ExternalLink,
+  Building2, Paintbrush,
 } from "lucide-react"
 import { ProfileModal, SettingsModal, PricingModal } from "@/components/account-modals"
 
@@ -106,6 +107,26 @@ export function AvatarDropdown() {
                 >
                   <Moon className="h-3.5 w-3.5" />
                   Dark
+                </button>
+              </div>
+            </div>
+
+            <div className="border-t border-border px-3 py-2.5">
+              <p className="text-xs text-muted-foreground mb-2 font-medium">Design</p>
+              <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+                <button
+                  onClick={() => { window.location.href = 'http://localhost:8080'; }}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all text-muted-foreground hover:text-foreground"
+                >
+                  <Building2 className="h-3.5 w-3.5" />
+                  Enterprise
+                </button>
+                <button
+                  onClick={() => setOpen(false)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all bg-card text-foreground shadow-sm"
+                >
+                  <Paintbrush className="h-3.5 w-3.5" />
+                  Studio
                 </button>
               </div>
             </div>
