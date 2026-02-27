@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { PipelineStatus } from "@/components/PipelineStatus";
 import { StatsBar } from "@/components/StatsBar";
@@ -13,8 +13,20 @@ import { Search, Plus, Trash2, Sparkles, Mic, Send, Volume2, Filter, Loader2 } f
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("projects");
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
   const { t } = useLanguage();
   const { projects, loading, error, stats: projectStats } = useProjects();
+
+  useEffect(() => {
+    if (projects.length > 0 && selectedProjectId === null) {
+      setSelectedProjectId(projects[0].id);
+    }
+  }, [projects]);
+
+  useEffect(() => {
+    setSelectedVersion(null);
+  }, [selectedProjectId]);
 
   const stats = [
     { label: t("totalProjects"), value: projectStats.total },
@@ -31,7 +43,12 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar activeTab={activeTab} onTabChange={setActiveTab} />
+      <Navbar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        selectedProjectName={projects.find(p => p.id === selectedProjectId)?.name}
+        selectedProjectVersion={selectedVersion != null ? `v${selectedVersion}` : projects.find(p => p.id === selectedProjectId)?.versions}
+      />
 
       <main className="max-w-7xl mx-auto px-4 py-4 space-y-4">
         {activeTab === "pipeline" && (
@@ -46,17 +63,23 @@ const Index = () => {
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h1 className="text-base font-semibold text-foreground">Add AI-powered insights</h1>
-                        <span className="text-[10px] font-semibold text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-500/15 px-1.5 py-0.5 rounded">v2</span>
+                        <h1 className="text-base font-semibold text-foreground">
+                          {(() => { const sp = projects.find(p => p.id === selectedProjectId); return sp ? sp.name : "Add AI-powered insights"; })()}
+                        </h1>
+                        <span className="text-[10px] font-semibold text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-500/15 px-1.5 py-0.5 rounded">
+                          {(() => { const sp = projects.find(p => p.id === selectedProjectId); return sp ? sp.versions : "v2"; })()}
+                        </span>
                       </div>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">Project #58 · Started Feb 27, 2026</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {(() => { const sp = projects.find(p => p.id === selectedProjectId); return sp ? `Project #${sp.id} · ${sp.created}` : "Project #58 · Started Feb 27, 2026"; })()}
+                      </p>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-medium text-blue-500 flex items-center gap-1.5">
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-                    {t("building")}
+                    {(() => { const sp = projects.find(p => p.id === selectedProjectId); return sp ? sp.status : t("building"); })()}
                   </span>
                 </div>
               </div>
@@ -221,16 +244,16 @@ const Index = () => {
                   <span className="ml-2 text-sm text-muted-foreground">Loading projects...</span>
                 </div>
               ) : (
-                <ProjectTable projects={projects} />
+                <ProjectTable projects={projects} onProjectSelect={(id) => { setSelectedProjectId(id); setActiveTab("pipeline"); }} />
               )}
               <ActivityFeed />
             </div>
           </>
         )}
 
-        {activeTab === "versions" && <VersionsView />}
+        {activeTab === "versions" && <VersionsView projectId={selectedProjectId} selectedVersion={selectedVersion} onVersionSelect={setSelectedVersion} />}
 
-        {activeTab === "artifacts" && <ArtifactsView />}
+        {activeTab === "artifacts" && <ArtifactsView projectId={selectedProjectId} selectedVersion={selectedVersion} onVersionSelect={setSelectedVersion} />}
       </main>
     </div>
   );

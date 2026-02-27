@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { useState, useEffect } from "react";
+import { PanelLeftClose, PanelLeftOpen, Loader2 } from "lucide-react";
 import { CheckCircle2, XCircle, Download, RotateCcw, FileText, Blocks, Code2, Monitor, Smartphone } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { fetchVersions } from "@/services/api";
 
 interface Version {
   id: number;
@@ -15,19 +16,6 @@ interface Version {
   filesGenerated?: number;
 }
 
-const versions: Version[] = [
-  { id: 10, label: "v10", status: "completed", description: "change the Join Community button …", time: "07:04 AM", filesChanged: 2, prompt: "change the Join Community button color to match the theme", buildSummary: "Pipeline completed successfully. 2 files were generated.", filesGenerated: 2 },
-  { id: 9, label: "v9", status: "completed", description: "add a dark overlay to the hero b…", time: "06:52 AM", filesChanged: 2, prompt: "add a dark overlay to the hero background image", buildSummary: "Pipeline completed successfully. 2 files were generated.", filesGenerated: 2 },
-  { id: 8, label: "v8", status: "completed", description: "add a mini game where the user ca…", time: "06:41 AM", filesChanged: 2, prompt: "add a mini game where the user can catch digimon", buildSummary: "Pipeline completed successfully. 2 files were generated.", filesGenerated: 2 },
-  { id: 7, label: "v7", status: "completed", description: "add a mini game where the user ca…", time: "06:27 AM", filesChanged: 3, prompt: "add a mini game where the user can catch digimon", buildSummary: "Pipeline completed successfully. 3 files were generated.", filesGenerated: 3 },
-  { id: 6, label: "v6", status: "failed", description: "add a mini game where the user ca…", time: "06:20 AM", filesChanged: 0, prompt: "add a mini game where the user can catch digimon", buildSummary: "Pipeline failed. 0 files were generated." },
-  { id: 5, label: "v5", status: "failed", description: "add a mini game where the user ca…", time: "06:13 AM", filesChanged: 0, prompt: "add a mini game where the user can catch digimon", buildSummary: "Pipeline failed. 0 files were generated." },
-  { id: 4, label: "v4", status: "failed", description: "add a mini game where the user ca…", time: "06:06 AM", filesChanged: 0, prompt: "add a mini game where the user can catch digimon", buildSummary: "Pipeline failed. 0 files were generated." },
-  { id: 3, label: "v3", status: "failed", description: "i want to just add a mini game to…", time: "05:53 AM", filesChanged: 0, prompt: "i want to just add a mini game to the site", buildSummary: "Pipeline failed. 0 files were generated." },
-  { id: 2, label: "v2", status: "completed", description: "lets do it", time: "05:21 AM", filesChanged: 2, prompt: "lets do it", buildSummary: "Pipeline completed successfully. 2 files were generated.", filesGenerated: 2 },
-  { id: 1, label: "v1", status: "completed", description: "create me a digimon fan page webs…", time: "05:15 AM", filesChanged: 2, prompt: "create me a digimon fan page website", buildSummary: "Pipeline completed successfully. 2 files were generated.", filesGenerated: 2 },
-];
-
 const StatusIcon = ({ status }: { status: "completed" | "failed" }) =>
   status === "completed" ? (
     <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
@@ -35,13 +23,76 @@ const StatusIcon = ({ status }: { status: "completed" | "failed" }) =>
     <XCircle className="h-4 w-4 text-destructive flex-shrink-0" />
   );
 
-export const VersionsView = () => {
-  const [selected, setSelected] = useState(9);
+interface VersionsViewProps {
+  projectId: number | null;
+  selectedVersion: number | null;
+  onVersionSelect: (v: number) => void;
+}
+
+export const VersionsView = ({ projectId, selectedVersion, onVersionSelect }: VersionsViewProps) => {
+  const selected = selectedVersion;
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "mobile">("desktop");
   const [collapsed, setCollapsed] = useState(false);
+  const [versions, setVersions] = useState<Version[]>([]);
+  const [loadingVersions, setLoadingVersions] = useState(false);
   const { t } = useLanguage();
 
-  const version = versions.find((v) => v.id === selected)!;
+  useEffect(() => {
+    if (!projectId) { setVersions([]); return; }
+    let cancelled = false;
+    setLoadingVersions(true);
+    fetchVersions(projectId).then((raw) => {
+      if (cancelled) return;
+      const mapped: Version[] = raw.map((v) => {
+        const lastUserMsg = v.prompt_history?.filter(m => m.role === "user").pop()?.content || "";
+        const isSuccess = v.status === "success" || v.status === "completed";
+        return {
+          id: v.version,
+          label: "v" + v.version,
+          status: isSuccess ? "completed" as const : "failed" as const,
+          description: lastUserMsg.length > 40 ? lastUserMsg.slice(0, 40) + "…" : lastUserMsg,
+          time: v.created_at ? new Date(v.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true }) : "",
+          filesChanged: v.artifacts ? 2 : 0,
+          prompt: lastUserMsg,
+          buildSummary: isSuccess ? "Pipeline completed successfully." : "Pipeline failed.",
+        };
+      });
+      mapped.sort((a, b) => b.id - a.id);
+      setVersions(mapped);
+      if (mapped.length > 0 && (selectedVersion === null || !mapped.find(m => m.id === selectedVersion))) {
+        onVersionSelect(mapped[0].id);
+      }
+      setLoadingVersions(false);
+    });
+    return () => { cancelled = true; };
+  }, [projectId]);
+
+  const version = versions.find((v) => v.id === selected);
+
+  if (!projectId) {
+    return (
+      <div className="border border-border rounded-md bg-card flex items-center justify-center py-20">
+        <span className="text-sm text-muted-foreground">Select a project to view versions</span>
+      </div>
+    );
+  }
+
+  if (loadingVersions) {
+    return (
+      <div className="border border-border rounded-md bg-card flex items-center justify-center py-20">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <span className="ml-2 text-sm text-muted-foreground">Loading versions...</span>
+      </div>
+    );
+  }
+
+  if (!version) {
+    return (
+      <div className="border border-border rounded-md bg-card flex items-center justify-center py-20">
+        <span className="text-sm text-muted-foreground">No versions found</span>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -72,7 +123,7 @@ export const VersionsView = () => {
               return (
                 <button
                   key={v.id}
-                  onClick={() => setSelected(v.id)}
+                  onClick={() => onVersionSelect(v.id)}
                   className={`w-full text-left px-3 py-2.5 rounded-md transition-colors ${
                     isActive ? "bg-primary/10 border border-primary/20" : "hover:bg-secondary/60"
                   }`}
@@ -195,40 +246,31 @@ export const VersionsView = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-center p-6 bg-secondary/20 min-h-[400px]">
+            <div className="bg-secondary/20" style={{ height: 500 }}>
               {previewDevice === "desktop" ? (
-                <div className="w-full max-w-3xl bg-background border border-border rounded-lg overflow-hidden shadow-sm">
-                  <div className="h-8 bg-secondary/60 border-b border-border flex items-center gap-1.5 px-3">
+                <div className="w-full h-full bg-background border border-border rounded-lg overflow-hidden shadow-sm flex flex-col">
+                  <div className="h-8 bg-secondary/60 border-b border-border flex items-center gap-1.5 px-3 flex-shrink-0">
                     <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />
                     <span className="h-2.5 w-2.5 rounded-full bg-amber-400/60" />
                     <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/60" />
                     <div className="ml-3 h-4 w-48 bg-secondary rounded-sm" />
                   </div>
-                  <div className="p-6 space-y-4">
-                    <div className="h-6 w-48 bg-secondary rounded" />
-                    <div className="h-32 bg-secondary/60 rounded-md" />
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="h-20 bg-secondary/40 rounded" />
-                      <div className="h-20 bg-secondary/40 rounded" />
-                      <div className="h-20 bg-secondary/40 rounded" />
-                    </div>
-                  </div>
+                  <iframe
+                    src={`http://localhost:5000/api/preview/${projectId}/${selected}`}
+                    className="w-full flex-1 border-0"
+                  />
                 </div>
               ) : (
-                <div className="w-[280px] bg-background border-2 border-foreground/20 rounded-[2rem] overflow-hidden shadow-lg">
-                  <div className="flex justify-center py-2">
-                    <div className="h-4 w-20 bg-foreground/10 rounded-full" />
-                  </div>
-                  <div className="mx-2 mb-2 rounded-xl overflow-hidden border border-border">
-                    <div className="p-4 space-y-3">
-                      <div className="h-5 w-32 bg-secondary rounded" />
-                      <div className="h-24 bg-secondary/60 rounded-md" />
-                      <div className="h-4 w-full bg-secondary/40 rounded" />
-                      <div className="h-4 w-3/4 bg-secondary/40 rounded" />
-                      <div className="flex gap-2">
-                        <div className="h-8 w-20 bg-primary/20 rounded" />
-                        <div className="h-8 w-20 bg-secondary rounded" />
-                      </div>
+                <div className="flex items-start justify-center h-full pt-4">
+                  <div className="w-[280px] bg-background border-2 border-foreground/20 rounded-[2rem] overflow-hidden shadow-lg flex flex-col" style={{ height: 480 }}>
+                    <div className="flex justify-center py-2 flex-shrink-0">
+                      <div className="h-4 w-20 bg-foreground/10 rounded-full" />
+                    </div>
+                    <div className="mx-2 mb-2 rounded-xl overflow-hidden border border-border flex-1">
+                      <iframe
+                        src={`http://localhost:5000/api/preview/${projectId}/${selected}`}
+                        className="w-full h-full border-0"
+                      />
                     </div>
                   </div>
                 </div>

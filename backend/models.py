@@ -49,6 +49,7 @@ class Project(Base):
     executions = relationship("Execution", back_populates="project", cascade="all, delete-orphan")
 
     def to_dict(self):
+        max_version = max((e.version for e in self.executions), default=0) if self.executions else 0
         return {
             "id": self.id,
             "name": self.name,
@@ -57,6 +58,7 @@ class Project(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "execution_count": len(self.executions) if self.executions else 0,
+            "version_count": max_version,
         }
 
 
@@ -165,3 +167,4 @@ def init_db():
 def get_session():
     """Get a new database session. Remember to close it after use!"""
     return SessionLocal()
+

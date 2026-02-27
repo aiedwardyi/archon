@@ -16,6 +16,7 @@ interface Project {
 
 interface ProjectTableProps {
   projects: Project[];
+  onProjectSelect?: (id: number) => void;
 }
 
 type SortKey = "name" | "id" | "status" | "lastRun" | "versions" | "created";
@@ -30,7 +31,7 @@ const statusStyles: Record<ProjectStatus, { dot: string; text: string; bg: strin
   Idle: { dot: "bg-gray-400", text: "text-gray-500 dark:text-gray-400", bg: "bg-gray-50 dark:bg-gray-500/10" },
 };
 
-export const ProjectTable = ({ projects }: ProjectTableProps) => {
+export const ProjectTable = ({ projects, onProjectSelect }: ProjectTableProps) => {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [sortKey, setSortKey] = useState<SortKey>("id");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -128,6 +129,7 @@ export const ProjectTable = ({ projects }: ProjectTableProps) => {
           return (
             <div
               key={p.id}
+              onClick={() => onProjectSelect?.(p.id)}
               className={`grid grid-cols-[40px_1fr_70px_110px_120px_80px_110px_80px] px-2 py-2.5 items-center transition-colors cursor-pointer ${
                 isSelected ? "bg-primary/5" : "hover:bg-secondary/40"
               }`}

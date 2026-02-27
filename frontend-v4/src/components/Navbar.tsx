@@ -5,7 +5,7 @@ import { ProfileModal } from "./ProfileModal";
 import { SettingsModal } from "./SettingsModal";
 import { PricingModal } from "./PricingModal";
 import {
-  Settings, LayoutGrid, Play, Clock, FileDown, Sparkles, Coins,
+  Settings, LayoutGrid, Play, Clock, FileDown, Coins,
   User, Sun, Moon, Building2, Pencil, DollarSign, BookOpen, ExternalLink,
   LogOut, Zap, ChevronDown, Globe,
 } from "lucide-react";
@@ -13,9 +13,11 @@ import {
 interface NavbarProps {
   activeTab?: string;
   onTabChange?: (tab: string) => void;
+  selectedProjectName?: string;
+  selectedProjectVersion?: string;
 }
 
-export const Navbar = ({ activeTab = "projects", onTabChange }: NavbarProps) => {
+export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectName, selectedProjectVersion }: NavbarProps) => {
   const [open, setOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<"profile" | "settings" | "pricing" | null>(null);
   const [designStyle, setDesignStyle] = useState<"studio" | "enterprise">("enterprise");
@@ -43,8 +45,10 @@ export const Navbar = ({ activeTab = "projects", onTabChange }: NavbarProps) => 
       {/* Left: Logo + Nav */}
       <div className="flex items-center gap-5">
         <div className="flex items-center gap-2 font-semibold text-foreground tracking-tight text-sm">
-          <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
-            <Sparkles className="h-3.5 w-3.5 text-primary-foreground" />
+          <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
+            <svg viewBox="0 0 32 32" className="h-4 w-4" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 4L8 18h8l-2 10 12-14h-8l2-10z" fill="white"/>
+            </svg>
           </div>
           <span>Archon</span>
         </div>
@@ -72,9 +76,9 @@ export const Navbar = ({ activeTab = "projects", onTabChange }: NavbarProps) => 
       {/* Right: Breadcrumb + Language + Credits + Avatar */}
       <div className="flex items-center gap-3">
         <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span>{t("buildAModern")}</span>
+          <span>{selectedProjectName || t("buildAModern")}</span>
           <ChevronDown className="h-3 w-3" />
-          <span className="font-medium text-foreground bg-secondary px-1.5 py-0.5 rounded text-[10px]">v1</span>
+          <span className="font-medium text-foreground bg-secondary px-1.5 py-0.5 rounded text-[10px]">{selectedProjectVersion || "v1"}</span>
         </div>
 
         <div className="h-5 w-px bg-border" />

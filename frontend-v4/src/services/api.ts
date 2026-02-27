@@ -30,13 +30,16 @@ export async function fetchProjects(): Promise<Project[]> {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
   const list: any[] = Array.isArray(data) ? data : data.projects || [];
+  if (list.length > 0) {
+    console.log("[fetchProjects] raw project sample:", list[0]);
+  }
   return list.map((p) => ({
     id: p.id,
     name: p.name || "Untitled",
     description: p.description || "No description",
     status: mapStatus(p.status),
     lastRun: p.updated_at ? formatDate(p.updated_at) : p.created_at ? formatDate(p.created_at) : "—",
-    versions: `v${p.version_count || 1}`,
+    versions: `v${p.version_count ?? 1}`,
     created: p.created_at ? formatDate(p.created_at) : "—",
   }));
 }
@@ -60,10 +63,9 @@ export function useProjects() {
     const load = async () => {
       try {
         const data = await fetchProjects();
-        if (!cancelled) {
-          setProjects(data);
-          setError(null);
-        }
+        if (cancelled) return;
+        setProjects(data);
+        setError(null);
       } catch (e: any) {
         if (!cancelled) setError(e.message || "Failed to fetch projects");
       } finally {
@@ -88,4 +90,79 @@ export function useProjects() {
   };
 
   return { projects, loading, error, stats };
+}
+
+// ── Version / Artifact APIs ──
+
+const API = "http://localhost:5000";
+
+export interface Version {
+  id: string;
+  version: number;
+  status: string;
+  created_at: string;
+  prompt_history?: Array<{ role: string; content: string }>;
+  artifacts?: { brief?: any; plan?: any };
+}
+
+export async function fetchVersions(projectId: number): Promise<Version[]> {
+  const res = await fetch(`${API}/api/projects/${projectId}/versions`);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return Array.isArray(data) ? data : (data.versions || []);
+}
+
+export async function fetchProjectHead(projectId: number): Promise<number | null> {
+  try {
+    const res = await fetch(`${API}/api/projects/${projectId}/head`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.version ?? data?.version_number ?? null;
+  } catch { return null; }
+}
+
+export async function fetchLogs(projectId: number, version: number): Promise<string[]> {
+  try {
+    const res = await fetch(`${API}/api/projects/${projectId}/versions/${version}/logs`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data.map((l: any) => `${l.timestamp ? new Date(l.timestamp).toLocaleTimeString([], {hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'}) : ''} ${l.message || l}`) : [];
+  } catch { return []; }
+}
+
+export async function fetchPrd(projectId: number, version: number): Promise<any> {
+  try {
+    const res = await fetch(`${API}/api/prd?project_id=${projectId}&version=${version}`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+
+export async function fetchPlan(projectId: number, version: number): Promise<any> {
+  try {
+    const res = await fetch(`${API}/api/plan?project_id=${projectId}&version=${version}`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+
+export async function fetchCodeFiles(projectId: number, version: number): Promise<Array<{filename: string; content: string; language: string}>> {
+  try {
+    const base = `${API}/api/projects/${projectId}/versions/${version}/files`;
+    const res = await fetch(base);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const tree = data.tree || [];
+    const flatten = (nodes: any[]): string[] => nodes.flatMap(n => n.type === 'file' ? [n.path] : flatten(n.children || []));
+    const paths = flatten(tree);
+    const files = await Promise.all(paths.map(async path => {
+      try {
+        const r = await fetch(`${base}?path=${encodeURIComponent(path)}`);
+        if (!r.ok) return null;
+        const f = await r.json();
+        return { filename: path, content: f.content || '', language: f.language || 'text' };
+      } catch { return null; }
+    }));
+    return files.filter(Boolean) as any[];
+  } catch { return []; }
 }
