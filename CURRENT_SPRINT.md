@@ -104,6 +104,7 @@ main (enterprise-ui merged and deleted)
 - ✅ ArtifactsView Code tab — fixed height with independent scroll for file tree and code viewer
 - ✅ WelcomeBanner — live backend health check (green/red dot with 10s polling)
 - ✅ i18n keys added: backendOffline, projectName, projectDescription, creating, create, cancel
+- ✅ Artifact cards (Brief/Plan/Code) in VersionsView navigate to Artifacts tab with correct sub-tab pre-selected
 
 ---
 

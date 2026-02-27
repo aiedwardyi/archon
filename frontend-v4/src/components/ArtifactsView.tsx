@@ -365,7 +365,7 @@ const CodeTab = ({ files, selectedFile, onSelectFile }: { files: CodeFile[]; sel
   if (files.length === 0) return <div className="text-sm text-muted-foreground">No code files found.</div>;
   const safeIdx = Math.min(selectedFile, files.length - 1);
   return (
-    <div className="grid grid-cols-[180px_1fr] gap-0 border border-border rounded-md overflow-hidden bg-card" style={{ height: "calc(100vh - 280px)", minHeight: 400 }}>
+    <div className="grid grid-cols-[180px_1fr] gap-0 border border-border rounded-md overflow-hidden bg-card" style={{ height: "calc(100vh - 300px)", minHeight: 400 }}>
       {/* File Tree — independently scrollable */}
       <div className="border-r border-border bg-secondary/30 overflow-y-auto">
         <div className="px-3 py-2 flex items-center gap-1.5 text-xs text-muted-foreground sticky top-0 bg-secondary/30 z-10">

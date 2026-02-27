@@ -224,22 +224,23 @@ const Index = () => {
                     </div>
                     <div className="flex items-center gap-3">
                       {pipeline.running ? (
-                        <span className="text-xs font-medium text-blue-500 flex items-center gap-1.5">
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10">
                           <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
                           {t("building")}
                         </span>
                       ) : pipeline.status === "COMPLETED" ? (
-                        <span className="text-xs font-medium text-success flex items-center gap-1.5">
-                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-500" />
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10">
+                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
                           {t("completed")}
                         </span>
                       ) : pipeline.status === "FAILED" ? (
-                        <span className="text-xs font-medium text-destructive flex items-center gap-1.5">
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10">
                           <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-500" />
                           {t("failed")}
                         </span>
                       ) : (
-                        <span className="text-xs font-medium text-muted-foreground">
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-500/10">
+                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-gray-400" />
                           {projects.find(p => p.id === selectedProjectId)?.status || "Idle"}
                         </span>
                       )}

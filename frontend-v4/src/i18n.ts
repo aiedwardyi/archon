@@ -41,7 +41,7 @@ export const translations = {
 
   // Stats
   totalProjects: { en: "Total Projects", ko: "전체 프로젝트" },
-  running: { en: "Running", ko: "실행 중" },
+  running: { en: "Building", ko: "빌딩 중" },
   completed: { en: "Completed", ko: "완료" },
   failed: { en: "Failed", ko: "실패" },
 
