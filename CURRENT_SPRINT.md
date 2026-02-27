@@ -97,15 +97,20 @@ main (enterprise-ui merged and deleted)
 - ✅ Pipeline tab — live output log panel with auto-scroll
 - ✅ Replaced Sparkles icon with Zap (lightning bolt) for Archon branding
 - ✅ Added missing i18n keys for pipeline UI
+- ✅ New Project modal (Name + Description → POST /api/projects, auto-selects project and opens Pipeline tab)
+- ✅ "What Was Built" summary — real file + image counts from backend (e.g. "2 code files · 3 images generated")
+- ✅ Backend returns `images_generated` count from `last_design_assets.json` per version
+- ✅ VersionsView files changed count uses real `files_generated` from API
+- ✅ ArtifactsView Code tab — fixed height with independent scroll for file tree and code viewer
+- ✅ WelcomeBanner — live backend health check (green/red dot with 10s polling)
+- ✅ i18n keys added: backendOffline, projectName, projectDescription, creating, create, cancel
 
 ---
 
 ## What's Next
 
 ### Phase 15.5 — Remaining
-- New Project modal (Name + Description → POST /api/projects)
 - Delete selected projects modal (type "delete" to confirm)
-- Files changed count in VersionsView (show real `files_generated`)
 - Studio theme CSS variables in frontend-v4
 
 ### Phase 15.6 — Frontend Cleanup

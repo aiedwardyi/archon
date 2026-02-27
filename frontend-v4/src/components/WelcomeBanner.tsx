@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Cpu, Code2, GitBranch, Clock } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePlatformStats } from "@/services/api";
@@ -21,6 +22,27 @@ function formatDuration(secs: number): string {
 export const WelcomeBanner = ({ stats }: WelcomeBannerProps) => {
   const { t } = useLanguage();
   const platform = usePlatformStats();
+  const [backendUp, setBackendUp] = useState(true);
+
+  useEffect(() => {
+    const checkHealth = async () => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
+      try {
+        const res = await fetch("http://localhost:5000/api/health", { signal: controller.signal });
+        setBackendUp(res.ok);
+      } catch {
+        setBackendUp(false);
+      } finally {
+        clearTimeout(timeout);
+      }
+    };
+
+    checkHealth();
+    const interval = setInterval(checkHealth, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
   const hour = new Date().getHours();
   const greeting = hour < 12 ? t("goodMorning") : hour < 18 ? t("goodAfternoon") : t("goodEvening");
 
@@ -43,8 +65,10 @@ export const WelcomeBanner = ({ stats }: WelcomeBannerProps) => {
           </p>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">{t("allSystemsOperational")}</span>
+          <span className={`inline-block h-2 w-2 rounded-full ${backendUp ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`} />
+          <span className={`text-[11px] font-medium ${backendUp ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+            {backendUp ? t("allSystemsOperational") : t("backendOffline")}
+          </span>
         </div>
       </div>
       <div className="grid grid-cols-4 gap-px bg-border border-t border-border">

@@ -712,6 +712,9 @@ def get_versions(project_id: int):
                 result_data = read_json_file(result_path)
                 if result_data:
                     e_dict["files_generated"] = result_data.get("outputs", {}).get("files_generated", 0)
+                assets_path = get_version_dir(project_id, e.version) / "last_design_assets.json"
+                assets_data = read_json_file(assets_path)
+                e_dict["images_generated"] = len(assets_data.get("assets", [])) if assets_data else 0
             versions_list.append(e_dict)
         return jsonify({
             "project_id": project_id,

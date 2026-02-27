@@ -359,10 +359,10 @@ const CodeTab = ({ files, selectedFile, onSelectFile }: { files: CodeFile[]; sel
   if (files.length === 0) return <div className="text-sm text-muted-foreground">No code files found.</div>;
   const safeIdx = Math.min(selectedFile, files.length - 1);
   return (
-    <div className="grid grid-cols-[180px_1fr] gap-0 border border-border rounded-md overflow-hidden bg-card">
-      {/* File Tree */}
-      <div className="border-r border-border bg-secondary/30">
-        <div className="px-3 py-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+    <div className="grid grid-cols-[180px_1fr] gap-0 border border-border rounded-md overflow-hidden bg-card" style={{ height: "calc(100vh - 280px)", minHeight: 400 }}>
+      {/* File Tree — independently scrollable */}
+      <div className="border-r border-border bg-secondary/30 overflow-y-auto">
+        <div className="px-3 py-2 flex items-center gap-1.5 text-xs text-muted-foreground sticky top-0 bg-secondary/30 z-10">
           <FolderOpen className="h-3.5 w-3.5" />
           <span className="font-medium">src</span>
         </div>
@@ -382,20 +382,20 @@ const CodeTab = ({ files, selectedFile, onSelectFile }: { files: CodeFile[]; sel
         ))}
       </div>
 
-      {/* Code Viewer */}
-      <div className="overflow-auto">
-        <div className="px-4 py-2 border-b border-border flex items-center justify-between bg-secondary/20">
+      {/* Code Viewer — scrolls both axes */}
+      <div className="flex flex-col min-h-0">
+        <div className="px-4 py-2 border-b border-border flex items-center justify-between bg-secondary/20 flex-shrink-0">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <FileCode className="h-3.5 w-3.5" />
             {files[safeIdx].path}
           </div>
           <span className="text-[10px] font-medium text-muted-foreground">{files[safeIdx].language}</span>
         </div>
-        <pre className="p-4 text-xs font-mono text-foreground leading-relaxed overflow-x-auto">
+        <pre className="p-4 text-xs font-mono text-foreground leading-relaxed overflow-scroll flex-1 min-h-0">
           {files[safeIdx].content.split("\n").map((line, i) => (
             <div key={i} className="flex">
               <span className="text-muted-foreground/50 w-8 text-right mr-4 select-none flex-shrink-0">{i + 1}</span>
-              <span>{line}</span>
+              <span className="whitespace-pre">{line}</span>
             </div>
           ))}
         </pre>

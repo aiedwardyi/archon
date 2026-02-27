@@ -6,6 +6,7 @@ import { StatsBar } from "@/components/StatsBar";
 import { ProjectTable } from "@/components/ProjectTable";
 import { WelcomeBanner } from "@/components/WelcomeBanner";
 import { ActivityFeed } from "@/components/ActivityFeed";
+import { NewProjectModal } from "@/components/NewProjectModal";
 import { VersionsView } from "@/components/VersionsView";
 import { ArtifactsView } from "@/components/ArtifactsView";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -23,6 +24,7 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("projects");
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
+  const [showNewProject, setShowNewProject] = useState(false);
   const { t } = useLanguage();
   const { projects, loading, error, stats: projectStats } = useProjects();
 
@@ -349,7 +351,7 @@ const Index = () => {
                 </select>
               </div>
               <div className="flex items-center gap-2">
-                <button className="h-8 px-3 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity flex items-center gap-1.5">
+                <button onClick={() => setShowNewProject(true)} className="h-8 px-3 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity flex items-center gap-1.5">
                   <Plus className="h-3.5 w-3.5" /> {t("newProject")}
                 </button>
               </div>
@@ -366,6 +368,16 @@ const Index = () => {
               )}
               <ActivityFeed />
             </div>
+
+            <NewProjectModal
+              open={showNewProject}
+              onClose={() => setShowNewProject(false)}
+              onCreated={(id) => {
+                setShowNewProject(false);
+                setSelectedProjectId(id);
+                setActiveTab("pipeline");
+              }}
+            />
           </>
         )}
 

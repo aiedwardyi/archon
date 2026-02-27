@@ -33,6 +33,7 @@ export const translations = {
   platformOverview: { en: "Platform overview", ko: "플랫폼 개요" },
   enterpriseWorkspace: { en: "Enterprise Workspace", ko: "엔터프라이즈 워크스페이스" },
   allSystemsOperational: { en: "All systems operational", ko: "모든 시스템 정상" },
+  backendOffline: { en: "Backend offline", ko: "백엔드 오프라인" },
   pipelinesToday: { en: "Pipelines Today", ko: "오늘 파이프라인" },
   linesGenerated: { en: "Lines Generated", ko: "생성된 라인" },
   versionsShipped: { en: "Versions Shipped", ko: "배포된 버전" },
@@ -48,6 +49,11 @@ export const translations = {
   searchProjects: { en: "Search projects...", ko: "프로젝트 검색..." },
   allStatuses: { en: "All statuses", ko: "모든 상태" },
   newProject: { en: "New Project", ko: "새 프로젝트" },
+  projectName: { en: "Project Name", ko: "프로젝트 이름" },
+  projectDescription: { en: "Description", ko: "설명" },
+  creating: { en: "Creating…", ko: "생성 중…" },
+  create: { en: "Create", ko: "만들기" },
+  cancel: { en: "Cancel", ko: "취소" },
 
   // Project table
   project: { en: "Project", ko: "프로젝트" },

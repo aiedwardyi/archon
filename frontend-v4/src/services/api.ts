@@ -25,6 +25,28 @@ function mapStatus(raw: string): Project["status"] {
   return "Idle";
 }
 
+export async function createProject(name: string, description: string): Promise<Project> {
+  const res = await fetch(`${API_BASE}/projects`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, description }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return {
+    id: data.id,
+    name: data.name || "Untitled",
+    description: data.description || "No description",
+    status: mapStatus(data.status),
+    lastRun: data.updated_at ? formatDate(data.updated_at) : data.created_at ? formatDate(data.created_at) : "—",
+    versions: `v${data.version_count ?? 1}`,
+    created: data.created_at ? formatDate(data.created_at) : "—",
+  };
+}
+
 export async function fetchProjects(): Promise<Project[]> {
   const res = await fetch(`${API_BASE}/projects`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -178,6 +200,8 @@ export interface Version {
   estimated_cost?: number | null;
   duration_seconds?: number | null;
   model_used?: string | null;
+  files_generated?: number;
+  images_generated?: number;
 }
 
 export interface BuildDetails {

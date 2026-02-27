@@ -46,15 +46,25 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect }: Ve
       const mapped: Version[] = raw.map((v) => {
         const lastUserMsg = v.prompt_history?.filter(m => m.role === "user").pop()?.content || "";
         const isSuccess = v.status === "success" || v.status === "completed";
+        const fileCount = v.files_generated ?? 0;
+        const imageCount = v.images_generated ?? 0;
+        const parts: string[] = [];
+        if (fileCount > 0) parts.push(`${fileCount} code file${fileCount !== 1 ? "s" : ""}`);
+        if (imageCount > 0) parts.push(`${imageCount} image${imageCount !== 1 ? "s" : ""}`);
         return {
           id: v.version,
           label: "v" + v.version,
           status: isSuccess ? "completed" as const : "failed" as const,
           description: lastUserMsg.length > 40 ? lastUserMsg.slice(0, 40) + "…" : lastUserMsg,
           time: v.created_at ? new Date(v.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true }) : "",
-          filesChanged: v.artifacts ? 2 : 0,
+          filesChanged: fileCount,
           prompt: lastUserMsg,
-          buildSummary: isSuccess ? "Pipeline completed successfully." : "Pipeline failed.",
+          filesGenerated: fileCount,
+          buildSummary: isSuccess
+            ? parts.length > 0
+              ? parts.join(" · ") + " generated"
+              : "Pipeline completed successfully."
+            : "Pipeline failed.",
         };
       });
       mapped.sort((a, b) => b.id - a.id);
