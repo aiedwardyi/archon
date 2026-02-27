@@ -1,8 +1,7 @@
-# Current Sprint — Phase 15: Consumer Frontend v2 + Iteration Hardening
+# Current Sprint — Phase 15.4-15.5: Enterprise UI (frontend-v4)
 
 ## Sprint Goal
-Ship a consumer-facing frontend with the Versions page as the core moat feature.
-Harden iteration mode so edits are surgical, not full redesigns.
+Ship enterprise frontend-v4 with real API wiring, Pipeline tab chat UI, and full project management features.
 
 ## Working Directory
 C:\Users\mredw\OneDrive\Desktop\ai-dev-team\
@@ -74,19 +73,44 @@ main (enterprise-ui merged and deleted)
 
 ---
 
+### Phase 15.4 — Enterprise UI (frontend-v4) ✅
+- Copied Lovable-generated Enterprise design (archon-v4) to `frontend-v4/`
+- Vite + React + TypeScript + Tailwind + shadcn/ui running on port 8080
+- 4-theme system foundation (Enterprise Light/Dark, Studio Light/Dark)
+- Korean/English language toggle with localStorage persistence
+- Projects page connected to real Flask API with 3s polling
+- Fixed N+1 query — added `version_count` to `Project.to_dict()` in `models.py`
+- VersionsView: real versions list + real iframe preview per version
+- ArtifactsView: real Brief (PRD), Plan, Code, Tasks, Logs
+- Navbar: real project name + version in breadcrumb
+- Favicon: lightning bolt SVG + "Archon - Enterprise Build" title
+
+### Phase 15.5 — Enterprise UI Polish (🔧 In Progress)
+- ✅ Checkbox UX fix — no longer triggers row navigation
+- ✅ Stats bar wired to real project counts (total/running/completed/failed)
+- ✅ Activity feed wired to real recent executions with collapse/expand
+- ✅ Avg build time stat with fallback for missing data
+- ✅ Publish and Download buttons wired to real endpoints
+- ✅ Pipeline tab — full chat UI with conversation panel, input bar, agent status cards
+- ✅ Pipeline tab — `/chat` and `/iterate` endpoints wired
+- ✅ Pipeline tab — chat history loaded from DB on project switch
+- ✅ Pipeline tab — live output log panel with auto-scroll
+- ✅ Replaced Sparkles icon with Zap (lightning bolt) for Archon branding
+- ✅ Added missing i18n keys for pipeline UI
+
+---
+
 ## What's Next
 
-### Phase 15.4 — Enterprise Theme Switcher (🔧 Up Next)
-- Add 3-option theme switcher to enterprise frontend (frontend/)
-- Dark (current default), Light (current light mode), Enterprise (new: neutral grays, tighter density, Inter/IBM Plex Sans, Bloomberg/Notion/Linear aesthetic)
-- Lovable designs the Enterprise theme CSS tokens + components
-- Claude Code wires switcher into navbar with localStorage persistence and data-theme="enterprise" attribute
-- Keep all existing dark/light modes intact
+### Phase 15.5 — Remaining
+- New Project modal (Name + Description → POST /api/projects)
+- Delete selected projects modal (type "delete" to confirm)
+- Files changed count in VersionsView (show real `files_generated`)
+- Studio theme CSS variables in frontend-v4
 
-### Frontend Cleanup
-- Decide between `frontend-consumer/` (port 3001) and `frontend-consumer2/` (port 3002)
-- Remove the one we don't keep
-- Single consumer frontend going forward
+### Phase 15.6 — Frontend Cleanup
+- Retire `frontend/` and `frontend-consumer2/` once frontend-v4 is feature-complete
+- Single frontend going forward
 
 ### Phase 8.3 — Client Share Link
 - Read-only shareable URL for client deliverables

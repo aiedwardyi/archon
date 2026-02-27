@@ -169,7 +169,8 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - ✅ Consumer Versions page — timeline + split panel + preview per version (THE MOAT)
 - ✅ Consumer frontend polished — Archon branding, newest-first timeline, glow effects, full Korean i18n
 - 🔧 Consumer UX bug fixes — stale state, code tab fixed, failed overlay fixed, progress bar restored (smooth animation, minor edge cases remain), preview iframe regression pending fix
-- ⬜ Phase 15.4 — Enterprise theme switcher (Dark / Light / Enterprise) — Lovable design + Claude Code wiring
+- ✅ Phase 15.4 — Enterprise UI (frontend-v4) — Vite + React + shadcn/ui on port 8080, real API wiring, 4-theme foundation
+- 🔧 Phase 15.5 — Enterprise UI polish — Pipeline tab chat UI done, stats/activity/publish wired, modals still needed
 - 🔴 PDF Export + Client Read-Only Link (Phase 8 remaining)
 
 ### Phase 9 — Pipeline Page & Classifier Improvements (⬜ Planned)
@@ -297,13 +298,24 @@ Impact:
 - Navbar: real project name + version in breadcrumb
 - Favicon: lightning bolt SVG + Archon - Enterprise Build title
 
-## Phase 15.5 - Enterprise UI Polish (IN PROGRESS)
+## Phase 15.5 - Enterprise UI Polish (🔧 IN PROGRESS)
+
+### Completed
+- ✅ Checkbox UX fix — no longer triggers row navigation
+- ✅ Stats bar wired to real project counts (total/running/completed/failed)
+- ✅ Activity feed wired to real recent executions with collapse/expand
+- ✅ Avg build time stat with fallback for missing data
+- ✅ Publish and Download buttons wired to real endpoints
+- ✅ Pipeline tab — full chat UI with conversation panel, input bar, agent status cards
+- ✅ Pipeline tab — /chat (conversational) and /iterate (build) endpoints wired
+- ✅ Pipeline tab — chat history loaded from DB on project switch
+- ✅ Pipeline tab — live output log panel with auto-scroll
+- ✅ Replaced Sparkles icon with Zap (lightning bolt) to match Archon branding
+- ✅ Added missing i18n keys for pipeline UI (designAgent, send, noMessages, etc.)
 
 ### Remaining work
-- Checkbox fix - should not trigger navigation
-- New Project modal (Name + Description -> POST /api/projects)
-- Delete selected projects modal (type delete to confirm)
+- New Project modal (Name + Description → POST /api/projects)
+- Delete selected projects modal (type "delete" to confirm)
 - Files changed count in VersionsView (show real files_generated)
-- Pipeline tab - wire to real execution/chat
 - Studio theme CSS variables in frontend-v4
 - Retire frontend/ and frontend-consumer2/ (Phase 15.6)
