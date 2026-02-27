@@ -88,9 +88,17 @@ export const translations = {
   plansTheBuild: { en: "Plans the build", ko: "빌드를 설계합니다" },
   buildAgent: { en: "Build Agent", ko: "빌드 에이전트" },
   writesYourCode: { en: "Writes your code", ko: "코드를 작성합니다" },
+  designAgent: { en: "Design Agent", ko: "디자인 에이전트" },
+  generatesVisuals: { en: "Generates visuals", ko: "비주얼을 생성합니다" },
   done: { en: "Done", ko: "완료" },
   building: { en: "Building…", ko: "빌드 중…" },
   pending: { en: "Pending", ko: "대기 중" },
+  selectProjectFirst: { en: "Select a project first", ko: "먼저 프로젝트를 선택하세요" },
+  selectProjectDesc: { en: "Go to the Projects tab and select a project to start building.", ko: "프로젝트 탭에서 프로젝트를 선택하여 빌드를 시작하세요." },
+  pipelineAlreadyRunning: { en: "A pipeline is already running", ko: "파이프라인이 이미 실행 중입니다" },
+  sending: { en: "Sending…", ko: "전송 중…" },
+  send: { en: "Send", ko: "전송" },
+  noMessages: { en: "No messages yet. Type a prompt below to start building.", ko: "아직 메시지가 없습니다. 아래에 프롬프트를 입력하여 빌드를 시작하세요." },
 
   // Versions
   versionHistory: { en: "Version History", ko: "버전 이력" },

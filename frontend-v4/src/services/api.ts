@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 const API_BASE = "http://localhost:5000/api";
 
@@ -268,4 +268,157 @@ export async function fetchCodeFiles(projectId: number, version: number): Promis
     }));
     return files.filter(Boolean) as any[];
   } catch { return []; }
+}
+
+// ── Pipeline Execution ──
+
+export interface ExecutionStatus {
+  status: "RUNNING" | "COMPLETED" | "FAILED";
+  currentStage: string; // "pm" | "planner" | "engineer" | "complete"
+  logs: Array<{ id: string; timestamp: number; message: string }>;
+  engineerTasks: any[];
+  project_id: number | null;
+  execution_id: number | null;
+}
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+  timestamp?: number;
+}
+
+/** POST /api/projects/:id/chat — classify intent, returns {response_type, message?} */
+export async function projectChat(projectId: number, message: string): Promise<{ response_type: "chat" | "build"; message?: string }> {
+  const res = await fetch(`${API_BASE}/projects/${projectId}/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+/** POST /api/projects/:id/iterate — start a pipeline build */
+export async function iterateProject(
+  projectId: number,
+  prompt: string,
+  promptHistory: ChatMessage[],
+): Promise<{ status: string; project_id: number; execution_id: number; version: number }> {
+  const res = await fetch(`${API_BASE}/projects/${projectId}/iterate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, prompt_history: promptHistory }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+/** POST /api/execute-task — start first build (no prior version) */
+export async function executeTask(projectId: number): Promise<{ status: string; project_id: number; execution_id: number; version: number }> {
+  const res = await fetch(`${API_BASE}/execute-task`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ project_id: projectId }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+/** GET /api/execution-status — poll pipeline progress */
+export async function fetchExecutionStatus(): Promise<ExecutionStatus> {
+  const res = await fetch(`${API_BASE}/execution-status`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+/** Fetch chat history for a project by reading prompt_history from all versions */
+export async function fetchChatHistory(projectId: number): Promise<ChatMessage[]> {
+  const versions = await fetchVersions(projectId);
+  const messages: ChatMessage[] = [];
+  for (const v of versions) {
+    const history = v.prompt_history || [];
+    for (const msg of history) {
+      messages.push({ role: msg.role as "user" | "assistant", content: msg.content });
+    }
+  }
+  return messages;
+}
+
+// ── Pipeline Status Hook ──
+
+type PipelineStage = "idle" | "pm" | "planner" | "engineer" | "complete";
+
+export interface PipelineState {
+  running: boolean;
+  stage: PipelineStage;
+  status: "RUNNING" | "COMPLETED" | "FAILED" | "IDLE";
+  logs: ExecutionStatus["logs"];
+  projectId: number | null;
+  executionId: number | null;
+}
+
+export function usePipelineStatus(projectId: number | null, enabled: boolean) {
+  const [state, setState] = useState<PipelineState>({
+    running: false,
+    stage: "idle",
+    status: "IDLE",
+    logs: [],
+    projectId: null,
+    executionId: null,
+  });
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startPolling = useCallback(() => {
+    // Clear any existing interval
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
+    const poll = async () => {
+      try {
+        const data = await fetchExecutionStatus();
+        // Only update if this status belongs to our project
+        if (data.project_id !== projectId) return;
+        const isRunning = data.status === "RUNNING";
+        setState({
+          running: isRunning,
+          stage: data.currentStage as PipelineStage,
+          status: data.status,
+          logs: data.logs || [],
+          projectId: data.project_id,
+          executionId: data.execution_id,
+        });
+        if (!isRunning && intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      } catch {
+        // ignore poll errors
+      }
+    };
+
+    poll(); // immediate first poll
+    intervalRef.current = setInterval(poll, 2000);
+  }, [projectId]);
+
+  const stopPolling = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
+  // Auto-poll when enabled
+  useEffect(() => {
+    if (enabled && projectId) {
+      startPolling();
+    }
+    return stopPolling;
+  }, [enabled, projectId, startPolling, stopPolling]);
+
+  return { ...state, startPolling, stopPolling };
 }
