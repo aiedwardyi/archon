@@ -170,7 +170,7 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - ✅ Consumer frontend polished — Archon branding, newest-first timeline, glow effects, full Korean i18n
 - 🔧 Consumer UX bug fixes — stale state, code tab fixed, failed overlay fixed, progress bar restored (smooth animation, minor edge cases remain), preview iframe regression pending fix
 - ✅ Phase 15.4 — Enterprise UI (frontend-v4) — Vite + React + shadcn/ui on port 8080, real API wiring, 4-theme foundation
-- 🔧 Phase 15.5 — Enterprise UI polish — Pipeline tab chat UI done, stats/activity/publish wired, modals still needed
+- ✅ Phase 15.5 — Enterprise UI polish complete — Pipeline chat UI, delete modal, build details, JSON repair, all state bugs fixed
 - 🔴 PDF Export + Client Read-Only Link (Phase 8 remaining)
 
 ### Phase 9 — Pipeline Page & Classifier Improvements (⬜ Planned)
@@ -298,45 +298,22 @@ Impact:
 - Navbar: real project name + version in breadcrumb
 - Favicon: lightning bolt SVG + Archon - Enterprise Build title
 
-## Phase 15.5 - Enterprise UI Polish (🔧 IN PROGRESS)
-
-### Completed
-- ✅ Checkbox UX fix — no longer triggers row navigation
-- ✅ Stats bar wired to real project counts (total/running/completed/failed)
-- ✅ Activity feed wired to real recent executions with collapse/expand
-- ✅ Avg build time stat with fallback for missing data
-- ✅ Publish and Download buttons wired to real endpoints
-- ✅ Pipeline tab — full chat UI with conversation panel, input bar, agent status cards
-- ✅ Pipeline tab — /chat (conversational) and /iterate (build) endpoints wired
-- ✅ Pipeline tab — chat history loaded from DB on project switch
-- ✅ Pipeline tab — live output log panel with auto-scroll
-- ✅ Replaced Sparkles icon with Zap (lightning bolt) to match Archon branding
-- ✅ Added missing i18n keys for pipeline UI (designAgent, send, noMessages, etc.)
-- ✅ New Project modal (Name + Description → POST /api/projects, auto-selects and opens Pipeline tab)
-- ✅ "What Was Built" summary — real file + image counts from backend (e.g. "2 code files · 3 images generated")
-- ✅ Backend returns images_generated count from last_design_assets.json per version
-- ✅ VersionsView files changed count uses real files_generated from API
-- ✅ ArtifactsView Code tab — fixed height, independent scroll for file tree and code viewer
-- ✅ WelcomeBanner — live backend health check (green/red dot with 10s polling)
-- ✅ i18n keys added: backendOffline, projectName, projectDescription, creating, create, cancel
-- ✅ Artifact cards (Brief/Plan/Code) in VersionsView navigate to Artifacts tab with correct sub-tab pre-selected
-- ✅ Code tab scrollbars fixed — outer grid overflow:hidden with calc height, pre overflow:auto, minWidth:0
-- ✅ Renamed "Running" → "Building" (EN) / "빌딩 중" (KO) across i18n and ProjectTable
-- ✅ Pipeline header status badge — colored rounded-full pills (blue/building, emerald/completed, red/failed, gray/idle)
-- ✅ Agent pipeline status persists after reload — reads DB status (success/failed/running)
-- ✅ Logs saved for successful builds (backend app.py)
-- ✅ Backend health indicator — red dot + "Backend offline" when Flask unreachable
-- ✅ Status badge colors — green/red/blue pills in Pipeline header and Projects table
-- ✅ Search filter on Projects page — client-side case-insensitive name filtering
-- ✅ Red dot pulse animation on "Backend offline" indicator (WelcomeBanner)
-- ✅ Removed Description field from New Project modal (name only, sends empty string)
-- ✅ Pipeline tab no longer auto-scrolls to bottom on initial load (guarded by ref + timer)
-
-### Remaining work
-- ✅ Live output + agent pipeline no longer bleeds across projects (pipeline state resets on project switch)
-- ✅ Chat messages persist via sessionStorage keyed by project ID (survives tab/project switching)
-- ✅ Pipeline tab scroll-to-top fixed (container ref + triple scroll target)
-- ✅ JSON repair bug — _repair_json strips fences, fixes bare backslashes, logs on failure
-- ✅ Delete modal — type "DELETE" to confirm + shutil.rmtree disk cleanup
-- ✅ Build Details card — tokens_used, estimated_cost, duration, model wired from DB
-- 🔴 Studio theme CSS variables in frontend-v4
+## Phase 15.5 - Enterprise UI Polish (✅ Completed)
+- Checkbox UX fix, Stats bar, Activity feed, Avg build time wired
+- Publish and Download buttons wired to real endpoints
+- Pipeline tab — full chat UI, /chat + /iterate endpoints, chat history, live output log
+- Zap icon branding, i18n keys, New Project modal, "What Was Built" summary
+- images_generated + files_generated counts from backend
+- ArtifactsView Code tab — fixed height, independent scroll
+- WelcomeBanner — live backend health check (green/red dot)
+- Artifact cards navigate to Artifacts tab with sub-tab pre-selection
+- Code tab scrollbars fixed, "Running" → "Building" rename
+- Pipeline header status badges (colored pills)
+- Agent pipeline status persists after reload from DB
+- Search filter on Projects page, red dot pulse on offline indicator
+- Pipeline tab scroll-to-top, no auto-scroll on initial load
+- Pipeline state resets on project switch (no bleed)
+- Chat messages persist via sessionStorage keyed by project ID
+- JSON repair bug fixed — _repair_json strips fences, fixes bare backslashes
+- Delete modal — type "DELETE" to confirm + shutil.rmtree disk cleanup
+- Build Details card — tokens_used, estimated_cost, duration, model wired from DB
