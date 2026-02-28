@@ -304,6 +304,32 @@ Impact:
 - Studio Projects page intentionally kept minimal: project count cards (Total/Running/Completed/Failed) + search/filter + full-width table
 - Enterprise (frontend-v4) retains its own stats bar and activity feed via `/api/stats` and `/api/activity` endpoints
 
+## Phase 16 — UI Parity, Auth & Polish (🔧 In Progress Feb 2026)
+
+### 16.2 — Branding (✅ Complete Feb 28, 2026)
+- ✅ Tab titles: "Archon - Studio Build", "Archon - Consumer Build"
+- ✅ Hexagon logo in frontend-v4 and frontend-consumer2
+- ✅ Hexagon SVG favicon in frontend-v4 and frontend-consumer2
+- ✅ load_dotenv fixed to always load backend/.env
+
+### 16.4 — Watson STT/TTS for Enterprise (✅ Complete Feb 28, 2026)
+- ✅ Mic (STT) + speaker (TTS) buttons in frontend-v4 pipeline
+- ✅ Fixed WATSON_TTS_API_KEY / WATSON_STT_API_KEY env var mismatch
+
+### 16.3 — Studio Feature Parity (🔧 In Progress)
+- ✅ Projects page kept minimal by design
+- 🔴 Korean/English toggle in Studio
+- 🔴 Build Details card in Studio Pipeline
+
+### 16.1 — Bug Fixes (🔴 Pending)
+- 🔴 Chat persistence after Flask restart
+- 🔴 Live output logs lost after restart
+- 🔴 Build Details tokens/cost showing —
+
+### 16.5 — Authentication (🔴 Planned)
+- 🔴 Sign up / Login pages
+- 🔴 JWT + protected routes
+
 ## Phase 15.5 - Enterprise UI Polish (🔧 IN PROGRESS)
 
 ### Completed

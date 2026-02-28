@@ -125,36 +125,33 @@ main (enterprise-ui merged and deleted)
 
 ---
 
-## What's Next
+## Current Sprint — Phase 16: UI Parity, Auth & Polish (🔧 In Progress Feb 2026)
 
-### Phase 15.5 — Remaining
-- ✅ Live output + agent pipeline no longer bleeds across projects (pipeline state resets on project switch)
-- ✅ Chat messages persist via sessionStorage keyed by project ID (survives tab/project switching)
-- ✅ Pipeline tab scroll-to-top fixed (container ref + triple scroll target)
-- 🔴 JSON repair bug — intermittent EngineerAgent \escape error (prompts/engineer.txt fix)
-- 🔴 Delete modal — type "delete" to confirm + shutil.rmtree disk cleanup
-- 🔴 Build Details card — wire tokens_used, estimated_cost to DB (model + duration already working)
-- 🔴 Studio theme CSS variables in frontend-v4
+### Phase 16.2 — Branding & Tab Titles (✅ Complete Feb 28, 2026)
+- ✅ Chrome tab title: "Archon - Studio Build" (frontend/)
+- ✅ Chrome tab title: "Archon - Consumer Build" (frontend-consumer2/)
+- ✅ Hexagon logo in frontend-v4 navbar (replaced lightning bolt)
+- ✅ Hexagon logo in frontend-consumer2 sidebar (replaced Zap icon)
+- ✅ Inline SVG hexagon favicon in frontend-v4
+- ✅ Inline SVG hexagon favicon in frontend-consumer2
+- ✅ Fixed load_dotenv to resolve backend/.env path correctly
 
-### Phase 15.6 — Frontend Cleanup
-- Retire `frontend/` and `frontend-consumer2/` once frontend-v4 is feature-complete
-- Studio button in avatar dropdown → switch to `frontend/` (Next.js, port 3000) design
-- Enterprise button → frontend-v4
+### Phase 16.4 — Watson STT/TTS for Enterprise (✅ Complete Feb 28, 2026)
+- ✅ Mic button (STT) in frontend-v4 pipeline chat input
+- ✅ Speaker button (TTS) on Archon reply bubbles in frontend-v4
+- ✅ Fixed WATSON_TTS_API_KEY / WATSON_STT_API_KEY env var mismatch in backend/app.py
 
-### Phase 8.3 — Client Share Link
-- Read-only shareable URL for client deliverables
-- No login required
-- Shows all versions, artifacts, and previews
+### Phase 16.3 — Studio Feature Parity (🔧 In Progress)
+- ✅ Studio Projects page — intentionally kept minimal (no stats bar, no activity feed)
+- 🔴 Korean/English toggle in Studio navbar
+- 🔴 Build Details card in Studio Pipeline page
 
-### Watson STT/TTS in Consumer Frontend
-- Wire mic button + speaker button into `frontend-consumer2`
-- Same Watson endpoints already working in enterprise frontend
+### Phase 16.1 — Bug Fixes (🔴 Pending)
+- 🔴 Studio + Enterprise chat persistence after Flask restart
+- 🔴 Live output logs lost after restart
+- 🔴 Build Details tokens/cost showing —
 
-### Image Generation Fix
-- Character portrait blending in hero section
-- DALL-E content filter edge cases
-
-### Korean Translation — Remaining
-- Delete confirmation modal strings
-- Error messages and edge case strings
-- Dynamic project names (leave untranslated)
+### Phase 16.5 — Authentication (🔴 Planned)
+- 🔴 Sign up / Login pages
+- 🔴 JWT + protected routes
+- 🔴 User-scoped projects (owner_id already in DB schema)
