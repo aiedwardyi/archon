@@ -20,7 +20,7 @@ export const translations = {
   design: { en: "Design", ko: "디자인" },
   light: { en: "Light", ko: "라이트" },
   dark: { en: "Dark", ko: "다크" },
-  enterprise: { en: "Enterprise", ko: "엔터프라이즈" },
+  enterprise: { en: "Enterprise", ko: "기업용" },
   studio: { en: "Studio", ko: "스튜디오" },
   credits: { en: "Credits", ko: "크레딧" },
   upgradeToPro: { en: "Upgrade to Pro", ko: "Pro로 업그레이드" },

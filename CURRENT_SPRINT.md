@@ -145,6 +145,7 @@ main (enterprise-ui merged and deleted)
 - ✅ Studio Projects page — intentionally kept minimal (no stats bar, no activity feed)
 - ✅ Korean/English toggle in Studio navbar (i18n.ts + LanguageContext + KO/EN pill toggle + t() wired in navbar + project-dashboard)
 - ✅ Studio Projects table column sort — clickable headers, ↑/↓ active indicator, faded ↑↓ inactive (Feb 28, 2026)
+- ✅ Watson TTS voice updated to en-US_EmilyV3Voice (neural, less robotic) (Feb 28, 2026)
 - 🔴 Build Details card in Studio Pipeline page
 
 ### Phase 16.1 — Bug Fixes (🔴 Pending)

@@ -9,6 +9,7 @@ import {
   Building2, Paintbrush,
 } from "lucide-react"
 import { ProfileModal, SettingsModal, PricingModal } from "@/components/account-modals"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 export function AvatarDropdown() {
   const [open, setOpen] = useState(false)
@@ -16,6 +17,7 @@ export function AvatarDropdown() {
   const { resolvedTheme, setTheme } = useTheme()
   const pathname = usePathname()
   const ref = useRef<HTMLDivElement>(null)
+  const { language, t } = useLanguage()
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -49,7 +51,7 @@ export function AvatarDropdown() {
           <div className="absolute right-0 top-9 w-64 rounded-xl border border-border bg-popover shadow-xl z-50 overflow-hidden">
 
             <div className="px-3 py-3 border-b border-border">
-              <p className="text-xs text-muted-foreground">Signed in as</p>
+              <p className="text-xs text-muted-foreground">{t("signedInAs")}</p>
               <p className="text-sm font-semibold text-foreground truncate mt-0.5">archon@archon.dev</p>
             </div>
 
@@ -59,14 +61,14 @@ export function AvatarDropdown() {
                 className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors"
               >
                 <User className="h-4 w-4 text-muted-foreground shrink-0" />
-                Profile
+                {t("profile")}
               </button>
               <button
                 onClick={() => openModal("settings")}
                 className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors"
               >
                 <Settings className="h-4 w-4 text-muted-foreground shrink-0" />
-                Settings
+                {t("settings")}
               </button>
               <button
                 onClick={() => openModal("pricing")}
@@ -74,7 +76,7 @@ export function AvatarDropdown() {
               >
                 <span className="flex items-center gap-2.5">
                   <DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />
-                  Pricing
+                  {t("pricing")}
                 </span>
                 <ExternalLink className="h-3 w-3 text-muted-foreground/60" />
               </button>
@@ -87,34 +89,34 @@ export function AvatarDropdown() {
               >
                 <span className="flex items-center gap-2.5">
                   <BookOpen className="h-4 w-4 text-muted-foreground shrink-0" />
-                  Documentation
+                  {t("documentation")}
                 </span>
                 <ExternalLink className="h-3 w-3 text-muted-foreground/60" />
               </a>
             </div>
 
             <div className="border-t border-border px-3 py-2.5">
-              <p className="text-xs text-muted-foreground mb-2 font-medium">Theme</p>
+              <p className="text-xs text-muted-foreground mb-2 font-medium">{t("theme")}</p>
               <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
                 <button
                   onClick={() => setTheme("light")}
                   className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all ${!isDark ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   <Sun className="h-3.5 w-3.5" />
-                  Light
+                  {t("light")}
                 </button>
                 <button
                   onClick={() => setTheme("dark")}
                   className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all ${isDark ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   <Moon className="h-3.5 w-3.5" />
-                  Dark
+                  {t("dark")}
                 </button>
               </div>
             </div>
 
             <div className="border-t border-border px-3 py-2.5">
-              <p className="text-xs text-muted-foreground mb-2 font-medium">Design</p>
+              <p className="text-xs text-muted-foreground mb-2 font-medium">{t("design")}</p>
               <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
                 <button
                   onClick={() => {
@@ -122,19 +124,20 @@ export function AvatarDropdown() {
                     const pathToTab: Record<string, string> = { '/': 'projects', '/pipeline': 'pipeline', '/versions': 'versions', '/artifacts': 'artifacts' };
                     const tab = pathToTab[pathname] || 'projects';
                     console.log('[studio] switching to enterprise, pathname:', pathname, 'mapped tab:', tab);
-                    window.location.href = `http://localhost:8080?tab=${tab}`;
+                    const langParam = language === "ko" ? "&lang=ko" : "";
+                    window.location.href = `http://localhost:8080?tab=${tab}${langParam}`;
                   }}
                   className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all text-muted-foreground hover:text-foreground"
                 >
                   <Building2 className="h-3.5 w-3.5" />
-                  Enterprise
+                  {t("enterprise")}
                 </button>
                 <button
                   onClick={() => setOpen(false)}
                   className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all bg-card text-foreground shadow-sm"
                 >
                   <Paintbrush className="h-3.5 w-3.5" />
-                  Studio
+                  {t("studio")}
                 </button>
               </div>
             </div>
@@ -143,7 +146,7 @@ export function AvatarDropdown() {
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2 text-sm text-foreground">
                   <Coins className="h-4 w-4 text-amber-500" />
-                  Credits
+                  {t("credits")}
                 </span>
                 <span className="text-sm font-semibold text-foreground">1,250</span>
               </div>
@@ -155,7 +158,7 @@ export function AvatarDropdown() {
                 className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
               >
                 <Zap className="h-3.5 w-3.5" />
-                Upgrade to Pro
+                {t("upgradeToPro")}
               </button>
             </div>
 
@@ -165,7 +168,7 @@ export function AvatarDropdown() {
                 className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-destructive hover:bg-accent transition-colors"
               >
                 <LogOut className="h-4 w-4" />
-                Sign out
+                {t("signOut")}
               </button>
             </div>
 

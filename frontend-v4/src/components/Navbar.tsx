@@ -147,7 +147,7 @@ export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectNam
                 <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t("design")}</div>
                 <div className="grid grid-cols-2 gap-1">
                   <button
-                    onClick={() => { window.location.href = 'http://localhost:8080'; }}
+                    onClick={() => { window.location.href = `http://localhost:8080${language === "ko" ? "?lang=ko" : ""}`; }}
                     className="flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs rounded-md transition-colors bg-primary text-primary-foreground font-medium"
                   >
                     <Building2 className="h-3.5 w-3.5" /> {t("enterprise")}
@@ -156,7 +156,8 @@ export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectNam
                     onClick={() => {
                       const tab = activeTab || 'projects';
                       console.log('[v4] switching to studio, activeTab:', tab);
-                      window.location.href = `http://localhost:3000/${tab === 'projects' ? '' : tab}`;
+                      const langParam = language === "ko" ? "?lang=ko" : "";
+                      window.location.href = `http://localhost:3000/${tab === 'projects' ? '' : tab}${langParam}`;
                     }}
                     className="flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs rounded-md transition-colors text-foreground hover:bg-secondary border border-border"
                   >

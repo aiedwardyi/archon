@@ -11,19 +11,26 @@ interface LanguageContextValue {
 
 const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
 
-const STORAGE_KEY = "archon_studio_lang";
+const STORAGE_KEY = "archon-language";
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguage] = useState<Language>("en");
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === "ko") setLanguage("ko");
+    const urlLang = new URLSearchParams(window.location.search).get("lang");
+    if (urlLang === "ko" || urlLang === "en") {
+      setLanguage(urlLang);
+    } else {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === "ko") setLanguage("ko");
+    }
+    setHydrated(true);
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, language);
-  }, [language]);
+    if (hydrated) localStorage.setItem(STORAGE_KEY, language);
+  }, [language, hydrated]);
 
   const toggleLanguage = () => setLanguage((prev) => (prev === "en" ? "ko" : "en"));
 

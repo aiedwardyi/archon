@@ -13,6 +13,11 @@ const STORAGE_KEY = "archon-language";
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguage] = useState<Language>(() => {
+    const urlLang = new URLSearchParams(window.location.search).get("lang");
+    if (urlLang === "ko" || urlLang === "en") {
+      localStorage.setItem(STORAGE_KEY, urlLang);
+      return urlLang;
+    }
     const stored = localStorage.getItem(STORAGE_KEY);
     return (stored === "ko" ? "ko" : "en") as Language;
   });
