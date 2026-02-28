@@ -112,21 +112,19 @@ main (enterprise-ui merged and deleted)
 
 ---
 
-### Phase 15.6 — Frontend Cleanup & Tab Sync (🔧 In Progress)
-- ✅ Wire Studio button in frontend-v4 navbar (opens Studio in same tab)
-- ✅ Add Enterprise/Studio design switcher to frontend/ navbar
-- ✅ Sync active tab between Enterprise and Studio on switch (URL query param approach)
-- ✅ Remove deprecated frontend-consumer/ folder
-- 🔴 Studio Tasks tab empty — wire real task data same way as frontend-v4
-- 🔴 Minor Studio polish touches
-- 🔴 Retire frontend-consumer2/ once consumer features confirmed complete (future)
-- 🔴 Next.js → Vite migration for frontend/ (deferred to end of all phases)
+### Phase 15.6 — Frontend Cleanup & Tab Sync (✅ Complete)
+- ✅ Wire Studio button in frontend-v4 navbar
+- ✅ Enterprise/Studio switcher in frontend/ navbar
+- ✅ Tab sync via URL query params
+- ✅ Removed deprecated frontend-consumer/ folder
+- ✅ Studio Tasks tab wired with real plan data
+- ✅ Delete modal requires DELETE (uppercase)
 
 ---
 
 ## What's Next
 
-### Phase 8.3 — Client Share Link
+### Phase 8.3 — Client Share Link (Next)
 - Read-only shareable URL for client deliverables
 - No login required
 - Shows all versions, artifacts, and previews
