@@ -172,14 +172,16 @@ main (enterprise-ui merged and deleted)
 - 🔴 Smarter routing: frustrated sentiment → chat, not build
 - 🔴 NLU result passed as context into PM Agent
 
-#### 17.3 — Credit System
-- 🔴 Define credit unit: 1 credit = ~2,500 tokens (adjustable)
-- 🔴 credits_used column on Execution model
-- 🔴 Deduct credits on pipeline completion, store on execution
-- 🔴 Build Details: replace tokens + cost with credits used + model + duration
-- 🔴 Navbar credit counter wired to real session balance
-- 🔴 Plan tiers: Starter 100/mo, Pro 500/mo, Agency unlimited
-- 🔴 /api/credits/balance endpoint
+#### 17.3 — Credit System (✅ Complete Feb 28, 2026)
+- ✅ 1 credit = 2,500 tokens formula, minimum 1
+- ✅ credits_used column on Execution model
+- ✅ Credits calculated and saved on pipeline completion
+- ✅ Build Details: shows credits used + model + duration (hides raw tokens/cost)
+- ✅ Studio + Enterprise both display credits correctly
+- 🔴 Navbar credit counter wired to real session balance (Part 2, post-auth)
+- 🔴 Plan tiers: Starter 100/mo, Pro 500/mo, Agency unlimited (post-auth)
+- 🔴 /api/credits/balance endpoint (post-auth)
+- 🔴 Enterprise BuildDetailsCard auto-refreshes post-build without page reload (UX polish)
 
 #### 17.2 — Governance Agent (AI Factsheets)
 - 🔴 GovernanceAgent runs once per pipeline completion

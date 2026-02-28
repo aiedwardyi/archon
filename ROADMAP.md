@@ -400,16 +400,16 @@ Impact:
 - 🔴 NLU result passed as context into PM Agent
 - IBM credential: WATSON_NLU_URL + WATSON_NLU_API_KEY in backend/.env
 
-#### 17.3 — Credit System
-- 🔴 Define credit unit: 1 credit = ~2,500 tokens (adjustable)
-- 🔴 credits_used column on Execution model
-- 🔴 credits_balance on User model (prep for auth)
-- 🔴 Deduct credits on pipeline completion
-- 🔴 Build Details shows "credits used" not raw tokens or dollar cost
-- 🔴 Navbar credit counter wired to real balance
-- 🔴 Plan tiers: Starter 100 credits/mo, Pro 500 credits/mo, Agency unlimited
-- 🔴 /api/credits/balance endpoint
-- Design: hides real cost, users can't reverse-engineer margin
+#### 17.3 — Credit System (✅ Complete Feb 28, 2026)
+- ✅ 1 credit = 2,500 tokens, minimum 1
+- ✅ credits_used column on Execution model
+- ✅ Credits calculated + saved on pipeline completion
+- ✅ Build Details: credits used + model + duration (hides raw cost)
+- ✅ Studio + Enterprise both display credits correctly
+- 🔴 Navbar credit counter wired to real balance (post-auth)
+- 🔴 Plan tiers: Starter 100/mo, Pro 500/mo, Agency unlimited (post-auth)
+- 🔴 /api/credits/balance endpoint (post-auth)
+- 🔴 Enterprise BuildDetailsCard live refresh post-build (UX polish)
 
 #### 17.2 — Governance Agent (AI Factsheets)
 - 🔴 GovernanceAgent runs once per pipeline completion
