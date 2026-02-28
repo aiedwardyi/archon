@@ -398,7 +398,7 @@ export function ProjectDashboard() {
             </div>
             <div className="mb-5">
               <label className="block text-xs text-muted-foreground mb-1.5">
-                Type <span className="font-mono font-semibold text-foreground">delete</span> to confirm
+                Type <span className="font-mono font-semibold text-foreground">DELETE</span> to confirm
               </label>
               <input
                 autoFocus
@@ -406,13 +406,13 @@ export function ProjectDashboard() {
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && deleteConfirmText === "delete") {
+                  if (e.key === "Enter" && deleteConfirmText === "DELETE") {
                     if (confirmModal.type === "all") handleDeleteAll()
                     else if (confirmModal.projectId) handleDeleteProject(confirmModal.projectId)
                   }
                   if (e.key === "Escape") closeModal()
                 }}
-                placeholder="delete"
+                placeholder="DELETE"
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 focus:ring-destructive/40 font-mono"
               />
             </div>
@@ -428,7 +428,7 @@ export function ProjectDashboard() {
                   if (confirmModal.type === "all") handleDeleteAll()
                   else if (confirmModal.projectId) handleDeleteProject(confirmModal.projectId)
                 }}
-                disabled={deleting || deleteConfirmText !== "delete"}
+                disabled={deleting || deleteConfirmText !== "DELETE"}
                 className="h-9 px-4 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
