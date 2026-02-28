@@ -329,33 +329,35 @@ Impact:
 - 🔴 Retire frontend-consumer2/ once consumer features confirmed complete (future)
 - 🔴 Next.js → Vite migration for frontend/ (deferred to end of all phases)
 
-## Phase 16 — UI Parity, Auth & Polish (🔧 Planned Feb 2026)
+## Phase 16 — UI Parity, Auth & Polish (🔧 In Progress Feb 2026)
 
-### 16.1 — Bug Fixes (Critical)
-- 🔴 Studio chat persistence — reload from DB on mount (loses all chat after Flask restart)
-- 🔴 Enterprise chat persistence — Archon replies lost after restart (only user messages survive)
-- 🔴 Live output lost after restart — Studio Artifacts logs + Pipeline log not reloaded from DB
-- 🔴 Build Details blank — tokens/cost showing "—", fix DB wiring or replace with available fields
+### 16.1 — Bug Fixes
+- 🔴 Studio + Enterprise chat persistence after Flask restart
+- 🔴 Live output logs lost after restart
+- 🔴 Build Details card showing — for tokens/cost
 
-### 16.2 — Branding & Tab Titles
-- 🔴 "Completed" badge gray instead of green — Enterprise pipeline page status badge
-- 🔴 Hexagon logo — replace Zap/lightning icon with Hexagon in frontend-v4 and frontend-consumer2
-- 🔴 Favicon — replace all favicons with Hexagon logo SVG
-- 🔴 Chrome tab titles: "Archon - Consumer Build" (frontend-consumer2), "Archon - Studio Build" (frontend)
+### 16.2 — Branding & Tab Titles (✅ Complete Feb 2026)
+- ✅ Chrome tab title: "Archon - Studio Build" (frontend/)
+- ✅ Chrome tab title: "Archon - Consumer Build" (frontend-consumer2/)
+- ✅ Hexagon logo in frontend-v4 navbar (replaced Zap icon)
+- ✅ Hexagon logo in frontend-consumer2 sidebar (replaced Zap icon)
+- ✅ Inline SVG hexagon favicon in frontend-v4
+- ✅ Inline SVG hexagon favicon in frontend-consumer2
 
 ### 16.3 — Studio Feature Parity
-- 🔴 Studio i18n — Korean/English toggle in Studio (frontend/) navbar, full translation coverage
-- 🔴 Studio Build Details card — add to Pipeline page (tokens, cost, duration, model)
-- 🔴 Studio stats bar — Pipelines today / Lines generated / Versions shipped / Avg build time on Projects page
-- 🔴 Studio Recent Activity — right-side activity feed on Projects page
+- 🔴 Korean/English toggle in Studio navbar + i18n coverage
+- 🔴 Build Details card in Studio Pipeline page
+- 🔴 Stats bar on Studio Projects page
+- 🔴 Recent Activity feed on Studio Projects page
 
-### 16.4 — Watson STT/TTS for Enterprise
-- 🔴 Wire mic button (STT) into frontend-v4 pipeline chat input
-- 🔴 Wire speaker button (TTS) on Archon reply bubbles in frontend-v4
+### 16.4 — Watson STT/TTS for Enterprise (✅ Complete Feb 2026)
+- ✅ Mic button (STT) wired in frontend-v4 pipeline chat input
+- ✅ Speaker button (TTS) on Archon reply bubbles in frontend-v4
+- ✅ Fixed Watson env key mismatch (WATSON_TTS_API_KEY / WATSON_STT_API_KEY)
+- ✅ Fixed load_dotenv path to always load from backend/.env
 
 ### 16.5 — Authentication
-- 🔴 Sign up page (email + password)
-- 🔴 Login page
-- 🔴 Session/JWT management
+- 🔴 Sign up / Login pages
+- 🔴 JWT session management
 - 🔴 Protected routes across all three frontends
 - 🔴 User-scoped projects (owner_id already in DB schema)

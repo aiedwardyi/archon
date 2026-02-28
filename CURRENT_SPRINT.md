@@ -125,50 +125,36 @@ main (enterprise-ui merged and deleted)
 ## Current Sprint — Phase 16: UI Parity, Auth & Polish
 
 ### Sprint Goal
-Fix critical bugs across Studio/Enterprise, achieve full UI parity between frontends, add auth.
+Fix critical bugs, achieve Studio/Enterprise feature parity, add auth.
 
-### Phase 16.1 — Bug Fixes (Start Here)
+## Completed This Sprint ✅
+
+### Phase 16.2 — Branding (✅ Complete)
+- ✅ Tab title: "Archon - Studio Build" (frontend/)
+- ✅ Tab title: "Archon - Consumer Build" (frontend-consumer2/)
+- ✅ Hexagon logo in frontend-v4 navbar
+- ✅ Hexagon logo in frontend-consumer2 sidebar
+- ✅ Hexagon SVG favicon in frontend-v4 and frontend-consumer2
+
+### Phase 16.4 — Watson STT/TTS for Enterprise (✅ Complete)
+- ✅ Mic button (STT) in Enterprise pipeline chat input
+- ✅ Speaker button (TTS) on Archon reply bubbles
+- ✅ Fixed WATSON_TTS_API_KEY / WATSON_STT_API_KEY env var mismatch
+- ✅ Fixed load_dotenv to always resolve backend/.env path
+
+## Remaining This Sprint 🔴
+
+### Phase 16.1 — Bug Fixes
 - 🔴 Studio + Enterprise chat persistence after Flask restart
-- 🔴 Live output logs lost after restart (Studio Artifacts + Pipeline)
-- 🔴 Build Details card showing "—" for tokens/cost
-
-### Phase 16.2 — Branding
-- 🔴 "Completed" badge → green in Enterprise pipeline
-- 🔴 Hexagon logo in frontend-v4 and frontend-consumer2
-- 🔴 Favicon update all frontends
-- 🔴 Chrome tab titles (Consumer + Studio)
+- 🔴 Live output logs lost after restart
+- 🔴 Build Details tokens/cost showing —
 
 ### Phase 16.3 — Studio Feature Parity
-- 🔴 Korean/English toggle in Studio navbar + i18n coverage
+- 🔴 Korean/English toggle in Studio navbar
 - 🔴 Build Details card in Studio Pipeline page
 - 🔴 Stats bar on Studio Projects page
 - 🔴 Recent Activity feed on Studio Projects page
 
-### Phase 16.4 — Watson STT/TTS for Enterprise (frontend-v4)
-
 ### Phase 16.5 — Authentication
-- Sign up / Login pages
-- JWT session management
-- Protected routes + user-scoped projects
-
----
-
-## What's Next
-
-### Phase 8.3 — Client Share Link (Next)
-- Read-only shareable URL for client deliverables
-- No login required
-- Shows all versions, artifacts, and previews
-
-### Watson STT/TTS in Consumer Frontend
-- Wire mic button + speaker button into `frontend-consumer2`
-- Same Watson endpoints already working in enterprise frontend
-
-### Image Generation Fix
-- Character portrait blending in hero section
-- DALL-E content filter edge cases
-
-### Korean Translation — Remaining
-- Delete confirmation modal strings
-- Error messages and edge case strings
-- Dynamic project names (leave untranslated)
+- 🔴 Sign up / Login pages
+- 🔴 JWT + protected routes

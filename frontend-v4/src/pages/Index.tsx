@@ -20,7 +20,7 @@ import {
   fetchLogs,
   type ChatMessage,
 } from "@/services/api";
-import { Search, Plus, Trash2, Zap, Mic, Send, Volume2, Filter, Loader2, AlertCircle } from "lucide-react";
+import { Search, Plus, Trash2, Zap, Mic, MicOff, Send, Volume2, VolumeX, Filter, Loader2, AlertCircle } from "lucide-react";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("projects");
@@ -50,6 +50,12 @@ const Index = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const logContainerRef = useRef<HTMLDivElement>(null);
   const activeProjectRef = useRef<number | null>(null);
+  const [micState, setMicState] = useState<"idle" | "recording" | "processing">("idle");
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const [ttsState, setTtsState] = useState<Record<string, "idle" | "loading" | "playing">>({});
+  const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
+  const ttsPlayingIdRef = useRef<string | null>(null);
   const pipeline = usePipelineStatus(selectedProjectId, activeTab === "pipeline" && sending);
 
   // Restore pipeline card state from DB when no live build is running
@@ -193,6 +199,83 @@ const Index = () => {
       setSending(false);
     }
   }, [chatInput, selectedProjectId, sending, chatMessages]);
+
+  const API_BASE = "http://localhost:5000";
+
+  const handleTts = async (msgId: string, text: string) => {
+    if (ttsAudioRef.current) {
+      ttsAudioRef.current.pause();
+      ttsAudioRef.current = null;
+    }
+    const prevId = ttsPlayingIdRef.current;
+    ttsPlayingIdRef.current = null;
+    if (prevId) setTtsState(s => ({ ...s, [prevId]: "idle" }));
+    if (prevId === msgId) return;
+
+    setTtsState(s => ({ ...s, [msgId]: "loading" }));
+    try {
+      const res = await fetch(`${API_BASE}/api/watson/tts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) throw new Error("TTS request failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      ttsAudioRef.current = audio;
+      ttsPlayingIdRef.current = msgId;
+      setTtsState(s => ({ ...s, [msgId]: "playing" }));
+      audio.onended = () => {
+        ttsPlayingIdRef.current = null;
+        ttsAudioRef.current = null;
+        URL.revokeObjectURL(url);
+        setTtsState(s => ({ ...s, [msgId]: "idle" }));
+      };
+      audio.play();
+    } catch (e) {
+      console.error("TTS error:", e);
+      setTtsState(s => ({ ...s, [msgId]: "idle" }));
+    }
+  };
+
+  const handleMic = async () => {
+    if (micState === "idle") {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const recorder = new MediaRecorder(stream);
+        audioChunksRef.current = [];
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) audioChunksRef.current.push(e.data);
+        };
+        recorder.onstop = async () => {
+          stream.getTracks().forEach(t => t.stop());
+          setMicState("processing");
+          const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+          const formData = new FormData();
+          formData.append("audio", blob, "recording.webm");
+          try {
+            const res = await fetch(`${API_BASE}/api/watson/stt`, {
+              method: "POST",
+              body: formData,
+            });
+            const data = await res.json();
+            if (data.transcript) setChatInput(data.transcript);
+          } catch (err) {
+            console.error("STT error:", err);
+          }
+          setMicState("idle");
+        };
+        recorder.start();
+        mediaRecorderRef.current = recorder;
+        setMicState("recording");
+      } catch (err) {
+        console.error("Mic access denied:", err);
+      }
+    } else if (micState === "recording") {
+      mediaRecorderRef.current?.stop();
+    }
+  };
 
   const stats = [
     { label: t("totalProjects"), value: projectStats.total },
@@ -353,6 +436,23 @@ const Index = () => {
                                   {msg.content}
                                 </div>
                               </div>
+                              <button
+                                onClick={() => handleTts(`msg-${i}`, msg.content)}
+                                className={`flex-shrink-0 h-7 w-7 rounded-full flex items-center justify-center mt-5 transition-all duration-200 ${
+                                  ttsState[`msg-${i}`] === "playing"
+                                    ? "bg-primary text-primary-foreground shadow-md scale-110"
+                                    : "bg-secondary text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:scale-110"
+                                }`}
+                                aria-label="Play message audio"
+                              >
+                                {ttsState[`msg-${i}`] === "loading" ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : ttsState[`msg-${i}`] === "playing" ? (
+                                  <VolumeX className="h-3.5 w-3.5" />
+                                ) : (
+                                  <Volume2 className="h-3.5 w-3.5" />
+                                )}
+                              </button>
                             </div>
                           )
                         )}
@@ -379,8 +479,23 @@ const Index = () => {
                         disabled={sending}
                         className="flex-1 h-9 px-3 text-sm border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
                       />
-                      <button className="h-9 w-9 flex items-center justify-center text-muted-foreground hover:text-foreground border border-border rounded-md transition-colors" title="Voice input">
-                        <Mic className="h-4 w-4" />
+                      <button
+                        onClick={handleMic}
+                        disabled={sending || micState === "processing"}
+                        className={`h-9 w-9 flex items-center justify-center border border-border rounded-md transition-colors disabled:opacity-50 ${
+                          micState === "recording"
+                            ? "bg-destructive text-destructive-foreground animate-pulse border-destructive"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                        title={micState === "recording" ? "Stop recording" : "Voice input"}
+                      >
+                        {micState === "processing" ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : micState === "recording" ? (
+                          <MicOff className="h-4 w-4" />
+                        ) : (
+                          <Mic className="h-4 w-4" />
+                        )}
                       </button>
                       <button
                         onClick={handleSend}

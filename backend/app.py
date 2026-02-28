@@ -1,5 +1,6 @@
 ﻿from dotenv import load_dotenv
-load_dotenv()
+from pathlib import Path
+load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env")
 
 from flask import Flask, request, jsonify, send_file, Response
 from flask_cors import CORS
@@ -1430,7 +1431,7 @@ def watson_stt():
 
     audio_file = request.files["audio"]
     watson_url = os.getenv("WATSON_STT_URL")
-    watson_key = os.getenv("WATSON_STT_APIKEY")
+    watson_key = os.getenv("WATSON_STT_API_KEY")
 
     if not watson_url or not watson_key:
         return jsonify({"error": "Watson STT credentials not configured"}), 500
@@ -1518,7 +1519,7 @@ def watson_tts():
     if not data or not data.get("text"):
         return jsonify({"error": "No text provided"}), 400
     watson_url = os.getenv("WATSON_TTS_URL")
-    watson_key = os.getenv("WATSON_TTS_APIKEY")
+    watson_key = os.getenv("WATSON_TTS_API_KEY")
     if not watson_url or not watson_key:
         return jsonify({"error": "Watson TTS credentials not configured"}), 500
     try:
