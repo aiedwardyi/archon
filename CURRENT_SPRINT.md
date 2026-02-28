@@ -157,7 +157,10 @@ main (enterprise-ui merged and deleted)
 - ✅ Existing 10 archetypes untouched
 
 ### Phase 16.1 — Bug Fixes (🔧 In Progress)
-- 🔴 Studio + Enterprise chat persistence after Flask restart
+- ✅ Enterprise chat persistence after Flask restart — DB-backed via /chat-history + /chat-messages endpoints (Feb 28, 2026)
+- 🔴 Studio chat persistence after Flask restart — still uses sessionStorage only (no DB fallback)
+- 🔴 Studio + Enterprise: chat not shared when switching between Studio ↔ Enterprise for same project (separate stores — Studio uses sessionStorage, Enterprise uses DB)
+- 🔴 Live output logs same across all projects — /api/execution-status is global server state, not scoped per project. Architectural fix needed: scope execution_state per project_id
 - 🔴 Live output logs lost after restart
 - ✅ Delete modal disk cleanup — already in app.py (Feb 28, 2026)
 - ✅ Studio theme CSS variables — obsolete, Studio is separate app (Feb 28, 2026)

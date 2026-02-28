@@ -375,8 +375,10 @@ Impact:
 - ✅ Build Details card in Studio Pipeline page — enterprise stat row (Lucide icons, Vercel-style, no emojis) (Feb 28, 2026)
 - ✅ Full Korean i18n — Studio + Enterprise all static strings translated (Feb 28, 2026)
 
-### 16.1 — Bug Fixes (🔴 Pending)
-- 🔴 Chat persistence after Flask restart
+### 16.1 — Bug Fixes (🔧 In Progress)
+- ✅ Enterprise chat persistence after Flask restart (Feb 28, 2026)
+- 🔴 Studio chat not shared with Enterprise when switching design modes (separate stores)
+- 🔴 Live output logs same across all projects (execution_state is global, not per-project)
 - 🔴 Live output logs lost after restart
 - ✅ Delete modal disk cleanup — shutil.rmtree on project delete (already in app.py)
 - ✅ Studio theme CSS variables — obsolete, Studio is a separate app (frontend/)
