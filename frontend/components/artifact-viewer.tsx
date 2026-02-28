@@ -16,6 +16,7 @@ import {
   Play,
   Eye,
   Loader2,
+  CheckCircle2,
 } from "lucide-react"
 import { PreviewPanel } from "@/components/preview-panel"
 
@@ -274,6 +275,10 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion,
 
   useEffect(() => {
     if (activeTab === "code" && projectId && version) fetchFileTree()
+  }, [activeTab, projectId, version])
+
+  useEffect(() => {
+    if (activeTab === "tasks" && projectId && !planData) fetchPlan()
   }, [activeTab, projectId, version])
 
   const fetchPrd = async () => {
@@ -670,10 +675,39 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion,
         {activeTab === "tasks" && (
           <div className="flex-1 overflow-auto p-6">
             <div className="max-w-3xl">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Build Tasks</h2>
-              <p className="text-sm text-muted-foreground italic">
-                Task tracking coming in a future update. Check the Logs tab for real-time pipeline progress.
+              <h2 className="text-lg font-semibold text-foreground mb-1">Build Tasks</h2>
+              <p className="text-xs text-muted-foreground mb-6">
+                {planData
+                  ? `${planData.milestones.flatMap((m) => m.tasks).length} tasks · All completed by Agent`
+                  : "Derived from build plan"}
               </p>
+              {planLoading && (
+                <div className="flex items-center gap-2 py-4">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Loading tasks...</span>
+                </div>
+              )}
+              {!planLoading && !planData && (
+                <p className="text-sm text-muted-foreground italic">
+                  No tasks available yet. Run the pipeline to generate one.
+                </p>
+              )}
+              {!planLoading && planData && (
+                <div className="bg-card border border-border rounded-lg overflow-hidden">
+                  <div className="divide-y divide-border">
+                    {planData.milestones.flatMap((m) => m.tasks).map((task) => (
+                      <div key={task.id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
+                        <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
+                        <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground shrink-0">
+                          {task.id}
+                        </span>
+                        <span className="text-foreground/80 flex-1">{task.description}</span>
+                        <span className="text-xs text-muted-foreground shrink-0">Agent</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
