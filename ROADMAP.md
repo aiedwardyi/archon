@@ -303,8 +303,8 @@ Impact:
 
 ### What was built
 - Stats bar added to Studio `frontend/components/project-dashboard.tsx` — 4 platform stat cards (Pipelines Today, Lines Generated, Versions Shipped, Avg Build Time) above existing project stats row
-- Recent Activity sidebar — right panel showing last 5 projects sorted by updated_at, colored status dots (green/red/gray), relative timestamps, "Live" badge
-- 2-column layout (`grid-cols-[1fr_280px]`) wrapping project table + activity panel
+- Recent Activity feed — matches Enterprise format: CheckCircle2/XCircle/Loader2 icons, "name v1 completed/build failed" one-line text, collapsible "Show more (N)" at 4 items
+- Activity positioned full-width above table (removed sidebar layout so table columns aren't clipped)
 - Backend `/api/stats` and `/api/activity` endpoints verified working
 - Calculations: Pipelines Today (projects updated today), Lines Generated (execution_count × 500), Versions Shipped (sum execution_count), Avg Build Time (hardcoded 5m 25s)
 
