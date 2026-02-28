@@ -170,7 +170,7 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - ✅ Consumer frontend polished — Archon branding, newest-first timeline, glow effects, full Korean i18n
 - 🔧 Consumer UX bug fixes — stale state, code tab fixed, failed overlay fixed, progress bar restored (smooth animation, minor edge cases remain), preview iframe regression pending fix
 - ✅ Phase 15.4 — Enterprise UI (frontend-v4) — Vite + React + shadcn/ui on port 8080, real API wiring, 4-theme foundation
-- ✅ Phase 15.5.S — Studio dashboard parity — stats bar + recent activity feed added to Studio frontend
+- ✅ Phase 15.5.S — Studio dashboard reviewed — kept minimal (no stats bar, no activity feed)
 - 🔧 Phase 15.5 — Enterprise UI polish — Pipeline tab chat UI done, stats/activity/publish wired, modals still needed
 - 🔴 PDF Export + Client Read-Only Link (Phase 8 remaining)
 
@@ -299,14 +299,10 @@ Impact:
 - Navbar: real project name + version in breadcrumb
 - Favicon: lightning bolt SVG + Archon - Enterprise Build title
 
-## Phase 15.5.S - Studio Dashboard Parity (✅ COMPLETED Feb 28, 2026)
-
-### What was built
-- Stats bar added to Studio `frontend/components/project-dashboard.tsx` — 4 platform stat cards (Pipelines Today, Lines Generated, Versions Shipped, Avg Build Time) above existing project stats row
-- Recent Activity feed — matches Enterprise format: CheckCircle2/XCircle/Loader2 icons, "name v1 completed/build failed" one-line text, collapsible "Show more (N)" at 4 items
-- Activity positioned full-width above table (removed sidebar layout so table columns aren't clipped)
-- Backend `/api/stats` and `/api/activity` endpoints verified working
-- Calculations: Pipelines Today (projects updated today), Lines Generated (execution_count × 500), Versions Shipped (sum execution_count), Avg Build Time (hardcoded 5m 25s)
+## Phase 15.5.S - Studio Dashboard Review (✅ Feb 28, 2026)
+- Stats bar and Recent Activity feed were prototyped then reverted — not shipping
+- Studio Projects page intentionally kept minimal: project count cards (Total/Running/Completed/Failed) + search/filter + full-width table
+- Enterprise (frontend-v4) retains its own stats bar and activity feed via `/api/stats` and `/api/activity` endpoints
 
 ## Phase 15.5 - Enterprise UI Polish (🔧 IN PROGRESS)
 

@@ -85,10 +85,9 @@ main (enterprise-ui merged and deleted)
 - Navbar: real project name + version in breadcrumb
 - Favicon: lightning bolt SVG + "Archon - Enterprise Build" title
 
-### Phase 15.5.S — Studio Dashboard Parity (✅ Completed Feb 28)
-- ✅ Stats bar added to Studio ProjectDashboard — 4 cards (Pipelines Today / Lines Generated / Versions Shipped / Avg Build Time) above existing project stats
-- ✅ Recent Activity feed — matches Enterprise format: CheckCircle2/XCircle/Loader2 icons, "name v1 completed/build failed" text, collapsible with "Show more (N)"
-- ✅ Activity moved to full-width section above table (removed 2-column sidebar layout so table columns aren't clipped)
+### Phase 15.5.S — Studio Dashboard Review (✅ Completed Feb 28)
+- Stats bar and Recent Activity feed were added then reverted — not shipping
+- Studio Projects page intentionally kept minimal: project count cards (Total/Running/Completed/Failed) + search + table only
 
 ### Phase 15.5 — Enterprise UI Polish (🔧 In Progress)
 - ✅ Checkbox UX fix — no longer triggers row navigation
