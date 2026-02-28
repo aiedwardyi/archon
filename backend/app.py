@@ -20,6 +20,11 @@ warnings.filterwarnings("ignore", category=DeprecationWarning, module="sqlalchem
 
 from models import Project, Execution, get_session, init_db, get_next_version
 
+# NLU Agent — sentiment + keyword analysis before pipeline routing
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from agents.nlu_agent import NLUAgent
+nlu_agent = NLUAgent()
+
 app = Flask(__name__)
 
 CORS(app, origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:8080"])
@@ -1352,6 +1357,21 @@ def project_chat(project_id: int):
             db.close()
 
         sys.path.insert(0, str(REPO_ROOT))
+
+        # NLU pre-analysis — frustrated sentiment short-circuits to chat
+        nlu_result = nlu_agent.analyze(data["message"])
+        print(f"[NLU] sentiment={nlu_result['sentiment']} score={nlu_result['sentiment_score']:.2f} domain={nlu_result['domain']} keywords={nlu_result['keywords']}")
+        if nlu_result["frustrated"]:
+            print("[NLU] Frustrated sentiment — routing to chat")
+            return jsonify({
+                "response_type": "chat",
+                "message": "I can see you're frustrated — let's work through this. What would you like to change or fix?"
+            }), 200
+
+        # Append NLU context to project context for better classify_intent routing
+        if nlu_result["keywords"]:
+            nlu_context_str = f"\nUser intent signals — domain: {nlu_result['domain']}, keywords: {', '.join(nlu_result['keywords'])}, sentiment: {nlu_result['sentiment']}"
+            project_context = (project_context or "") + nlu_context_str
 
         from agents.pm_agent import PMAgent
         pm = PMAgent()
