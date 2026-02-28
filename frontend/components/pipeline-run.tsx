@@ -689,12 +689,12 @@ export function PipelineRun() {
           </div>
         )}
 
-        <div className="flex-1 bg-card border border-border rounded-lg flex flex-col min-h-0">
+        <div className="bg-card border border-border rounded-lg flex flex-col">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
             <Bot className="h-4 w-4 text-muted-foreground" />
             <h3 className="text-sm font-semibold text-foreground">{t("conversation")}</h3>
           </div>
-          <div className="flex-1 overflow-auto p-4 flex flex-col gap-3">
+          <div className="p-4 flex flex-col gap-3 max-h-[55vh] overflow-y-auto">
             {messages.length === 0 && (
               <p className="text-sm text-muted-foreground italic text-center mt-4">
                 {projectId ? t("askOrBuild") : t("selectProjectFirst")}
