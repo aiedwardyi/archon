@@ -196,6 +196,30 @@ export function PipelineRun() {
           if (restored === "complete") {
             setCurrentStage("engineer")
             sessionStorage.setItem("archon_current_stage", "engineer")
+            // Eagerly fetch build details when restoring completed state
+            if (resolvedVer) {
+              fetch(`${API_BASE}/api/projects/${pidNum}/versions`)
+                .then(r => r.json())
+                .then((vdata: any) => {
+                  const list = Array.isArray(vdata) ? vdata : vdata.versions || []
+                  const v = list.find((x: any) => x.version === resolvedVer)
+                  if (!v) return
+                  const dur = v.duration_seconds
+                  let durStr = "—"
+                  if (dur != null) {
+                    const mins = Math.floor(dur / 60)
+                    const secs = Math.round(dur % 60)
+                    durStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`
+                  }
+                  setBuildDetails({
+                    model: v.model_used || "—",
+                    tokensUsed: v.tokens_used != null ? v.tokens_used.toLocaleString() : "—",
+                    estCost: v.estimated_cost != null ? `$${v.estimated_cost.toFixed(4)}` : "—",
+                    duration: durStr,
+                  })
+                })
+                .catch(() => {})
+            }
           }
           if (restored === "running") {
             isRunningRef.current = true
@@ -517,7 +541,7 @@ export function PipelineRun() {
         setBuildDetails({
           model: v.model_used || "—",
           tokensUsed: v.tokens_used != null ? v.tokens_used.toLocaleString() : "—",
-          estCost: v.estimated_cost != null ? `${v.estimated_cost.toFixed(4)}` : "—",
+          estCost: v.estimated_cost != null ? `$${v.estimated_cost.toFixed(4)}` : "—",
           duration: durStr,
         })
       })

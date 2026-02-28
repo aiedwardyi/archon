@@ -72,6 +72,7 @@ def _run_claude(contents: str) -> EngineeringResult:
     import anthropic
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     raw = ""
+    usage = None
     with client.messages.stream(
         model="claude-sonnet-4-5",
         max_tokens=32000,
@@ -79,9 +80,13 @@ def _run_claude(contents: str) -> EngineeringResult:
     ) as stream:
         for text in stream.text_stream:
             raw += text
+        final_message = stream.get_final_message()
+        usage = final_message.usage if final_message else None
     data = _repair_json(raw)
     result = EngineeringResult.model_validate(data)
     result.files = _deduplicate_files(result.files)
+    if usage:
+        result.usage = usage
     return result
 
 

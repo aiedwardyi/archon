@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List
+from typing import Any, List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -13,3 +13,4 @@ class EngineeringResult(BaseModel):
     task_id: str = Field(..., description="Planner task id this corresponds to")
     summary: str = Field(..., description="Short summary of what was generated")
     files: List[FileArtifact] = Field(default_factory=list, description="Files to write to disk")
+    usage: Optional[Any] = None

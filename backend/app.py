@@ -494,9 +494,14 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
                 execution.duration_seconds = round(time.time() - pipeline_start_time, 2)
                 execution.model_used = "Claude Sonnet 4.5"
                 if hasattr(result, "usage") and result.usage:
-                    execution.tokens_used = getattr(result.usage, "total_tokens", None)
+                    input_tokens = getattr(result.usage, "input_tokens", 0) or 0
+                    output_tokens = getattr(result.usage, "output_tokens", 0) or 0
+                    execution.tokens_used = input_tokens + output_tokens
                     if execution.tokens_used:
-                        execution.estimated_cost = round(execution.tokens_used * 0.000003, 4)
+                        # Claude Sonnet 4.5 pricing: $3/M input, $15/M output
+                        execution.estimated_cost = round(
+                            (input_tokens * 0.000003) + (output_tokens * 0.000015), 4
+                        )
                 if (
                     execution.version == 1
                     and not project.locked_ui_archetype

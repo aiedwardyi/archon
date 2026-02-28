@@ -163,6 +163,22 @@ main (enterprise-ui merged and deleted)
 - ✅ Studio theme CSS variables — obsolete, Studio is separate app (Feb 28, 2026)
 - 🔧 Build Details tokens/cost — Claude stream usage capture (engineer_agent.py) — in progress
 
+### Phase 17 — IBM Governance & NLU Integration (🔴 Planned)
+
+#### 17.1 — Watson NLU Pre-Pipeline Analyzer
+- 🔴 Watson NLU analyzes user prompt before PM Agent
+- 🔴 Extracts: intent, sentiment, domain keywords
+- 🔴 Smarter routing: frustrated sentiment → chat, not build
+- 🔴 NLU result passed as context into PM Agent
+
+#### 17.2 — Governance Agent (AI Factsheets)
+- 🔴 GovernanceAgent runs once per pipeline completion
+- 🔴 Factsheet per version: models, tokens, cost, duration, archetype, quality
+- 🔴 governance_log JSON column on Execution model
+- 🔴 Governance sub-tab in Artifacts page
+- 🔴 PDF export — solves Phase 8.2 client audit trail
+- 🔴 /api/governance/summary cross-run analytics endpoint
+
 ### Phase 16.5 — Authentication (🔴 Planned)
 - 🔴 Sign up / Login pages
 - 🔴 JWT + protected routes

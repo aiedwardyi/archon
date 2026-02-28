@@ -388,6 +388,26 @@ Impact:
 - 🔴 User-scoped projects (owner_id already in DB schema)
 
 ### 16.6 — Planner Archetype Expansion (✅ Complete Feb 28, 2026)
+
+### Phase 17 — IBM Governance & NLU Integration (🔴 Planned)
+
+#### 17.1 — Watson NLU Pre-Pipeline Analyzer
+- 🔴 Watson NLU analyzes user prompt before PM Agent
+- 🔴 Extracts: intent category, sentiment, domain keywords
+- 🔴 Tags project domain automatically (e.g. fintech, gaming, healthcare)
+- 🔴 Smarter routing: frustrated sentiment → chat, not build
+- 🔴 NLU result passed as context into PM Agent
+- IBM credential: WATSON_NLU_URL + WATSON_NLU_API_KEY in backend/.env
+
+#### 17.2 — Governance Agent (AI Factsheets)
+- 🔴 GovernanceAgent runs once per pipeline completion
+- 🔴 Writes structured Factsheet per version: models used, tokens, cost, duration, archetype, intent, quality indicators
+- 🔴 Stored in DB (governance_log JSON column on Execution)
+- 🔴 Factsheet visible in Artifacts tab (new Governance sub-tab)
+- 🔴 Exportable as PDF — solves Phase 8.2 client audit trail
+- 🔴 Cross-run analytics endpoint: /api/governance/summary
+- IBM credential: Watson Studio AI Factsheets or local structured logging
+- Resume value: governed, auditable AI pipeline — rare even among senior IBM AEs
 - ✅ Expanded planner.txt from 10 → 25 archetypes
 - ✅ Added render_path A/B field for Tailwind vs Raw CSS routing
 - ✅ Layout + content contracts for all 15 new archetypes
