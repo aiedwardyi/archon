@@ -178,6 +178,8 @@ main (enterprise-ui merged and deleted)
 - ✅ Credits calculated and saved on pipeline completion
 - ✅ Build Details: shows credits used + model + duration (hides raw tokens/cost)
 - ✅ Studio + Enterprise both display credits correctly
+- ✅ Build Agent upgraded to claude-sonnet-4-6 (Feb 28, 2026)
+- ✅ model_used display updated to "Claude Sonnet 4.6" (Feb 28, 2026)
 - ✅ Navbar credit counter wired to real balance via /api/credits/balance (Feb 28, 2026)
 - ✅ Build Details: "12 credits · 488 remaining" format (Feb 28, 2026)
 - 🔴 Plan tiers: Starter 100/mo, Pro 500/mo, Agency unlimited (post-auth)
@@ -196,3 +198,28 @@ main (enterprise-ui merged and deleted)
 - 🔴 Sign up / Login pages
 - 🔴 JWT + protected routes
 - 🔴 User-scoped projects (owner_id already in DB schema)
+
+### Phase 18 — Unified Auth + Plan-Based UI Routing (🔴 Planned)
+- 🔴 18.1 Landing/pricing page — Consumer vs Enterprise plan selector
+- 🔴 18.2 Auth gates: Consumer login → frontend-consumer2, Enterprise login → frontend-v4
+- 🔴 18.3 Enterprise design switcher (Studio ↔ Enterprise toggle in navbar)
+- 🔴 18.4 Plan-aware credit limits (Consumer: 100/mo, Enterprise: 500/mo)
+- 🔴 18.5 Upgrade flow: Consumer → Enterprise upsell modal
+
+**Plan breakdown:**
+- Consumer plan: frontend-consumer2 — simplified UI, light theme only
+- Enterprise plan: frontend-v4 (default) + optional Studio (frontend/) toggle — dark/light mode, full pipeline controls
+
+---
+
+## 🔴 Known Quality Bug — Image Generation Regression
+
+DALL-E character images stopped matching character descriptions accurately after Phase 14 (scoped iteration enforcement). Previously generated highly accurate character likenesses (e.g. FF7 Cloud/Barrett). Now produces generic mid-tier outputs.
+
+**Suspected cause:** `iteration_context` injected before main prompt may be bleeding into or compressing the Design Agent's image prompt context.
+
+**To fix:**
+- Audit `agents/design_agent.py` — verify character name/description passes in fully
+- Ensure `iteration_context` only affects EngineerAgent, not DesignAgent
+- Restore DALL-E prompt format that worked pre-Phase 14
+- Test with: "Final Fantasy 7 character selection page with Cloud Strife and Barrett"

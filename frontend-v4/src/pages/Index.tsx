@@ -23,11 +23,12 @@ import {
 import { Search, Plus, Trash2, Zap, Mic, MicOff, Send, Volume2, VolumeX, Filter, Loader2, AlertCircle } from "lucide-react";
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState("projects");
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem("archon_active_tab") || "projects");
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
   const [artifactTab, setArtifactTab] = useState<"brief" | "plan" | "code">("brief");
   const [showNewProject, setShowNewProject] = useState(false);
+  const [buildRefreshKey, setBuildRefreshKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const { t } = useLanguage();
   const { projects, loading, error, stats: projectStats } = useProjects();
@@ -41,6 +42,11 @@ const Index = () => {
       window.history.replaceState({}, '', '/');
     }
   }, []);
+
+  // Persist active tab to localStorage
+  useEffect(() => {
+    localStorage.setItem("archon_active_tab", activeTab);
+  }, [activeTab]);
 
   // Pipeline state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -138,6 +144,9 @@ const Index = () => {
   useEffect(() => {
     if (pipeline.status === "COMPLETED" || pipeline.status === "FAILED") {
       setSending(false);
+    }
+    if (pipeline.status === "COMPLETED") {
+      setBuildRefreshKey(k => k + 1);
     }
   }, [pipeline.status]);
 
@@ -540,7 +549,7 @@ const Index = () => {
                     </div>
 
                     {/* Build Info */}
-                    <BuildDetailsCard projectId={selectedProjectId} version={selectedVersion ?? (projects.find(p => p.id === selectedProjectId) ? parseInt(projects.find(p => p.id === selectedProjectId)!.versions.replace("v", "")) : null)} />
+                    <BuildDetailsCard projectId={selectedProjectId} version={selectedVersion ?? (projects.find(p => p.id === selectedProjectId) ? parseInt(projects.find(p => p.id === selectedProjectId)!.versions.replace("v", "")) : null)} refreshKey={buildRefreshKey} />
                   </div>
                 </div>
               </>

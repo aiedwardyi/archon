@@ -406,6 +406,8 @@ Impact:
 - ✅ Credits calculated + saved on pipeline completion
 - ✅ Build Details: credits used + model + duration (hides raw cost)
 - ✅ Studio + Enterprise both display credits correctly
+- ✅ Build Agent upgraded to claude-sonnet-4-6 (Feb 28, 2026)
+- ✅ model_used display updated to "Claude Sonnet 4.6" (Feb 28, 2026)
 - ✅ Navbar credit counter wired to real balance via /api/credits/balance (Feb 28, 2026)
 - ✅ Build Details: "12 credits · 488 remaining" format (Feb 28, 2026)
 - 🔴 Plan tiers: Starter 100/mo, Pro 500/mo, Agency unlimited (post-auth)
@@ -425,3 +427,43 @@ Impact:
 - ✅ Added render_path A/B field for Tailwind vs Raw CSS routing
 - ✅ Layout + content contracts for all 15 new archetypes
 - ✅ Existing 10 archetypes untouched
+
+---
+
+## Phase 18 — Unified Auth + Plan-Based UI Routing (🔴 Planned)
+
+**Business model:** Two plans, two UI experiences. One login, one backend.
+
+| Plan | UI | Features |
+|------|----|---------|
+| Consumer | frontend-consumer2 (simplified) | Light theme only, standard builds, version history |
+| Enterprise | frontend-v4 or frontend/ (power) | Light + Dark mode, Studio or Enterprise design toggle, advanced pipeline controls |
+
+**Flow:**
+- User signs up → picks Consumer or Enterprise plan
+- Routed to correct UI automatically based on plan
+- Enterprise users can toggle between Studio (frontend/) and Enterprise (frontend-v4) designs
+- Upgrade path: Consumer → Enterprise unlocks full UI switcher
+- Same Flask backend serves both
+
+**Key principle:** Consumer UI is simplified for non-technical clients. Enterprise UI is for agencies and power users who need full audit trail, pipeline controls, and theme flexibility.
+
+- 🔴 18.1 Landing/pricing page with plan selector (Consumer vs Enterprise)
+- 🔴 18.2 Auth gates: Consumer login → frontend-consumer2, Enterprise login → frontend-v4
+- 🔴 18.3 Enterprise design switcher (Studio ↔ Enterprise toggle in navbar)
+- 🔴 18.4 Plan-aware credit limits (Consumer: 100/mo, Enterprise: 500/mo)
+- 🔴 18.5 Upgrade flow: Consumer → Enterprise upsell modal
+
+---
+
+## Known Quality Bug — Image Generation Regression (🔴 Active)
+
+**Problem:** DALL-E character images stopped matching character descriptions accurately after scoped iteration enforcement was added (Phase 14). Previously generated highly accurate character likenesses (e.g. FF7 Cloud/Barrett). Now produces generic mid-tier outputs.
+
+**Root cause hypothesis:** Iteration enforcement rules placed BEFORE the main prompt in `engineer.txt` are interfering with the Design Agent's image prompt generation path, or the Design Agent's prompt context is being compressed/truncated.
+
+**Fix needed:**
+- Audit Design Agent prompt construction — ensure character names + descriptions flow in fully
+- Separate iteration_context injection so it only affects EngineerAgent, not DesignAgent
+- Consider restoring the exact DALL-E prompt format that produced high-quality results pre-Phase 14
+- Test: prompt "Final Fantasy 7 character selection page with Cloud Strife and Barrett" and verify image accuracy

@@ -5,9 +5,10 @@ import { fetchBuildDetails, type BuildDetails } from "@/services/api";
 interface BuildDetailsCardProps {
   projectId: number | null;
   version: number | null;
+  refreshKey?: number;
 }
 
-export const BuildDetailsCard = ({ projectId, version }: BuildDetailsCardProps) => {
+export const BuildDetailsCard = ({ projectId, version, refreshKey }: BuildDetailsCardProps) => {
   const { t } = useLanguage();
   const [details, setDetails] = useState<BuildDetails | null>(null);
 
@@ -18,7 +19,7 @@ export const BuildDetailsCard = ({ projectId, version }: BuildDetailsCardProps) 
       if (!cancelled) setDetails(d);
     });
     return () => { cancelled = true; };
-  }, [projectId, version]);
+  }, [projectId, version, refreshKey]);
 
   const rows = [
     { label: t("model"), value: details?.model ?? "—" },

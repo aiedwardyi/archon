@@ -5,6 +5,12 @@ import os
 import re
 from pathlib import Path
 
+try:
+    from json_repair import repair_json
+    _JSON_REPAIR_AVAILABLE = True
+except ImportError:
+    _JSON_REPAIR_AVAILABLE = False
+
 from google import genai
 
 from schemas.plan_schema import Task
@@ -60,6 +66,25 @@ def _repair_json(raw: str) -> dict:
         pass
     try:
         return json.loads(re.sub(r'\\(?!["\\/bfnrtu])', r"\\\\", candidate))
+    except json.JSONDecodeError:
+        pass
+
+    # Third pass: use json_repair library if available (handles complex escapes)
+    if _JSON_REPAIR_AVAILABLE:
+        try:
+            repaired = repair_json(candidate, return_objects=True)
+            if isinstance(repaired, dict):
+                return repaired
+        except Exception:
+            pass
+
+    # Fourth pass: aggressive backslash doubling then retry
+    try:
+        aggressive = candidate.replace('\\', '\\\\')
+        # Don't double-escape already-valid sequences
+        for seq in ['\\"', '\\\\', '\\/', '\\b', '\\f', '\\n', '\\r', '\\t']:
+            aggressive = aggressive.replace('\\\\' + seq[1], seq)
+        return json.loads(aggressive)
     except json.JSONDecodeError as e:
         raise RuntimeError(
             "EngineerAgent: JSON repair failed.\n\n"
