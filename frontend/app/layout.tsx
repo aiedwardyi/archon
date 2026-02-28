@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/theme-provider'
+import { LanguageProvider } from '@/contexts/LanguageContext'
 import { Navbar } from '@/components/navbar'
 import './globals.css'
 
@@ -31,10 +32,12 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <div className="min-h-screen flex flex-col bg-background">
-            <Navbar />
-            <main className="flex-1 flex flex-col">{children}</main>
-          </div>
+          <LanguageProvider>
+            <div className="min-h-screen flex flex-col bg-background">
+              <Navbar />
+              <main className="flex-1 flex flex-col">{children}</main>
+            </div>
+          </LanguageProvider>
         </ThemeProvider>
         <Analytics />
       </body>

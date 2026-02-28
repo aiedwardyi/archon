@@ -16,6 +16,7 @@ import {
   AlertTriangle,
 } from "lucide-react"
 import { StatusBadge } from "@/components/status-badge"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 const API_BASE = "http://localhost:5000"
 
@@ -37,6 +38,7 @@ type ConfirmModal = {
 
 export function ProjectDashboard() {
   const router = useRouter()
+  const { t } = useLanguage()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
@@ -193,10 +195,10 @@ export function ProjectDashboard() {
       {/* Stats bar */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         {[
-          { label: "Total Projects", value: stats.total, color: "text-foreground" },
-          { label: "Running", value: stats.running, color: "text-info" },
-          { label: "Completed", value: stats.completed, color: "text-success" },
-          { label: "Failed", value: stats.failed, color: "text-destructive" },
+          { label: t("totalProjects"), value: stats.total, color: "text-foreground" },
+          { label: t("running"), value: stats.running, color: "text-info" },
+          { label: t("completed"), value: stats.completed, color: "text-success" },
+          { label: t("failed"), value: stats.failed, color: "text-destructive" },
         ].map((stat) => (
           <div key={stat.label} className="bg-card border border-border rounded-lg p-4">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{stat.label}</p>
@@ -212,7 +214,7 @@ export function ProjectDashboard() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search projects..."
+              placeholder={t("searchProjects")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-9 w-64 rounded-md border border-input bg-card pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
@@ -224,11 +226,11 @@ export function ProjectDashboard() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="h-9 appearance-none rounded-md border border-input bg-card pl-3 pr-8 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             >
-              <option value="all">All statuses</option>
-              <option value="running">Running</option>
-              <option value="completed">Completed</option>
-              <option value="failed">Failed</option>
-              <option value="pending">Pending</option>
+              <option value="all">{t("allStatuses")}</option>
+              <option value="running">{t("running")}</option>
+              <option value="completed">{t("completed")}</option>
+              <option value="failed">{t("failed")}</option>
+              <option value="pending">{t("pending")}</option>
             </select>
             <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           </div>
@@ -240,7 +242,7 @@ export function ProjectDashboard() {
               className="h-9 flex items-center gap-2 rounded-md border border-border px-3 text-sm font-medium text-muted-foreground hover:text-destructive hover:border-destructive/50 transition-colors"
             >
               <Trash2 className="h-4 w-4" />
-              Delete All
+              {t("deleteAll")}
             </button>
           )}
           {showNewProjectInput && (
@@ -263,7 +265,7 @@ export function ProjectDashboard() {
             className="h-9 flex items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-60"
           >
             {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            {showNewProjectInput ? "Create" : "New Project"}
+            {showNewProjectInput ? t("create") : t("newProject")}
           </button>
         </div>
       </div>
@@ -273,12 +275,20 @@ export function ProjectDashboard() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-border">
-              {["Project", "ID", "Status", "Last Run", "Versions", "Created", ""].map((header) => (
-                <th key={header} className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  {header && (
+              {[
+                { key: "project", label: t("project") },
+                { key: "id", label: t("id") },
+                { key: "status", label: t("status") },
+                { key: "lastRun", label: t("lastRun") },
+                { key: "versions", label: t("versions") },
+                { key: "created", label: t("created") },
+                { key: "actions", label: "" },
+              ].map((header) => (
+                <th key={header.key} className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  {header.label && (
                     <span className="flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors">
-                      {header}
-                      {header !== "" && <ArrowUpDown className="h-3 w-3" />}
+                      {header.label}
+                      <ArrowUpDown className="h-3 w-3" />
                     </span>
                   )}
                 </th>
@@ -356,7 +366,7 @@ export function ProjectDashboard() {
                             }}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
-                            Delete project
+                            {t("deleteProject")}
                           </button>
                         </div>
                       )}
@@ -421,7 +431,7 @@ export function ProjectDashboard() {
                 onClick={closeModal}
                 className="h-9 px-4 rounded-md border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors"
               >
-                Cancel
+                {t("cancel")}
               </button>
               <button
                 onClick={() => {
@@ -432,7 +442,7 @@ export function ProjectDashboard() {
                 className="h-9 px-4 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
-                Delete
+                {t("delete_")}
               </button>
             </div>
           </div>

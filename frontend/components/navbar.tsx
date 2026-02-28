@@ -13,16 +13,20 @@ import {
   Coins,
 } from "lucide-react"
 import { AvatarDropdown } from "@/components/avatar-dropdown"
+import { useLanguage } from "@/contexts/LanguageContext"
 
-const navItems = [
-  { href: "/", label: "Projects", icon: LayoutDashboard },
-  { href: "/pipeline", label: "Pipeline", icon: Play },
-  { href: "/versions", label: "Versions", icon: Clock },
-  { href: "/artifacts", label: "Artifacts", icon: FileCode2 },
+import type { TranslationKey } from "@/lib/i18n"
+
+const navItems: { href: string; labelKey: TranslationKey; icon: typeof LayoutDashboard }[] = [
+  { href: "/", labelKey: "projects", icon: LayoutDashboard },
+  { href: "/pipeline", labelKey: "pipeline", icon: Play },
+  { href: "/versions", labelKey: "versions", icon: Clock },
+  { href: "/artifacts", labelKey: "artifacts", icon: FileCode2 },
 ]
 
 export function Navbar() {
   const pathname = usePathname()
+  const { language, toggleLanguage, t } = useLanguage()
   const [projectName, setProjectName] = useState<string | null>(null)
   const [version, setVersion] = useState<string | null>(null)
 
@@ -74,7 +78,7 @@ export function Navbar() {
                 }`}
               >
                 <item.icon className="h-4 w-4" />
-                {item.label}
+                {t(item.labelKey)}
               </Link>
             )
           })}
@@ -93,6 +97,28 @@ export function Navbar() {
           </span>
         )}
         <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center rounded-md border border-border overflow-hidden">
+            <button
+              onClick={toggleLanguage}
+              className={`px-2 py-1 text-xs font-medium transition-colors ${
+                language === "en"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              EN
+            </button>
+            <button
+              onClick={toggleLanguage}
+              className={`px-2 py-1 text-xs font-medium transition-colors ${
+                language === "ko"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              KO
+            </button>
+          </div>
           <span className="hidden md:flex items-center gap-1 text-xs text-muted-foreground font-medium">
             <Coins className="h-3.5 w-3.5 text-amber-500" />
             1,250

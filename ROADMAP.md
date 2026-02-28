@@ -318,7 +318,7 @@ Impact:
 
 ### 16.3 — Studio Feature Parity (🔧 In Progress)
 - ✅ Projects page kept minimal by design
-- 🔴 Korean/English toggle in Studio
+- ✅ Korean/English toggle in Studio
 - 🔴 Build Details card in Studio Pipeline
 
 ### 16.1 — Bug Fixes (🔴 Pending)
