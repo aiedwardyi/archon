@@ -57,15 +57,6 @@ const Index = () => {
   const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
   const ttsPlayingIdRef = useRef<string | null>(null);
   const pipeline = usePipelineStatus(selectedProjectId, activeTab === "pipeline" && sending);
-  const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
-
-  useEffect(() => {
-    fetch("http://localhost:5000/api/credits/balance")
-      .then(r => r.json())
-      .then(d => setCreditsRemaining(d.credits_remaining))
-      .catch(() => {})
-  }, [selectedVersion]);
-
   // Restore pipeline card state from DB when no live build is running
   const [historicalStatus, setHistoricalStatus] = useState<string | null>(null);
   const [historicalLogs, setHistoricalLogs] = useState<Array<{ id: string; timestamp: number; message: string }>>([]);
@@ -549,7 +540,7 @@ const Index = () => {
                     </div>
 
                     {/* Build Info */}
-                    <BuildDetailsCard projectId={selectedProjectId} version={selectedVersion ?? (projects.find(p => p.id === selectedProjectId) ? parseInt(projects.find(p => p.id === selectedProjectId)!.versions.replace("v", "")) : null)} creditsRemaining={creditsRemaining} />
+                    <BuildDetailsCard projectId={selectedProjectId} version={selectedVersion ?? (projects.find(p => p.id === selectedProjectId) ? parseInt(projects.find(p => p.id === selectedProjectId)!.versions.replace("v", "")) : null)} />
                   </div>
                 </div>
               </>

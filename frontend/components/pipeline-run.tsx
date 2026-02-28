@@ -78,7 +78,6 @@ export function PipelineRun() {
   const [buildDetails, setBuildDetails] = useState<{
     model: string; creditsUsed: string; duration: string
   } | null>(null)
-  const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null)
   const logsEndRef = useRef<HTMLDivElement>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
@@ -280,10 +279,6 @@ export function PipelineRun() {
         setIsRunning(false)
         isRunningRef.current = false
         stopPolling()
-        fetch(`${API_BASE}/api/credits/balance`)
-          .then(r => r.json())
-          .then(d => setCreditsRemaining(d.credits_remaining))
-          .catch(() => {})
         if (data.execution_id) {
           const eid = Number(data.execution_id)
           executionIdRef.current = eid
@@ -642,9 +637,7 @@ export function PipelineRun() {
           <div className="flex items-center divide-x divide-border text-xs font-mono">
             {[
               { icon: Cpu, label: t("model"), value: buildDetails.model },
-              { icon: Hash, label: t("creditsUsed"), value: buildDetails.creditsUsed && creditsRemaining != null
-                ? `${buildDetails.creditsUsed} · ${creditsRemaining} remaining`
-                : buildDetails.creditsUsed },
+              { icon: Hash, label: t("creditsUsed"), value: buildDetails.creditsUsed },
               { icon: Clock, label: t("duration"), value: buildDetails.duration },
             ].map(({ icon: Icon, label, value }) => (
               <div key={label} className="flex items-center gap-1.5 px-3 first:pl-0">
