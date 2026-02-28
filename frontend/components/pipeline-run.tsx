@@ -17,7 +17,12 @@ import {
   MicOff,
   Volume2,
   VolumeX,
+  Cpu,
+  Hash,
+  DollarSign,
+  Clock,
 } from "lucide-react"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 const API_BASE = "http://localhost:5000"
 const POLL_INTERVAL_MS = 1500
@@ -50,6 +55,7 @@ function AgentStatusLabel({ status }: { status: AgentStatus }) {
 }
 
 export function PipelineRun() {
+  const { t } = useLanguage()
   const [inputValue, setInputValue] = useState("")
   const [projectId, setProjectId] = useState<number | null>(null)
   const [projectName, setProjectName] = useState("my-project")
@@ -69,6 +75,9 @@ export function PipelineRun() {
   const ttsPlayingIdRef = useRef<string | null>(null)
   const [globallyBlocked, setGloballyBlocked] = useState(false)
   const [blockingProjectId, setBlockingProjectId] = useState<number | null>(null)
+  const [buildDetails, setBuildDetails] = useState<{
+    model: string; tokensUsed: string; estCost: string; duration: string
+  } | null>(null)
   const logsEndRef = useRef<HTMLDivElement>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
@@ -489,6 +498,31 @@ export function PipelineRun() {
     if (projectId && !isRunning) checkGlobalBlock()
   }, [projectId, isRunning])
 
+  useEffect(() => {
+    if (!projectId || !version) { setBuildDetails(null); return }
+    fetch(`http://localhost:5000/api/projects/${projectId}/versions`)
+      .then(r => r.json())
+      .then((data: any) => {
+        const list = Array.isArray(data) ? data : data.versions || []
+        const v = list.find((x: any) => x.version === version)
+        if (!v) { setBuildDetails(null); return }
+        const dur = v.duration_seconds
+        let durStr = "—"
+        if (dur != null) {
+          const mins = Math.floor(dur / 60)
+          const secs = Math.round(dur % 60)
+          durStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`
+        }
+        setBuildDetails({
+          model: v.model_used || "—",
+          tokensUsed: v.tokens_used != null ? v.tokens_used.toLocaleString() : "—",
+          estCost: v.estimated_cost != null ? `${v.estimated_cost.toFixed(4)}` : "—",
+          duration: durStr,
+        })
+      })
+      .catch(() => setBuildDetails(null))
+  }, [projectId, version])
+
   const agentStages = [
     { key: "pm", name: "Requirements Agent", role: "Understands your request" },
     { key: "planner", name: "Architecture Agent", role: "Plans the build" },
@@ -576,6 +610,23 @@ export function PipelineRun() {
             })}
           </div>
         </div>
+
+        {pipelineStatus === "complete" && buildDetails && (
+          <div className="flex items-center divide-x divide-border text-xs font-mono">
+            {[
+              { icon: Cpu, label: t("model"), value: buildDetails.model },
+              { icon: Hash, label: t("tokensUsed"), value: buildDetails.tokensUsed },
+              { icon: DollarSign, label: t("estCost"), value: buildDetails.estCost },
+              { icon: Clock, label: t("duration"), value: buildDetails.duration },
+            ].map(({ icon: Icon, label, value }) => (
+              <div key={label} className="flex items-center gap-1.5 px-3 first:pl-0">
+                <Icon className="h-3 w-3 text-muted-foreground" />
+                <span className="text-muted-foreground">{label}</span>
+                <span className="font-medium text-foreground">{value}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="flex-1 bg-card border border-border rounded-lg flex flex-col min-h-0">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
