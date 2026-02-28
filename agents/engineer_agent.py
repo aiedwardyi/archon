@@ -45,6 +45,45 @@ def _deduplicate_files(files: list[FileArtifact]) -> list[FileArtifact]:
     return list(seen.values())
 
 
+def _fix_backslashes_in_strings(candidate: str) -> str:
+    """Walk the JSON char-by-char; inside string values, replace invalid
+    \\X escapes with \\\\X (literal backslash + char) so json.loads succeeds."""
+    _VALID_ESCAPES = set('"\\\/bfnrtu')
+    out: list[str] = []
+    in_string = False
+    i = 0
+    n = len(candidate)
+    while i < n:
+        ch = candidate[i]
+        if not in_string:
+            out.append(ch)
+            if ch == '"':
+                in_string = True
+            i += 1
+            continue
+        # inside a JSON string
+        if ch == '"':
+            out.append(ch)
+            in_string = False
+            i += 1
+            continue
+        if ch == '\\' and i + 1 < n:
+            nxt = candidate[i + 1]
+            if nxt in _VALID_ESCAPES:
+                out.append(ch)
+                out.append(nxt)
+                i += 2
+            else:
+                # invalid escape like \e \s \p \x \0 — double the backslash
+                out.append('\\\\')
+                out.append(nxt)
+                i += 2
+            continue
+        out.append(ch)
+        i += 1
+    return "".join(out)
+
+
 def _repair_json(raw: str) -> dict:
     text = raw.strip()
     text = re.sub(r"^```json\s*", "", text, flags=re.IGNORECASE)
@@ -60,16 +99,26 @@ def _repair_json(raw: str) -> dict:
     candidate = text[start : end + 1]
     candidate = re.sub(r"}\s*\n\s*{", "},\n{", candidate)
     candidate = re.sub(r"`(#[0-9a-fA-F]{3,8})`", r"\1", candidate)
+
+    # Pass 1: direct parse
+    try:
+        return json.loads(candidate)
+    except json.JSONDecodeError:
+        pass
+
+    # Pass 2: regex strip invalid backslash escapes
     try:
         return json.loads(re.sub(r'\\(?!["\\/bfnrtu])', "", candidate))
     except json.JSONDecodeError:
         pass
+
+    # Pass 3: char-walking backslash fixer (context-aware, only inside strings)
     try:
-        return json.loads(re.sub(r'\\(?!["\\/bfnrtu])', r"\\\\", candidate))
+        return json.loads(_fix_backslashes_in_strings(candidate))
     except json.JSONDecodeError:
         pass
 
-    # Third pass: use json_repair library if available (handles complex escapes)
+    # Pass 4: json_repair library
     if _JSON_REPAIR_AVAILABLE:
         try:
             repaired = repair_json(candidate, return_objects=True)
@@ -78,10 +127,9 @@ def _repair_json(raw: str) -> dict:
         except Exception:
             pass
 
-    # Fourth pass: aggressive backslash doubling then retry
+    # Pass 5: aggressive backslash doubling then retry
     try:
         aggressive = candidate.replace('\\', '\\\\')
-        # Don't double-escape already-valid sequences
         for seq in ['\\"', '\\\\', '\\/', '\\b', '\\f', '\\n', '\\r', '\\t']:
             aggressive = aggressive.replace('\\\\' + seq[1], seq)
         return json.loads(aggressive)
