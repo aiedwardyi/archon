@@ -377,7 +377,7 @@ Impact:
 
 ### 16.1 — Bug Fixes (🔧 In Progress)
 - ✅ Enterprise chat persistence after Flask restart (Feb 28, 2026)
-- 🔴 Studio chat not shared with Enterprise when switching design modes (separate stores)
+- ✅ Studio + Enterprise chat shared when switching design modes — both load from DB (Feb 28, 2026)
 - 🔴 Live output logs same across all projects (execution_state is global, not per-project)
 - 🔴 Live output logs lost after restart
 - ✅ Delete modal disk cleanup — shutil.rmtree on project delete (already in app.py)
