@@ -74,7 +74,7 @@ def _run_claude(contents: str) -> EngineeringResult:
     raw = ""
     usage = None
     with client.messages.stream(
-        model="claude-sonnet-4-5",
+        model="claude-sonnet-4-6",
         max_tokens=32000,
         messages=[{"role": "user", "content": contents}],
     ) as stream:
