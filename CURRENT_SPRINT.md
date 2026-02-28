@@ -144,6 +144,7 @@ main (enterprise-ui merged and deleted)
 ### Phase 16.3 — Studio Feature Parity (🔧 In Progress)
 - ✅ Studio Projects page — intentionally kept minimal (no stats bar, no activity feed)
 - ✅ Korean/English toggle in Studio navbar (i18n.ts + LanguageContext + KO/EN pill toggle + t() wired in navbar + project-dashboard)
+- ✅ Studio Projects table column sort — clickable headers, ↑/↓ active indicator, faded ↑↓ inactive (Feb 28, 2026)
 - 🔴 Build Details card in Studio Pipeline page
 
 ### Phase 16.1 — Bug Fixes (🔴 Pending)

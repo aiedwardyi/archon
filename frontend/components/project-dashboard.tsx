@@ -52,6 +52,8 @@ export function ProjectDashboard() {
   const [deleteConfirmText, setDeleteConfirmText] = useState("")
   const [deleting, setDeleting] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const [sortKey, setSortKey] = useState<keyof Project>("id")
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
 
   const fetchProjects = async () => {
     try {
@@ -120,6 +122,15 @@ export function ProjectDashboard() {
     setDeleteConfirmText("")
   }
 
+  const handleSort = (key: keyof Project) => {
+    if (key === sortKey) {
+      setSortDir(prev => prev === "asc" ? "desc" : "asc")
+    } else {
+      setSortKey(key)
+      setSortDir("desc")
+    }
+  }
+
   const handleDeleteProject = async (projectId: number) => {
     setDeleting(true)
     try {
@@ -162,6 +173,13 @@ export function ProjectDashboard() {
       (p.description || "").toLowerCase().includes(searchQuery.toLowerCase())
     const matchesStatus = statusFilter === "all" || p.status === statusFilter
     return matchesSearch && matchesStatus
+  })
+
+  const sorted = [...filtered].sort((a, b) => {
+    const av = a[sortKey]
+    const bv = b[sortKey]
+    const cmp = typeof av === "string" ? av.localeCompare(bv as string) : (av as number) - (bv as number)
+    return sortDir === "asc" ? cmp : -cmp
   })
 
   const stats = {
@@ -275,28 +293,35 @@ export function ProjectDashboard() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-border">
-              {[
-                { key: "project", label: t("project") },
-                { key: "id", label: t("id") },
-                { key: "status", label: t("status") },
-                { key: "lastRun", label: t("lastRun") },
-                { key: "versions", label: t("versions") },
-                { key: "created", label: t("created") },
-                { key: "actions", label: "" },
-              ].map((header) => (
-                <th key={header.key} className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  {header.label && (
-                    <span className="flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors">
+              {([
+                { key: "name" as const, label: t("project") },
+                { key: "id" as const, label: t("id") },
+                { key: "status" as const, label: t("status") },
+                { key: "updated_at" as const, label: t("lastRun") },
+                { key: "execution_count" as const, label: t("versions") },
+                { key: "created_at" as const, label: t("created") },
+                { key: null, label: "" },
+              ] as const).map((header) => (
+                <th key={header.key ?? "actions"} className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  {header.key ? (
+                    <span
+                      className="flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors"
+                      onClick={() => handleSort(header.key!)}
+                    >
                       {header.label}
-                      <ArrowUpDown className="h-3 w-3" />
+                      {sortKey === header.key ? (
+                        <span className="text-foreground text-xs">{sortDir === "asc" ? "↑" : "↓"}</span>
+                      ) : (
+                        <ArrowUpDown className="h-3 w-3 opacity-40" />
+                      )}
                     </span>
-                  )}
+                  ) : null}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {filtered.map((project, i) => (
+            {sorted.map((project, i) => (
               <tr
                 key={project.id}
                 onClick={() => handleProjectClick(project)}

@@ -372,3 +372,31 @@ Impact:
 - 🔴 Delete modal — type "delete" to confirm + shutil.rmtree disk cleanup
 - 🔴 Build Details card — wire tokens_used, estimated_cost to DB (model + duration already working)
 - 🔴 Studio theme CSS variables in frontend-v4
+
+## Phase 16 — UI Parity, Auth & Polish (🔧 In Progress Feb 2026)
+
+### 16.2 — Branding (✅ Complete Feb 28, 2026)
+- ✅ Tab titles: "Archon - Studio Build", "Archon - Consumer Build"
+- ✅ Hexagon logo in frontend-v4 and frontend-consumer2
+- ✅ Hexagon SVG favicon in frontend-v4 and frontend-consumer2
+- ✅ load_dotenv fixed to always load backend/.env
+
+### 16.4 — Watson STT/TTS for Enterprise (✅ Complete Feb 28, 2026)
+- ✅ Mic (STT) + speaker (TTS) buttons in frontend-v4 pipeline
+- ✅ Fixed WATSON_TTS_API_KEY / WATSON_STT_API_KEY env var mismatch
+
+### 16.3 — Studio Feature Parity (🔧 In Progress)
+- ✅ Projects page kept minimal by design
+- ✅ Korean/English toggle in Studio navbar (i18n.ts + LanguageContext + KO/EN pills)
+- 🔴 Studio Projects table column sort (↑↓) not functional — fix needed
+- 🔴 Build Details card in Studio Pipeline page
+
+### 16.1 — Bug Fixes (🔴 Pending)
+- 🔴 Chat persistence after Flask restart
+- 🔴 Live output logs lost after restart
+- 🔴 Build Details tokens/cost showing —
+
+### 16.5 — Authentication (🔴 Planned)
+- 🔴 Sign up / Login pages
+- 🔴 JWT + protected routes
+- 🔴 User-scoped projects (owner_id already in DB schema)
