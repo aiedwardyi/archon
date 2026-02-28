@@ -216,6 +216,10 @@ main (enterprise-ui merged and deleted)
 - 🔴 JWT + protected routes
 - 🔴 User-scoped projects (owner_id already in DB schema)
 
+### Phase 19 — Product Tour & Onboarding Walkthrough (🔴 Deferred — post beta testing)
+- Scope and pattern TBD after recruiting 3-5 beta users
+- See ROADMAP.md Phase 19 memo for full context
+
 ### Phase 18 — Unified Auth + Plan-Based UI Routing (🔴 Planned)
 - 🔴 18.1 Landing/pricing page — Consumer vs Enterprise plan selector
 - 🔴 18.2 Auth gates: Consumer login → frontend-consumer2, Enterprise login → frontend-v4

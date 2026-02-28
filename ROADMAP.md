@@ -435,6 +435,28 @@ Impact:
 
 ---
 
+## Phase 19 — Product Tour & Onboarding Walkthrough (🔴 Deferred)
+
+First-time user guidance system. Pattern and scope TBD after beta user testing.
+
+**Memo (Mar 1, 2026):** Deferring implementation until after initial user testing.
+Will recruit 3-5 beta users to identify where they actually get stuck — rather than
+guessing. Tour design will be driven by real friction points, not assumptions.
+
+- Enterprise users may only need a minimal welcome modal + "?" help button
+- Consumer users may need a full spotlight tour with Korean i18n
+- Pattern choice (modal overlay vs spotlight tooltip) decided post-testing
+
+### Planned sub-phases (scope pending user research)
+- 🔴 19.1 Enterprise (frontend-v4) — welcome moment + optional per-page tips
+- 🔴 19.2 Studio (frontend/) — minimal, same pattern as Enterprise
+- 🔴 19.3 Consumer (frontend-consumer2) — fuller guidance + Korean i18n
+
+**Tech candidate:** Shepherd.js (spotlight tooltips, React-compatible, free)
+**Revisit:** After first round of beta user sessions
+
+---
+
 ## Phase 18 — Unified Auth + Plan-Based UI Routing (🔴 Planned)
 
 **Business model:** Two plans, two UI experiences. One login, one backend.
