@@ -100,7 +100,15 @@ export function PipelineRun() {
   useEffect(() => {
     if (messages.length > 0) {
       const pid = sessionStorage.getItem("archon_current_project_id")
-      if (pid) sessionStorage.setItem(`archon_messages_${pid}`, JSON.stringify(messages))
+      if (pid) {
+        sessionStorage.setItem(`archon_messages_${pid}`, JSON.stringify(messages))
+        // Also persist to DB so Enterprise shares the same conversation
+        fetch(`${API_BASE}/api/projects/${pid}/chat-messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages }),
+        }).catch(() => {}) // non-fatal
+      }
     }
   }, [messages])
 
@@ -132,6 +140,20 @@ export function PipelineRun() {
       executionIdRef.current = null
       sessionStorage.removeItem("archon_prompt_history")
       setPromptHistory([])
+      fetch(`${API_BASE}/api/projects/${urlPid}/chat-history`)
+        .then(r => r.json())
+        .then((data: any) => {
+          if (!Array.isArray(data) || data.length === 0) return
+          const normalized = data.map((m: any, i: number) => ({
+            id: m.id || `db-${i}`,
+            role: m.role === "assistant" ? "archon" : m.role,
+            content: m.content,
+            timestamp: m.timestamp || Date.now(),
+          }))
+          setMessages(normalized)
+          sessionStorage.setItem(`archon_messages_${urlPid}`, JSON.stringify(normalized))
+        })
+        .catch(() => {})
       return
     }
 
@@ -160,12 +182,22 @@ export function PipelineRun() {
       try { setPromptHistory(JSON.parse(cachedHistory)) } catch {}
     }
 
-    // Always clear messages first, then load only this project's messages
+    // Always load from DB — source of truth shared with Enterprise
     setMessages([])
-    const cachedMsgs = sessionStorage.getItem(`archon_messages_${pidNum}`)
-    if (cachedMsgs) {
-      try { setMessages(JSON.parse(cachedMsgs)) } catch {}
-    }
+    fetch(`${API_BASE}/api/projects/${pidNum}/chat-history`)
+      .then(r => r.json())
+      .then((data: any) => {
+        if (!Array.isArray(data) || data.length === 0) return
+        const normalized = data.map((m: any, i: number) => ({
+          id: m.id || `db-${i}`,
+          role: m.role === "assistant" ? "archon" : m.role,
+          content: m.content,
+          timestamp: m.timestamp || Date.now(),
+        }))
+        setMessages(normalized)
+        sessionStorage.setItem(`archon_messages_${pidNum}`, JSON.stringify(normalized))
+      })
+      .catch(() => {})
 
     if (!cachedStatus || cachedStatus === "idle" || cachedStatus === "complete") {
       fetch(`${API_BASE}/api/projects/${pidNum}`)

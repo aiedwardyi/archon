@@ -113,17 +113,12 @@ const Index = () => {
     activeProjectRef.current = selectedProjectId;
     setChatMessages([]); // clear immediately
 
-    const cached = sessionStorage.getItem(`archon_messages_${selectedProjectId}`);
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (parsed.length > 0) { setChatMessages(parsed); return; } // early return — no DB call
-      } catch {}
-    }
-
-    // Only hit DB if no sessionStorage cache
+    // Always load from DB — source of truth shared with Studio
     fetchChatHistory(selectedProjectId).then((msgs) => {
-      if (activeProjectRef.current === selectedProjectId) setChatMessages(msgs);
+      if (activeProjectRef.current === selectedProjectId) {
+        setChatMessages(msgs);
+        if (msgs.length > 0) sessionStorage.setItem(`archon_messages_${selectedProjectId}`, JSON.stringify(msgs));
+      }
     });
   }, [selectedProjectId]);
 
