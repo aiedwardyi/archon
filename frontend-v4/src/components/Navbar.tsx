@@ -20,9 +20,17 @@ interface NavbarProps {
 export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectName, selectedProjectVersion }: NavbarProps) => {
   const [open, setOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<"profile" | "settings" | "pricing" | null>(null);
+  const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const { colorMode, setColorMode } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/credits/balance")
+      .then(r => r.json())
+      .then(d => setCreditsRemaining(d.credits_remaining))
+      .catch(() => {})
+  }, []);
 
   const navItems = [
     { id: "projects", label: t("projects"), icon: LayoutGrid },
@@ -91,7 +99,7 @@ export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectNam
 
         <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
           <Coins className="h-3.5 w-3.5 text-amber-500" />
-          1,250
+          {creditsRemaining !== null ? creditsRemaining.toLocaleString() : "—"}
         </div>
 
         <div className="h-5 w-px bg-border" />
@@ -171,7 +179,7 @@ export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectNam
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Coins className="h-3.5 w-3.5 text-amber-500" /> {t("credits")}
                 </div>
-                <span className="text-sm font-bold text-foreground">1,250</span>
+                <span className="text-sm font-bold text-foreground">{creditsRemaining !== null ? creditsRemaining.toLocaleString() : "—"}</span>
               </div>
 
               {/* Upgrade */}

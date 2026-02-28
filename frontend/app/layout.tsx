@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/theme-provider'
 import { LanguageProvider } from '@/contexts/LanguageContext'
-import { Navbar } from '@/components/navbar'
+import { Navbar } from '@/components/Navbar'
 import './globals.css'
 
 const geistSans = Geist({ subsets: ["latin"] });

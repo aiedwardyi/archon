@@ -178,10 +178,11 @@ main (enterprise-ui merged and deleted)
 - ✅ Credits calculated and saved on pipeline completion
 - ✅ Build Details: shows credits used + model + duration (hides raw tokens/cost)
 - ✅ Studio + Enterprise both display credits correctly
-- 🔴 Navbar credit counter wired to real session balance (Part 2, post-auth)
+- ✅ Navbar credit counter wired to real balance via /api/credits/balance (Feb 28, 2026)
+- ✅ Build Details: "12 credits · 488 remaining" format (Feb 28, 2026)
 - 🔴 Plan tiers: Starter 100/mo, Pro 500/mo, Agency unlimited (post-auth)
-- 🔴 /api/credits/balance endpoint (post-auth)
-- 🔴 Enterprise BuildDetailsCard auto-refreshes post-build without page reload (UX polish)
+- 🔴 /api/credits/balance endpoint (pre-auth mock: 500 Pro credits minus all used)
+- 🔴 Enterprise BuildDetailsCard live refresh post-build (UX polish)
 
 #### 17.2 — Governance Agent (AI Factsheets)
 - 🔴 GovernanceAgent runs once per pipeline completion

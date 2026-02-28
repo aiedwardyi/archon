@@ -29,6 +29,14 @@ export function Navbar() {
   const { language, toggleLanguage, t } = useLanguage()
   const [projectName, setProjectName] = useState<string | null>(null)
   const [version, setVersion] = useState<string | null>(null)
+  const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null)
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/credits/balance")
+      .then(r => r.json())
+      .then(d => setCreditsRemaining(d.credits_remaining))
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     const readStorage = () => {
@@ -121,7 +129,7 @@ export function Navbar() {
           </div>
           <span className="hidden md:flex items-center gap-1 text-xs text-muted-foreground font-medium">
             <Coins className="h-3.5 w-3.5 text-amber-500" />
-            1,250
+            {creditsRemaining !== null ? creditsRemaining.toLocaleString() : "—"}
           </span>
           <AvatarDropdown />
         </div>

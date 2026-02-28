@@ -1274,6 +1274,26 @@ def get_project_head(project_id: int):
         return jsonify({"project_id": project_id, "version": head.version, "execution_id": head.id}), 200
     finally:
         session.close()
+@app.route("/api/credits/balance", methods=["GET"])
+def get_credits_balance():
+    plan_credits = 500  # Pro plan (pre-auth mock)
+    from sqlalchemy import func
+    session = get_session()
+    try:
+        used = session.query(func.sum(Execution.credits_used)).filter(
+            Execution.credits_used.isnot(None)
+        ).scalar() or 0
+        balance = max(0, plan_credits - int(used))
+        return jsonify({
+            "plan": "Pro",
+            "plan_credits": plan_credits,
+            "credits_used": int(used),
+            "credits_remaining": balance
+        })
+    finally:
+        session.close()
+
+
 @app.route("/api/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok"}), 200
