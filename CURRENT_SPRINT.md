@@ -160,8 +160,12 @@ main (enterprise-ui merged and deleted)
 - ✅ Enterprise chat persistence after Flask restart — DB-backed via /chat-history + /chat-messages endpoints (Feb 28, 2026)
 - ✅ Studio chat persistence after Flask restart — always loads from DB on project switch (Feb 28, 2026)
 - ✅ Studio + Enterprise: chat now shared when switching between Studio ↔ Enterprise — both always load from DB (Feb 28, 2026)
-- 🔴 Live output logs same across all projects — /api/execution-status is global server state, not scoped per project. Architectural fix needed: scope execution_state per project_id
-- 🔴 Live output logs lost after restart
+- ✅ Live output logs restored after Flask restart — Studio fetches from /versions/<v>/logs on load (Feb 28, 2026)
+- ✅ Double timestamp removed from live output logs — Enterprise + Studio (Feb 28, 2026)
+- ✅ Chat messages persist across builds, project switches, and Flask restarts — reactive save guarded by !sending, explicit save after /iterate resolves (Feb 28, 2026)
+- ✅ Stuck "Sending..." state auto-heals on project switch — execution-status check clears sending if backend not running (Feb 28, 2026)
+- 🔴 Live output logs still global (same across all projects) — execution_state is server-wide, architectural fix needed
+- 🔴 Global build lock not communicated in Enterprise UI — user can attempt to build project B while project A is running, gets silent 409 error (fix: Option B friendly banner, next sprint)
 - ✅ Delete modal disk cleanup — already in app.py (Feb 28, 2026)
 - ✅ Studio theme CSS variables — obsolete, Studio is separate app (Feb 28, 2026)
 - ✅ Build Details tokens/cost — Claude stream usage capture working (Feb 28, 2026)
