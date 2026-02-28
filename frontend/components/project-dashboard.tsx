@@ -10,14 +10,10 @@ import {
   Folder,
   Clock,
   ChevronDown,
-  ChevronUp,
   Download,
   Loader2,
   Trash2,
   AlertTriangle,
-  CheckCircle2,
-  XCircle,
-  GitBranch,
 } from "lucide-react"
 import { StatusBadge } from "@/components/status-badge"
 
@@ -53,7 +49,6 @@ export function ProjectDashboard() {
   const [confirmModal, setConfirmModal] = useState<ConfirmModal | null>(null)
   const [deleteConfirmText, setDeleteConfirmText] = useState("")
   const [deleting, setDeleting] = useState(false)
-  const [activityExpanded, setActivityExpanded] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   const fetchProjects = async () => {
@@ -195,22 +190,7 @@ export function ProjectDashboard() {
         </div>
       )}
 
-      {/* Pipeline stats bar */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        {[
-          { label: "Pipelines Today", value: projects.filter((p) => { const d = new Date(p.updated_at); const now = new Date(); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate() }).length },
-          { label: "Lines Generated", value: `${(projects.reduce((sum, p) => sum + (p.execution_count || 0), 0) * 500 / 1000).toFixed(1)}k` },
-          { label: "Versions Shipped", value: projects.reduce((sum, p) => sum + (p.execution_count || 0), 0) },
-          { label: "Avg Build Time", value: "5m 25s" },
-        ].map((stat) => (
-          <div key={stat.label} className="bg-card border border-border rounded-lg p-4">
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{stat.label}</p>
-            <p className="text-2xl font-semibold mt-1 text-foreground">{stat.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Project stats bar */}
+      {/* Stats bar */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         {[
           { label: "Total Projects", value: stats.total, color: "text-foreground" },
@@ -288,55 +268,7 @@ export function ProjectDashboard() {
         </div>
       </div>
 
-      {/* Recent Activity */}
-      {projects.length > 0 && (
-        <div className="bg-card border border-border rounded-lg overflow-hidden mb-4">
-          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-            <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-              Recent Activity
-            </h3>
-            <span className="text-[10px] font-medium text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded">Live</span>
-          </div>
-          <div className="divide-y divide-border">
-            {(() => {
-              const sorted = [...projects].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
-              const visible = activityExpanded ? sorted : sorted.slice(0, 4);
-              return visible.map((p) => {
-                const Icon = p.status === "completed" ? CheckCircle2 : p.status === "failed" ? XCircle : p.status === "running" || p.status === "in_progress" ? Loader2 : GitBranch;
-                const iconClass = p.status === "completed" ? "text-emerald-500" : p.status === "failed" ? "text-destructive" : p.status === "running" || p.status === "in_progress" ? "text-blue-500 animate-spin" : "text-muted-foreground";
-                const actionText = p.status === "completed" ? `${p.name} v${p.execution_count || 1} completed` : p.status === "failed" ? `${p.name} v${p.execution_count || 1} build failed` : p.status === "running" || p.status === "in_progress" ? `Pipeline started for ${p.name}` : `${p.name} v${p.execution_count || 1} pending`;
-                const diff = Date.now() - new Date(p.updated_at).getTime();
-                const mins = Math.floor(diff / 60000);
-                const timeAgo = mins < 1 ? "just now" : mins < 60 ? `${mins}m ago` : Math.floor(mins / 60) < 24 ? `${Math.floor(mins / 60)}h ago` : `${Math.floor(Math.floor(mins / 60) / 24)}d ago`;
-                return (
-                  <div key={p.id} className="px-4 py-2.5 flex items-start gap-2.5 hover:bg-muted/40 transition-colors">
-                    <Icon className={`h-3.5 w-3.5 mt-0.5 flex-shrink-0 ${iconClass}`} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs text-foreground leading-snug">{actionText}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">{timeAgo}</p>
-                    </div>
-                  </div>
-                );
-              });
-            })()}
-          </div>
-          {projects.length > 4 && (
-            <button
-              onClick={() => setActivityExpanded(!activityExpanded)}
-              className="w-full px-4 py-2 border-t border-border text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors flex items-center justify-center gap-1"
-            >
-              {activityExpanded ? (
-                <><ChevronUp className="h-3 w-3" /> Show less</>
-              ) : (
-                <><ChevronDown className="h-3 w-3" /> Show more ({projects.length - 4})</>
-              )}
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Projects Table */}
+      {/* Table */}
       <div className="bg-card border border-border rounded-lg overflow-hidden" ref={menuRef}>
         <table className="w-full">
           <thead>
@@ -443,7 +375,6 @@ export function ProjectDashboard() {
           </div>
         )}
       </div>
-
 
       {/* Confirmation Modal */}
       {confirmModal && (
