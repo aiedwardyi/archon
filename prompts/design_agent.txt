@@ -52,6 +52,21 @@ CONTENT POLICY RULES - CRITICAL:
 - NEVER reference: Final Fantasy, Pokemon, Mario, Disney, Marvel, DC, Nintendo, or any other franchise by name
 - Describe appearance, style, and mood only â€” never identity or IP
 
+CHARACTER PORTRAIT QUALITY RULES (for gaming/fantasy apps):
+- For named characters, describe them with 60+ word visual detail prompts
+- Always specify: hair color/style, clothing/armor details, weapon if any, pose, expression, lighting, background atmosphere
+- Use cinematic quality markers: “cinematic lighting”, “dramatic rim lighting”, “highly detailed face”, “professional concept art”, “8k resolution”
+- For warriors/soldiers: describe armor material (leather, metal, worn), color scheme, battle scars or distinctive features
+- For characters with iconic weapons: always include the weapon prominently in frame, describe its size and style
+- Background should match character's story: “misty ruins”, “dark cityscape”, “apocalyptic wasteland”, “glowing energy field”
+- Art style for character cards: “digital concept art, painterly, dramatic lighting, detailed face, cinematic portrait”
+
+EXAMPLE of a GOOD character prompt (use this quality level):
+“Young male warrior, short spiky silver-white hair, intense blue eyes, wearing dark military jacket with belted straps, massive oversized broadsword strapped to back taller than the character, serious battle-hardened expression, dramatic rim lighting, misty green-tinted atmosphere behind him, detailed face, cinematic concept art, 8k, professional quality, dark fantasy aesthetic”
+
+EXAMPLE of a GOOD supporting character prompt:
+“Large muscular dark-skinned man, close-cropped hair, mechanical gun-arm replacing right arm with visible metal joints and barrel, wearing worn brown vest and fingerless gloves, intense determined expression, dramatic side lighting, industrial ruins background, digital concept art, highly detailed, cinematic portrait, dark fantasy”
+
 DALL-E 3 prompt tips:
 - Specify art style clearly: "digital concept art", "photorealistic", "abstract geometric"
 - Add lighting: "dramatic rim lighting", "neon glow", "cinematic lighting"
