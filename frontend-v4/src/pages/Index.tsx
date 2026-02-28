@@ -16,6 +16,7 @@ import {
   projectChat,
   iterateProject,
   fetchChatHistory,
+  saveChatMessages,
   fetchVersions,
   fetchLogs,
   type ChatMessage,
@@ -102,6 +103,7 @@ const Index = () => {
   useEffect(() => {
     if (selectedProjectId && chatMessages.length > 0 && activeProjectRef.current === selectedProjectId) {
       sessionStorage.setItem(`archon_messages_${selectedProjectId}`, JSON.stringify(chatMessages));
+      saveChatMessages(selectedProjectId, chatMessages); // persist to DB — survives Flask restart
     }
   }, [chatMessages, selectedProjectId]);
 

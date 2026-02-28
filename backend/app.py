@@ -1389,6 +1389,53 @@ def project_chat(project_id: int):
 
 
 # ============================================================================
+# CHAT HISTORY ENDPOINTS (Phase 16.1)
+# ============================================================================
+
+@app.route("/api/projects/<int:project_id>/chat-history", methods=["GET"])
+def get_chat_history(project_id: int):
+    """Returns saved chat messages for the active head execution."""
+    db = get_session()
+    try:
+        head = (
+            db.query(Execution)
+            .filter(Execution.project_id == project_id, Execution.is_active_head == True)
+            .first()
+        )
+        if not head or not head.chat_messages:
+            return jsonify([]), 200
+        try:
+            messages = json.loads(head.chat_messages)
+        except Exception:
+            messages = []
+        return jsonify(messages), 200
+    finally:
+        db.close()
+
+
+@app.route("/api/projects/<int:project_id>/chat-messages", methods=["POST"])
+def save_chat_messages(project_id: int):
+    """Saves full chat message array to the active head execution."""
+    data = request.get_json()
+    if not data or "messages" not in data:
+        return jsonify({"error": "messages array required"}), 400
+    db = get_session()
+    try:
+        head = (
+            db.query(Execution)
+            .filter(Execution.project_id == project_id, Execution.is_active_head == True)
+            .first()
+        )
+        if not head:
+            return jsonify({"error": "No active execution found"}), 404
+        head.chat_messages = json.dumps(data["messages"])
+        db.commit()
+        return jsonify({"saved": len(data["messages"])}), 200
+    finally:
+        db.close()
+
+
+# ============================================================================
 # PUBLISH ENDPOINTS (Phase 8.1)
 # ============================================================================
 

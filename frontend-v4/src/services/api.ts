@@ -359,17 +359,25 @@ export async function fetchExecutionStatus(): Promise<ExecutionStatus> {
   return res.json();
 }
 
-/** Fetch chat history for a project by reading prompt_history from all versions */
+/** GET /api/projects/:id/chat-history — load persisted chat messages */
 export async function fetchChatHistory(projectId: number): Promise<ChatMessage[]> {
-  const versions = await fetchVersions(projectId);
-  const messages: ChatMessage[] = [];
-  for (const v of versions) {
-    const history = v.prompt_history || [];
-    for (const msg of history) {
-      messages.push({ role: msg.role as "user" | "assistant", content: msg.content });
-    }
-  }
-  return messages;
+  try {
+    const res = await fetch(`${API}/api/projects/${projectId}/chat-history`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch { return []; }
+}
+
+/** POST /api/projects/:id/chat-messages — persist chat messages to DB */
+export async function saveChatMessages(projectId: number, messages: ChatMessage[]): Promise<void> {
+  try {
+    await fetch(`${API}/api/projects/${projectId}/chat-messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages }),
+    });
+  } catch { /* non-fatal */ }
 }
 
 // ── Pipeline Status Hook ──
