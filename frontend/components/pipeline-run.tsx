@@ -512,6 +512,13 @@ export function PipelineRun() {
 
   useEffect(() => { return () => stopPolling() }, [])
 
+  // Auto-scroll chat to bottom when messages load or change
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView()
+    }
+  }, [messages])
+
   useEffect(() => {
     const pid = sessionStorage.getItem("archon_current_project_id")
     if (!pid) return
