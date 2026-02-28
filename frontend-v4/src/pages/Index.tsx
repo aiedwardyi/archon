@@ -416,7 +416,7 @@ const Index = () => {
                             <div key={i} className="flex justify-end">
                               <div className="max-w-sm">
                                 <div className="text-[10px] font-medium text-muted-foreground text-right mb-1">
-                                  You{msg.timestamp ? ` · ${new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}
+                                  {t("you")}{msg.timestamp ? ` · ${new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}
                                 </div>
                                 <div className="bg-primary text-primary-foreground text-sm px-3 py-2 rounded-lg rounded-tr-sm">
                                   {msg.content}

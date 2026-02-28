@@ -65,7 +65,7 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
             ? parts.length > 0
               ? parts.join(" · ") + " generated"
               : "Pipeline completed successfully."
-            : "Pipeline failed.",
+            : t("pipelineFailed"),
         };
       });
       mapped.sort((a, b) => b.id - a.id);
@@ -178,7 +178,7 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
             </span>
             <div className="flex items-center gap-1.5">
               <StatusIcon status={version.status} />
-              <span className="text-xs font-medium text-foreground capitalize">{version.status}</span>
+              <span className="text-xs font-medium text-foreground capitalize">{version.status === "completed" ? t("completed") : t("failed")}</span>
             </div>
             <span className="text-xs text-muted-foreground">{t("yesterday")} at {version.time}</span>
           </div>

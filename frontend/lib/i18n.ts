@@ -56,6 +56,10 @@ export const translations = {
   cancel: { en: "Cancel", ko: "취소" },
   deleteAll: { en: "Delete All", ko: "전체 삭제" },
   deleteProject: { en: "Delete project", ko: "프로젝트 삭제" },
+  deleteProjectQuestion: { en: "Delete project?", ko: "프로젝트 삭제?" },
+  deleteWarning: { en: "Permanently deletes", ko: "영구 삭제됩니다" },
+  deleteCannotUndo: { en: "This cannot be undone.", ko: "이 작업은 취소할 수 없습니다." },
+  typeDeleteToConfirm: { en: "Type DELETE to confirm", ko: "삭제 확인을 위해 DELETE를 입력하세요" },
 
   // Project table
   project: { en: "Project", ko: "프로젝트" },
@@ -88,14 +92,17 @@ export const translations = {
   estCost: { en: "Est. Cost", ko: "예상 비용" },
   duration: { en: "Duration", ko: "소요 시간" },
   whatWouldYouLikeToBuild: { en: "What would you like to build?", ko: "무엇을 만들고 싶으세요?" },
+  askOrBuild: { en: "Ask a question or describe what you would like to build.", ko: "질문하거나 만들고 싶은 것을 설명하세요." },
+  whatToBUILD: { en: "What would you like to build?", ko: "무엇을 만들어 드릴까요?" },
 
   // Pipeline agents
   requirementsAgent: { en: "Requirements Agent", ko: "요구사항 에이전트" },
   understandsYourRequest: { en: "Understands your request", ko: "요청을 분석합니다" },
+  understandsRequest: { en: "Understands your request", ko: "요청 사항 분석" },
   architectureAgent: { en: "Architecture Agent", ko: "아키텍처 에이전트" },
-  plansTheBuild: { en: "Plans the build", ko: "빌드를 설계합니다" },
+  plansTheBuild: { en: "Plans the build", ko: "빌드 계획 수립" },
   buildAgent: { en: "Build Agent", ko: "빌드 에이전트" },
-  writesYourCode: { en: "Writes your code", ko: "코드를 작성합니다" },
+  writesYourCode: { en: "Writes your code", ko: "코드 작성" },
   designAgent: { en: "Design Agent", ko: "디자인 에이전트" },
   generatesVisuals: { en: "Generates visuals", ko: "비주얼을 생성합니다" },
   done: { en: "Done", ko: "완료" },
@@ -115,6 +122,7 @@ export const translations = {
   restoreToThisVersion: { en: "Restore to this version", ko: "이 버전으로 복원" },
   filesChanged: { en: "files changed", ko: "파일 변경" },
   whatWasBuilt: { en: "What Was Built", ko: "빌드 내용" },
+  pipelineSuccess: { en: "Pipeline completed successfully. Check the artifacts for details.", ko: "파이프라인이 성공적으로 완료되었습니다. 아티팩트를 확인하세요." },
   livePreview: { en: "Live Preview", ko: "실시간 미리보기" },
   prompt: { en: "Prompt", ko: "프롬프트" },
   brief: { en: "Brief", ko: "브리프" },

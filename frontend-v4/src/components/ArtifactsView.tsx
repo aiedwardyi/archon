@@ -6,16 +6,17 @@ import {
   AlertCircle, Loader2, Copy, Check, ExternalLink,
 } from "lucide-react";
 import { fetchProjectHead, fetchPrd, fetchPlan, fetchCodeFiles, fetchLogs } from "@/services/api";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type ArtifactTab = "brief" | "plan" | "code" | "tasks" | "logs" | "preview";
 
-const tabs: { id: ArtifactTab; label: string; icon: typeof FileText }[] = [
-  { id: "brief", label: "Brief", icon: FileText },
-  { id: "plan", label: "Plan", icon: Target },
-  { id: "code", label: "Code", icon: Code2 },
-  { id: "tasks", label: "Tasks", icon: ListChecks },
-  { id: "logs", label: "Logs", icon: ScrollText },
-  { id: "preview", label: "Preview", icon: Eye },
+const tabDefs: { id: ArtifactTab; key: "brief" | "plan" | "code" | "tasks" | "logs" | "preview"; icon: typeof FileText }[] = [
+  { id: "brief", key: "brief", icon: FileText },
+  { id: "plan", key: "plan", icon: Target },
+  { id: "code", key: "code", icon: Code2 },
+  { id: "tasks", key: "tasks", icon: ListChecks },
+  { id: "logs", key: "logs", icon: ScrollText },
+  { id: "preview", key: "preview", icon: Eye },
 ];
 
 // ── Data interfaces ──
@@ -55,6 +56,7 @@ interface ArtifactsViewProps {
 }
 
 export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, initialTab }: ArtifactsViewProps) => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<ArtifactTab>(initialTab || "brief");
   const [showRawData, setShowRawData] = useState(false);
 
@@ -106,10 +108,10 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, ini
       if (prdRaw?.prd) {
         const prd = prdRaw.prd;
         const sections: BriefData["sections"] = [];
-        if (prd.overview) sections.push({ heading: "Overview", content: prd.overview });
-        if (prd.goals) sections.push({ heading: "Goals", subtitle: "Success Criteria", bullets: prd.goals });
-        if (prd.core_features_mvp) sections.push({ heading: "Core Features (MVP)", subtitle: "What We're Building", bullets: prd.core_features_mvp });
-        if (prd.target_users) sections.push({ heading: "Target Users", subtitle: "Who We're Building For", bullets: prd.target_users });
+        if (prd.overview) sections.push({ heading: t("overview"), content: prd.overview });
+        if (prd.goals) sections.push({ heading: t("goals"), subtitle: t("successCriteria"), bullets: prd.goals });
+        if (prd.core_features_mvp) sections.push({ heading: t("coreFeatures"), subtitle: t("whatWereBuilding"), bullets: prd.core_features_mvp });
+        if (prd.target_users) sections.push({ heading: t("targetUsers"), subtitle: t("whoWereBuildingFor"), bullets: prd.target_users });
         setBriefData({
           title: prd.document_title || "Brief",
           version: `v${ver}`,
@@ -181,18 +183,18 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, ini
       <div className="px-5 py-2.5 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-3">
           <nav className="flex items-center gap-1 text-xs">
-            <span className="text-muted-foreground">Requirements</span>
+            <span className="text-muted-foreground">{t("requirements")}</span>
             <ChevronRight className="h-3 w-3 text-muted-foreground" />
-            <span className="text-muted-foreground">Architecture</span>
+            <span className="text-muted-foreground">{t("architecture")}</span>
             <ChevronRight className="h-3 w-3 text-muted-foreground" />
-            <span className="font-medium text-foreground">Code</span>
+            <span className="font-medium text-foreground">{t("code")}</span>
           </nav>
           <div className="h-4 w-px bg-border" />
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-blue-300 text-blue-600 dark:text-blue-400 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/10">
-            ▷ Reproducible
+            ▷ {t("reproducible")}
           </span>
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-emerald-300 text-emerald-600 dark:text-emerald-400 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10">
-            ○ Verified
+            ○ {t("verified")}
           </span>
           <span className="text-[10px] font-bold bg-secondary text-muted-foreground px-1.5 py-0.5 rounded">{headVersion ? `V${headVersion}` : "V?"}</span>
         </div>
@@ -241,7 +243,7 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, ini
               className="h-8 px-3 text-xs font-semibold bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity flex items-center gap-1.5 disabled:opacity-50"
             >
               {publishState === "loading" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-              {publishState === "loading" ? "Publishing..." : "Publish"}
+              {publishState === "loading" ? "Publishing..." : t("publish")}
             </button>
           )}
           <a
@@ -249,7 +251,7 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, ini
             download
             className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5 no-underline"
           >
-            <Download className="h-3.5 w-3.5" /> Download Code
+            <Download className="h-3.5 w-3.5" /> {t("downloadCode")}
           </a>
           <button
             onClick={() => rawDataAvailable && setShowRawData(!showRawData)}
@@ -261,7 +263,7 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, ini
                 : "text-muted-foreground cursor-not-allowed opacity-50"
             }`}
           >
-            <Braces className="h-3.5 w-3.5" /> Raw Data
+            <Braces className="h-3.5 w-3.5" /> {t("rawData")}
           </button>
         </div>
       </div>
@@ -269,7 +271,7 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, ini
       {/* Tab Bar */}
       <div className="px-5 border-b border-border bg-secondary/20">
         <div className="flex items-center gap-0.5">
-          {tabs.map(({ id, label, icon: Icon }) => (
+          {tabDefs.map(({ id, key, icon: Icon }) => (
             <button
               key={id}
               onClick={() => { setActiveTab(id); setShowRawData(false); }}
@@ -280,7 +282,7 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, ini
               }`}
             >
               <Icon className="h-3.5 w-3.5" />
-              {label}
+              {t(key)}
             </button>
           ))}
         </div>
@@ -304,7 +306,9 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, ini
 
 // ── Sub-components ──
 
-const BriefTab = ({ data }: { data: BriefData }) => (
+const BriefTab = ({ data }: { data: BriefData }) => {
+  const { t } = useLanguage();
+  return (
   <div className="max-w-2xl">
     <h1 className="text-lg font-bold text-foreground">
       {data.title}
@@ -312,7 +316,7 @@ const BriefTab = ({ data }: { data: BriefData }) => (
         {data.version || "v1"}
       </span>
     </h1>
-    <p className="text-xs text-muted-foreground mt-1">v1.0 · Generated by {data.generatedBy}</p>
+    <p className="text-xs text-muted-foreground mt-1">v1.0 · {t("generatedBy")} {data.generatedBy}</p>
 
     <div className="mt-6 space-y-5">
       {data.sections.map((s, i) => (
@@ -334,24 +338,26 @@ const BriefTab = ({ data }: { data: BriefData }) => (
       ))}
     </div>
   </div>
-);
+); };
 
-const PlanTab = ({ data }: { data: PlanData }) => (
+const PlanTab = ({ data }: { data: PlanData }) => {
+  const { t } = useLanguage();
+  return (
   <div className="max-w-2xl">
-    <h1 className="text-lg font-bold text-foreground">Build Plan</h1>
-    <p className="text-xs text-muted-foreground mt-1">{data.milestoneCount} milestones · Generated by {data.generatedBy}</p>
+    <h1 className="text-lg font-bold text-foreground">{t("buildPlan")}</h1>
+    <p className="text-xs text-muted-foreground mt-1">{data.milestoneCount} {t("milestones")} · {t("generatedBy")} {data.generatedBy}</p>
 
     <div className="mt-6 space-y-5">
       {data.milestones.map((m, i) => (
         <div key={i} className="border border-border rounded-md p-5">
           <h2 className="text-sm font-bold text-foreground">{m.title}</h2>
           <div className="mt-3 space-y-0 divide-y divide-border">
-            {m.tasks.map((t) => (
-              <div key={t.id} className="py-2.5 flex items-start gap-3">
+            {m.tasks.map((tk) => (
+              <div key={tk.id} className="py-2.5 flex items-start gap-3">
                 <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded flex-shrink-0 mt-0.5 font-mono">
-                  {t.id}
+                  {tk.id}
                 </span>
-                <p className="text-sm text-muted-foreground leading-relaxed">{t.description}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">{tk.description}</p>
               </div>
             ))}
           </div>
@@ -359,7 +365,7 @@ const PlanTab = ({ data }: { data: PlanData }) => (
       ))}
     </div>
   </div>
-);
+); };
 
 const CodeTab = ({ files, selectedFile, onSelectFile }: { files: CodeFile[]; selectedFile: number; onSelectFile: (i: number) => void }) => {
   if (files.length === 0) return <div className="text-sm text-muted-foreground">No code files found.</div>;

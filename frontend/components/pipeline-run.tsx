@@ -49,9 +49,10 @@ function AgentStatusIcon({ status }: { status: AgentStatus }) {
 }
 
 function AgentStatusLabel({ status }: { status: AgentStatus }) {
-  if (status === "complete") return <span className="text-xs font-medium text-success">Done</span>
-  if (status === "running") return <span className="text-xs font-medium text-info">Building...</span>
-  return <span className="text-xs font-medium text-muted-foreground">Pending</span>
+  const { t } = useLanguage()
+  if (status === "complete") return <span className="text-xs font-medium text-success">{t("done")}</span>
+  if (status === "running") return <span className="text-xs font-medium text-info">{t("building")}</span>
+  return <span className="text-xs font-medium text-muted-foreground">{t("pending")}</span>
 }
 
 export function PipelineRun() {
@@ -524,9 +525,9 @@ export function PipelineRun() {
   }, [projectId, version])
 
   const agentStages = [
-    { key: "pm", name: "Requirements Agent", role: "Understands your request" },
-    { key: "planner", name: "Architecture Agent", role: "Plans the build" },
-    { key: "engineer", name: "Build Agent", role: "Writes your code" },
+    { key: "pm", name: t("requirementsAgent"), role: t("understandsRequest") },
+    { key: "planner", name: t("architectureAgent"), role: t("plansTheBuild") },
+    { key: "engineer", name: t("buildAgent"), role: t("writesYourCode") },
   ]
   const stageOrder = ["pm", "planner", "engineer"]
 
@@ -549,9 +550,9 @@ export function PipelineRun() {
 
   const statusLabel = {
     idle: null,
-    running: <span className="flex items-center gap-1.5 text-xs text-info bg-info/10 px-2.5 py-1 rounded-full font-medium"><Loader2 className="h-3 w-3 animate-spin" />Building...</span>,
-    complete: <span className="flex items-center gap-1.5 text-xs text-success bg-success/10 px-2.5 py-1 rounded-full font-medium">Complete</span>,
-    failed: <span className="flex items-center gap-1.5 text-xs text-destructive bg-destructive/10 px-2.5 py-1 rounded-full font-medium">Failed</span>,
+    running: <span className="flex items-center gap-1.5 text-xs text-info bg-info/10 px-2.5 py-1 rounded-full font-medium"><Loader2 className="h-3 w-3 animate-spin" />{t("building")}</span>,
+    complete: <span className="flex items-center gap-1.5 text-xs text-success bg-success/10 px-2.5 py-1 rounded-full font-medium">{t("complete")}</span>,
+    failed: <span className="flex items-center gap-1.5 text-xs text-destructive bg-destructive/10 px-2.5 py-1 rounded-full font-medium">{t("failed")}</span>,
   }[pipelineStatus]
 
   return (
@@ -579,7 +580,7 @@ export function PipelineRun() {
         <div className="bg-card border border-border rounded-lg p-5">
           <div className="flex items-center gap-2 mb-4">
             <Zap className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-semibold text-foreground">Agent Pipeline</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t("agentPipeline")}</h3>
           </div>
           <div className="flex items-stretch gap-0">
             {agentStages.map((agent, i) => {
@@ -631,12 +632,12 @@ export function PipelineRun() {
         <div className="flex-1 bg-card border border-border rounded-lg flex flex-col min-h-0">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
             <Bot className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-sm font-semibold text-foreground">Conversation</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t("conversation")}</h3>
           </div>
           <div className="flex-1 overflow-auto p-4 flex flex-col gap-3">
             {messages.length === 0 && (
               <p className="text-sm text-muted-foreground italic text-center mt-4">
-                {projectId ? "Ask a question or describe what you would like to build." : "Select a project to get started."}
+                {projectId ? t("askOrBuild") : t("selectProjectFirst")}
               </p>
             )}
             {messages.map((msg) => (
@@ -689,9 +690,9 @@ export function PipelineRun() {
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
               <div className="flex items-center gap-2">
                 <Terminal className="h-4 w-4 text-muted-foreground" />
-                <h3 className="text-sm font-semibold text-foreground">LIVE OUTPUT</h3>
+                <h3 className="text-sm font-semibold text-foreground">{t("liveOutput")}</h3>
                 <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                  {logs.length} entries
+                  {logs.length} {t("entries")}
                 </span>
               </div>
               {!showAllLogs && logs.length > 6 && (
@@ -725,10 +726,10 @@ export function PipelineRun() {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") handleSend() }}
               placeholder={
-                !projectId ? "Select a project first..." :
+                !projectId ? t("selectProjectFirst") :
                 globallyBlocked ? `Another project (ID: ${blockingProjectId}) is building. Wait for it to finish.` :
-                isRunning ? "Building..." :
-                "What would you like to build?"
+                isRunning ? t("building") :
+                t("whatToBUILD")
               }
               disabled={!projectId || isRunning || globallyBlocked}
               className="w-full h-9 rounded-md border border-input bg-background pl-3 pr-20 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring font-mono disabled:opacity-50"

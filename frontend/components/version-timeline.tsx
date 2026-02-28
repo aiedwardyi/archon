@@ -16,6 +16,7 @@ import {
   Download,
 } from "lucide-react"
 import { PreviewPanel } from "@/components/preview-panel"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 const API_BASE = "http://localhost:5000"
 
@@ -66,6 +67,7 @@ function VersionStatusIcon({ status }: { status: Version["status"] }) {
 }
 
 export function VersionTimeline() {
+  const { t } = useLanguage()
   const [panelOpen, setPanelOpen] = useState(true)
   const [versions, setVersions] = useState<Version[]>([])
   const [selectedVersionId, setSelectedVersionId] = useState<number | null>(null)
@@ -134,7 +136,7 @@ export function VersionTimeline() {
           <div className="flex items-center justify-between px-4 py-3 border-b border-border h-[49px]">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-sm font-semibold text-foreground">Version History</h3>
+              <h3 className="text-sm font-semibold text-foreground">{t("versionHistory")}</h3>
             </div>
             <button onClick={() => setPanelOpen(false)} className="p-1 rounded hover:bg-muted transition-colors">
               <PanelLeftClose className="h-4 w-4 text-muted-foreground" />
@@ -185,7 +187,7 @@ export function VersionTimeline() {
                       </div>
                       <p className="text-sm text-foreground truncate mt-1">{v.prompt}</p>
                       <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                        <span>{v.filesChanged} files changed</span>
+                        <span>{v.filesChanged} {t("filesChanged")}</span>
                       </div>
                     </button>
                   )
@@ -204,7 +206,7 @@ export function VersionTimeline() {
               {!panelOpen && (
                 <button onClick={() => setPanelOpen(true)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border hover:bg-muted">
                   <PanelLeft className="h-3.5 w-3.5" />
-                  Show versions
+                  {t("showVersions")}
                 </button>
               )}
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-primary/30 bg-primary/10 text-primary font-mono font-semibold">
@@ -219,7 +221,7 @@ export function VersionTimeline() {
               <div className="flex items-center gap-2">
                 <button className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                   <Download className="h-3 w-3" />
-                  Download Report
+                  {t("downloadReport")}
                 </button>
                 {selected.status !== "running" && headVersion && selected.id !== headVersion.id && (
                   <button
@@ -228,7 +230,7 @@ export function VersionTimeline() {
                     className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
                   >
                     {restoring ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3" />}
-                    Restore to this version
+                    {t("restoreToThisVersion")}
                   </button>
                 )}
               </div>
@@ -238,7 +240,7 @@ export function VersionTimeline() {
             {/* Prompt card */}
             <div className="rounded-lg border-l-4 border-l-primary border border-border bg-card p-4">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs font-semibold uppercase tracking-wider text-primary">Prompt</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-primary">{t("prompt")}</span>
                 <span className="text-xs text-muted-foreground">{selected.timestamp}</span>
               </div>
               <p className="text-sm text-foreground leading-relaxed">{selected.prompt}</p>
@@ -247,22 +249,22 @@ export function VersionTimeline() {
             {/* What was built card */}
             <div className="rounded-lg border-l-4 border-l-info border border-border bg-card p-4">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs font-semibold uppercase tracking-wider text-info">What Was Built</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-info">{t("whatWasBuilt")}</span>
                 <span className="text-xs text-muted-foreground">{selected.timestamp}</span>
               </div>
               <p className="text-sm text-foreground/80 leading-relaxed">
-                Pipeline completed successfully. {selected.filesChanged > 0
-                  ? `${selected.filesChanged} file${selected.filesChanged !== 1 ? "s" : ""} were generated.`
-                  : "Check the artifacts for details."}
+                {selected.filesChanged > 0
+                  ? `${t("pipelineSuccess").split(".")[0]}. ${selected.filesChanged} ${t("files")}.`
+                  : t("pipelineSuccess")}
               </p>
             </div>
 
             {/* Artifacts grid */}
             <div className="grid grid-cols-3 gap-3">
               {[
-                { label: "Brief", sub: "Requirements doc", icon: FileText, color: "text-primary", bg: "bg-primary/10", border: "border-l-primary", tab: "brief" },
-                { label: "Build Plan", sub: "Architecture plan", icon: Map, color: "text-info", bg: "bg-info/10", border: "border-l-info", tab: "plan" },
-                { label: "Code", sub: `${selected.filesChanged} files`, icon: Code2, color: "text-success", bg: "bg-success/10", border: "border-l-success", tab: "code" },
+                { label: t("brief"), sub: t("requirementsDoc"), icon: FileText, color: "text-primary", bg: "bg-primary/10", border: "border-l-primary", tab: "brief" },
+                { label: t("buildPlan"), sub: t("architecturePlan"), icon: Map, color: "text-info", bg: "bg-info/10", border: "border-l-info", tab: "plan" },
+                { label: t("code"), sub: `${selected.filesChanged} ${t("files")}`, icon: Code2, color: "text-success", bg: "bg-success/10", border: "border-l-success", tab: "code" },
               ].map((art) => (
                 <button
                   key={art.label}
@@ -285,7 +287,7 @@ export function VersionTimeline() {
 
             <div className="bg-card border border-border rounded-lg overflow-hidden">
               <div className="px-4 py-3 border-b border-border">
-                <h3 className="text-sm font-semibold text-foreground">Live Preview</h3>
+                <h3 className="text-sm font-semibold text-foreground">{t("livePreview")}</h3>
               </div>
               <div className="flex flex-col">
                 <PreviewPanel projectId={projectId} version={selected.version} />

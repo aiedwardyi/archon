@@ -388,8 +388,8 @@ Impact:
 ### 16.3 — Studio Feature Parity (🔧 In Progress)
 - ✅ Projects page kept minimal by design
 - ✅ Korean/English toggle in Studio navbar (i18n.ts + LanguageContext + KO/EN pills)
-- 🔴 Studio Projects table column sort (↑↓) not functional — fix needed
-- 🔴 Build Details card in Studio Pipeline page
+- ✅ Studio Projects table column sort — clickable headers, ↑/↓ active indicator (Feb 28, 2026)
+- ✅ Build Details card in Studio Pipeline page — enterprise stat row (Lucide icons, Vercel-style, no emojis) (Feb 28, 2026)
 
 ### 16.1 — Bug Fixes (🔴 Pending)
 - 🔴 Chat persistence after Flask restart

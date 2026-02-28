@@ -422,18 +422,18 @@ export function ProjectDashboard() {
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-foreground">
-                  {confirmModal.type === "all" ? "Delete all projects?" : "Delete project?"}
+                  {confirmModal.type === "all" ? `${t("delete_")} ${t("projects")}?` : t("deleteProjectQuestion")}
                 </h3>
                 <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                   {confirmModal.type === "all"
-                    ? `Permanently deletes all ${projects.length} projects and their version history. This cannot be undone.`
-                    : `Permanently deletes "${confirmModal.projectName}" and all its version history. This cannot be undone.`}
+                    ? `${t("deleteWarning")} ${projects.length} ${t("projects")}. ${t("deleteCannotUndo")}`
+                    : `${t("deleteWarning")} "${confirmModal.projectName}". ${t("deleteCannotUndo")}`}
                 </p>
               </div>
             </div>
             <div className="mb-5">
               <label className="block text-xs text-muted-foreground mb-1.5">
-                Type <span className="font-mono font-semibold text-foreground">DELETE</span> to confirm
+                {t("typeDeleteToConfirm")}
               </label>
               <input
                 autoFocus

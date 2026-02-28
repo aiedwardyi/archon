@@ -55,6 +55,12 @@ export const translations = {
   create: { en: "Create", ko: "만들기" },
   cancel: { en: "Cancel", ko: "취소" },
 
+  // Delete modal
+  deleteNProjects: { en: "Delete {n} project?", ko: "{n}개 프로젝트 삭제?" },
+  deleteCannotUndo: { en: "This action cannot be undone.", ko: "이 작업은 취소할 수 없습니다." },
+  deleteListWarning: { en: "The following project and all associated versions will be permanently deleted:", ko: "다음 프로젝트와 모든 버전 기록이 영구 삭제됩니다:" },
+  typeDeleteToConfirm: { en: "Type DELETE to confirm:", ko: "삭제 확인을 위해 DELETE를 입력하세요:" },
+
   // Project table
   project: { en: "Project", ko: "프로젝트" },
   id: { en: "ID", ko: "ID" },
@@ -72,6 +78,9 @@ export const translations = {
   // Activity Feed
   recentActivity: { en: "Recent Activity", ko: "최근 활동" },
   live: { en: "Live", ko: "실시간" },
+
+  // Pipeline chat
+  you: { en: "You", ko: "나" },
 
   // Pipeline
   conversation: { en: "Conversation", ko: "대화" },
@@ -110,6 +119,7 @@ export const translations = {
   versionHistory: { en: "Version History", ko: "버전 이력" },
   showVersions: { en: "Show versions", ko: "버전 보기" },
   downloadReport: { en: "Download Report", ko: "보고서 다운로드" },
+  pipelineFailed: { en: "Pipeline failed.", ko: "파이프라인이 실패했습니다." },
   restoreToThisVersion: { en: "Restore to this version", ko: "이 버전으로 복원" },
   filesChanged: { en: "files changed", ko: "파일 변경" },
   whatWasBuilt: { en: "What Was Built", ko: "빌드 내용" },

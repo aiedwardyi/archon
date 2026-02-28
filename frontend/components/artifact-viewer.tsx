@@ -19,16 +19,17 @@ import {
   CheckCircle2,
 } from "lucide-react"
 import { PreviewPanel } from "@/components/preview-panel"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 const API_BASE = "http://localhost:5000"
 
-const tabs = [
-  { id: "brief", label: "Brief", icon: FileText },
-  { id: "plan", label: "Plan", icon: MapPin },
-  { id: "code", label: "Code", icon: Code2 },
-  { id: "tasks", label: "Tasks", icon: ListChecks },
-  { id: "logs", label: "Logs", icon: ScrollText },
-  { id: "preview", label: "Preview", icon: Eye },
+const tabDefs = [
+  { id: "brief", key: "brief" as const, icon: FileText },
+  { id: "plan", key: "plan" as const, icon: MapPin },
+  { id: "code", key: "code" as const, icon: Code2 },
+  { id: "tasks", key: "tasks" as const, icon: ListChecks },
+  { id: "logs", key: "logs" as const, icon: ScrollText },
+  { id: "preview", key: "preview" as const, icon: Eye },
 ]
 
 type FileNode = {
@@ -142,6 +143,7 @@ function SyntaxHighlightedCode({ code }: { code: string }) {
 }
 
 function PublishButton({ projectId, version }: { projectId: number; version: number }) {
+  const { t } = useLanguage()
   const [state, setState] = useState<"idle" | "loading" | "done">("idle")
   const [publishedUrl, setPublishedUrl] = useState("")
   const [copied, setCopied] = useState(false)
@@ -199,7 +201,7 @@ function PublishButton({ projectId, version }: { projectId: number; version: num
       ) : (
         <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" /></svg>
       )}
-      {state === "loading" ? "Publishing..." : "Publish"}
+      {state === "loading" ? "Publishing..." : t("publish")}
     </button>
   )
 }
@@ -209,7 +211,8 @@ interface ArtifactViewerProps {
   version?: number | null
 }
 
-export function ArtifactViewer({ projectId: propProjectId, version: propVersion, initialTab }: ArtifactViewerProps = {}) {
+export function ArtifactViewer({ projectId: propProjectId, version: propVersion, initialTab }: ArtifactViewerProps & { initialTab?: string } = {}) {
+  const { t } = useLanguage()
   const [activeTab, setActiveTab] = useState(initialTab ?? "brief")
   const [selectedFilePath, setSelectedFilePath] = useState("")
   const [selectedFileName, setSelectedFileName] = useState("")
@@ -414,18 +417,18 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion,
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs">
             <span className="flex items-center gap-1 font-mono">
-              <span className="text-muted-foreground font-medium">Requirements</span>
+              <span className="text-muted-foreground font-medium">{t("requirements")}</span>
               <ChevronRight className="h-3 w-3 text-muted-foreground/50" />
-              <span className="text-info font-medium">Architecture</span>
+              <span className="text-info font-medium">{t("architecture")}</span>
               <ChevronRight className="h-3 w-3 text-muted-foreground/50" />
-              <span className="text-primary font-medium">Code</span>
+              <span className="text-primary font-medium">{t("code")}</span>
             </span>
             <span className="mx-2 text-border">|</span>
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-success/30 bg-success/10 text-success">
-              <Play className="h-3 w-3" />Reproducible
+              <Play className="h-3 w-3" />{t("reproducible")}
             </span>
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-info/30 bg-info/10 text-info">
-              <Shield className="h-3 w-3" />Verified
+              <Shield className="h-3 w-3" />{t("verified")}
             </span>
             {version && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-primary/30 bg-primary/10 text-primary font-mono">
@@ -443,7 +446,7 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion,
                   className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 >
                   <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                  Download Code
+                  {t("downloadCode")}
                 </a>
               </>
             )}
@@ -455,7 +458,7 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion,
                   : "border-border text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
             >
-              <Braces className="h-3 w-3" />Raw Data
+              <Braces className="h-3 w-3" />{t("rawData")}
             </button>
           </div>
         </div>
@@ -464,7 +467,7 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion,
       {/* Tabs */}
       <div className="border-b border-border bg-card px-6">
         <div className="flex items-center gap-0">
-          {tabs.map((tab) => {
+          {tabDefs.map((tab) => {
             const isActive = tab.id === activeTab
             return (
               <button
@@ -475,7 +478,7 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion,
                 }`}
               >
                 <tab.icon className="h-3.5 w-3.5" />
-                {tab.label}
+                {t(tab.key)}
               </button>
             )
           })}
@@ -512,19 +515,19 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion,
                       {prdData.version}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground mb-6">v1.0 &middot; Generated by Archon</p>
+                  <p className="text-xs text-muted-foreground mb-6">v1.0 &middot; {t("generatedBy")} Archon</p>
 
                   {prdData.overview && (
                     <div className="bg-card border border-border rounded-lg p-5 mb-4">
-                      <h3 className="text-sm font-semibold text-foreground mb-2">Overview</h3>
+                      <h3 className="text-sm font-semibold text-foreground mb-2">{t("overview")}</h3>
                       <p className="text-sm text-foreground/70 leading-relaxed">{prdData.overview}</p>
                     </div>
                   )}
 
                   {prdData.goals.length > 0 && (
                     <div className="bg-card border border-border rounded-lg p-5 mb-4">
-                      <h3 className="text-sm font-semibold text-foreground mb-1">Goals</h3>
-                      <p className="text-xs text-muted-foreground mb-3">Success Criteria</p>
+                      <h3 className="text-sm font-semibold text-foreground mb-1">{t("goals")}</h3>
+                      <p className="text-xs text-muted-foreground mb-3">{t("successCriteria")}</p>
                       <ul className="space-y-2">
                         {prdData.goals.map((g, i) => (
                           <li key={i} className="flex items-start gap-2 text-sm text-foreground/80">
@@ -538,8 +541,8 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion,
 
                   {prdData.core_features.length > 0 && (
                     <div className="bg-card border border-border rounded-lg p-5 mb-4">
-                      <h3 className="text-sm font-semibold text-foreground mb-1">Core Features (MVP)</h3>
-                      <p className="text-xs text-muted-foreground mb-3">What We're Building</p>
+                      <h3 className="text-sm font-semibold text-foreground mb-1">{t("coreFeatures")}</h3>
+                      <p className="text-xs text-muted-foreground mb-3">{t("whatWereBuilding")}</p>
                       <ul className="space-y-2">
                         {prdData.core_features.map((f, i) => (
                           <li key={i} className="flex items-start gap-2 text-sm text-foreground/80">
@@ -553,8 +556,8 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion,
 
                   {prdData.target_users.length > 0 && (
                     <div className="bg-card border border-border rounded-lg p-5">
-                      <h3 className="text-sm font-semibold text-foreground mb-1">Target Users</h3>
-                      <p className="text-xs text-muted-foreground mb-3">Who We're Building For</p>
+                      <h3 className="text-sm font-semibold text-foreground mb-1">{t("targetUsers")}</h3>
+                      <p className="text-xs text-muted-foreground mb-3">{t("whoWereBuildingFor")}</p>
                       <ul className="space-y-2">
                         {prdData.target_users.map((u, i) => (
                           <li key={i} className="flex items-start gap-2 text-sm text-foreground/80">
@@ -592,9 +595,9 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion,
                 </pre>
               ) : (
                 <div className="max-w-3xl">
-                  <h2 className="text-lg font-semibold text-foreground mb-1">Build Plan</h2>
+                  <h2 className="text-lg font-semibold text-foreground mb-1">{t("buildPlan")}</h2>
                   <p className="text-xs text-muted-foreground mb-6">
-                    {planData.milestones.length} milestones &middot; Generated by Archon
+                    {planData.milestones.length} {t("milestones")} &middot; {t("generatedBy")} Archon
                   </p>
                   <div className="space-y-3">
                     {planData.milestones.map((m, i) => (

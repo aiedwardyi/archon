@@ -146,7 +146,7 @@ main (enterprise-ui merged and deleted)
 - ✅ Korean/English toggle in Studio navbar (i18n.ts + LanguageContext + KO/EN pill toggle + t() wired in navbar + project-dashboard)
 - ✅ Studio Projects table column sort — clickable headers, ↑/↓ active indicator, faded ↑↓ inactive (Feb 28, 2026)
 - ✅ Watson TTS voice updated to en-US_EmilyV3Voice (neural, less robotic) (Feb 28, 2026)
-- 🔴 Build Details card in Studio Pipeline page
+- ✅ Build Details card in Studio Pipeline page — enterprise stat row (Lucide icons, Vercel-style, no emojis) (Feb 28, 2026)
 
 ### Phase 16.1 — Bug Fixes (🔴 Pending)
 - 🔴 Studio + Enterprise chat persistence after Flask restart

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface DeleteProjectModalProps {
   open: boolean;
@@ -10,6 +11,7 @@ interface DeleteProjectModalProps {
 }
 
 export const DeleteProjectModal = ({ open, projectCount, projectNames, onConfirm, onClose }: DeleteProjectModalProps) => {
+  const { t } = useLanguage();
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
 
@@ -47,14 +49,14 @@ export const DeleteProjectModal = ({ open, projectCount, projectNames, onConfirm
             <AlertTriangle className="h-4 w-4 text-destructive" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-foreground">Delete {projectCount} project{projectCount !== 1 ? "s" : ""}?</h2>
-            <p className="text-[11px] text-muted-foreground mt-0.5">This action cannot be undone.</p>
+            <h2 className="text-sm font-semibold text-foreground">{t("deleteNProjects").replace("{n}", String(projectCount))}{projectCount !== 1 ? "s" : ""}</h2>
+            <p className="text-[11px] text-muted-foreground mt-0.5">{t("deleteCannotUndo")}</p>
           </div>
         </div>
 
         <div className="px-5 py-4 space-y-3">
           <div className="text-xs text-muted-foreground">
-            The following project{projectCount !== 1 ? "s" : ""} and all associated versions will be permanently deleted:
+            {t("deleteListWarning")}
           </div>
           <div className="border border-border rounded-md bg-secondary/30 p-3 max-h-32 overflow-y-auto space-y-1">
             {projectNames.map((name, i) => (
@@ -62,7 +64,7 @@ export const DeleteProjectModal = ({ open, projectCount, projectNames, onConfirm
             ))}
           </div>
           <div className="text-xs text-muted-foreground">
-            Type <span className="font-mono font-semibold text-destructive">DELETE</span> to confirm:
+            {t("typeDeleteToConfirm")}
           </div>
           <input
             type="text"
@@ -79,14 +81,14 @@ export const DeleteProjectModal = ({ open, projectCount, projectNames, onConfirm
             onClick={handleClose}
             className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors"
           >
-            Cancel
+            {t("cancel")}
           </button>
           <button
             onClick={handleConfirm}
             disabled={!canConfirm || deleting}
             className="h-8 px-3 text-xs font-semibold rounded-md transition-colors bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {deleting ? "Deleting..." : "Delete"}
+            {deleting ? "Deleting..." : t("delete_")}
           </button>
         </div>
       </div>
