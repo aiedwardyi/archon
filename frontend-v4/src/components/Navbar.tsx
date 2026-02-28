@@ -7,7 +7,7 @@ import { PricingModal } from "./PricingModal";
 import {
   Settings, LayoutGrid, Play, Clock, FileDown, Coins,
   User, Sun, Moon, Building2, Pencil, DollarSign, BookOpen, ExternalLink,
-  LogOut, Zap, ChevronDown, Globe,
+  LogOut, Zap, Hexagon, ChevronDown, Globe,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -44,11 +44,7 @@ export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectNam
       {/* Left: Logo + Nav */}
       <div className="flex items-center gap-5">
         <div className="flex items-center gap-2 font-semibold text-foreground tracking-tight text-sm">
-          <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-            <svg viewBox="0 0 32 32" className="h-4 w-4" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M18 4L8 18h8l-2 10 12-14h-8l2-10z" fill="white"/>
-            </svg>
-          </div>
+          <Hexagon className="h-5 w-5 text-primary" strokeWidth={2.5} />
           <span>Archon</span>
         </div>
 

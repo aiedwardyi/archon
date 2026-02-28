@@ -9,7 +9,7 @@ const geistSans = Geist({ subsets: ["latin"] });
 const geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Archon - AI Code Generation Platform',
+  title: 'Archon - Studio Build',
   description: 'Enterprise AI code generation with multi-agent pipelines, version control, and full audit trails.',
 }
 

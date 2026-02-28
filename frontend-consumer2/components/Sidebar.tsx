@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Project } from '../types';
-import { Plus, LayoutGrid, Search, Zap, Moon, Sun, Trash2, X, AlertCircle, Settings, Server, ServerOff } from 'lucide-react';
+import { Plus, LayoutGrid, Search, Hexagon, Moon, Sun, Trash2, X, AlertCircle, Settings, Server, ServerOff } from 'lucide-react';
 import { backend } from '../services/orchestrator';
 import { t, getLang, Lang } from '../i18n';
 
@@ -76,9 +76,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-6 relative">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-2 cursor-pointer group" onClick={onNewProject}>
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 group-hover:scale-110 transition-transform">
-              <Zap size={16} fill="currentColor" />
-            </div>
+            <Hexagon className="h-5 w-5 text-violet-500" strokeWidth={2.5} />
             <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-white">Arch<span className="text-violet-600 dark:text-violet-400">on</span></span>
           </div>
           {/* Mobile Close Button */}
