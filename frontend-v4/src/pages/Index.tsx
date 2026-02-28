@@ -39,6 +39,12 @@ const Index = () => {
     const tabFromUrl = params.get('tab');
     if (tabFromUrl) {
       setActiveTab(tabFromUrl);
+    }
+    const projectIdFromUrl = params.get('projectId');
+    if (projectIdFromUrl) {
+      setSelectedProjectId(parseInt(projectIdFromUrl));
+    }
+    if (tabFromUrl || projectIdFromUrl) {
       window.history.replaceState({}, '', '/');
     }
   }, []);
@@ -340,6 +346,7 @@ const Index = () => {
         onTabChange={setActiveTab}
         selectedProjectName={projects.find(p => p.id === selectedProjectId)?.name}
         selectedProjectVersion={selectedVersion != null ? `v${selectedVersion}` : projects.find(p => p.id === selectedProjectId)?.versions}
+        selectedProjectId={selectedProjectId}
       />
 
       <main className="max-w-7xl mx-auto px-4 py-4 space-y-4">

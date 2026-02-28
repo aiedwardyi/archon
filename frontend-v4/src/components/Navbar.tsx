@@ -15,9 +15,10 @@ interface NavbarProps {
   onTabChange?: (tab: string) => void;
   selectedProjectName?: string;
   selectedProjectVersion?: string;
+  selectedProjectId?: number | null;
 }
 
-export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectName, selectedProjectVersion }: NavbarProps) => {
+export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectName, selectedProjectVersion, selectedProjectId }: NavbarProps) => {
   const [open, setOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<"profile" | "settings" | "pricing" | null>(null);
   const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
@@ -164,8 +165,12 @@ export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectNam
                     onClick={() => {
                       const tab = activeTab || 'projects';
                       console.log('[v4] switching to studio, activeTab:', tab);
-                      const langParam = language === "ko" ? "?lang=ko" : "";
-                      window.location.href = `http://localhost:3000/${tab === 'projects' ? '' : tab}${langParam}`;
+                      const params = new URLSearchParams();
+                      if (selectedProjectId) params.set("pid", String(selectedProjectId));
+                      if (language === "ko") params.set("lang", "ko");
+                      const qs = params.toString() ? "?" + params.toString() : "";
+                      const path = tab === "projects" ? "" : tab;
+                      window.location.href = `http://localhost:3000/${path}${qs}`;
                     }}
                     className="flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs rounded-md transition-colors text-foreground hover:bg-secondary border border-border"
                   >

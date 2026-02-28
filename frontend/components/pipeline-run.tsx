@@ -115,7 +115,15 @@ export function PipelineRun() {
     if (urlPid && urlPid !== storedPid) {
       sessionStorage.setItem("archon_current_project_id", urlPid)
       setProjectId(Number(urlPid))
-      setProjectName(pname || "my-project")
+      // Fetch the real project name from API instead of trusting stale sessionStorage
+      fetch(`http://localhost:5000/api/projects/${urlPid}`)
+        .then(r => r.json())
+        .then(data => {
+          const name = data.name || data.project?.name || "my-project"
+          setProjectName(name)
+          sessionStorage.setItem("archon_project_name", name)
+        })
+        .catch(() => setProjectName(pname || "my-project"))
       setVersion(null)
       setLogs([])
       setMessages([])
