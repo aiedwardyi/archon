@@ -429,8 +429,8 @@ const Index = () => {
       return agentIdx < currentIdx ? "done" : agentIdx === currentIdx ? "failed" : "pending";
     }
 
-    // No live build — restore from DB
-    if (historicalStatus === "SUCCESS" || historicalStatus === "COMPLETED") return "done";
+    // No live build — restore from DB (but not if we're actively sending/building)
+    if (!sending && (historicalStatus === "SUCCESS" || historicalStatus === "COMPLETED")) return "done";
     if (historicalStatus === "FAILED" || historicalStatus === "ERROR") {
       // Requirements + Architecture + Design completed, Build failed
       return agentStage === "engineer" ? "failed" : "done";
@@ -506,7 +506,7 @@ const Index = () => {
                           <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
                           {t("completed")}
                         </span>
-                      ) : pipeline.status === "FAILED" ? (
+                      ) : pipeline.status === "FAILED" && !sending ? (
                         <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10">
                           <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-500" />
                           {t("failed")}

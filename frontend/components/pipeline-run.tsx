@@ -168,6 +168,35 @@ export function PipelineRun() {
           sessionStorage.setItem(`archon_messages_${urlPid}`, JSON.stringify(normalized))
         })
         .catch(() => {})
+      // Also restore pipeline status for the new project
+      fetch(`${API_BASE}/api/projects/${urlPid}`)
+        .then(r => r.json())
+        .then(data => {
+          const execs: any[] = data.executions || []
+          if (!execs.length) return
+          execs.sort((a: any, b: any) => b.version - a.version)
+          const latest = execs[0]
+          const statusMap: Record<string, "idle" | "running" | "complete" | "failed"> = {
+            success: "complete", completed: "complete",
+            error: "failed", failed: "failed",
+            running: "running", in_progress: "running",
+          }
+          const restored = statusMap[latest.status]
+          if (restored) {
+            setPipelineStatus(restored)
+            sessionStorage.setItem("archon_pipeline_status", restored)
+          }
+          if (restored === "complete") {
+            setCurrentStage("engineer")
+            sessionStorage.setItem("archon_current_stage", "engineer")
+          }
+          if (latest.version) {
+            setVersion(latest.version)
+            versionRef.current = latest.version
+            sessionStorage.setItem("archon_current_version", String(latest.version))
+          }
+        })
+        .catch(() => {})
       return
     }
 
@@ -188,8 +217,15 @@ export function PipelineRun() {
         try { setLogs(JSON.parse(cachedLogs)) } catch {}
       }
     }
-    if (cachedStatus && cachedStatus !== "idle") setPipelineStatus(cachedStatus)
-    if (cachedStage) setCurrentStage(cachedStage)
+    // Apply cached status immediately (synchronous) so cards don't flash Pending
+    // DB restore below will overwrite this with authoritative data
+    if (cachedStatus === "complete") {
+      setPipelineStatus("complete")
+      setCurrentStage("engineer")
+    } else if (cachedStatus === "failed") {
+      setPipelineStatus("failed")
+    }
+    if (cachedStage && cachedStatus === "complete") setCurrentStage("engineer")
 
     const cachedHistory = sessionStorage.getItem("archon_prompt_history")
     if (cachedHistory) {
@@ -213,8 +249,8 @@ export function PipelineRun() {
       })
       .catch(() => {})
 
-    if (!cachedStatus || cachedStatus === "idle" || cachedStatus === "complete") {
-      fetch(`${API_BASE}/api/projects/${pidNum}`)
+    // Always restore from DB — DB is source of truth, don't trust stale sessionStorage status
+    fetch(`${API_BASE}/api/projects/${pidNum}`)
         .then(r => r.json())
         .then(data => {
           const execs: any[] = data.executions || []
@@ -297,7 +333,6 @@ export function PipelineRun() {
           }
         })
         .catch(() => {})
-    }
   }, [searchParams])
 
 
