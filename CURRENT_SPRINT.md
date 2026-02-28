@@ -163,6 +163,11 @@ main (enterprise-ui merged and deleted)
 - ✅ Studio theme CSS variables — obsolete, Studio is separate app (Feb 28, 2026)
 - ✅ Build Details tokens/cost — Claude stream usage capture working (Feb 28, 2026)
 - ✅ Studio build details stat row — now displays after build completes (Feb 28, 2026)
+- ✅ Enterprise BuildDetailsCard live refresh post-build — refreshKey bumps on COMPLETED (Feb 28, 2026)
+- ✅ Tab persistence across page refresh — reads/writes localStorage archon_active_tab (Feb 28, 2026)
+- ✅ EngineerAgent JSON repair — 4-pass fallback with json_repair library (Feb 28, 2026)
+- ✅ Studio ↔ Enterprise design switch preserves selected project — ?pid= / ?projectId= passing (Feb 28, 2026)
+- ✅ Studio pipeline page project name fix — fetches name from API when arriving via ?pid= (Feb 28, 2026)
 
 ### Phase 17 — IBM Governance & NLU Integration (🔴 Planned)
 

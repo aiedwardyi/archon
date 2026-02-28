@@ -412,7 +412,7 @@ Impact:
 - ✅ Build Details: "12 credits · 488 remaining" format (Feb 28, 2026)
 - 🔴 Plan tiers: Starter 100/mo, Pro 500/mo, Agency unlimited (post-auth)
 - 🔴 /api/credits/balance endpoint (pre-auth mock: 500 Pro credits minus all used)
-- 🔴 Enterprise BuildDetailsCard live refresh post-build (UX polish)
+- ✅ Enterprise BuildDetailsCard live refresh post-build (Feb 28, 2026)
 
 #### 17.2 — Governance Agent (AI Factsheets)
 - 🔴 GovernanceAgent runs once per pipeline completion
