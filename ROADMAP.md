@@ -380,7 +380,8 @@ Impact:
 - 🔴 Live output logs lost after restart
 - ✅ Delete modal disk cleanup — shutil.rmtree on project delete (already in app.py)
 - ✅ Studio theme CSS variables — obsolete, Studio is a separate app (frontend/)
-- 🔧 Build Details tokens/cost — Claude usage capture fix in progress (engineer_agent.py)
+- ✅ Build Details tokens/cost — Claude stream usage capture working (Feb 28, 2026)
+- ✅ Studio build details stat row — displays after build completes (Feb 28, 2026)
 
 ### 16.5 — Authentication (🔴 Planned)
 - 🔴 Sign up / Login pages
@@ -398,6 +399,17 @@ Impact:
 - 🔴 Smarter routing: frustrated sentiment → chat, not build
 - 🔴 NLU result passed as context into PM Agent
 - IBM credential: WATSON_NLU_URL + WATSON_NLU_API_KEY in backend/.env
+
+#### 17.3 — Credit System
+- 🔴 Define credit unit: 1 credit = ~2,500 tokens (adjustable)
+- 🔴 credits_used column on Execution model
+- 🔴 credits_balance on User model (prep for auth)
+- 🔴 Deduct credits on pipeline completion
+- 🔴 Build Details shows "credits used" not raw tokens or dollar cost
+- 🔴 Navbar credit counter wired to real balance
+- 🔴 Plan tiers: Starter 100 credits/mo, Pro 500 credits/mo, Agency unlimited
+- 🔴 /api/credits/balance endpoint
+- Design: hides real cost, users can't reverse-engineer margin
 
 #### 17.2 — Governance Agent (AI Factsheets)
 - 🔴 GovernanceAgent runs once per pipeline completion

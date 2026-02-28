@@ -90,6 +90,7 @@ export const translations = {
   model: { en: "Model", ko: "모델" },
   tokensUsed: { en: "Tokens Used", ko: "사용된 토큰" },
   estCost: { en: "Est. Cost", ko: "예상 비용" },
+  creditsUsed: { en: "Credits Used", ko: "사용된 크레딧" },
   duration: { en: "Duration", ko: "소요 시간" },
   whatWouldYouLikeToBuild: { en: "What would you like to build?", ko: "무엇을 만들고 싶으세요?" },
   askOrBuild: { en: "Ask a question or describe what you would like to build.", ko: "질문하거나 만들고 싶은 것을 설명하세요." },

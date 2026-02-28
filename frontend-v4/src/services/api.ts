@@ -206,8 +206,7 @@ export interface Version {
 
 export interface BuildDetails {
   model: string;
-  tokensUsed: string;
-  estCost: string;
+  creditsUsed: string;
   duration: string;
 }
 
@@ -225,8 +224,7 @@ export async function fetchBuildDetails(projectId: number, version: number): Pro
     }
     return {
       model: v.model_used || "—",
-      tokensUsed: v.tokens_used != null ? v.tokens_used.toLocaleString() : "—",
-      estCost: v.estimated_cost != null ? `$${v.estimated_cost.toFixed(4)}` : "—",
+      creditsUsed: v.credits_used != null ? `${v.credits_used} credits` : "—",
       duration: durStr,
     };
   } catch { return null; }

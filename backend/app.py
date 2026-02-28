@@ -502,6 +502,8 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
                         execution.estimated_cost = round(
                             (input_tokens * 0.000003) + (output_tokens * 0.000015), 4
                         )
+                    # 1 credit = 2500 tokens, minimum 1
+                    execution.credits_used = max(1, round(execution.tokens_used / 2500))
                 if (
                     execution.version == 1
                     and not project.locked_ui_archetype

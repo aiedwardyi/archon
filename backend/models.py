@@ -105,6 +105,7 @@ class Execution(Base):
     # Build metrics
     tokens_used = Column(Integer, nullable=True)
     estimated_cost = Column(Float, nullable=True)
+    credits_used = Column(Integer, nullable=True)
     duration_seconds = Column(Float, nullable=True)
     model_used = Column(String(100), nullable=True)
 
@@ -137,6 +138,7 @@ class Execution(Base):
             "error_message": self.error_message,
             "tokens_used": self.tokens_used,
             "estimated_cost": self.estimated_cost,
+            "credits_used": self.credits_used,
             "duration_seconds": self.duration_seconds,
             "model_used": self.model_used,
         }
@@ -178,6 +180,7 @@ def init_db():
             for col_name, col_type in [
                 ("tokens_used", "INTEGER"),
                 ("estimated_cost", "REAL"),
+                ("credits_used", "INTEGER"),
                 ("duration_seconds", "REAL"),
                 ("model_used", "VARCHAR(100)"),
             ]:

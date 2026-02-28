@@ -161,7 +161,8 @@ main (enterprise-ui merged and deleted)
 - 🔴 Live output logs lost after restart
 - ✅ Delete modal disk cleanup — already in app.py (Feb 28, 2026)
 - ✅ Studio theme CSS variables — obsolete, Studio is separate app (Feb 28, 2026)
-- 🔧 Build Details tokens/cost — Claude stream usage capture (engineer_agent.py) — in progress
+- ✅ Build Details tokens/cost — Claude stream usage capture working (Feb 28, 2026)
+- ✅ Studio build details stat row — now displays after build completes (Feb 28, 2026)
 
 ### Phase 17 — IBM Governance & NLU Integration (🔴 Planned)
 
@@ -170,6 +171,15 @@ main (enterprise-ui merged and deleted)
 - 🔴 Extracts: intent, sentiment, domain keywords
 - 🔴 Smarter routing: frustrated sentiment → chat, not build
 - 🔴 NLU result passed as context into PM Agent
+
+#### 17.3 — Credit System
+- 🔴 Define credit unit: 1 credit = ~2,500 tokens (adjustable)
+- 🔴 credits_used column on Execution model
+- 🔴 Deduct credits on pipeline completion, store on execution
+- 🔴 Build Details: replace tokens + cost with credits used + model + duration
+- 🔴 Navbar credit counter wired to real session balance
+- 🔴 Plan tiers: Starter 100/mo, Pro 500/mo, Agency unlimited
+- 🔴 /api/credits/balance endpoint
 
 #### 17.2 — Governance Agent (AI Factsheets)
 - 🔴 GovernanceAgent runs once per pipeline completion

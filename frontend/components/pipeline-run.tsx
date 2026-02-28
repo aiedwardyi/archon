@@ -19,7 +19,6 @@ import {
   VolumeX,
   Cpu,
   Hash,
-  DollarSign,
   Clock,
 } from "lucide-react"
 import { useLanguage } from "@/contexts/LanguageContext"
@@ -77,7 +76,7 @@ export function PipelineRun() {
   const [globallyBlocked, setGloballyBlocked] = useState(false)
   const [blockingProjectId, setBlockingProjectId] = useState<number | null>(null)
   const [buildDetails, setBuildDetails] = useState<{
-    model: string; tokensUsed: string; estCost: string; duration: string
+    model: string; creditsUsed: string; duration: string
   } | null>(null)
   const logsEndRef = useRef<HTMLDivElement>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
@@ -213,8 +212,7 @@ export function PipelineRun() {
                   }
                   setBuildDetails({
                     model: v.model_used || "—",
-                    tokensUsed: v.tokens_used != null ? v.tokens_used.toLocaleString() : "—",
-                    estCost: v.estimated_cost != null ? `$${v.estimated_cost.toFixed(4)}` : "—",
+                    creditsUsed: v.credits_used != null ? `${v.credits_used} credits` : "—",
                     duration: durStr,
                   })
                 })
@@ -540,8 +538,7 @@ export function PipelineRun() {
         }
         setBuildDetails({
           model: v.model_used || "—",
-          tokensUsed: v.tokens_used != null ? v.tokens_used.toLocaleString() : "—",
-          estCost: v.estimated_cost != null ? `$${v.estimated_cost.toFixed(4)}` : "—",
+          creditsUsed: v.credits_used != null ? `${v.credits_used} credits` : "—",
           duration: durStr,
         })
       })
@@ -640,8 +637,7 @@ export function PipelineRun() {
           <div className="flex items-center divide-x divide-border text-xs font-mono">
             {[
               { icon: Cpu, label: t("model"), value: buildDetails.model },
-              { icon: Hash, label: t("tokensUsed"), value: buildDetails.tokensUsed },
-              { icon: DollarSign, label: t("estCost"), value: buildDetails.estCost },
+              { icon: Hash, label: t("creditsUsed"), value: buildDetails.creditsUsed },
               { icon: Clock, label: t("duration"), value: buildDetails.duration },
             ].map(({ icon: Icon, label, value }) => (
               <div key={label} className="flex items-center gap-1.5 px-3 first:pl-0">

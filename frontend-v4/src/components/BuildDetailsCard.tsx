@@ -22,8 +22,7 @@ export const BuildDetailsCard = ({ projectId, version }: BuildDetailsCardProps) 
 
   const rows = [
     { label: t("model"), value: details?.model ?? "—" },
-    { label: t("tokensUsed"), value: details?.tokensUsed ?? "—" },
-    { label: t("estCost"), value: details?.estCost ?? "—" },
+    { label: t("creditsUsed"), value: details?.creditsUsed ?? "—" },
     { label: t("duration"), value: details?.duration ?? "—" },
   ];
 
