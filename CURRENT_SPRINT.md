@@ -171,11 +171,12 @@ main (enterprise-ui merged and deleted)
 
 ### Phase 17 — IBM Governance & NLU Integration (🔴 Planned)
 
-#### 17.1 — Watson NLU Pre-Pipeline Analyzer
-- 🔴 Watson NLU analyzes user prompt before PM Agent
-- 🔴 Extracts: intent, sentiment, domain keywords
-- 🔴 Smarter routing: frustrated sentiment → chat, not build
-- 🔴 NLU result passed as context into PM Agent
+#### 17.1 — Watson NLU Pre-Pipeline Analyzer (✅ Complete Feb 28, 2026)
+- ✅ Watson NLU analyzes user prompt before PM Agent
+- ✅ Extracts: sentiment, domain keywords, categories
+- ✅ Smarter routing: frustrated sentiment (score < -0.5) → chat, not build
+- ✅ NLU keyword context appended to project_context for classify_intent
+- ✅ Graceful fallback when WATSON_NLU credentials missing (enabled=False)
 
 #### 17.3 — Credit System (✅ Complete Feb 28, 2026)
 - ✅ 1 credit = 2,500 tokens formula, minimum 1

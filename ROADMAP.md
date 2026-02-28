@@ -390,15 +390,15 @@ Impact:
 
 ### 16.6 — Planner Archetype Expansion (✅ Complete Feb 28, 2026)
 
-### Phase 17 — IBM Governance & NLU Integration (🔴 Planned)
+### Phase 17 — IBM Governance & NLU Integration (🔧 In Progress)
 
-#### 17.1 — Watson NLU Pre-Pipeline Analyzer
-- 🔴 Watson NLU analyzes user prompt before PM Agent
-- 🔴 Extracts: intent category, sentiment, domain keywords
-- 🔴 Tags project domain automatically (e.g. fintech, gaming, healthcare)
-- 🔴 Smarter routing: frustrated sentiment → chat, not build
-- 🔴 NLU result passed as context into PM Agent
-- IBM credential: WATSON_NLU_URL + WATSON_NLU_API_KEY in backend/.env
+#### 17.1 — Watson NLU Pre-Pipeline Analyzer (✅ Complete Feb 28, 2026)
+- ✅ Watson NLU analyzes user prompt before PM Agent
+- ✅ Extracts: sentiment, domain keywords, categories
+- ✅ Smarter routing: frustrated sentiment (score < -0.5) → empathetic chat, not build
+- ✅ NLU keyword context appended to project_context for classify_intent
+- ✅ Graceful fallback when WATSON_NLU credentials missing (enabled=False, no crashes)
+- IBM credential: WATSON_NLU_URL + WATSON_NLU_API_KEY in backend/.env ✅
 
 #### 17.3 — Credit System (✅ Complete Feb 28, 2026)
 - ✅ 1 credit = 2,500 tokens, minimum 1

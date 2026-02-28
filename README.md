@@ -28,7 +28,7 @@ Architecture Agent (Gemini)         → Build Plan artifact (versioned)
     ↓
 Design Agent (GPT-4o-mini + DALL-E) → Image assets (versioned, reused on iterations)
     ↓
-Build Agent (Claude Sonnet 4.5)     → Code files (versioned)
+Build Agent (Claude Sonnet 4.6)     → Code files (versioned)
     ↓
 Execution Result → Database + UI + Version Timeline + Live Preview
 ```
@@ -41,7 +41,8 @@ Execution Result → Database + UI + Version Timeline + Live Preview
 - Python 3.11+
 - Node.js 18+
 - OpenAI API key
-- Anthropic API key (Build Agent — Claude Sonnet 4.5)
+- Anthropic API key (Build Agent — Claude Sonnet 4.6)
+- IBM Watson API keys (STT, TTS, NLU — optional, degrades gracefully)
 - Google Gemini API key (fallback)
 
 ### 1. Clone and install
@@ -69,6 +70,8 @@ $env:WATSON_TTS_URL = "https://..."
 $env:WATSON_TTS_APIKEY = "your_api_key"
 $env:WATSON_STT_URL = "https://..."
 $env:WATSON_STT_APIKEY = "your_api_key"
+$env:WATSON_NLU_URL = "https://..."
+$env:WATSON_NLU_APIKEY = "your_api_key"
 ```
 
 ### 3. Start the servers
@@ -109,10 +112,11 @@ Both connect to the same Flask backend on port 5000.
 ```
 ai-dev-team/
 ├── agents/
-│   ├── pm_agent.py           # Requirements Agent (OpenAI GPT-4o)
-│   ├── planner_agent.py      # Architecture Agent (Gemini)
+│   ├── pm_agent.py           # Requirements Agent (OpenAI GPT-4o-mini)
+│   ├── planner_agent.py      # Architecture Agent (Gemini Flash)
 │   ├── design_agent.py       # Design Agent (GPT-4o-mini + DALL-E 3)
-│   └── engineer_agent.py     # Build Agent (Claude Sonnet 4.5, Gemini fallback)
+│   ├── engineer_agent.py     # Build Agent (Claude Sonnet 4.6, Gemini fallback)
+│   └── nlu_agent.py          # NLU Agent (IBM Watson — sentiment + keyword analysis)
 ├── backend/
 │   ├── app.py                # Flask API (port 5000)
 │   ├── models.py             # SQLAlchemy models (Project, Execution, User)
@@ -170,6 +174,7 @@ ai-dev-team/
 | GET | `/api/assets/:pid/:version/:file` | Serve design assets |
 | POST | `/api/watson/stt` | Speech to text (IBM Watson) |
 | POST | `/api/watson/tts` | Text to speech (IBM Watson) |
+| POST | `/api/projects/:id/chat` | Chat + NLU pre-analysis (sentiment routing) |
 
 ---
 
@@ -185,6 +190,7 @@ ai-dev-team/
 | Chat Persistence | Messages saved to DB, survive refresh and machine changes |
 | One-Click Publish | Shareable hosted URL for any version |
 | Watson STT/TTS | Voice input and audio playback in enterprise UI |
+| Watson NLU | Pre-pipeline sentiment analysis — frustrated users routed to chat, not build |
 
 ---
 
@@ -196,6 +202,7 @@ ai-dev-team/
 | 7A-7H | ✅ | Iterative pipeline, live preview, stability, output quality, chatbox |
 | 8.1 | ✅ | One-click publish |
 | 10.1-10.2 | ✅ | Watson STT/TTS |
+| 17.1 | ✅ | Watson NLU pre-pipeline analyzer |
 | 10.4 | ✅ | App type lock (archetype guardrail) |
 | 12.1 | ✅ | Domain personality upgrade |
 | 13 | ✅ | Chat persistence + user model |
