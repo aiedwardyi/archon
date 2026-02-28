@@ -12,7 +12,7 @@ and enterprises delivering client apps to non-technical clients.
 - Agencies can show clients exactly what was built and why, version by version
 - Business language UI — no developer jargon anywhere
 
-**The MOAT:** The Versions page. Competitors show current state only.
+**The MOAT:** The Versions page. Lovable/v0 show current state only.
 Archon shows complete decision history with artifacts and live preview per version.
 
 ---
@@ -79,7 +79,7 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - ✅ 7D.1 Navbar real project name + version
 - ✅ 7D.2 Projects table: Project ID column added
 - ✅ 7D.3 Delete project + delete all with type-to-confirm modal
-- ✅ 7D.4 Avatar dropdown (email, dark mode, credits, sign out)
+- ✅ 7D.4 Avatar dropdown (v0-style: email, dark mode, credits, sign out)
 - ✅ 7D.5 Versions page live preview height increase
 - ✅ 7D.6 Artifacts + Navbar version sync fixed (custom event bus)
 
@@ -125,7 +125,7 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 
 ## Competitive Positioning
 
-| Feature | Competitors | Archon |
+| Feature | Lovable/v0 | Archon |
 |---------|-----------|--------|
 | Context continuation | ✅ | ✅ |
 | Full chain on every edit | ❌ | ✅ |
@@ -170,8 +170,8 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - ✅ Consumer frontend polished — Archon branding, newest-first timeline, glow effects, full Korean i18n
 - 🔧 Consumer UX bug fixes — stale state, code tab fixed, failed overlay fixed, progress bar restored (smooth animation, minor edge cases remain), preview iframe regression pending fix
 - ✅ Phase 15.4 — Enterprise UI (frontend-v4) — Vite + React + shadcn/ui on port 8080, real API wiring, 4-theme foundation
-- ✅ Phase 15.5 — Enterprise UI polish complete — Pipeline chat UI, delete modal, build details, JSON repair, all state bugs fixed
-- ✅ Phase 15.6 — Frontend cleanup & tab sync complete — Studio/Enterprise switcher, tab sync via URL query params, deprecated frontend-consumer removed, Studio Tasks wired
+- ✅ Phase 15.5.S — Studio dashboard parity — stats bar + recent activity feed added to Studio frontend
+- 🔧 Phase 15.5 — Enterprise UI polish — Pipeline tab chat UI done, stats/activity/publish wired, modals still needed
 - 🔴 PDF Export + Client Read-Only Link (Phase 8 remaining)
 
 ### Phase 9 — Pipeline Page & Classifier Improvements (⬜ Planned)
@@ -197,7 +197,7 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - Preserves full Brief / Plan / Code artifact trail per version.
 Impact:
 - Prevents unintended app-type mutation (e.g., landing → dashboard).
-- Enables stable iteration while maintaining audit trail moat.
+- Enables stable, Lovable-style iteration while maintaining audit trail moat.
 
 ### Phase 11 — Pipeline Page Redesign (⬜ Planned)
 - Three-panel layout for large screens:
@@ -217,14 +217,14 @@ Impact:
 -           fintech = green/red tickers, candlestick feel, data density
 -           gaming = dark immersive, HUD elements, particle effects
 - Approach: planner agent injects domain_personality block into engineer task
-- This is the main quality gap vs Competitors
+- This is the main quality gap vs Lovable/v0
 
 ### Phase 12.1 — Domain Personality Upgrade (✅ Completed Feb 2026)
 - Injected Tailwind CDN + Alpine.js for visual pages
 - 18 archetypes with domain-specific palettes, fonts, and components
 - pollinations.ai for fictional character/game asset generation
 - Anti-patterns list to prevent generic AI output
-- Result: FF7 fan page output matches premium quality
+- Result: FF7 fan page output matches Lovable quality
 
 ### Phase 13.1 — Chat Message Persistence (✅ Completed)
 - chat_messages TEXT column on executions table (JSON array)
@@ -284,7 +284,7 @@ Impact:
 ## Phase 15.4 - Enterprise UI (frontend-v4) COMPLETED Feb 27, 2026
 
 ### What was built
-- Copied Enterprise design (archon-v4) to frontend-v4/
+- Copied Lovable-generated Enterprise design (archon-v4) to frontend-v4/
 - Vite + React + TypeScript + Tailwind + shadcn/ui running on port 8080
 - 4-theme system foundation (Enterprise Light/Dark, Studio Light/Dark)
 - Korean/English language toggle with localStorage persistence
@@ -299,65 +299,54 @@ Impact:
 - Navbar: real project name + version in breadcrumb
 - Favicon: lightning bolt SVG + Archon - Enterprise Build title
 
-## Phase 15.5 - Enterprise UI Polish (✅ Completed)
-- Checkbox UX fix, Stats bar, Activity feed, Avg build time wired
-- Publish and Download buttons wired to real endpoints
-- Pipeline tab — full chat UI, /chat + /iterate endpoints, chat history, live output log
-- Zap icon branding, i18n keys, New Project modal, "What Was Built" summary
-- images_generated + files_generated counts from backend
-- ArtifactsView Code tab — fixed height, independent scroll
-- WelcomeBanner — live backend health check (green/red dot)
-- Artifact cards navigate to Artifacts tab with sub-tab pre-selection
-- Code tab scrollbars fixed, "Running" → "Building" rename
-- Pipeline header status badges (colored pills)
-- Agent pipeline status persists after reload from DB
-- Search filter on Projects page, red dot pulse on offline indicator
-- Pipeline tab scroll-to-top, no auto-scroll on initial load
-- Pipeline state resets on project switch (no bleed)
-- Chat messages persist via sessionStorage keyed by project ID
-- JSON repair bug fixed — _repair_json strips fences, fixes bare backslashes
-- Delete modal — type "DELETE" to confirm + shutil.rmtree disk cleanup
-- Build Details card — tokens_used, estimated_cost, duration, model wired from DB
+## Phase 15.5.S - Studio Dashboard Parity (✅ COMPLETED Feb 28, 2026)
 
-## Phase 15.6 — Frontend Cleanup & Tab Sync (✅ Complete)
-- ✅ Wire Studio button in frontend-v4 navbar (opens Studio in same tab)
-- ✅ Add Enterprise/Studio design switcher to frontend/ navbar
-- ✅ Sync active tab between Enterprise and Studio on switch (URL query param approach)
-- ✅ Remove deprecated frontend-consumer/ folder
-- ✅ Studio Tasks tab — wired real task data from plan milestones
-- ✅ Studio polish — delete modal requires DELETE (uppercase) to match Enterprise
-- 🔴 Retire frontend-consumer2/ once consumer features confirmed complete (future)
-- 🔴 Next.js → Vite migration for frontend/ (deferred to end of all phases)
+### What was built
+- Stats bar added to Studio `frontend/components/project-dashboard.tsx` — 4 platform stat cards (Pipelines Today, Lines Generated, Versions Shipped, Avg Build Time) above existing project stats row
+- Recent Activity sidebar — right panel showing last 5 projects sorted by updated_at, colored status dots (green/red/gray), relative timestamps, "Live" badge
+- 2-column layout (`grid-cols-[1fr_280px]`) wrapping project table + activity panel
+- Backend `/api/stats` and `/api/activity` endpoints verified working
+- Calculations: Pipelines Today (projects updated today), Lines Generated (execution_count × 500), Versions Shipped (sum execution_count), Avg Build Time (hardcoded 5m 25s)
 
-## Phase 16 — UI Parity, Auth & Polish (🔧 In Progress Feb 2026)
+## Phase 15.5 - Enterprise UI Polish (🔧 IN PROGRESS)
 
-### 16.1 — Bug Fixes
-- 🔴 Studio + Enterprise chat persistence after Flask restart
-- 🔴 Live output logs lost after restart
-- 🔴 Build Details card showing — for tokens/cost
+### Completed
+- ✅ Checkbox UX fix — no longer triggers row navigation
+- ✅ Stats bar wired to real project counts (total/running/completed/failed)
+- ✅ Activity feed wired to real recent executions with collapse/expand
+- ✅ Avg build time stat with fallback for missing data
+- ✅ Publish and Download buttons wired to real endpoints
+- ✅ Pipeline tab — full chat UI with conversation panel, input bar, agent status cards
+- ✅ Pipeline tab — /chat (conversational) and /iterate (build) endpoints wired
+- ✅ Pipeline tab — chat history loaded from DB on project switch
+- ✅ Pipeline tab — live output log panel with auto-scroll
+- ✅ Replaced Sparkles icon with Zap (lightning bolt) to match Archon branding
+- ✅ Added missing i18n keys for pipeline UI (designAgent, send, noMessages, etc.)
+- ✅ New Project modal (Name + Description → POST /api/projects, auto-selects and opens Pipeline tab)
+- ✅ "What Was Built" summary — real file + image counts from backend (e.g. "2 code files · 3 images generated")
+- ✅ Backend returns images_generated count from last_design_assets.json per version
+- ✅ VersionsView files changed count uses real files_generated from API
+- ✅ ArtifactsView Code tab — fixed height, independent scroll for file tree and code viewer
+- ✅ WelcomeBanner — live backend health check (green/red dot with 10s polling)
+- ✅ i18n keys added: backendOffline, projectName, projectDescription, creating, create, cancel
+- ✅ Artifact cards (Brief/Plan/Code) in VersionsView navigate to Artifacts tab with correct sub-tab pre-selected
+- ✅ Code tab scrollbars fixed — outer grid overflow:hidden with calc height, pre overflow:auto, minWidth:0
+- ✅ Renamed "Running" → "Building" (EN) / "빌딩 중" (KO) across i18n and ProjectTable
+- ✅ Pipeline header status badge — colored rounded-full pills (blue/building, emerald/completed, red/failed, gray/idle)
+- ✅ Agent pipeline status persists after reload — reads DB status (success/failed/running)
+- ✅ Logs saved for successful builds (backend app.py)
+- ✅ Backend health indicator — red dot + "Backend offline" when Flask unreachable
+- ✅ Status badge colors — green/red/blue pills in Pipeline header and Projects table
+- ✅ Search filter on Projects page — client-side case-insensitive name filtering
+- ✅ Red dot pulse animation on "Backend offline" indicator (WelcomeBanner)
+- ✅ Removed Description field from New Project modal (name only, sends empty string)
+- ✅ Pipeline tab no longer auto-scrolls to bottom on initial load (guarded by ref + timer)
 
-### 16.2 — Branding & Tab Titles (✅ Complete Feb 2026)
-- ✅ Chrome tab title: "Archon - Studio Build" (frontend/)
-- ✅ Chrome tab title: "Archon - Consumer Build" (frontend-consumer2/)
-- ✅ Hexagon logo in frontend-v4 navbar (replaced Zap icon)
-- ✅ Hexagon logo in frontend-consumer2 sidebar (replaced Zap icon)
-- ✅ Inline SVG hexagon favicon in frontend-v4
-- ✅ Inline SVG hexagon favicon in frontend-consumer2
-
-### 16.3 — Studio Feature Parity
-- 🔴 Korean/English toggle in Studio navbar + i18n coverage
-- 🔴 Build Details card in Studio Pipeline page
-- 🔴 Stats bar on Studio Projects page
-- 🔴 Recent Activity feed on Studio Projects page
-
-### 16.4 — Watson STT/TTS for Enterprise (✅ Complete Feb 2026)
-- ✅ Mic button (STT) wired in frontend-v4 pipeline chat input
-- ✅ Speaker button (TTS) on Archon reply bubbles in frontend-v4
-- ✅ Fixed Watson env key mismatch (WATSON_TTS_API_KEY / WATSON_STT_API_KEY)
-- ✅ Fixed load_dotenv path to always load from backend/.env
-
-### 16.5 — Authentication
-- 🔴 Sign up / Login pages
-- 🔴 JWT session management
-- 🔴 Protected routes across all three frontends
-- 🔴 User-scoped projects (owner_id already in DB schema)
+### Remaining work
+- ✅ Live output + agent pipeline no longer bleeds across projects (pipeline state resets on project switch)
+- ✅ Chat messages persist via sessionStorage keyed by project ID (survives tab/project switching)
+- ✅ Pipeline tab scroll-to-top fixed (container ref + triple scroll target)
+- 🔴 JSON repair bug — intermittent EngineerAgent \escape error (prompts/engineer.txt fix)
+- 🔴 Delete modal — type "delete" to confirm + shutil.rmtree disk cleanup
+- 🔴 Build Details card — wire tokens_used, estimated_cost to DB (model + duration already working)
+- 🔴 Studio theme CSS variables in frontend-v4
