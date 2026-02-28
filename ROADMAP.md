@@ -316,20 +316,6 @@ Impact:
 - ✅ Mic (STT) + speaker (TTS) buttons in frontend-v4 pipeline
 - ✅ Fixed WATSON_TTS_API_KEY / WATSON_STT_API_KEY env var mismatch
 
-### 16.3 — Studio Feature Parity (🔧 In Progress)
-- ✅ Projects page kept minimal by design
-- ✅ Korean/English toggle in Studio
-- 🔴 Build Details card in Studio Pipeline
-
-### 16.1 — Bug Fixes (🔴 Pending)
-- 🔴 Chat persistence after Flask restart
-- 🔴 Live output logs lost after restart
-- 🔴 Build Details tokens/cost showing —
-
-### 16.5 — Authentication (🔴 Planned)
-- 🔴 Sign up / Login pages
-- 🔴 JWT + protected routes
-
 ## Phase 15.5 - Enterprise UI Polish (🔧 IN PROGRESS)
 
 ### Completed
@@ -369,9 +355,6 @@ Impact:
 - ✅ Chat messages persist via sessionStorage keyed by project ID (survives tab/project switching)
 - ✅ Pipeline tab scroll-to-top fixed (container ref + triple scroll target)
 - 🔴 JSON repair bug — intermittent EngineerAgent \escape error (prompts/engineer.txt fix)
-- 🔴 Delete modal — type "delete" to confirm + shutil.rmtree disk cleanup
-- 🔴 Build Details card — wire tokens_used, estimated_cost to DB (model + duration already working)
-- 🔴 Studio theme CSS variables in frontend-v4
 
 ## Phase 16 — UI Parity, Auth & Polish (🔧 In Progress Feb 2026)
 
@@ -385,18 +368,27 @@ Impact:
 - ✅ Mic (STT) + speaker (TTS) buttons in frontend-v4 pipeline
 - ✅ Fixed WATSON_TTS_API_KEY / WATSON_STT_API_KEY env var mismatch
 
-### 16.3 — Studio Feature Parity (🔧 In Progress)
+### 16.3 — Studio Feature Parity (✅ Complete Feb 28, 2026)
 - ✅ Projects page kept minimal by design
 - ✅ Korean/English toggle in Studio navbar (i18n.ts + LanguageContext + KO/EN pills)
 - ✅ Studio Projects table column sort — clickable headers, ↑/↓ active indicator (Feb 28, 2026)
 - ✅ Build Details card in Studio Pipeline page — enterprise stat row (Lucide icons, Vercel-style, no emojis) (Feb 28, 2026)
+- ✅ Full Korean i18n — Studio + Enterprise all static strings translated (Feb 28, 2026)
 
 ### 16.1 — Bug Fixes (🔴 Pending)
 - 🔴 Chat persistence after Flask restart
 - 🔴 Live output logs lost after restart
-- 🔴 Build Details tokens/cost showing —
+- ✅ Delete modal disk cleanup — shutil.rmtree on project delete (already in app.py)
+- ✅ Studio theme CSS variables — obsolete, Studio is a separate app (frontend/)
+- 🔧 Build Details tokens/cost — Claude usage capture fix in progress (engineer_agent.py)
 
 ### 16.5 — Authentication (🔴 Planned)
 - 🔴 Sign up / Login pages
 - 🔴 JWT + protected routes
 - 🔴 User-scoped projects (owner_id already in DB schema)
+
+### 16.6 — Planner Archetype Expansion (✅ Complete Feb 28, 2026)
+- ✅ Expanded planner.txt from 10 → 25 archetypes
+- ✅ Added render_path A/B field for Tailwind vs Raw CSS routing
+- ✅ Layout + content contracts for all 15 new archetypes
+- ✅ Existing 10 archetypes untouched

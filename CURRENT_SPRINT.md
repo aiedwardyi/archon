@@ -141,17 +141,27 @@ main (enterprise-ui merged and deleted)
 - ✅ Speaker button (TTS) on Archon reply bubbles in frontend-v4
 - ✅ Fixed WATSON_TTS_API_KEY / WATSON_STT_API_KEY env var mismatch in backend/app.py
 
-### Phase 16.3 — Studio Feature Parity (🔧 In Progress)
+### Phase 16.3 — Studio Feature Parity (✅ Complete Feb 28, 2026)
 - ✅ Studio Projects page — intentionally kept minimal (no stats bar, no activity feed)
 - ✅ Korean/English toggle in Studio navbar (i18n.ts + LanguageContext + KO/EN pill toggle + t() wired in navbar + project-dashboard)
 - ✅ Studio Projects table column sort — clickable headers, ↑/↓ active indicator, faded ↑↓ inactive (Feb 28, 2026)
 - ✅ Watson TTS voice updated to en-US_EmilyV3Voice (neural, less robotic) (Feb 28, 2026)
 - ✅ Build Details card in Studio Pipeline page — enterprise stat row (Lucide icons, Vercel-style, no emojis) (Feb 28, 2026)
+- ✅ Full Korean i18n — Studio: all static strings translated (pipeline, agents, versions, artifacts, delete modal) (Feb 28, 2026)
+- ✅ Full Korean i18n — Enterprise: all static strings translated (artifacts, versions, pipeline, delete modal) (Feb 28, 2026)
 
-### Phase 16.1 — Bug Fixes (🔴 Pending)
+### Phase 16.6 — Planner Archetype Expansion (✅ Complete Feb 28, 2026)
+- ✅ planner.txt expanded from 10 → 25 archetypes
+- ✅ render_path A/B field added for Tailwind vs Raw CSS routing
+- ✅ Layout + content contracts for all 15 new archetypes (restaurant, medical, crypto, fitness, etc.)
+- ✅ Existing 10 archetypes untouched
+
+### Phase 16.1 — Bug Fixes (🔧 In Progress)
 - 🔴 Studio + Enterprise chat persistence after Flask restart
 - 🔴 Live output logs lost after restart
-- 🔴 Build Details tokens/cost showing —
+- ✅ Delete modal disk cleanup — already in app.py (Feb 28, 2026)
+- ✅ Studio theme CSS variables — obsolete, Studio is separate app (Feb 28, 2026)
+- 🔧 Build Details tokens/cost — Claude stream usage capture (engineer_agent.py) — in progress
 
 ### Phase 16.5 — Authentication (🔴 Planned)
 - 🔴 Sign up / Login pages
