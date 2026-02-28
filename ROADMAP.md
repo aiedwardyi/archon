@@ -378,6 +378,8 @@ Impact:
 ### 16.1 — Bug Fixes (🔧 In Progress)
 - ✅ Enterprise chat persistence after Flask restart (Feb 28, 2026)
 - ✅ Studio + Enterprise chat shared when switching design modes — both load from DB (Feb 28, 2026)
+- ✅ Global build lock — friendly banner + chat reply when user tries to build while another project is building (Feb 28, 2026)
+- 🔴 Enterprise chat panel scrolls to top on load — should scroll to bottom like Studio
 - 🔴 Live output logs same across all projects (execution_state is global, not per-project)
 - 🔴 Live output logs lost after restart
 - ✅ Delete modal disk cleanup — shutil.rmtree on project delete (already in app.py)

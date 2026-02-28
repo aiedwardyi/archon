@@ -165,7 +165,8 @@ main (enterprise-ui merged and deleted)
 - ✅ Chat messages persist across builds, project switches, and Flask restarts — reactive save guarded by !sending, explicit save after /iterate resolves (Feb 28, 2026)
 - ✅ Stuck "Sending..." state auto-heals on project switch — execution-status check clears sending if backend not running (Feb 28, 2026)
 - 🔴 Live output logs still global (same across all projects) — execution_state is server-wide, architectural fix needed
-- 🔴 Global build lock not communicated in Enterprise UI — user can attempt to build project B while project A is running, gets silent 409 error (fix: Option B friendly banner, next sprint)
+- ✅ Global build lock — friendly banner + chat reply when user tries to build while another project is building (Feb 28, 2026)
+  - 🔴 Enterprise chat panel scrolls to top on load — should scroll to bottom (newest messages) like Studio
 - ✅ Delete modal disk cleanup — already in app.py (Feb 28, 2026)
 - ✅ Studio theme CSS variables — obsolete, Studio is separate app (Feb 28, 2026)
 - ✅ Build Details tokens/cost — Claude stream usage capture working (Feb 28, 2026)

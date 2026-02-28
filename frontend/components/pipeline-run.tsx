@@ -98,11 +98,11 @@ export function PipelineRun() {
   }, [promptHistory])
 
   useEffect(() => {
-    if (messages.length > 0 && !isRunning) {
+    if (messages.length > 0) {
       const pid = sessionStorage.getItem("archon_current_project_id")
       if (pid) {
         sessionStorage.setItem(`archon_messages_${pid}`, JSON.stringify(messages))
-        // Also persist to DB so Enterprise shares the same conversation
+        // Always persist to DB — including mid-build so Enterprise/Studio stay in sync
         fetch(`${API_BASE}/api/projects/${pid}/chat-messages`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -110,7 +110,7 @@ export function PipelineRun() {
         }).catch(() => {}) // non-fatal
       }
     }
-  }, [messages, isRunning])
+  }, [messages])
 
   useEffect(() => {
     const urlPid = searchParams.get("pid")
@@ -134,12 +134,26 @@ export function PipelineRun() {
         .catch(() => setProjectName(pname || "my-project"))
       setVersion(null)
       setLogs([])
-      setMessages([])
       setPipelineStatus("idle")
       setCurrentStage("pm")
       executionIdRef.current = null
       sessionStorage.removeItem("archon_prompt_history")
       setPromptHistory([])
+      // Load messages from DB — but first check sessionStorage for the NEW project
+      // (messages for urlPid may already exist from a previous visit)
+      const cachedForNewPid = sessionStorage.getItem(`archon_messages_${urlPid}`)
+      if (cachedForNewPid) {
+        try {
+          const parsed = JSON.parse(cachedForNewPid)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setMessages(parsed)
+          } else {
+            setMessages([])
+          }
+        } catch { setMessages([]) }
+      } else {
+        setMessages([])
+      }
       fetch(`${API_BASE}/api/projects/${urlPid}/chat-history`)
         .then(r => r.json())
         .then((data: any) => {
@@ -413,7 +427,8 @@ export function PipelineRun() {
 
 
   const handleSend = async () => {
-    if (!inputValue.trim() || isRunning || !projectId) return
+    if (!inputValue.trim() || !projectId) return
+    if (isRunning) return
 
     const prompt = inputValue.trim()
     setInputValue("")
@@ -444,6 +459,18 @@ export function PipelineRun() {
         }
         setMessages(prev => [...prev, archonMsg])
         return  // Stop here — no pipeline, no version created
+      }
+
+      // Build intent — check global lock, show clean reply
+      if (globallyBlocked) {
+        const replyMsg: ChatMessage = {
+          id: `msg-${Date.now()}-archon`,
+          role: "archon",
+          content: "A build is already in progress. Send this again when it finishes.",
+          timestamp: Date.now(),
+        }
+        setMessages(prev => [...prev, replyMsg])
+        return
       }
 
       // It is a build — add a system message then call /iterate
@@ -553,11 +580,10 @@ export function PipelineRun() {
     fetch(`${API_BASE}/api/execution-status`)
       .then(r => r.json())
       .then(data => {
-        // Only restore state if this pipeline belongs to THIS project
-        if (data.project_id && Number(data.project_id) !== Number(pid)) {
-          setIsRunning(false)
-          isRunningRef.current = false
-          setPipelineStatus("idle")
+        // ONLY act on execution-status if it belongs to THIS project
+        // If project_id is null or different, ignore it entirely — DB restore handles the rest
+        if (!data.project_id || Number(data.project_id) !== Number(pid)) {
+          // Don't touch pipelineStatus — DB restore useEffect will set it correctly
           return
         }
         if (data.status === "COMPLETED") {
@@ -577,6 +603,11 @@ export function PipelineRun() {
             setIsRunning(true)
             pollRef.current = setInterval(pollStatus, POLL_INTERVAL_MS)
           }
+        } else if (data.status === "FAILED") {
+          // Only apply FAILED if it's definitively this project's failure
+          setPipelineStatus("failed")
+          setIsRunning(false)
+          isRunningRef.current = false
         }
         if (data.logs?.length) setLogs(data.logs)
       })
@@ -636,9 +667,19 @@ export function PipelineRun() {
     const currentIdx = stageOrder.indexOf(currentStage)
     const agentIdx = stageOrder.indexOf(key)
     if (pipelineStatus === "complete") return "complete"
-    if (pipelineStatus === "idle") return "pending"
-    if (agentIdx < currentIdx) return "complete"
-    if (agentIdx === currentIdx) return "running"
+    if (pipelineStatus === "failed") {
+      // All agents before current are done, current is failed, rest are pending
+      if (agentIdx < currentIdx) return "complete"
+      if (agentIdx === currentIdx) return "running"
+      return "pending"
+    }
+    if (pipelineStatus === "running") {
+      if (agentIdx < currentIdx) return "complete"
+      if (agentIdx === currentIdx) return "running"
+      return "pending"
+    }
+    // idle — check if currentStage suggests we actually finished (engineer stage = all done)
+    if (pipelineStatus === "idle" && currentStage === "engineer") return "complete"
     return "pending"
   }
 
@@ -813,6 +854,15 @@ export function PipelineRun() {
         )}
       </div>
 
+      {/* Build-lock banner */}
+      {globallyBlocked && (
+        <div className="border-t border-border bg-muted/40 px-6 py-2 flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+          <span>
+            {blockingProjectId ? `Project #${blockingProjectId}` : "Another project"} is building — chat is available while you wait.
+          </span>
+        </div>
+      )}
       <div className="border-t border-border bg-card px-6 py-3">
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground font-mono shrink-0">{projectName} {">"}</span>
@@ -824,11 +874,10 @@ export function PipelineRun() {
               onKeyDown={(e) => { if (e.key === "Enter") handleSend() }}
               placeholder={
                 !projectId ? t("selectProjectFirst") :
-                globallyBlocked ? `Another project (ID: ${blockingProjectId}) is building. Wait for it to finish.` :
                 isRunning ? t("building") :
                 t("whatToBUILD")
               }
-              disabled={!projectId || isRunning || globallyBlocked}
+              disabled={!projectId || isRunning}
               className="w-full h-9 rounded-md border border-input bg-background pl-3 pr-20 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring font-mono disabled:opacity-50"
             />
             <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -852,7 +901,7 @@ export function PipelineRun() {
               </button>
               <button
                 onClick={handleSend}
-                disabled={!inputValue.trim() || isRunning || !projectId || globallyBlocked}
+                disabled={!inputValue.trim() || isRunning || !projectId}
                 className="p-1.5 rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40"
                 aria-label="Send message"
               >

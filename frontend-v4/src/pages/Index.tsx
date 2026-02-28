@@ -60,6 +60,8 @@ const Index = () => {
   const [chatInput, setChatInput] = useState("");
   const [sending, setSending] = useState(false);
   const [pipelineError, setPipelineError] = useState<string | null>(null);
+  const [globalBuildBlocked, setGlobalBuildBlocked] = useState(false);
+  const [blockingProjectId, setBlockingProjectId] = useState<number | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const logContainerRef = useRef<HTMLDivElement>(null);
   const activeProjectRef = useRef<number | null>(null);
@@ -69,6 +71,7 @@ const Index = () => {
   const [ttsState, setTtsState] = useState<Record<string, "idle" | "loading" | "playing">>({});
   const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
   const ttsPlayingIdRef = useRef<string | null>(null);
+  const sendingRef = useRef(false);
   const pipeline = usePipelineStatus(selectedProjectId, activeTab === "pipeline" && sending);
   // Restore pipeline card state from DB when no live build is running
   const [historicalStatus, setHistoricalStatus] = useState<string | null>(null);
@@ -77,9 +80,11 @@ const Index = () => {
   useEffect(() => {
     setHistoricalStatus(null); // reset synchronously BEFORE async fetch to prevent bleed
     setHistoricalLogs([]); // reset logs too
+    setGlobalBuildBlocked(false);
+    setBlockingProjectId(null);
     if (!selectedProjectId) return;
     let cancelled = false;
-    // On project switch, verify build is actually running — clear stuck state
+    // On project switch, verify build is actually running — clear stuck state and update block status
     fetch("http://localhost:5000/api/execution-status")
       .then(r => r.json())
       .then(data => {
@@ -87,9 +92,27 @@ const Index = () => {
         const isActuallyRunning = data.status === "RUNNING" && data.project_id === selectedProjectId;
         if (!isActuallyRunning) {
           setSending(false);
+          sendingRef.current = false;
+        } else {
+          // This project IS the one currently building — keep ref in sync
+          setSending(true);
+          sendingRef.current = true;
+        }
+        // Update global block state based on fresh status
+        if (data.status === "RUNNING" && data.project_id !== selectedProjectId) {
+          setGlobalBuildBlocked(true);
+          setBlockingProjectId(data.project_id);
+        } else {
+          // Not blocked — another project isn't building (or this project is the one building)
+          setGlobalBuildBlocked(false);
+          setBlockingProjectId(null);
         }
       })
-      .catch(() => setSending(false)); // Flask offline → definitely not running
+      .catch(() => {
+        setSending(false);
+        setGlobalBuildBlocked(false);
+        setBlockingProjectId(null);
+      });
     fetchVersions(selectedProjectId).then((versions) => {
       if (cancelled || versions.length === 0) return;
       // versions are returned newest-first from API
@@ -99,6 +122,7 @@ const Index = () => {
       // If DB shows running, re-enable sending so polling restarts
       if (latestStatus === "RUNNING" || latestStatus === "IN_PROGRESS") {
         setSending(true);
+        sendingRef.current = true;
       }
       // Load historical logs for completed/failed projects (not currently building)
       if (!pipeline.running) {
@@ -114,6 +138,23 @@ const Index = () => {
     });
     return () => { cancelled = true; };
   }, [selectedProjectId]);
+
+  // Auto-dismiss build-lock banner when blocking project finishes
+  useEffect(() => {
+    if (!globalBuildBlocked) return;
+    const interval = setInterval(() => {
+      fetch("http://localhost:5000/api/execution-status")
+        .then(r => r.json())
+        .then(data => {
+          if (data.status !== "RUNNING") {
+            setGlobalBuildBlocked(false);
+            setBlockingProjectId(null);
+          }
+        })
+        .catch(() => {});
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [globalBuildBlocked]);
 
   // Save chat messages to sessionStorage whenever they change
   useEffect(() => {
@@ -138,19 +179,10 @@ const Index = () => {
     });
   }, [selectedProjectId]);
 
-  // Auto-scroll chat — only when user sends a message (not on initial load)
-  const chatScrollEnabled = useRef(false);
+  // Auto-scroll chat to bottom on load AND when new messages arrive
   useEffect(() => {
-    if (chatScrollEnabled.current) {
-      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
-  useEffect(() => {
-    // Enable scroll after first render so initial load doesn't jump
-    chatScrollEnabled.current = false;
-    const timer = setTimeout(() => { chatScrollEnabled.current = true; }, 500);
-    return () => clearTimeout(timer);
-  }, [selectedProjectId, activeTab]);
 
   // Auto-scroll live output
   useEffect(() => {
@@ -163,9 +195,18 @@ const Index = () => {
   useEffect(() => {
     if (pipeline.status === "COMPLETED" || pipeline.status === "FAILED") {
       setSending(false);
+      sendingRef.current = false;
     }
     if (pipeline.status === "COMPLETED") {
       setBuildRefreshKey(k => k + 1);
+      // Save messages on completion — this is the authoritative save after build finishes
+      if (selectedProjectId) {
+        setChatMessages(prev => {
+          saveChatMessages(selectedProjectId, prev);
+          sessionStorage.setItem(`archon_messages_${selectedProjectId}`, JSON.stringify(prev));
+          return prev;
+        });
+      }
     }
   }, [pipeline.status]);
 
@@ -191,7 +232,7 @@ const Index = () => {
   }, [activeTab]);
 
   const handleSend = useCallback(async () => {
-    if (!chatInput.trim() || !selectedProjectId || sending) return;
+    if (!chatInput.trim() || !selectedProjectId) return;
     const prompt = chatInput.trim();
     setChatInput("");
     setPipelineError(null);
@@ -211,6 +252,37 @@ const Index = () => {
         return;
       }
 
+      // Check global build lock — show clean reply, no optimistic "building" message
+      if (globalBuildBlocked) {
+        const replyMsg: ChatMessage = { role: "assistant", content: "A build is already in progress. Send this again when it finishes.", timestamp: Date.now() };
+        setChatMessages((prev) => [...prev, replyMsg]);
+        return;
+      }
+
+      // Live check in case state is stale
+      try {
+        const statusRes = await fetch("http://localhost:5000/api/execution-status");
+        const statusData = await statusRes.json();
+        if (statusData.status === "RUNNING" && statusData.project_id !== selectedProjectId) {
+          setGlobalBuildBlocked(true);
+          setBlockingProjectId(statusData.project_id);
+          const replyMsg: ChatMessage = { role: "assistant", content: "A build is already in progress. Send this again when it finishes.", timestamp: Date.now() };
+          setChatMessages((prev) => [...prev, replyMsg]);
+          return;
+        }
+      } catch {}
+
+      // Don't start another build if one is already running for THIS project
+      if (sendingRef.current) {
+        const busyMsg: ChatMessage = {
+          role: "assistant",
+          content: "A build is already running for this project. Wait for it to finish, then try again.",
+          timestamp: Date.now(),
+        };
+        setChatMessages((prev) => [...prev, busyMsg]);
+        return;
+      }
+
       // Build intent — start pipeline
       const assistantMsg: ChatMessage = { role: "assistant", content: "Got it! Starting the build now… ⚡", timestamp: Date.now() };
       setChatMessages((prev) => [...prev, assistantMsg]);
@@ -219,6 +291,7 @@ const Index = () => {
       const promptHistory = allMessages.map((m) => ({ role: m.role, content: m.content }));
 
       setSending(true);
+      sendingRef.current = true;
       await iterateProject(selectedProjectId, prompt, promptHistory as ChatMessage[]);
       // New execution is now active head — safe to save
       const msgsSnapshot = [...chatMessages, userMsg, assistantMsg];
@@ -227,8 +300,28 @@ const Index = () => {
       }, 300);
       // Polling starts automatically via usePipelineStatus (sending=true triggers enabled)
     } catch (err: any) {
-      setPipelineError(err.message || "Failed to start build");
+      sendingRef.current = false;
       setSending(false);
+      // Detect ANY 409 / pipeline lock error — show banner, never show red error
+      const errMsg = (err.message || "").toLowerCase();
+      const is409 = errMsg.includes("409") || errMsg.includes("build already running") || errMsg.includes("pipeline already running") || errMsg.includes("already running");
+      if (is409) {
+        // Show friendly banner only — no red error
+        fetch("http://localhost:5000/api/execution-status")
+          .then(r => r.json())
+          .then(data => {
+            if (data.status === "RUNNING") {
+              setGlobalBuildBlocked(true);
+              if (data.project_id !== selectedProjectId) {
+                setBlockingProjectId(data.project_id);
+              }
+            }
+          })
+          .catch(() => {});
+      } else {
+        // Only show red error for genuine non-409 failures
+        setPipelineError(err.message || "Failed to start build");
+      }
     }
   }, [chatInput, selectedProjectId, sending, chatMessages]);
 
@@ -501,6 +594,16 @@ const Index = () => {
                       </div>
                     )}
 
+                    {/* Build-lock banner — shown when another project is building */}
+                    {globalBuildBlocked && (
+                      <div className="border border-border rounded-md bg-muted/40 px-4 py-2 text-xs text-muted-foreground flex items-center gap-2">
+                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                        <span>
+                          {blockingProjectId ? `Project #${blockingProjectId}` : "Another project"} is building — chat is available while you wait.
+                        </span>
+                      </div>
+                    )}
+
                     {/* Chat Input */}
                     <div className="border border-border rounded-md bg-card p-3 flex items-center gap-2">
                       <input
@@ -509,8 +612,8 @@ const Index = () => {
                         onChange={(e) => setChatInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                         placeholder={t("whatWouldYouLikeToBuild")}
-                        disabled={sending}
-                        className="flex-1 h-9 px-3 text-sm border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
+                        disabled={false}
+                        className="flex-1 h-9 px-3 text-sm border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                       />
                       <button
                         onClick={handleMic}
@@ -532,7 +635,7 @@ const Index = () => {
                       </button>
                       <button
                         onClick={handleSend}
-                        disabled={sending || !chatInput.trim()}
+                        disabled={!chatInput.trim()}
                         className="h-9 px-3 flex items-center justify-center gap-1.5 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 text-sm font-medium"
                         title={t("send")}
                       >
