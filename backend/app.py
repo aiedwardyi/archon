@@ -1402,6 +1402,13 @@ def get_chat_history(project_id: int):
             .filter(Execution.project_id == project_id, Execution.is_active_head == True)
             .first()
         )
+        if not head:
+            head = (
+                db.query(Execution)
+                .filter(Execution.project_id == project_id)
+                .order_by(Execution.id.desc())
+                .first()
+            )
         if not head or not head.chat_messages:
             return jsonify([]), 200
         try:
@@ -1427,7 +1434,14 @@ def save_chat_messages(project_id: int):
             .first()
         )
         if not head:
-            return jsonify({"error": "No active execution found"}), 404
+            head = (
+                db.query(Execution)
+                .filter(Execution.project_id == project_id)
+                .order_by(Execution.id.desc())
+                .first()
+            )
+        if not head:
+            return jsonify({"error": "No execution found for this project"}), 404
         head.chat_messages = json.dumps(data["messages"])
         db.commit()
         return jsonify({"saved": len(data["messages"])}), 200

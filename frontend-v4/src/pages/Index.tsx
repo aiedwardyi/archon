@@ -79,18 +79,34 @@ const Index = () => {
     setHistoricalLogs([]); // reset logs too
     if (!selectedProjectId) return;
     let cancelled = false;
+    // On project switch, verify build is actually running — clear stuck state
+    fetch("http://localhost:5000/api/execution-status")
+      .then(r => r.json())
+      .then(data => {
+        if (cancelled) return;
+        const isActuallyRunning = data.status === "RUNNING" && data.project_id === selectedProjectId;
+        if (!isActuallyRunning) {
+          setSending(false);
+        }
+      })
+      .catch(() => setSending(false)); // Flask offline → definitely not running
     fetchVersions(selectedProjectId).then((versions) => {
       if (cancelled || versions.length === 0) return;
       // versions are returned newest-first from API
       const latest = versions[0];
-      setHistoricalStatus(latest.status?.toUpperCase() || null);
+      const latestStatus = latest.status?.toUpperCase() || null;
+      setHistoricalStatus(latestStatus);
+      // If DB shows running, re-enable sending so polling restarts
+      if (latestStatus === "RUNNING" || latestStatus === "IN_PROGRESS") {
+        setSending(true);
+      }
       // Load historical logs for completed/failed projects (not currently building)
       if (!pipeline.running) {
         fetchLogs(selectedProjectId, latest.version).then((logStrings) => {
           if (cancelled) return;
           setHistoricalLogs(logStrings.map((msg, i) => ({
             id: `hist-${i}`,
-            timestamp: Date.now(),
+            timestamp: 0,
             message: msg,
           })));
         });
@@ -101,11 +117,11 @@ const Index = () => {
 
   // Save chat messages to sessionStorage whenever they change
   useEffect(() => {
-    if (selectedProjectId && chatMessages.length > 0 && activeProjectRef.current === selectedProjectId) {
+    if (selectedProjectId && chatMessages.length > 0 && activeProjectRef.current === selectedProjectId && !sending) {
       sessionStorage.setItem(`archon_messages_${selectedProjectId}`, JSON.stringify(chatMessages));
-      saveChatMessages(selectedProjectId, chatMessages); // persist to DB — survives Flask restart
+      saveChatMessages(selectedProjectId, chatMessages);
     }
-  }, [chatMessages, selectedProjectId]);
+  }, [chatMessages, selectedProjectId, sending]);
 
   // Load chat history when project changes — sessionStorage first, then DB fallback
   useEffect(() => {
@@ -204,6 +220,11 @@ const Index = () => {
 
       setSending(true);
       await iterateProject(selectedProjectId, prompt, promptHistory as ChatMessage[]);
+      // New execution is now active head — safe to save
+      const msgsSnapshot = [...chatMessages, userMsg, assistantMsg];
+      setTimeout(() => {
+        saveChatMessages(selectedProjectId, msgsSnapshot);
+      }, 300);
       // Polling starts automatically via usePipelineStatus (sending=true triggers enabled)
     } catch (err: any) {
       setPipelineError(err.message || "Failed to start build");
@@ -518,6 +539,15 @@ const Index = () => {
                         {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                         {sending ? t("sending") : t("send")}
                       </button>
+                      {sending && !pipeline.running && (
+                        <button
+                          onClick={() => setSending(false)}
+                          className="h-9 px-3 text-xs text-muted-foreground border border-border rounded-md hover:text-destructive hover:border-destructive transition-colors"
+                          title="Cancel stuck build"
+                        >
+                          Reset
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -540,10 +570,7 @@ const Index = () => {
                             <div className="text-center py-3 text-muted-foreground">—</div>
                           ) : (
                             displayLogs.map((log) => (
-                              <div key={log.id} className="flex gap-2">
-                                <span className="text-foreground flex-shrink-0">
-                                  {new Date(log.timestamp).toLocaleTimeString([], { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                                </span>
+                              <div key={log.id} className="py-0.5">
                                 <span>{log.message}</span>
                               </div>
                             ))

@@ -98,7 +98,7 @@ export function PipelineRun() {
   }, [promptHistory])
 
   useEffect(() => {
-    if (messages.length > 0) {
+    if (messages.length > 0 && !isRunning) {
       const pid = sessionStorage.getItem("archon_current_project_id")
       if (pid) {
         sessionStorage.setItem(`archon_messages_${pid}`, JSON.stringify(messages))
@@ -110,7 +110,7 @@ export function PipelineRun() {
         }).catch(() => {}) // non-fatal
       }
     }
-  }, [messages])
+  }, [messages, isRunning])
 
   useEffect(() => {
     const urlPid = searchParams.get("pid")
@@ -257,6 +257,22 @@ export function PipelineRun() {
                   })
                 })
                 .catch(() => {})
+              // Restore logs from DB after restart
+              fetch(`${API_BASE}/api/projects/${pidNum}/versions/${resolvedVer}/logs`)
+                .then(r => r.json())
+                .then((logData: any) => {
+                  const entries = logData.logs || logData
+                  if (Array.isArray(entries) && entries.length > 0) {
+                    const restored = entries.map((l: any, i: number) => ({
+                      id: l.id || `log-${i}`,
+                      timestamp: l.timestamp || 0,
+                      message: l.message || String(l),
+                      type: l.type || "info",
+                    }))
+                    setLogs(restored)
+                  }
+                })
+                .catch(() => {})
             }
           }
           if (restored === "running") {
@@ -331,6 +347,18 @@ export function PipelineRun() {
         }
         const v = versionRef.current
         if (v) sessionStorage.setItem("archon_current_version", String(v))
+        // Save messages now — new execution is active head
+        const savePid = data.project_id || sessionStorage.getItem("archon_current_project_id")
+        if (savePid) {
+          setMessages(prev => {
+            fetch(`${API_BASE}/api/projects/${savePid}/chat-messages`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ messages: prev }),
+            }).catch(() => {})
+            return prev
+          })
+        }
       } else if (data.status === "FAILED") {
         setPipelineStatus("failed")
         sessionStorage.setItem("archon_pipeline_status", "failed")
@@ -526,7 +554,12 @@ export function PipelineRun() {
       .then(r => r.json())
       .then(data => {
         // Only restore state if this pipeline belongs to THIS project
-        if (data.project_id && Number(data.project_id) !== Number(pid)) return
+        if (data.project_id && Number(data.project_id) !== Number(pid)) {
+          setIsRunning(false)
+          isRunningRef.current = false
+          setPipelineStatus("idle")
+          return
+        }
         if (data.status === "COMPLETED") {
           setCurrentStage("engineer")
           setPipelineStatus("complete")
@@ -771,9 +804,6 @@ export function PipelineRun() {
             <div className="p-4 font-mono text-xs max-h-48 overflow-auto">
               {displayedLogs.map((log) => (
                 <div key={log.id} className="flex items-start gap-3 py-1 hover:bg-muted/30 px-2 -mx-2 rounded">
-                  <span className="text-muted-foreground/60 shrink-0 w-14">
-                    {new Date(log.timestamp).toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                  </span>
                   <span className="text-foreground/70">{log.message}</span>
                 </div>
               ))}
