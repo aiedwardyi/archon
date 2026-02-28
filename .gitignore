@@ -46,6 +46,7 @@ artifacts/
 # Node
 node_modules/
 dist/
+pnpm-lock.yaml
 
 # Environment variables (never commit)
 .env
