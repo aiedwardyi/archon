@@ -1,4 +1,4 @@
-# Current Sprint — Phase 15.6: Frontend Cleanup & Tab Sync
+# Current Sprint — Phase 16: UI Parity, Auth & Polish
 
 ## Sprint Goal
 Unify navigation between Enterprise (frontend-v4) and Studio (frontend) designs, clean up deprecated frontends.
@@ -112,13 +112,44 @@ main (enterprise-ui merged and deleted)
 
 ---
 
-### Phase 15.6 — Frontend Cleanup & Tab Sync (✅ Complete)
+### Phase 15.6 — Frontend Cleanup & Tab Sync (✅ Complete Feb 2026)
 - ✅ Wire Studio button in frontend-v4 navbar
 - ✅ Enterprise/Studio switcher in frontend/ navbar
 - ✅ Tab sync via URL query params
 - ✅ Removed deprecated frontend-consumer/ folder
 - ✅ Studio Tasks tab wired with real plan data
-- ✅ Delete modal requires DELETE (uppercase)
+- ✅ Delete modal requires DELETE (uppercase) to match Enterprise
+
+---
+
+## Current Sprint — Phase 16: UI Parity, Auth & Polish
+
+### Sprint Goal
+Fix critical bugs across Studio/Enterprise, achieve full UI parity between frontends, add auth.
+
+### Phase 16.1 — Bug Fixes (Start Here)
+- 🔴 Studio + Enterprise chat persistence after Flask restart
+- 🔴 Live output logs lost after restart (Studio Artifacts + Pipeline)
+- 🔴 Build Details card showing "—" for tokens/cost
+
+### Phase 16.2 — Branding
+- 🔴 "Completed" badge → green in Enterprise pipeline
+- 🔴 Hexagon logo in frontend-v4 and frontend-consumer2
+- 🔴 Favicon update all frontends
+- 🔴 Chrome tab titles (Consumer + Studio)
+
+### Phase 16.3 — Studio Feature Parity
+- 🔴 Korean/English toggle in Studio navbar + i18n coverage
+- 🔴 Build Details card in Studio Pipeline page
+- 🔴 Stats bar on Studio Projects page
+- 🔴 Recent Activity feed on Studio Projects page
+
+### Phase 16.4 — Watson STT/TTS for Enterprise (frontend-v4)
+
+### Phase 16.5 — Authentication
+- Sign up / Login pages
+- JWT session management
+- Protected routes + user-scoped projects
 
 ---
 

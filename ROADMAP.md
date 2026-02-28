@@ -328,3 +328,34 @@ Impact:
 - ✅ Studio polish — delete modal requires DELETE (uppercase) to match Enterprise
 - 🔴 Retire frontend-consumer2/ once consumer features confirmed complete (future)
 - 🔴 Next.js → Vite migration for frontend/ (deferred to end of all phases)
+
+## Phase 16 — UI Parity, Auth & Polish (🔧 Planned Feb 2026)
+
+### 16.1 — Bug Fixes (Critical)
+- 🔴 Studio chat persistence — reload from DB on mount (loses all chat after Flask restart)
+- 🔴 Enterprise chat persistence — Archon replies lost after restart (only user messages survive)
+- 🔴 Live output lost after restart — Studio Artifacts logs + Pipeline log not reloaded from DB
+- 🔴 Build Details blank — tokens/cost showing "—", fix DB wiring or replace with available fields
+
+### 16.2 — Branding & Tab Titles
+- 🔴 "Completed" badge gray instead of green — Enterprise pipeline page status badge
+- 🔴 Hexagon logo — replace Zap/lightning icon with Hexagon in frontend-v4 and frontend-consumer2
+- 🔴 Favicon — replace all favicons with Hexagon logo SVG
+- 🔴 Chrome tab titles: "Archon - Consumer Build" (frontend-consumer2), "Archon - Studio Build" (frontend)
+
+### 16.3 — Studio Feature Parity
+- 🔴 Studio i18n — Korean/English toggle in Studio (frontend/) navbar, full translation coverage
+- 🔴 Studio Build Details card — add to Pipeline page (tokens, cost, duration, model)
+- 🔴 Studio stats bar — Pipelines today / Lines generated / Versions shipped / Avg build time on Projects page
+- 🔴 Studio Recent Activity — right-side activity feed on Projects page
+
+### 16.4 — Watson STT/TTS for Enterprise
+- 🔴 Wire mic button (STT) into frontend-v4 pipeline chat input
+- 🔴 Wire speaker button (TTS) on Archon reply bubbles in frontend-v4
+
+### 16.5 — Authentication
+- 🔴 Sign up page (email + password)
+- 🔴 Login page
+- 🔴 Session/JWT management
+- 🔴 Protected routes across all three frontends
+- 🔴 User-scoped projects (owner_id already in DB schema)
