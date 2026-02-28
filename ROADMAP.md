@@ -375,17 +375,18 @@ Impact:
 - ✅ Build Details card in Studio Pipeline page — enterprise stat row (Lucide icons, Vercel-style, no emojis) (Feb 28, 2026)
 - ✅ Full Korean i18n — Studio + Enterprise all static strings translated (Feb 28, 2026)
 
-### 16.1 — Bug Fixes (🔧 In Progress)
+### 16.1 — Bug Fixes (✅ Complete Feb 28, 2026)
 - ✅ Enterprise chat persistence after Flask restart (Feb 28, 2026)
-- ✅ Studio + Enterprise chat shared when switching design modes — both load from DB (Feb 28, 2026)
-- ✅ Global build lock — friendly banner + chat reply when user tries to build while another project is building (Feb 28, 2026)
-- 🔴 Enterprise chat panel scrolls to top on load — should scroll to bottom like Studio
-- 🔴 Live output logs same across all projects (execution_state is global, not per-project)
-- 🔴 Live output logs lost after restart
-- ✅ Delete modal disk cleanup — shutil.rmtree on project delete (already in app.py)
-- ✅ Studio theme CSS variables — obsolete, Studio is a separate app (frontend/)
-- ✅ Build Details tokens/cost — Claude stream usage capture working (Feb 28, 2026)
-- ✅ Studio build details stat row — displays after build completes (Feb 28, 2026)
+- ✅ Studio + Enterprise chat shared when switching design modes (Feb 28, 2026)
+- ✅ Global build lock — friendly banner + chat reply, correct text (Feb 28, 2026)
+- ✅ Enterprise chat scroll to bottom on load (Feb 28, 2026)
+- ✅ Studio agent cards restore green on load + on project switch (Feb 28, 2026)
+- ✅ Enterprise "Failed" badge suppressed during active build (Feb 28, 2026)
+- ✅ EngineerAgent JSON repair — json_repair + char-walking backslash fixer (Feb 28, 2026)
+- ✅ Live output logs restored after Flask restart (Feb 28, 2026)
+- ✅ Build Details tokens/cost working (Feb 28, 2026)
+- ✅ Studio build details stat row displays after build completes (Feb 28, 2026)
+- 🔴 Live output logs still global (execution_state is server-wide — architectural fix needed)
 
 ### 16.5 — Authentication (🔴 Planned)
 - 🔴 Sign up / Login pages

@@ -156,26 +156,29 @@ main (enterprise-ui merged and deleted)
 - ✅ Layout + content contracts for all 15 new archetypes (restaurant, medical, crypto, fitness, etc.)
 - ✅ Existing 10 archetypes untouched
 
-### Phase 16.1 — Bug Fixes (🔧 In Progress)
+### Phase 16.1 — Bug Fixes (✅ Complete Feb 28, 2026)
 - ✅ Enterprise chat persistence after Flask restart — DB-backed via /chat-history + /chat-messages endpoints (Feb 28, 2026)
 - ✅ Studio chat persistence after Flask restart — always loads from DB on project switch (Feb 28, 2026)
 - ✅ Studio + Enterprise: chat now shared when switching between Studio ↔ Enterprise — both always load from DB (Feb 28, 2026)
 - ✅ Live output logs restored after Flask restart — Studio fetches from /versions/<v>/logs on load (Feb 28, 2026)
 - ✅ Double timestamp removed from live output logs — Enterprise + Studio (Feb 28, 2026)
-- ✅ Chat messages persist across builds, project switches, and Flask restarts — reactive save guarded by !sending, explicit save after /iterate resolves (Feb 28, 2026)
-- ✅ Stuck "Sending..." state auto-heals on project switch — execution-status check clears sending if backend not running (Feb 28, 2026)
-- 🔴 Live output logs still global (same across all projects) — execution_state is server-wide, architectural fix needed
-- ✅ Global build lock — friendly banner + chat reply when user tries to build while another project is building (Feb 28, 2026)
-  - 🔴 Enterprise chat panel scrolls to top on load — should scroll to bottom (newest messages) like Studio
+- ✅ Chat messages persist across builds, project switches, and Flask restarts (Feb 28, 2026)
+- ✅ Stuck "Sending..." state auto-heals on project switch (Feb 28, 2026)
+- ✅ Global build lock — friendly banner + chat reply when another project is building (Feb 28, 2026)
+- ✅ Enterprise chat scroll to bottom on load (Feb 28, 2026)
+- ✅ Studio agent cards restore green correctly on load — stale global execution-status no longer overrides DB (Feb 28, 2026)
+- ✅ Studio agent cards restore green on project switch via URL pid param (Feb 28, 2026)
+- ✅ Enterprise "Failed" badge suppressed during active build (!sending gate) (Feb 28, 2026)
+- ✅ Build-lock banner text fixed — "chat is available while you wait" (Feb 28, 2026)
+- ✅ EngineerAgent JSON repair — installed json_repair + char-walking backslash fixer (Feb 28, 2026)
 - ✅ Delete modal disk cleanup — already in app.py (Feb 28, 2026)
-- ✅ Studio theme CSS variables — obsolete, Studio is separate app (Feb 28, 2026)
 - ✅ Build Details tokens/cost — Claude stream usage capture working (Feb 28, 2026)
-- ✅ Studio build details stat row — now displays after build completes (Feb 28, 2026)
+- ✅ Studio build details stat row — displays after build completes (Feb 28, 2026)
 - ✅ Enterprise BuildDetailsCard live refresh post-build — refreshKey bumps on COMPLETED (Feb 28, 2026)
 - ✅ Tab persistence across page refresh — reads/writes localStorage archon_active_tab (Feb 28, 2026)
-- ✅ EngineerAgent JSON repair — 4-pass fallback with json_repair library (Feb 28, 2026)
 - ✅ Studio ↔ Enterprise design switch preserves selected project — ?pid= / ?projectId= passing (Feb 28, 2026)
 - ✅ Studio pipeline page project name fix — fetches name from API when arriving via ?pid= (Feb 28, 2026)
+- 🔴 Live output logs still global (same across all projects) — execution_state is server-wide, architectural fix needed
 
 ### Phase 17 — IBM Governance & NLU Integration (🔴 Planned)
 
