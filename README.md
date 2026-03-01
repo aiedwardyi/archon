@@ -1,5 +1,7 @@
 # Archon — AI Dev Team Platform
 
+> Digital agencies spend 70% of their time rebuilding and re-explaining decisions to clients. Archon solves this by generating complete web apps with a full audit trail — every decision recorded, every version restorable, every build IBM Watson-certified. Agencies close clients faster and reduce revision cycles by showing exactly what was built, when, and why.
+
 A multi-agent platform that converts product ideas into auditable web applications
 with full version history. Built for digital agencies and enterprises delivering
 client apps to non-technical clients.

@@ -563,12 +563,19 @@ guessing. Tour design will be driven by real friction points, not assumptions.
 - Enterprise + Studio: date format yyyy.mm.dd in Korean mode
 - Merged via PR from feat/ko-i18n-polish
 
-## 🔴 Phase 16.5 — Authentication (Planned)
-- Sign up / Login pages (Studio + Enterprise)
-- JWT tokens + protected API routes
-- User-scoped projects — owner_id already in DB schema
-- Each user sees only their own projects
-- Branch: feat/auth-jwt
+## 🔇 Phase 16.5 — Authentication (In Progress)
+- ✅ Backend JWT auth — register, login, me, forgot-password, reset-password
+- ✅ Google OAuth backend endpoint /api/auth/google
+- ✅ frontend/lib/auth.ts — authService with localStorage token management
+- ✅ AuthGuard — redirects unauthenticated users to /login
+- ✅ Login, Register, Forgot Password pages — Studio (frontend/)
+- ✅ Sign out wired — closes dropdown + redirects to /login
+- ✅ Login page redesign — dark split-layout, IBM Plex Sans, agency-owner copy (Mar 1, 2026)
+- 🔴 Apply redesign to register/page.tsx and forgot-password/page.tsx
+- 🔴 Enterprise (frontend-v4) auth pages
+- 🔴 Google OAuth frontend wiring (needs Google Client ID)
+- 🔴 Cross-origin token handoff (Studio ↔ Enterprise theme switch)
+- Branch: feat/login-redesign
 
 ## 🔴 Known Bug — DALL-E Content Filter on Character Names
 - Certain character names (e.g. "Zell" from FF8) trigger DALL-E content policy error 400

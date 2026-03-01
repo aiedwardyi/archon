@@ -285,11 +285,16 @@ main (enterprise-ui merged and deleted)
 - ✅ AuthGuard — redirects unauthenticated users to /login (Mar 1, 2026)
 - ✅ Login, Register, Forgot Password pages — Studio (frontend/) (Mar 1, 2026)
 - ✅ Sign out wired — closes dropdown + redirects to /login (Mar 1, 2026)
-- 🔴 Login page redesign — dark split-layout (form left, value props right)
+- ✅ Login page redesign — dark split-layout (form left, value props right) (Mar 1, 2026)
+- ✅ IBM Plex Sans font applied via next/font/google — enterprise-grade typography (Mar 1, 2026)
+- ✅ Right panel: pill badge, headline, bullets, IBM Watson trust badge — vertically centered (Mar 1, 2026)
+- ✅ Updated value prop copy to agency-owner language (hours not weeks, certified, sign-off) (Mar 1, 2026)
+- ✅ README updated — business case blockquote added at top (Mar 1, 2026)
 - 🔴 Google OAuth frontend wiring (needs Google Client ID)
 - 🔴 Enterprise (frontend-v4) auth pages
+- 🔴 Apply same login redesign to register/page.tsx and forgot-password/page.tsx
 - 🔴 Cross-origin token handoff (Studio ↔ Enterprise theme switch)
-- Branch: feat/auth-jwt
+- Branch: feat/login-redesign
 
 ## 🔴 Known Bug — DALL-E Content Filter on Character Names
 - Character name "Zell" (FF8) triggers DALL-E content policy violation (error 400)
