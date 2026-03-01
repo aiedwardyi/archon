@@ -39,22 +39,27 @@ class GovernanceAgent:
             result = self.nlu.analyze(prompt)
 
             # Score logic:
-            # Base: 50 points
-            # +20 if sentiment is positive or neutral (not frustrated/angry)
-            # +10 per keyword found (max 20, so up to 2 keywords = +20)
-            # +10 if domain is not "general" (specific intent detected)
-            score = 50
-            sentiment_score = result.get("sentiment_score", 0.0)
+            # Base: 40 points
+            # +20 if domain is NOT "general" (specific domain detected)
+            # +20 if 2+ keywords found (meaningful content words)
+            # +10 if 1 keyword found
+            # +20 if prompt is 20+ words (detailed request)
+            # +10 if prompt is 10-19 words (moderate detail)
+            score = 40
             keywords = result.get("keywords", [])
             domain = result.get("domain", "general")
+            sentiment_score = result.get("sentiment_score", 0.0)
+            word_count = len(prompt.split())
 
-            if sentiment_score >= -0.3:  # neutral or positive
+            if domain != "general":
                 score += 20
             if len(keywords) >= 2:
                 score += 20
             elif len(keywords) == 1:
                 score += 10
-            if domain != "general":
+            if word_count >= 20:
+                score += 20
+            elif word_count >= 10:
                 score += 10
 
             score = min(score, 100)
@@ -96,49 +101,35 @@ class GovernanceAgent:
         score = 0
         breakdown = []
 
-        # Files generated (max 40 pts)
+        # Files generated (max 50 pts)
         if files_generated >= 2:
-            score += 40
-            breakdown.append({"factor": "Code files", "points": 40, "note": f"{files_generated} files"})
+            score += 50
+            breakdown.append({"factor": "Code files", "points": 50, "note": f"{files_generated} files"})
         elif files_generated == 1:
-            score += 25
-            breakdown.append({"factor": "Code files", "points": 25, "note": "1 file"})
+            score += 30
+            breakdown.append({"factor": "Code files", "points": 30, "note": "1 file"})
         else:
             breakdown.append({"factor": "Code files", "points": 0, "note": "No files generated"})
 
-        # Archetype detected (max 20 pts)
+        # Archetype detected (max 30 pts)
         if ui_archetype:
-            score += 20
-            breakdown.append({"factor": "Archetype detected", "points": 20, "note": ui_archetype})
+            score += 30
+            breakdown.append({"factor": "Archetype detected", "points": 30, "note": ui_archetype})
         else:
             breakdown.append({"factor": "Archetype detected", "points": 0, "note": "Unknown"})
 
-        # Images generated (max 20 pts)
-        if images_generated >= 2:
-            score += 20
-            breakdown.append({"factor": "Design assets", "points": 20, "note": f"{images_generated} images"})
-        elif images_generated == 1:
-            score += 10
-            breakdown.append({"factor": "Design assets", "points": 10, "note": "1 image"})
-        else:
-            breakdown.append({"factor": "Design assets", "points": 0, "note": "No images"})
-
-        # Build speed (max 20 pts)
-        if duration_seconds and duration_seconds < 60:
-            score += 20
-            breakdown.append({"factor": "Build speed", "points": 20, "note": f"{duration_seconds:.1f}s"})
-        elif duration_seconds and duration_seconds < 120:
-            score += 10
-            breakdown.append({"factor": "Build speed", "points": 10, "note": f"{duration_seconds:.1f}s"})
-        else:
-            breakdown.append({"factor": "Build speed", "points": 0, "note": f"{duration_seconds:.1f}s (slow)" if duration_seconds else "Unknown"})
+        # Pipeline success (max 20 pts)
+        score += 20
+        breakdown.append({"factor": "Pipeline success", "points": 20, "note": "Completed without error"})
 
         score = min(score, 100)
 
-        if score >= 80:
-            label = "high"
+        if score >= 90:
+            label = "excellent"
+        elif score >= 75:
+            label = "good"
         elif score >= 50:
-            label = "medium"
+            label = "fair"
         else:
             label = "low"
 
@@ -177,8 +168,8 @@ class GovernanceAgent:
 
         # Human review required if either score is low
         human_review_required = (
-            (prompt_score["score"] is not None and prompt_score["score"] < 50)
-            or build_score["score"] < 50
+            (prompt_score["score"] is not None and prompt_score["score"] < 70)
+            or build_score["score"] < 80
         )
 
         # Quality indicators
@@ -204,6 +195,13 @@ class GovernanceAgent:
                 "agent_role": role,
                 "model": model_name,
                 "provider": self._get_provider(model_name),
+            })
+
+        if self.nlu and self.nlu.enabled:
+            model_registry.append({
+                "agent_role": "Governance Agent",
+                "model": "Watson NLU",
+                "provider": "IBM",
             })
 
         factsheet = {

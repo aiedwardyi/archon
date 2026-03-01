@@ -673,10 +673,6 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
                     <span className="text-foreground">{factsheet.scoring.prompt_quality.domain}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Sentiment</span>
-                    <span className="text-foreground">{factsheet.scoring.prompt_quality.sentiment} ({factsheet.scoring.prompt_quality.sentiment_score})</span>
-                  </div>
-                  <div className="flex justify-between">
                     <span className="text-muted-foreground">Keywords</span>
                     <span className="text-foreground">{factsheet.scoring.prompt_quality.keywords.length > 0 ? factsheet.scoring.prompt_quality.keywords.join(", ") : "—"}</span>
                   </div>
@@ -693,17 +689,16 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
           {/* Build Quality Score */}
           <div className="border border-border rounded-md p-5">
             <h2 className="text-sm font-bold text-foreground">Build Quality Score</h2>
-            <p className="text-[11px] text-muted-foreground mt-0.5 mb-3">Based on code output, archetype detection, and design assets</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5 mb-3">Based on code output, archetype detection, and pipeline success</p>
             {(() => {
-              const raw = factsheet.scoring!.build_confidence.score;
-              const displayScore = factsheet.pipeline.status === "success" ? Math.max(raw, 75) : raw;
-              const displayLabel = displayScore >= 85 ? "excellent" : displayScore >= 75 ? "good" : displayScore >= 60 ? "fair" : "low";
+              const displayScore = factsheet.scoring!.build_confidence.score;
+              const displayLabel = displayScore >= 90 ? "excellent" : displayScore >= 75 ? "good" : displayScore >= 50 ? "fair" : "low";
               const labelColor = displayScore >= 75
                 ? "border-emerald-300 text-emerald-600 dark:text-emerald-400 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10"
-                : displayScore >= 60
+                : displayScore >= 50
                 ? "border-amber-300 text-amber-600 dark:text-amber-400 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10"
                 : "border-red-300 text-red-600 dark:text-red-400 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10";
-              const filteredBreakdown = factsheet.scoring!.build_confidence.breakdown.filter(b => b.factor.toLowerCase() !== "build speed");
+              const filteredBreakdown = factsheet.scoring!.build_confidence.breakdown.filter(b => b.factor.toLowerCase() !== "build speed" && b.factor.toLowerCase() !== "design assets");
               return (
                 <>
                   <div className="flex items-end gap-2 mb-3">
