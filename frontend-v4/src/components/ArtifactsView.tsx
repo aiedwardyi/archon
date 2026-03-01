@@ -282,7 +282,7 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, ini
                   : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
-              <Icon className="h-3.5 w-3.5" />
+              <Icon className={`h-3.5 w-3.5 ${id === "governance" ? "text-blue-500" : ""}`} />
               {t(key)}
             </button>
           ))}
@@ -607,7 +607,7 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
       {/* Header */}
       <div>
         <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
-          <Shield className="h-5 w-5 text-primary" />
+          <Shield className="h-5 w-5 text-blue-500" />
           AI Factsheet — v{factsheet.project.version}
         </h1>
         <p className="text-xs text-muted-foreground mt-1">Generated {ts} · Factsheet v{factsheet.factsheet_version}</p>
