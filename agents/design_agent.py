@@ -22,16 +22,39 @@ def _repair_json_array(raw: str) -> list:
 
 
 def _generate_one(req, client, save_dir):
-    try:
-        print(f"  -> Generating: {req.get('key', 'unknown')} ({req.get('style', '')})")
+    def _call_dalle(prompt):
         img_response = client.images.generate(
             model="dall-e-3",
-            prompt=req["prompt"],
+            prompt=prompt,
             size="1792x1024",
             quality="standard",
             n=1,
         )
-        url = img_response.data[0].url
+        return img_response.data[0].url
+
+    def _sanitize_prompt(prompt):
+        # Strip capitalised words (likely proper nouns) except sentence starts
+        words = prompt.split()
+        cleaned = []
+        for i, w in enumerate(words):
+            prev_ends_sentence = i == 0 or words[i-1].rstrip().endswith(('.', '!', '?'))
+            if w[0].isupper() and not prev_ends_sentence:
+                continue
+            cleaned.append(w)
+        return " ".join(cleaned)
+
+    try:
+        print(f"  -> Generating: {req.get('key', 'unknown')} ({req.get('style', '')})")
+        try:
+            url = _call_dalle(req["prompt"])
+        except Exception as e:
+            if "content_policy_violation" in str(e):
+                fallback_prompt = _sanitize_prompt(req["prompt"])
+                print(f"  ! Content filter hit for {req['key']}, retrying with sanitized prompt...")
+                url = _call_dalle(fallback_prompt)
+            else:
+                raise
+
         print(f"  + {req['key']}: {url[:60]}...")
 
         local_path = None
