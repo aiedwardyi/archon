@@ -210,6 +210,7 @@ ai-dev-team/
 | **Model Registry** | **Factsheet logs every AI model used per version: OpenAI, Anthropic, Gemini, IBM Watson** |
 | **Human Review Flag** | **Auto-triggers when prompt or build score < 50** |
 | **Dashboard Governance** | **Enterprise header shows live Avg Prompt Score and Avg Build Score across all builds** |
+| **Quality Tier Badges** | **Every version card shows High / Good / Low Quality badge based on combined score** |
 
 ---
 
@@ -237,6 +238,16 @@ The Enterprise dashboard header shows live averages across all builds:
 - Avg Build Score (blue Shield icon)
 - Pre-governance builds show "—" (not zero)
 
+**Quality Tier system:**
+After every build, Archon computes a combined score from Prompt Quality + Build Confidence and assigns a Quality Tier:
+- **High Quality** (85–100) — build meets the quality standard, shown in blue on the Versions timeline
+- **Good Quality** (60–84) — solid build with room to improve, shown in green
+- **Low Quality** (0–59) — consider rebuilding with a more detailed prompt, shown in red
+
+The tier badge appears on every version card in the Versions timeline — so non-technical founders and agency owners can instantly see which versions are ready to present, without reading scores or technical details.
+
+A prominent banner also appears at the top of the Governance tab with plain-English messaging matched to each tier.
+
 **Resume/portfolio value:** Governed, auditable AI pipelines with IBM Watson scoring — rare even among senior IBM AI Engineers.
 
 ---
@@ -262,8 +273,8 @@ The Enterprise dashboard header shows live averages across all builds:
 | 17.1 | ✅ | Watson NLU pre-pipeline analyzer |
 | 17.2 | ✅ | Governance Agent — AI Factsheets + Watson NLU scoring |
 | 17.3 | ✅ | Dashboard governance metrics (Avg Prompt + Build scores) |
-| 17.4 | 🔴 | Dual PDF export — Client PDF + Internal PDF |
-| 17.5 | 🔴 | Delivery Readiness Gate — configurable score threshold |
+| 17.4 | ✅ | Dual PDF export — Client PDF + Internal PDF |
+| 17.5 | ✅ | Delivery Readiness Gate — Quality Tier badges (High/Good/Low) on Versions timeline |
 | 16.5 | 🔴 | Authentication (JWT + protected routes) |
 | 18 | 🔴 | Unified auth + plan-based UI routing |
 | 8.2 | 🔴 | PDF export of full build history |
