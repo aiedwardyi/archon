@@ -450,12 +450,19 @@ Impact:
 - ✅ Enterprise dashboard (frontend-v4 WelcomeBanner) updated
 - ✅ Studio had no equivalent header cards — no changes needed
 
-#### 17.4 — Dual PDF Export (🔴 Planned)
-- 🔴 Two buttons on Governance tab: "Download Client PDF" + "Download Internal PDF"
-- 🔴 Client PDF: project name, AI models used, compliance badges, files/images generated. No scores, no cost, no tokens.
-- 🔴 Internal PDF: full factsheet — scores, tokens, cost, duration, iteration history, pass/fail indicators
-- 🔴 Each version's artifacts + factsheet printable per version (Brief + Plan + Code + Factsheet)
-- 🔴 Solves Phase 8.2 client audit trail requirement
+#### 17.4 — Dual PDF Export (✅ Complete Mar 1, 2026)
+- ✅ Two buttons on Governance tab: "Download Client PDF" + "Download Internal PDF"
+- ✅ WeasyPrint HTML→PDF renderer (enterprise-grade, pixel-perfect CSS rendering)
+- ✅ GTK3 runtime installed on Windows for WeasyPrint support
+- ✅ Client PDF: Archon cover bar, shield, project name, brief, build plan, AI models, build output, compliance. No scores, no tokens, no cost.
+- ✅ Internal PDF: all client content + pipeline details, quality scoring with methodology note, credits+tokens, build score breakdown
+- ✅ Scores displayed at top with big numbers, grade badges (green/amber/red), IBM Watson NLU + Archon Engine attribution
+- ✅ Verified (green) + Auditable (blue+shield) enterprise trust badges in header
+- ✅ Audit Trail, Version Controlled, AI Governed, Immutable Record trust strip
+- ✅ Human review warning box — different wording for client vs internal
+- ✅ Cryptographic/repetitive wording removed — clean enterprise copy
+- ✅ Dark navy header (IBM enterprise aesthetic), hexagon logo
+- ✅ Solves Phase 8.2 client audit trail requirement
 
 #### 17.3 — Dashboard Governance Metrics (🔴 Planned)
 - 🔴 Replace "Pipelines Today" header stat with **Avg Prompt Score** (Sparkles icon, /100 suffix)

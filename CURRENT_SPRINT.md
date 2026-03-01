@@ -222,7 +222,7 @@ main (enterprise-ui merged and deleted)
 - ✅ Dashboard icon colors — Sparkles text-purple-400, Shield text-blue-400 (Mar 1, 2026)
 - ✅ Backend build_confidence key fix in dashboard_stats() (Mar 1, 2026)
 - ✅ README updated with Watson Governance section, architecture diagram, full roadmap table (Mar 1, 2026)
-- 🔴 17.4 Dual PDF Export — "Download Client PDF" + "Download Internal PDF" buttons on Governance tab
+- ✅ 17.4 Dual PDF Export — "Download Client PDF" + "Download Internal PDF" buttons on Governance tab (Mar 1, 2026)
 - 🔴 17.5 Delivery Readiness Gate — configurable 85/100 threshold, flags version as Client Ready or Needs Iteration
 - 🔴 /api/governance/summary cross-run analytics (future)
 
