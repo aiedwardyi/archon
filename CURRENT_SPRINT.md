@@ -271,11 +271,12 @@ main (enterprise-ui merged and deleted)
 - Fix: add fallback prompt that strips character name and uses description only if content filter fires
 - Test: FF8 character page build — Zell image should generate with fallback prompt
 
-## 🔴 Known Bug — Chat Messages Disappear During Build When Switching UIs
-- Messages sent during an active build are lost when switching Studio ↔ Enterprise
-- Messages reappear after build completes (they save to DB on pipeline completion, not on send)
-- Fix: save chat messages to DB immediately on send, not after pipeline completes
-- Affects: messages sent to actively building projects only
+## ✅ Chat Persistence — Partial Fix (Mar 1, 2026)
+- User messages now save to DB immediately on send (before pipeline starts)
+- Persists correctly when switching Studio ↔ Enterprise mid-build
+- 🔴 Remaining bug: Agent reply disappears during build, returns after completion
+- Root cause: agent reply generated at END of /chat — nothing to pre-save
+- Fix later: cache agent reply in sessionStorage immediately, sync to DB on completion
 
 ## 🔴 Known Quality Bug — Image Generation Regression
 
