@@ -22,9 +22,9 @@ export const useTheme = () => useContext(ThemeContext);
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [colorMode, setColorMode] = useState<ColorMode>(() => {
     if (typeof window !== "undefined") {
-      return (localStorage.getItem("app-color-mode") as ColorMode) || "light";
+      return (localStorage.getItem("app-color-mode") as ColorMode) || "dark";
     }
-    return "light";
+    return "dark";
   });
 
   useEffect(() => {

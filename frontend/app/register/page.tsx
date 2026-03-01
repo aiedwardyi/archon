@@ -17,7 +17,8 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await authService.register(email, password, name);
-      router.push("/");
+      const token = authService.getToken();
+      window.location.href = `http://localhost:8080?token=${token}`;
     } catch (err: any) {
       setError(err.message);
     } finally {
