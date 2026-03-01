@@ -299,7 +299,7 @@ main (enterprise-ui merged and deleted)
 - ✅ Enterprise (frontend-v4) auth pages (login, register, forgot-password) — Mar 1, 2026
 - ✅ Enterprise AuthGuard — redirects to /login if no token — Mar 1, 2026
 - ✅ Enterprise Sign Out wired (authService.logout + redirect to /login) — Mar 1, 2026
-- 🔴 Studio ↔ Enterprise theme toggle button in navbar
+- ✅ Studio ↔ Enterprise theme toggle passes token — Mar 1, 2026
 - 🔴 Google OAuth frontend wiring (needs Google Client ID)
 
 ## 🔴 Known Bug — DALL-E Content Filter on Character Names
