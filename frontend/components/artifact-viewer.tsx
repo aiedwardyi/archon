@@ -906,10 +906,6 @@ function GovernanceTab({ projectId, version }: { projectId: number | null; versi
                     <span className="text-foreground">{factsheet.scoring.prompt_quality.domain}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Sentiment</span>
-                    <span className="text-foreground">{factsheet.scoring.prompt_quality.sentiment} ({factsheet.scoring.prompt_quality.sentiment_score})</span>
-                  </div>
-                  <div className="flex justify-between">
                     <span className="text-muted-foreground">Keywords</span>
                     <span className="text-foreground">{factsheet.scoring.prompt_quality.keywords.length > 0 ? factsheet.scoring.prompt_quality.keywords.join(", ") : "—"}</span>
                   </div>
@@ -926,17 +922,16 @@ function GovernanceTab({ projectId, version }: { projectId: number | null; versi
           {/* Build Quality Score */}
           <div className="bg-card border border-border rounded-lg p-5">
             <h3 className="text-sm font-semibold text-foreground">Build Quality Score</h3>
-            <p className="text-[11px] text-muted-foreground mt-0.5 mb-3">Based on code output, archetype detection, and design assets</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5 mb-3">Based on code output, archetype detection, and pipeline success</p>
             {(() => {
-              const raw = factsheet.scoring!.build_confidence.score
-              const displayScore = factsheet.pipeline.status === "success" ? Math.max(raw, 75) : raw
-              const displayLabel = displayScore >= 85 ? "excellent" : displayScore >= 75 ? "good" : displayScore >= 60 ? "fair" : "low"
+              const displayScore = factsheet.scoring!.build_confidence.score
+              const displayLabel = displayScore >= 90 ? "excellent" : displayScore >= 75 ? "good" : displayScore >= 50 ? "fair" : "low"
               const labelColor = displayScore >= 75
                 ? "border-success/40 bg-success/10 text-success"
-                : displayScore >= 60
+                : displayScore >= 50
                 ? "border-warning/40 bg-warning/10 text-warning"
                 : "border-destructive/40 bg-destructive/10 text-destructive"
-              const filteredBreakdown = factsheet.scoring!.build_confidence.breakdown.filter(b => b.factor.toLowerCase() !== "build speed")
+              const filteredBreakdown = factsheet.scoring!.build_confidence.breakdown.filter(b => b.factor.toLowerCase() !== "build speed" && b.factor.toLowerCase() !== "design assets")
               return (
                 <>
                   <div className="flex items-end gap-2 mb-3">
