@@ -214,6 +214,13 @@ main (enterprise-ui merged and deleted)
 - ✅ Build confidence scoring (0-100) — files, archetype, images, speed
 - ✅ Human Review Required auto-triggers when score < 50
 - ✅ Factsheet v1.1 — scoring UI added non-destructively to existing layout
+- ✅ Governance scoring logic fixed — removed gameable metrics (sentiment, design assets, build speed) (Mar 1, 2026)
+- ✅ Governance UI polish — capitalization, layout, spacing, font sizes (Mar 1, 2026)
+- ✅ Watson NLU added to Model Registry in factsheet (Mar 1, 2026)
+- ✅ 17.3 Dashboard governance metrics — Avg Prompt Score (Sparkles/purple) + Avg Build Score (Shield/blue) in header (Mar 1, 2026)
+- ✅ /api/dashboard/stats endpoint — averages scores from governance_log across all executions (Mar 1, 2026)
+- ✅ Dashboard icon colors — Sparkles text-purple-400, Shield text-blue-400 (Mar 1, 2026)
+- ✅ Backend build_confidence key fix in dashboard_stats() (Mar 1, 2026)
 - 🔴 17.4 Dual PDF Export — "Download Client PDF" + "Download Internal PDF" buttons on Governance tab
 - 🔴 17.5 Delivery Readiness Gate — configurable 85/100 threshold, flags version as Client Ready or Needs Iteration
 - 🔴 /api/governance/summary cross-run analytics (future)

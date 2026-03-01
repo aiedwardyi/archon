@@ -432,10 +432,23 @@ Impact:
 - ✅ Build confidence scoring (0-100) — computed from files, archetype, images, speed (Mar 1, 2026)
 - ✅ Human Review Required flag auto-triggers when prompt or build score < 50 (Mar 1, 2026)
 - ✅ Factsheet v1.1 — scoring section added to existing layout (non-destructive)
+- ✅ Governance scoring logic fixed — removed sentiment, design assets, build speed as gameable metrics (Mar 1, 2026)
+- ✅ Governance UI polish — capitalization, layout, spacing, font sizes throughout factsheet (Mar 1, 2026)
+- ✅ Watson NLU added to Model Registry in factsheet (Mar 1, 2026)
+- ✅ Dashboard icon colors — Sparkles text-purple-400, Shield text-blue-400 (Mar 1, 2026)
+- ✅ Backend build_confidence key fix in dashboard_stats() (Mar 1, 2026)
 - 🔴 PDF export — two variants: Client PDF (clean certificate) + Internal PDF (full metrics) (Phase 17.4)
 - 🔴 Delivery Readiness Gate — configurable score threshold (default 85/100), flags version as client-ready (Phase 17.5)
 - 🔴 Cross-run analytics endpoint: /api/governance/summary (future)
 - Resume value: governed, auditable AI pipeline with IBM Watson scoring — rare even among senior IBM AEs
+
+#### 17.3 — Dashboard Governance Metrics (✅ Mar 1, 2026)
+- ✅ Replaced "Pipelines Today" with Avg Prompt Score (Sparkles icon, purple, /100 suffix)
+- ✅ Replaced "Lines Generated" with Avg Build Score (Shield icon, blue, /100 suffix)
+- ✅ GET /api/dashboard/stats endpoint — averages prompt + build scores from governance_log
+- ✅ Nulls skipped — pre-v1.1 builds show "—" not 0
+- ✅ Enterprise dashboard (frontend-v4 WelcomeBanner) updated
+- ✅ Studio had no equivalent header cards — no changes needed
 
 #### 17.4 — Dual PDF Export (🔴 Planned)
 - 🔴 Two buttons on Governance tab: "Download Client PDF" + "Download Internal PDF"
