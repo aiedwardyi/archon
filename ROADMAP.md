@@ -558,10 +558,17 @@ guessing. Tour design will be driven by real friction points, not assumptions.
 - Hexagon color: text-primary (blue) in both light and dark mode across all surfaces
 - Files changed: pipeline-run.tsx, project-dashboard.tsx, PipelineStatus.tsx, ProjectTable.tsx, Index.tsx
 
-## 🔴 Planned — Korean i18n Polish (Mar 1, 2026)
-- Studio Projects table: status badges in English when KO mode active — needs Korean translation
-- Enterprise + Studio: date format should be yyyy.mm.dd when in Korean mode
-- Affects: project-dashboard.tsx (Studio), ProjectTable.tsx (Enterprise)
+## ✅ Korean i18n Polish (Mar 1, 2026)
+- Studio Projects table: status badges now translated in KO mode
+- Enterprise + Studio: date format yyyy.mm.dd in Korean mode
+- Merged via PR from feat/ko-i18n-polish
+
+## 🔴 Phase 16.5 — Authentication (Planned)
+- Sign up / Login pages (Studio + Enterprise)
+- JWT tokens + protected API routes
+- User-scoped projects — owner_id already in DB schema
+- Each user sees only their own projects
+- Branch: feat/auth-jwt
 
 ## 🔴 Known Bug — DALL-E Content Filter on Character Names
 - Certain character names (e.g. "Zell" from FF8) trigger DALL-E content policy error 400

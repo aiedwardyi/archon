@@ -273,10 +273,16 @@ main (enterprise-ui merged and deleted)
 - ⚡ emoji removed from agent build reply text — Studio + Enterprise
 - Hexagon SVG uses text-primary (blue) in all themes
 
-## 🔴 Next Task — Korean i18n Polish
-- Studio: status badges still in English in KO mode — add Korean translations
+## ✅ Korean i18n Polish (Mar 1, 2026)
+- Studio: status badges now in Korean in KO mode
 - Enterprise + Studio: date format yyyy.mm.dd when language = KO
-- Branch: feat/ko-i18n-polish
+- Merged via PR from feat/ko-i18n-polish
+
+## 🔴 Next Task — Phase 16.5 Authentication
+- Sign up / Login pages
+- JWT + protected routes
+- User-scoped projects (owner_id already in DB schema)
+- Branch: feat/auth-jwt
 
 ## 🔴 Known Bug — DALL-E Content Filter on Character Names
 - Character name "Zell" (FF8) triggers DALL-E content policy violation (error 400)
