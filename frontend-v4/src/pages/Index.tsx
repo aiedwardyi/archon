@@ -21,7 +21,7 @@ import {
   fetchLogs,
   type ChatMessage,
 } from "@/services/api";
-import { Search, Plus, Trash2, Zap, Mic, MicOff, Send, Volume2, VolumeX, Filter, Loader2, AlertCircle } from "lucide-react";
+import { Search, Plus, Trash2, Zap, Mic, MicOff, Send, Volume2, VolumeX, Filter, Loader2, AlertCircle, X } from "lucide-react";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem("archon_active_tab") || "projects");
@@ -72,10 +72,33 @@ const Index = () => {
   const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
   const ttsPlayingIdRef = useRef<string | null>(null);
   const sendingRef = useRef(false);
+  const buildStartTimeRef = useRef<number | null>(null);
+  const [isStuck, setIsStuck] = useState(false);
   const pipeline = usePipelineStatus(selectedProjectId, activeTab === "pipeline" && sending);
   // Restore pipeline card state from DB when no live build is running
   const [historicalStatus, setHistoricalStatus] = useState<string | null>(null);
   const [historicalLogs, setHistoricalLogs] = useState<Array<{ id: string; timestamp: number; message: string }>>([]);
+
+  // Track build start time and detect stuck builds (> 5 min)
+  useEffect(() => {
+    if (sending && !buildStartTimeRef.current) {
+      buildStartTimeRef.current = Date.now();
+    }
+    if (!sending) {
+      buildStartTimeRef.current = null;
+      setIsStuck(false);
+    }
+  }, [sending]);
+
+  useEffect(() => {
+    if (!sending) return;
+    const interval = setInterval(() => {
+      if (buildStartTimeRef.current && Date.now() - buildStartTimeRef.current > 5 * 60 * 1000) {
+        setIsStuck(true);
+      }
+    }, 10_000);
+    return () => clearInterval(interval);
+  }, [sending]);
 
   useEffect(() => {
     setHistoricalStatus(null); // reset synchronously BEFORE async fetch to prevent bleed
@@ -633,6 +656,27 @@ const Index = () => {
                           <Mic className="h-4 w-4" />
                         )}
                       </button>
+                      {isStuck && selectedProjectId && (
+                        <button
+                          onClick={async () => {
+                            try {
+                              await fetch(`http://localhost:5000/api/projects/${selectedProjectId}/reset-build`, { method: "POST" });
+                            } catch {}
+                            setSending(false);
+                            sendingRef.current = false;
+                            buildStartTimeRef.current = null;
+                            setIsStuck(false);
+                            pipeline.stopPolling();
+                            setPipelineError(null);
+                            window.dispatchEvent(new Event("archon:build-reset"));
+                          }}
+                          className="bg-red-500 hover:bg-red-600 text-white font-medium rounded-md px-4 py-2 text-sm flex items-center gap-1.5 transition-colors"
+                          title="Reset stuck build"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                          Reset
+                        </button>
+                      )}
                       <button
                         onClick={handleSend}
                         disabled={!chatInput.trim()}
@@ -642,15 +686,6 @@ const Index = () => {
                         {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                         {sending ? t("sending") : t("send")}
                       </button>
-                      {sending && !pipeline.running && (
-                        <button
-                          onClick={() => setSending(false)}
-                          className="h-9 px-3 text-xs text-muted-foreground border border-border rounded-md hover:text-destructive hover:border-destructive transition-colors"
-                          title="Cancel stuck build"
-                        >
-                          Reset
-                        </button>
-                      )}
                     </div>
                   </div>
 

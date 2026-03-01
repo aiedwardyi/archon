@@ -98,9 +98,13 @@ export function useProjects() {
     load();
     intervalRef.current = setInterval(load, 3000);
 
+    const onBuildReset = () => { load(); };
+    window.addEventListener("archon:build-reset", onBuildReset);
+
     return () => {
       cancelled = true;
       if (intervalRef.current) clearInterval(intervalRef.current);
+      window.removeEventListener("archon:build-reset", onBuildReset);
     };
   }, []);
 

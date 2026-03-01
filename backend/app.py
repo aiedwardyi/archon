@@ -754,6 +754,23 @@ def delete_project(project_id: int):
         session.close()
 
 
+@app.route("/api/projects/<int:project_id>/reset-build", methods=["POST"])
+def reset_build(project_id):
+    db = get_session()
+    try:
+        stuck = db.query(Execution).filter(
+            Execution.project_id == project_id,
+            Execution.status == "running"
+        ).first()
+        if stuck:
+            stuck.status = "failed"
+            db.commit()
+            return jsonify({"reset": True, "execution_id": stuck.id})
+        return jsonify({"reset": False, "message": "No running execution found"})
+    finally:
+        db.close()
+
+
 # ============================================================================
 # VERSION ENDPOINTS (Phase 7A)
 # ============================================================================
