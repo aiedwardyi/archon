@@ -550,6 +550,19 @@ guessing. Tour design will be driven by real friction points, not assumptions.
 - Shield icon `text-blue-500` in Governance tab + factsheet header — Enterprise + Studio, light + dark mode
 - Hexagon logo `text-blue-500` in light mode, `text-primary` in dark mode — Enterprise + Studio
 
+## ✅ UI Polish — Hexagon Icons + Emoji Cleanup (Mar 1, 2026)
+- Replaced all Zap/lightning bolt icons in Studio (frontend/) with Archon hexagon SVG
+- Replaced all Zap/lightning bolt icons in Enterprise (frontend-v4/) with Archon hexagon SVG
+- Replaced Bot icon in agent chat bubbles (Studio + Enterprise) with hexagon SVG
+- Removed ⚡ emoji from "Got it! Starting the build now." agent reply — Studio + Enterprise
+- Hexagon color: text-primary (blue) in both light and dark mode across all surfaces
+- Files changed: pipeline-run.tsx, project-dashboard.tsx, PipelineStatus.tsx, ProjectTable.tsx, Index.tsx
+
+## 🔴 Planned — Korean i18n Polish (Mar 1, 2026)
+- Studio Projects table: status badges in English when KO mode active — needs Korean translation
+- Enterprise + Studio: date format should be yyyy.mm.dd when in Korean mode
+- Affects: project-dashboard.tsx (Studio), ProjectTable.tsx (Enterprise)
+
 ## 🔴 Known Bug — DALL-E Content Filter on Character Names
 - Certain character names (e.g. "Zell" from FF8) trigger DALL-E content policy error 400
 - Other characters in the same build generate fine (Squall, Rinoa passed)

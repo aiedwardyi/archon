@@ -267,6 +267,17 @@ main (enterprise-ui merged and deleted)
 - Shield icon blue (text-blue-500) in Governance tab bar, factsheet header — Enterprise + Studio, light + dark mode
 - Hexagon logo blue in light mode (text-blue-500), keeps primary color in dark mode — Enterprise + Studio
 
+## ✅ UI Polish — Hexagon Icons + Emoji Cleanup (Mar 1, 2026)
+- All Zap/lightning bolt icons replaced with Archon hexagon SVG — Studio + Enterprise
+- Bot icon in agent chat bubbles replaced with hexagon SVG — Studio + Enterprise
+- ⚡ emoji removed from agent build reply text — Studio + Enterprise
+- Hexagon SVG uses text-primary (blue) in all themes
+
+## 🔴 Next Task — Korean i18n Polish
+- Studio: status badges still in English in KO mode — add Korean translations
+- Enterprise + Studio: date format yyyy.mm.dd when language = KO
+- Branch: feat/ko-i18n-polish
+
 ## 🔴 Known Bug — DALL-E Content Filter on Character Names
 - Character name "Zell" (FF8) triggers DALL-E content policy violation (error 400)
 - Other characters in same build (Squall, Rinoa) generate fine
