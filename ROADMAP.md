@@ -571,7 +571,9 @@ guessing. Tour design will be driven by real friction points, not assumptions.
 - ✅ Login, Register, Forgot Password pages — Studio (frontend/)
 - ✅ Sign out wired — closes dropdown + redirects to /login
 - ✅ Login page redesign — dark split-layout, IBM Plex Sans, agency-owner copy (Mar 1, 2026)
-- 🔴 Apply redesign to register/page.tsx and forgot-password/page.tsx
+- ✅ Register page redesign — dark split-layout matching login (Mar 1, 2026)
+- ✅ Forgot password page redesign — dark split-layout matching login (Mar 1, 2026)
+- ✅ "Forgot password?" link added to login form (Mar 1, 2026)
 - 🔴 Enterprise (frontend-v4) auth pages
 - 🔴 Google OAuth frontend wiring (needs Google Client ID)
 - 🔴 Cross-origin token handoff (Studio ↔ Enterprise theme switch)

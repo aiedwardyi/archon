@@ -292,7 +292,9 @@ main (enterprise-ui merged and deleted)
 - ✅ README updated — business case blockquote added at top (Mar 1, 2026)
 - 🔴 Google OAuth frontend wiring (needs Google Client ID)
 - 🔴 Enterprise (frontend-v4) auth pages
-- 🔴 Apply same login redesign to register/page.tsx and forgot-password/page.tsx
+- ✅ Register page redesign — dark split-layout matching login (Mar 1, 2026)
+- ✅ Forgot password page redesign — dark split-layout matching login (Mar 1, 2026)
+- ✅ "Forgot password?" link added to login form (Mar 1, 2026)
 - 🔴 Cross-origin token handoff (Studio ↔ Enterprise theme switch)
 - Branch: feat/login-redesign
 
