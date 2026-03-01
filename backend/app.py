@@ -1799,6 +1799,218 @@ def dashboard_stats():
         session.close()
 
 
+@app.route("/api/projects/<int:project_id>/versions/<int:version>/factsheet/pdf", methods=["GET"])
+def download_factsheet_pdf(project_id: int, version: int):
+    """Generate PDF factsheet. ?type=client or ?type=internal"""
+    import io
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import mm
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+    from reportlab.lib.enums import TA_LEFT, TA_CENTER
+
+    pdf_type = request.args.get("type", "internal")
+
+    # Load factsheet from disk or DB
+    factsheet_path = get_version_dir(project_id, version) / "last_factsheet.json"
+    factsheet = read_json_file(factsheet_path)
+    if not factsheet:
+        session = get_session()
+        try:
+            execution = session.query(Execution).filter(
+                Execution.project_id == project_id, Execution.version == version
+            ).first()
+            if execution and execution.governance_log:
+                factsheet = json.loads(execution.governance_log)
+        finally:
+            session.close()
+    if not factsheet:
+        return jsonify({"error": "Factsheet not available"}), 404
+
+    buf = io.BytesIO()
+    W, H = A4
+    usable = W - 40*mm
+
+    INDIGO  = colors.HexColor("#4F46E5")
+    SLATE   = colors.HexColor("#1E293B")
+    MUTED   = colors.HexColor("#64748B")
+    EMERALD = colors.HexColor("#059669")
+    RED_C   = colors.HexColor("#DC2626")
+    LIGHT   = colors.HexColor("#F8FAFC")
+    BORDER  = colors.HexColor("#E2E8F0")
+
+    doc = SimpleDocTemplate(buf, pagesize=A4,
+        leftMargin=20*mm, rightMargin=20*mm,
+        topMargin=20*mm, bottomMargin=20*mm)
+
+    h1  = ParagraphStyle("h1",  fontSize=20, textColor=SLATE, spaceAfter=2,  fontName="Helvetica-Bold")
+    h2  = ParagraphStyle("h2",  fontSize=12, textColor=SLATE, spaceBefore=12, spaceAfter=4, fontName="Helvetica-Bold")
+    sub = ParagraphStyle("sub", fontSize=12, textColor=INDIGO, spaceAfter=2,  fontName="Helvetica-Bold")
+    sm  = ParagraphStyle("sm",  fontSize=8,  textColor=MUTED, spaceAfter=6,   fontName="Helvetica")
+    bod = ParagraphStyle("bod", fontSize=9,  textColor=MUTED, spaceAfter=3,   fontName="Helvetica", leading=14)
+
+    def tbl(data, col_widths, header=True):
+        t = Table(data, colWidths=col_widths)
+        style = [
+            ("FONTSIZE", (0,0), (-1,-1), 8),
+            ("GRID", (0,0), (-1,-1), 0.5, BORDER),
+            ("ROWBACKGROUNDS", (0, 1 if header else 0), (-1,-1), [LIGHT, colors.white]),
+            ("FONTNAME", (0,0), (-1,-1), "Helvetica"),
+        ]
+        if header:
+            style += [
+                ("BACKGROUND", (0,0), (-1,0), INDIGO),
+                ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+                ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+            ]
+        t.setStyle(TableStyle(style))
+        return t
+
+    story = []
+
+    # Header
+    proj = factsheet.get("project", {})
+    project_name = proj.get("name", "Project")
+    ver = proj.get("version", version)
+    gen_at = factsheet.get("generated_at", "")
+    ts = ""
+    if gen_at:
+        try:
+            from datetime import datetime as _dt
+            ts = _dt.fromisoformat(gen_at.replace("Z","")).strftime("%B %d, %Y %H:%M UTC")
+        except Exception:
+            ts = gen_at
+
+    story.append(Paragraph("AI Build Factsheet", h1))
+    story.append(Paragraph(f"{project_name} · Version {ver}", sub))
+    story.append(Paragraph(f"Generated {ts} · Powered by Archon", sm))
+    story.append(HRFlowable(width=usable, thickness=1, color=BORDER, spaceAfter=10))
+
+    pipeline = factsheet.get("pipeline", {})
+    outputs  = factsheet.get("outputs", {})
+    models   = factsheet.get("model_registry", [])
+    compliance = factsheet.get("compliance", {})
+
+    if pdf_type == "client":
+        # CLIENT PDF — clean, no scores/cost/tokens
+        story.append(Paragraph("AI Models Used", h2))
+        if models:
+            rows = [["Agent Role", "Model", "Provider"]]
+            for m in models:
+                rows.append([m.get("agent_role",""), m.get("model",""), m.get("provider","")])
+            story.append(tbl(rows, [usable*0.35, usable*0.40, usable*0.25]))
+        story.append(Spacer(1, 6*mm))
+
+        story.append(Paragraph("Build Output", h2))
+        archetype = pipeline.get("ui_archetype") or "Auto-detected"
+        rows = [["Files Generated", "Images Generated", "UI Archetype"],
+                [str(outputs.get("files_generated", 0)),
+                 str(outputs.get("images_generated", 0)),
+                 archetype.capitalize()]]
+        story.append(tbl(rows, [usable/3, usable/3, usable/3]))
+        story.append(Spacer(1, 6*mm))
+
+        story.append(Paragraph("Compliance", h2))
+        comp_rows = []
+        for key, val in compliance.items():
+            label_str = " ".join(w.capitalize() for w in key.split("_"))
+            status = "✓  Pass" if val else "✗  Review Required"
+            comp_rows.append([label_str, status])
+        if comp_rows:
+            story.append(tbl([["Requirement", "Status"]] + comp_rows, [usable*0.65, usable*0.35]))
+
+        story.append(Spacer(1, 10*mm))
+        story.append(Paragraph(
+            "This application was built using a governed, auditable AI pipeline. "
+            "All decisions are version-controlled and available for review.",
+            bod))
+
+    else:
+        # INTERNAL PDF — full factsheet with scores, tokens, cost, breakdown
+        story.append(Paragraph("Pipeline", h2))
+        seq = " → ".join(a.upper() if a == "pm" else a.capitalize()
+                         for a in pipeline.get("agent_sequence", []))
+        duration = pipeline.get("duration_seconds")
+        dur_str = f"{duration}s" if duration else "—"
+        rows = [["Status", "UI Archetype", "Duration", "Agent Sequence"],
+                [pipeline.get("status","").capitalize(),
+                 (pipeline.get("ui_archetype") or "Auto").capitalize(),
+                 dur_str, seq]]
+        story.append(tbl(rows, [usable*0.15, usable*0.20, usable*0.15, usable*0.50]))
+        story.append(Spacer(1, 4*mm))
+
+        story.append(Paragraph("AI Models", h2))
+        if models:
+            rows = [["Agent Role", "Model", "Provider"]]
+            for m in models:
+                rows.append([m.get("agent_role",""), m.get("model",""), m.get("provider","")])
+            story.append(tbl(rows, [usable*0.30, usable*0.45, usable*0.25]))
+        story.append(Spacer(1, 4*mm))
+
+        usage = factsheet.get("usage", {})
+        story.append(Paragraph("Usage & Cost", h2))
+        rows = [["Tokens Used", "Estimated Cost (USD)", "Credits Used"],
+                [str(usage.get("tokens_used") or "—"),
+                 f"${usage.get('estimated_cost_usd'):.4f}" if usage.get("estimated_cost_usd") else "—",
+                 str(usage.get("credits_used") or "—")]]
+        story.append(tbl(rows, [usable/3, usable/3, usable/3]))
+        story.append(Spacer(1, 4*mm))
+
+        scoring = factsheet.get("scoring", {})
+        if scoring:
+            story.append(Paragraph("Scoring", h2))
+            pq = scoring.get("prompt_quality", {})
+            bc = scoring.get("build_confidence", {})
+            rows = [["Metric", "Score", "Label"],
+                    ["Prompt Quality", str(pq.get("score","—")), (pq.get("label") or "—").capitalize()],
+                    ["Build Confidence", str(bc.get("score","—")), (bc.get("label") or "—").capitalize()]]
+            story.append(tbl(rows, [usable*0.50, usable*0.25, usable*0.25]))
+
+            breakdown = [b for b in bc.get("breakdown", [])
+                         if b.get("factor","").lower() not in ("build speed","design assets")]
+            if breakdown:
+                story.append(Spacer(1, 3*mm))
+                story.append(Paragraph("Build Score Breakdown", ParagraphStyle("h3", fontSize=10, textColor=SLATE, spaceBefore=6, spaceAfter=3, fontName="Helvetica-Bold")))
+                rows = [["Factor", "Points", "Note"]]
+                for b in breakdown:
+                    rows.append([b.get("factor","").title(), str(b.get("points","")), b.get("note","").capitalize()])
+                story.append(tbl(rows, [usable*0.40, usable*0.15, usable*0.45]))
+            story.append(Spacer(1, 4*mm))
+
+        story.append(Paragraph("Outputs", h2))
+        rows = [["Files Generated", "Images Generated"],
+                [str(outputs.get("files_generated", 0)), str(outputs.get("images_generated", 0))]]
+        story.append(tbl(rows, [usable/2, usable/2]))
+        story.append(Spacer(1, 4*mm))
+
+        qi = [q for q in factsheet.get("quality_indicators", [])
+              if q.get("indicator","").lower() != "build speed"]
+        if qi:
+            story.append(Paragraph("Quality Indicators", h2))
+            rows = [["Indicator", "Status", "Value"]]
+            for q in qi:
+                rows.append([" ".join(w.capitalize() for w in q.get("indicator","").split("_")),
+                              q.get("status","").capitalize(),
+                              q.get("value","")])
+            story.append(tbl(rows, [usable*0.40, usable*0.20, usable*0.40]))
+            story.append(Spacer(1, 4*mm))
+
+        story.append(Paragraph("Compliance", h2))
+        comp_rows = [["Requirement", "Status"]]
+        for key, val in compliance.items():
+            label_str = " ".join(w.capitalize() for w in key.split("_"))
+            comp_rows.append([label_str, "Pass" if val else "Review Required"])
+        story.append(tbl(comp_rows, [usable*0.65, usable*0.35]))
+
+    doc.build(story)
+    buf.seek(0)
+
+    label = "client" if pdf_type == "client" else "internal"
+    filename = f"archon-factsheet-{project_name.lower().replace(' ','-')}-v{ver}-{label}.pdf"
+    return send_file(buf, mimetype="application/pdf", as_attachment=True, download_name=filename)
+
+
 if __name__ == "__main__":
     init_db()
     print(f"Flask server starting...")

@@ -615,18 +615,20 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
 
       {/* PDF Download Buttons */}
       <div className="flex items-center gap-2">
-        <button
-          onClick={() => alert("PDF export coming soon — Phase 17.4")}
-          className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5"
+        <a
+          href={projectId && version ? `http://localhost:5000/api/projects/${projectId}/versions/${version}/factsheet/pdf?type=client` : "#"}
+          download
+          className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5 no-underline"
         >
           <FileText className="h-3.5 w-3.5" /> Download Client PDF
-        </button>
-        <button
-          onClick={() => alert("PDF export coming soon — Phase 17.4")}
-          className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5"
+        </a>
+        <a
+          href={projectId && version ? `http://localhost:5000/api/projects/${projectId}/versions/${version}/factsheet/pdf?type=internal` : "#"}
+          download
+          className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5 no-underline"
         >
           <FileText className="h-3.5 w-3.5" /> Download Internal PDF
-        </button>
+        </a>
       </div>
 
       {/* Pipeline */}
