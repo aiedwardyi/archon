@@ -137,6 +137,8 @@ export function AvatarDropdown() {
                     params.set("tab", tab);
                     if (storedPid) params.set("projectId", storedPid);
                     if (language === "ko") params.set("lang", "ko");
+                    const token = localStorage.getItem("archon_token");
+                    if (token) params.set("token", token);
                     window.location.href = `http://localhost:8080?${params.toString()}`;
                   }}
                   className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all text-muted-foreground hover:text-foreground"
