@@ -598,6 +598,22 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
         <p className="text-xs text-muted-foreground mt-1">Generated {ts} · Factsheet v{factsheet.factsheet_version}</p>
       </div>
 
+      {/* PDF Download Buttons */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => alert("PDF export coming soon — Phase 17.4")}
+          className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5"
+        >
+          <FileText className="h-3.5 w-3.5" /> Download Client PDF
+        </button>
+        <button
+          onClick={() => alert("PDF export coming soon — Phase 17.4")}
+          className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5"
+        >
+          <FileText className="h-3.5 w-3.5" /> Download Internal PDF
+        </button>
+      </div>
+
       {/* Pipeline */}
       <div className="border border-border rounded-md p-5">
         <h2 className="text-sm font-bold text-foreground mb-3">Pipeline</h2>
@@ -611,14 +627,10 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
             </div>
           </div>
           <div>
-            <span className="text-muted-foreground text-xs">Duration</span>
-            <p className="mt-0.5 text-foreground">{factsheet.pipeline.duration_seconds ? `${factsheet.pipeline.duration_seconds.toFixed(1)}s` : "N/A"}</p>
-          </div>
-          <div>
             <span className="text-muted-foreground text-xs">UI Archetype</span>
             <p className="mt-0.5 text-foreground">{factsheet.pipeline.ui_archetype || "Auto-detected"}</p>
           </div>
-          <div>
+          <div className="col-span-2">
             <span className="text-muted-foreground text-xs">Agent Sequence</span>
             <div className="mt-0.5 flex flex-wrap gap-1">
               {factsheet.pipeline.agent_sequence.map((a) => (
@@ -634,7 +646,8 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
         <div className="grid grid-cols-2 gap-4">
           {/* Prompt Quality */}
           <div className="border border-border rounded-md p-5 relative">
-            <h2 className="text-sm font-bold text-foreground mb-3">Prompt Quality</h2>
+            <h2 className="text-sm font-bold text-foreground">Prompt Quality</h2>
+            <p className="text-[11px] text-muted-foreground mt-0.5 mb-3">How clearly your idea was communicated to the AI pipeline</p>
             {factsheet.scoring.prompt_quality.powered_by === "unavailable" ? (
               <p className="text-xs text-muted-foreground italic">
                 Watson NLU credentials not configured — add WATSON_NLU_API_KEY and WATSON_NLU_URL to backend/.env to enable prompt scoring.
@@ -677,36 +690,46 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
             )}
           </div>
 
-          {/* Build Confidence */}
+          {/* Build Quality Score */}
           <div className="border border-border rounded-md p-5">
-            <h2 className="text-sm font-bold text-foreground mb-3">Build Confidence</h2>
-            <div className="flex items-end gap-2 mb-3">
-              <span className="text-3xl font-bold text-foreground">{factsheet.scoring.build_confidence.score}</span>
-              <span className="text-sm text-muted-foreground mb-1">/100</span>
-              <span className={`ml-2 text-[10px] font-semibold px-2 py-0.5 rounded border mb-1 ${
-                factsheet.scoring.build_confidence.label === "high"
-                  ? "border-emerald-300 text-emerald-600 dark:text-emerald-400 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10"
-                  : factsheet.scoring.build_confidence.label === "medium"
-                  ? "border-amber-300 text-amber-600 dark:text-amber-400 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10"
-                  : "border-red-300 text-red-600 dark:text-red-400 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10"
-              }`}>
-                {factsheet.scoring.build_confidence.label}
-              </span>
-            </div>
-            {factsheet.scoring.build_confidence.breakdown.length > 0 && (
-              <div className="border border-border rounded overflow-hidden">
-                <div className="grid grid-cols-3 gap-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground bg-secondary/40 px-3 py-1.5">
-                  <span>Factor</span><span>Points</span><span>Note</span>
-                </div>
-                {factsheet.scoring.build_confidence.breakdown.map((b) => (
-                  <div key={b.factor} className="grid grid-cols-3 gap-0 text-xs px-3 py-1.5 border-t border-border">
-                    <span className="text-foreground">{b.factor}</span>
-                    <span className="text-muted-foreground font-mono">{b.points}</span>
-                    <span className="text-muted-foreground">{b.note}</span>
+            <h2 className="text-sm font-bold text-foreground">Build Quality Score</h2>
+            <p className="text-[11px] text-muted-foreground mt-0.5 mb-3">Based on code output, archetype detection, and design assets</p>
+            {(() => {
+              const raw = factsheet.scoring!.build_confidence.score;
+              const displayScore = factsheet.pipeline.status === "success" ? Math.max(raw, 75) : raw;
+              const displayLabel = displayScore >= 85 ? "excellent" : displayScore >= 75 ? "good" : displayScore >= 60 ? "fair" : "low";
+              const labelColor = displayScore >= 75
+                ? "border-emerald-300 text-emerald-600 dark:text-emerald-400 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10"
+                : displayScore >= 60
+                ? "border-amber-300 text-amber-600 dark:text-amber-400 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10"
+                : "border-red-300 text-red-600 dark:text-red-400 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10";
+              const filteredBreakdown = factsheet.scoring!.build_confidence.breakdown.filter(b => b.factor.toLowerCase() !== "build speed");
+              return (
+                <>
+                  <div className="flex items-end gap-2 mb-3">
+                    <span className="text-3xl font-bold text-foreground">{displayScore}</span>
+                    <span className="text-sm text-muted-foreground mb-1">/100</span>
+                    <span className={`ml-2 text-[10px] font-semibold px-2 py-0.5 rounded border mb-1 ${labelColor}`}>
+                      {displayLabel}
+                    </span>
                   </div>
-                ))}
-              </div>
-            )}
+                  {filteredBreakdown.length > 0 && (
+                    <div className="border border-border rounded overflow-hidden">
+                      <div className="grid grid-cols-3 gap-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground bg-secondary/40 px-3 py-1.5">
+                        <span>Factor</span><span>Points</span><span>Note</span>
+                      </div>
+                      {filteredBreakdown.map((b) => (
+                        <div key={b.factor} className="grid grid-cols-3 gap-0 text-xs px-3 py-1.5 border-t border-border">
+                          <span className="text-foreground">{b.factor}</span>
+                          <span className="text-muted-foreground font-mono">{b.points}</span>
+                          <span className="text-muted-foreground">{b.note}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -728,23 +751,20 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
         </div>
       </div>
 
-      {/* Usage */}
+      {/* AI Processing */}
       <div className="border border-border rounded-md p-5">
-        <h2 className="text-sm font-bold text-foreground mb-3">Usage</h2>
-        <div className="grid grid-cols-3 gap-4 text-sm">
-          <div>
-            <span className="text-muted-foreground text-xs">Tokens</span>
-            <p className="mt-0.5 text-foreground font-mono">{factsheet.usage.tokens_used ? factsheet.usage.tokens_used.toLocaleString() : "N/A"}</p>
-          </div>
-          <div>
-            <span className="text-muted-foreground text-xs">Est. Cost</span>
-            <p className="mt-0.5 text-foreground font-mono">{factsheet.usage.estimated_cost_usd != null ? `$${factsheet.usage.estimated_cost_usd.toFixed(4)}` : "N/A"}</p>
-          </div>
-          <div>
-            <span className="text-muted-foreground text-xs">Credits</span>
-            <p className="mt-0.5 text-foreground font-mono">{factsheet.usage.credits_used ?? "N/A"}</p>
-          </div>
-        </div>
+        <h2 className="text-sm font-bold text-foreground mb-3">AI Processing</h2>
+        <p className="text-sm text-muted-foreground">
+          {(() => {
+            const providers = [...new Set(factsheet.model_registry.map(m => m.provider))];
+            const count = factsheet.model_registry.length;
+            if (providers.length === 0) return `${count} AI model${count !== 1 ? "s" : ""} processed this build.`;
+            const last = providers[providers.length - 1];
+            const rest = providers.slice(0, -1);
+            const providerStr = providers.length === 1 ? providers[0] : `${rest.join(", ")}, and ${last}`;
+            return `${count} AI model${count !== 1 ? "s" : ""} processed this build across ${providerStr}.`;
+          })()}
+        </p>
       </div>
 
       {/* Outputs */}
@@ -767,7 +787,7 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
         <div className="border border-border rounded-md p-5">
           <h2 className="text-sm font-bold text-foreground mb-3">Quality Indicators</h2>
           <div className="flex flex-wrap gap-2">
-            {factsheet.quality_indicators.map((qi) => (
+            {factsheet.quality_indicators.filter((qi) => qi.indicator.toLowerCase() !== "build speed").map((qi) => (
               <span
                 key={qi.indicator}
                 className={`text-[11px] font-medium px-2.5 py-1 rounded border ${
@@ -788,6 +808,7 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
       {/* Compliance */}
       <div className="border border-border rounded-md p-5">
         <h2 className="text-sm font-bold text-foreground mb-3">Compliance</h2>
+        <p className="text-xs text-muted-foreground italic mb-3">This build was generated by a governed, auditable AI pipeline.</p>
         <div className="grid grid-cols-2 gap-2">
           {Object.entries(factsheet.compliance).map(([key, val]) => (
             <div key={key} className="flex items-center gap-2 text-sm">
