@@ -1,4 +1,4 @@
-﻿import concurrent.futures
+import concurrent.futures
 import json
 import os
 import re
@@ -21,12 +21,45 @@ def _repair_json_array(raw: str) -> list:
     return json.loads(text[start:end + 1])
 
 
-class DesignAgent:
-    """
-    Generates images via DALL-E 3 based on PRD content.
-    Returns a list of {key, url, local_path, purpose} dicts for the Build Agent.
-    """
+def _generate_one(req, client, save_dir):
+    try:
+        print(f"  -> Generating: {req.get('key', 'unknown')} ({req.get('style', '')})")
+        img_response = client.images.generate(
+            model="dall-e-3",
+            prompt=req["prompt"],
+            size="1792x1024",
+            quality="standard",
+            n=1,
+        )
+        url = img_response.data[0].url
+        print(f"  + {req['key']}: {url[:60]}...")
 
+        local_path = None
+        if save_dir:
+            save_dir.mkdir(parents=True, exist_ok=True)
+            img_filename = f"{req['key']}.png"
+            img_dest = save_dir / img_filename
+            try:
+                urllib.request.urlretrieve(url, img_dest)
+                local_path = str(img_dest)
+                print(f"  saved -> {img_dest.name}")
+            except Exception as dl_err:
+                print(f"  download failed for {req['key']}: {dl_err}")
+
+        return {
+            "key": req["key"],
+            "url": url,
+            "local_path": local_path,
+            "purpose": req.get("purpose", ""),
+            "prompt": req["prompt"],
+            "style": req.get("style", ""),
+        }
+    except Exception as e:
+        print(f"  x Failed to generate {req.get('key')}: {e}")
+        return None
+
+
+class DesignAgent:
     def __init__(self, api_key: str | None = None):
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         if not self.api_key:
@@ -53,43 +86,6 @@ class DesignAgent:
         image_requests = image_requests[:max_images]
 
         print(f"DesignAgent: Generating {len(image_requests)} images...")
-
-        def _generate_one(req, client, save_dir):
-            try:
-                print(f"  -> Generating: {req.get('key', 'unknown')} ({req.get('style', '')})")
-                img_response = client.images.generate(
-                    model="dall-e-3",
-                    prompt=req["prompt"],
-                    size="1792x1024",
-                    quality="standard",
-                    n=1,
-                )
-                url = img_response.data[0].url
-                print(f"  + {req['key']}: {url[:60]}...")
-
-                local_path = None
-                if save_dir:
-                    save_dir.mkdir(parents=True, exist_ok=True)
-                    img_filename = f"{req['key']}.png"
-                    img_dest = save_dir / img_filename
-                    try:
-                        urllib.request.urlretrieve(url, img_dest)
-                        local_path = str(img_dest)
-                        print(f"  saved -> {img_dest.name}")
-                    except Exception as dl_err:
-                        print(f"  download failed for {req['key']}: {dl_err}")
-
-                return {
-                    "key": req["key"],
-                    "url": url,
-                    "local_path": local_path,
-                    "purpose": req.get("purpose", ""),
-                    "prompt": req["prompt"],
-                    "style": req.get("style", ""),
-                }
-            except Exception as e:
-                print(f"  x Failed to generate {req.get('key')}: {e}")
-                return None
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
             futures = [executor.submit(_generate_one, req, client, save_dir) for req in image_requests]

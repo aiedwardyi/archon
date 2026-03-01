@@ -479,7 +479,7 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion,
                   isActive ? "border-primary text-foreground font-medium" : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <tab.icon className="h-3.5 w-3.5" />
+                <tab.icon className={`h-3.5 w-3.5 ${tab.id === "governance" ? "text-blue-500" : ""}`} />
                 {t(tab.key)}
               </button>
             )
@@ -845,7 +845,7 @@ function GovernanceTab({ projectId, version }: { projectId: number | null; versi
     <div className="max-w-3xl space-y-4">
       <div>
         <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-          <Shield className="h-5 w-5 text-primary" />
+          <Shield className="h-5 w-5 text-blue-500" />
           AI Factsheet — v{factsheet.project.version}
         </h2>
         <p className="text-xs text-muted-foreground mt-1">Generated {ts} · Factsheet v{factsheet.factsheet_version}</p>
