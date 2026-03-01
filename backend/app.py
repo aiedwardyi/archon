@@ -917,6 +917,21 @@ def iterate_project(project_id: int):
         session.commit()
         session.refresh(execution)
 
+        # Immediately persist the user message to chat_messages
+        existing_msgs = []
+        if execution.chat_messages:
+            try:
+                existing_msgs = json.loads(execution.chat_messages)
+            except Exception:
+                existing_msgs = []
+        existing_msgs.append({
+            "role": "user",
+            "content": prompt,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+        execution.chat_messages = json.dumps(existing_msgs)
+        session.commit()
+
         execution_state["running"] = True
         execution_state["started_at"] = time.time()
         execution_state["current_project_id"] = project_id
@@ -1428,6 +1443,22 @@ def project_chat(project_id: int):
                 .filter(Execution.project_id == project_id, Execution.is_active_head == True)
                 .first()
             )
+            # Immediately persist the user message to chat_messages
+            if head:
+                existing_msgs = []
+                if head.chat_messages:
+                    try:
+                        existing_msgs = json.loads(head.chat_messages)
+                    except Exception:
+                        existing_msgs = []
+                existing_msgs.append({
+                    "role": "user",
+                    "content": data["message"],
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                })
+                head.chat_messages = json.dumps(existing_msgs)
+                db.commit()
+
             if head:
                 prd_path = get_version_dir(project_id, head.version) / "last_prd.json"
                 prd_data = read_json_file(prd_path)

@@ -93,7 +93,7 @@ const Index = () => {
   useEffect(() => {
     if (!sending) return;
     const interval = setInterval(() => {
-      if (buildStartTimeRef.current && Date.now() - buildStartTimeRef.current > 5 * 60 * 1000) {
+      if (buildStartTimeRef.current && Date.now() - buildStartTimeRef.current > 8 * 60 * 1000) {
         setIsStuck(true);
       }
     }, 10_000);
