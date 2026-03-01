@@ -38,7 +38,7 @@ type ConfirmModal = {
 
 export function ProjectDashboard() {
   const router = useRouter()
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
@@ -191,7 +191,14 @@ export function ProjectDashboard() {
 
   const formatDate = (iso: string) => {
     if (!iso) return "—"
-    return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    const d = new Date(iso)
+    if (language === "ko") {
+      const y = d.getFullYear()
+      const m = String(d.getMonth() + 1).padStart(2, "0")
+      const day = String(d.getDate()).padStart(2, "0")
+      return `${y}.${m}.${day}`
+    }
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
   }
 
   if (loading) {

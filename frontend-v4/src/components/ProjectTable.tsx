@@ -178,7 +178,7 @@ export const ProjectTable = ({ projects, onProjectSelect }: ProjectTableProps) =
               <div className="cursor-pointer py-2.5">
                 <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full ${style.text} ${style.bg}`}>
                   <span className={`inline-block h-1.5 w-1.5 rounded-full ${style.dot} ${p.status === "Running" ? "animate-pulse" : ""}`} />
-                  {p.status === "Running" ? t("running") : p.status === "Completed" ? t("completed") : p.status === "Failed" ? t("failed") : p.status}
+                  {p.status === "Running" ? t("running") : p.status === "Completed" ? t("completed") : p.status === "Failed" ? t("failed") : p.status === "Idle" ? t("pending") : p.status}
                 </span>
               </div>
 
