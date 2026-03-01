@@ -290,13 +290,15 @@ main (enterprise-ui merged and deleted)
 - ✅ Right panel: pill badge, headline, bullets, IBM Watson trust badge — vertically centered (Mar 1, 2026)
 - ✅ Updated value prop copy to agency-owner language (hours not weeks, certified, sign-off) (Mar 1, 2026)
 - ✅ README updated — business case blockquote added at top (Mar 1, 2026)
-- 🔴 Google OAuth frontend wiring (needs Google Client ID)
-- 🔴 Enterprise (frontend-v4) auth pages
 - ✅ Register page redesign — dark split-layout matching login (Mar 1, 2026)
 - ✅ Forgot password page redesign — dark split-layout matching login (Mar 1, 2026)
 - ✅ "Forgot password?" link added to login form (Mar 1, 2026)
-- 🔴 Cross-origin token handoff (Studio ↔ Enterprise theme switch)
-- Branch: feat/login-redesign
+- ✅ Post-login/register redirect to Enterprise dark mode (Mar 1, 2026)
+- ✅ Cross-origin token handoff via ?token= URL param — Studio → Enterprise (Mar 1, 2026)
+- ✅ Enterprise defaults to dark mode on first visit (ThemeProvider fallback) (Mar 1, 2026)
+- 🔴 Enterprise (frontend-v4) auth pages (login, register, forgot-password)
+- 🔴 Studio ↔ Enterprise theme toggle button in navbar
+- 🔴 Google OAuth frontend wiring (needs Google Client ID)
 
 ## 🔴 Known Bug — DALL-E Content Filter on Character Names
 - Character name "Zell" (FF8) triggers DALL-E content policy violation (error 400)

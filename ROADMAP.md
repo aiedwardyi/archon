@@ -574,10 +574,12 @@ guessing. Tour design will be driven by real friction points, not assumptions.
 - ✅ Register page redesign — dark split-layout matching login (Mar 1, 2026)
 - ✅ Forgot password page redesign — dark split-layout matching login (Mar 1, 2026)
 - ✅ "Forgot password?" link added to login form (Mar 1, 2026)
-- 🔴 Enterprise (frontend-v4) auth pages
+- ✅ Post-login/register redirect to Enterprise dark mode (Mar 1, 2026)
+- ✅ Cross-origin token handoff via ?token= URL param — Studio → Enterprise (Mar 1, 2026)
+- ✅ Enterprise defaults to dark mode on first visit (Mar 1, 2026)
+- 🔴 Enterprise (frontend-v4) auth pages (login, register, forgot-password)
+- 🔴 Studio ↔ Enterprise theme toggle button in navbar
 - 🔴 Google OAuth frontend wiring (needs Google Client ID)
-- 🔴 Cross-origin token handoff (Studio ↔ Enterprise theme switch)
-- Branch: feat/login-redesign
 
 ## 🔴 Known Bug — DALL-E Content Filter on Character Names
 - Certain character names (e.g. "Zell" from FF8) trigger DALL-E content policy error 400
