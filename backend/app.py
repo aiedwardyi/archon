@@ -564,6 +564,9 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
             exec_for_gov = session.get(Execution, execution_id)
             if exec_for_gov:
                 exec_for_gov.governance_log = json.dumps(factsheet)
+                readiness = factsheet.get("readiness", {})
+                exec_for_gov.readiness_score = readiness.get("combined_score")
+                exec_for_gov.quality_tier = readiness.get("quality_tier")
                 session.commit()
 
             add_log("Governance Agent: Factsheet recorded.")

@@ -553,6 +553,7 @@ interface Factsheet {
   outputs: { files_generated: number; images_generated: number };
   scoring?: { prompt_quality: PromptQuality; build_confidence: BuildConfidence };
   quality_indicators: Array<{ indicator: string; status: string; value: string }>;
+  readiness?: { combined_score: number; quality_tier: string };
   compliance: { audit_trail: boolean; version_history: boolean; artifact_retention: boolean; human_review_required: boolean };
 }
 
@@ -612,6 +613,23 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
         </h1>
         <p className="text-xs text-muted-foreground mt-1">Generated {ts} · Factsheet v{factsheet.factsheet_version}</p>
       </div>
+
+      {/* Readiness Banner */}
+      {factsheet.readiness?.quality_tier === "high" && (
+        <div className="px-4 py-3 rounded-md bg-blue-500/10 border border-blue-400/40 shadow-[0_0_6px_rgba(59,130,246,0.4)]">
+          <p className="text-sm font-semibold text-blue-500">High Quality — This build meets the quality standard.</p>
+        </div>
+      )}
+      {factsheet.readiness?.quality_tier === "good" && (
+        <div className="px-4 py-3 rounded-md bg-emerald-500/10 border border-emerald-400/40">
+          <p className="text-sm font-semibold text-emerald-500">Good Quality — This build is solid but has room to improve.</p>
+        </div>
+      )}
+      {factsheet.readiness?.quality_tier === "low" && (
+        <div className="px-4 py-3 rounded-md bg-red-500/10 border border-red-400/40">
+          <p className="text-sm font-semibold text-red-500">Low Quality — Consider rebuilding with a more detailed prompt.</p>
+        </div>
+      )}
 
       {/* PDF Download Buttons */}
       <div className="flex items-center gap-2">

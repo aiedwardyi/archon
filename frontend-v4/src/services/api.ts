@@ -240,6 +240,8 @@ export interface Version {
   model_used?: string | null;
   files_generated?: number;
   images_generated?: number;
+  quality_tier?: string | null;
+  readiness_score?: number | null;
 }
 
 export interface BuildDetails {
