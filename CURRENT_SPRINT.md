@@ -278,10 +278,17 @@ main (enterprise-ui merged and deleted)
 - Enterprise + Studio: date format yyyy.mm.dd when language = KO
 - Merged via PR from feat/ko-i18n-polish
 
-## 🔴 Next Task — Phase 16.5 Authentication
-- Sign up / Login pages
-- JWT + protected routes
-- User-scoped projects (owner_id already in DB schema)
+## 🔧 Phase 16.5 Authentication (In Progress)
+- ✅ Backend JWT auth — register, login, me, forgot-password, reset-password (Mar 1, 2026)
+- ✅ Google OAuth backend endpoint /api/auth/google (Mar 1, 2026)
+- ✅ frontend/lib/auth.ts — authService with localStorage token management (Mar 1, 2026)
+- ✅ AuthGuard — redirects unauthenticated users to /login (Mar 1, 2026)
+- ✅ Login, Register, Forgot Password pages — Studio (frontend/) (Mar 1, 2026)
+- ✅ Sign out wired — closes dropdown + redirects to /login (Mar 1, 2026)
+- 🔴 Login page redesign — dark split-layout (form left, value props right)
+- 🔴 Google OAuth frontend wiring (needs Google Client ID)
+- 🔴 Enterprise (frontend-v4) auth pages
+- 🔴 Cross-origin token handoff (Studio ↔ Enterprise theme switch)
 - Branch: feat/auth-jwt
 
 ## 🔴 Known Bug — DALL-E Content Filter on Character Names
