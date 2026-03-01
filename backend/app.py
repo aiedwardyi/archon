@@ -1801,18 +1801,14 @@ def dashboard_stats():
 
 @app.route("/api/projects/<int:project_id>/versions/<int:version>/factsheet/pdf", methods=["GET"])
 def download_factsheet_pdf(project_id: int, version: int):
-    """Generate PDF factsheet. ?type=client or ?type=internal"""
+    """Generate enterprise-style PDF using WeasyPrint HTML renderer."""
     import io
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.units import mm
-    from reportlab.lib import colors
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
-    from reportlab.lib.enums import TA_LEFT, TA_CENTER
+    from datetime import datetime as _dt
+    from weasyprint import HTML, CSS
 
     pdf_type = request.args.get("type", "internal")
 
-    # Load factsheet from disk or DB
+    # Load factsheet
     factsheet_path = get_version_dir(project_id, version) / "last_factsheet.json"
     factsheet = read_json_file(factsheet_path)
     if not factsheet:
@@ -1828,186 +1824,504 @@ def download_factsheet_pdf(project_id: int, version: int):
     if not factsheet:
         return jsonify({"error": "Factsheet not available"}), 404
 
-    buf = io.BytesIO()
-    W, H = A4
-    usable = W - 40*mm
+    prd_data  = read_json_file(get_version_dir(project_id, version) / "last_prd.json")
+    plan_data = read_json_file(get_version_dir(project_id, version) / "last_plan.json")
 
-    INDIGO  = colors.HexColor("#4F46E5")
-    SLATE   = colors.HexColor("#1E293B")
-    MUTED   = colors.HexColor("#64748B")
-    EMERALD = colors.HexColor("#059669")
-    RED_C   = colors.HexColor("#DC2626")
-    LIGHT   = colors.HexColor("#F8FAFC")
-    BORDER  = colors.HexColor("#E2E8F0")
-
-    doc = SimpleDocTemplate(buf, pagesize=A4,
-        leftMargin=20*mm, rightMargin=20*mm,
-        topMargin=20*mm, bottomMargin=20*mm)
-
-    h1  = ParagraphStyle("h1",  fontSize=20, textColor=SLATE, spaceAfter=2,  fontName="Helvetica-Bold")
-    h2  = ParagraphStyle("h2",  fontSize=12, textColor=SLATE, spaceBefore=12, spaceAfter=4, fontName="Helvetica-Bold")
-    sub = ParagraphStyle("sub", fontSize=12, textColor=INDIGO, spaceAfter=2,  fontName="Helvetica-Bold")
-    sm  = ParagraphStyle("sm",  fontSize=8,  textColor=MUTED, spaceAfter=6,   fontName="Helvetica")
-    bod = ParagraphStyle("bod", fontSize=9,  textColor=MUTED, spaceAfter=3,   fontName="Helvetica", leading=14)
-
-    def tbl(data, col_widths, header=True):
-        t = Table(data, colWidths=col_widths)
-        style = [
-            ("FONTSIZE", (0,0), (-1,-1), 8),
-            ("GRID", (0,0), (-1,-1), 0.5, BORDER),
-            ("ROWBACKGROUNDS", (0, 1 if header else 0), (-1,-1), [LIGHT, colors.white]),
-            ("FONTNAME", (0,0), (-1,-1), "Helvetica"),
-        ]
-        if header:
-            style += [
-                ("BACKGROUND", (0,0), (-1,0), INDIGO),
-                ("TEXTCOLOR", (0,0), (-1,0), colors.white),
-                ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-            ]
-        t.setStyle(TableStyle(style))
-        return t
-
-    story = []
-
-    # Header
-    proj = factsheet.get("project", {})
+    # Extract data
+    proj         = factsheet.get("project", {})
     project_name = proj.get("name", "Project")
-    ver = proj.get("version", version)
-    gen_at = factsheet.get("generated_at", "")
+    ver          = proj.get("version", version)
+    gen_at       = factsheet.get("generated_at", "")
+    pipeline     = factsheet.get("pipeline", {})
+    model_reg    = factsheet.get("model_registry", [])
+    usage        = factsheet.get("usage", {})
+    outputs      = factsheet.get("outputs", {})
+    scoring      = factsheet.get("scoring", {})
+    compliance   = factsheet.get("compliance", {})
+    human_review = compliance.get("human_review_required", False)
+    archetype    = (pipeline.get("ui_archetype") or "Auto-detected").capitalize()
+    prd          = (prd_data.get("prd", prd_data) if prd_data else {}) or {}
+    milestones   = (plan_data.get("milestones", []) if plan_data else []) or []
+
     ts = ""
     if gen_at:
         try:
-            from datetime import datetime as _dt
-            ts = _dt.fromisoformat(gen_at.replace("Z","")).strftime("%B %d, %Y %H:%M UTC")
+            ts = _dt.fromisoformat(gen_at.replace("Z","")).strftime("%B %d, %Y")
         except Exception:
             ts = gen_at
 
-    story.append(Paragraph("AI Build Factsheet", h1))
-    story.append(Paragraph(f"{project_name} · Version {ver}", sub))
-    story.append(Paragraph(f"Generated {ts} · Powered by Archon", sm))
-    story.append(HRFlowable(width=usable, thickness=1, color=BORDER, spaceAfter=10))
+    pq = scoring.get("prompt_quality", {}) or {}
+    bc = scoring.get("build_confidence", {}) or {}
+    pq_score = pq.get("score")
+    bc_score = bc.get("score")
+    pq_label = (pq.get("label") or "").capitalize()
+    bc_label = (
+        "Excellent" if isinstance(bc_score, (int,float)) and bc_score >= 90 else
+        "Good"      if isinstance(bc_score, (int,float)) and bc_score >= 75 else
+        "Fair"      if isinstance(bc_score, (int,float)) and bc_score >= 50 else
+        "Low"
+    )
 
-    pipeline = factsheet.get("pipeline", {})
-    outputs  = factsheet.get("outputs", {})
-    models   = factsheet.get("model_registry", [])
-    compliance = factsheet.get("compliance", {})
+    def score_color(score):
+        if score is None: return "#64748B"
+        if score >= 75: return "#059669"
+        if score >= 50: return "#D97706"
+        return "#DC2626"
 
-    if pdf_type == "client":
-        # CLIENT PDF — clean, no scores/cost/tokens
-        story.append(Paragraph("AI Models Used", h2))
-        if models:
-            rows = [["Agent Role", "Model", "Provider"]]
-            for m in models:
-                rows.append([m.get("agent_role",""), m.get("model",""), m.get("provider","")])
-            story.append(tbl(rows, [usable*0.35, usable*0.40, usable*0.25]))
-        story.append(Spacer(1, 6*mm))
+    def score_bg(score):
+        if score is None: return "#F8FAFC"
+        if score >= 75: return "#ECFDF5"
+        if score >= 50: return "#FFFBEB"
+        return "#FEF2F2"
 
-        story.append(Paragraph("Build Output", h2))
-        archetype = pipeline.get("ui_archetype") or "Auto-detected"
-        rows = [["Files Generated", "Images Generated", "UI Archetype"],
-                [str(outputs.get("files_generated", 0)),
-                 str(outputs.get("images_generated", 0)),
-                 archetype.capitalize()]]
-        story.append(tbl(rows, [usable/3, usable/3, usable/3]))
-        story.append(Spacer(1, 6*mm))
+    def badge_class(label):
+        l = label.lower()
+        if l in ("high","excellent","good","pass"): return "badge-green"
+        if l in ("medium","fair","warn","warning"):  return "badge-amber"
+        return "badge-red"
 
-        story.append(Paragraph("Compliance", h2))
-        comp_rows = []
-        for key, val in compliance.items():
-            label_str = " ".join(w.capitalize() for w in key.split("_"))
-            status = "✓  Pass" if val else "✗  Review Required"
-            comp_rows.append([label_str, status])
-        if comp_rows:
-            story.append(tbl([["Requirement", "Status"]] + comp_rows, [usable*0.65, usable*0.35]))
+    def compliance_rows():
+        items = [
+            ("audit_trail",        "Audit Trail"),
+            ("version_history",    "Version History"),
+            ("artifact_retention", "Artifact Retention"),
+        ]
+        rows = ""
+        for key, label in items:
+            val = compliance.get(key, False)
+            icon = "\u2713" if val else "\u2717"
+            cls  = "check-pass" if val else "check-fail"
+            rows += f'<div class="compliance-row"><span class="{cls}">{icon}</span>{label}</div>'
+        return rows
 
-        story.append(Spacer(1, 10*mm))
-        story.append(Paragraph(
-            "This application was built using a governed, auditable AI pipeline. "
-            "All decisions are version-controlled and available for review.",
-            bod))
+    def model_rows():
+        rows = ""
+        for m in model_reg:
+            rows += f"""
+            <tr>
+              <td>{m.get('agent_role','')}</td>
+              <td class="mono">{m.get('model','')}</td>
+              <td>{m.get('provider','')}</td>
+            </tr>"""
+        return rows
 
-    else:
-        # INTERNAL PDF — full factsheet with scores, tokens, cost, breakdown
-        story.append(Paragraph("Pipeline", h2))
-        seq = " → ".join(a.upper() if a == "pm" else a.capitalize()
-                         for a in pipeline.get("agent_sequence", []))
+    def milestone_rows():
+        html = ""
+        for m in milestones:
+            html += f'<div class="milestone-title">{m.get("name","")}</div>'
+            for tk in m.get("tasks", [])[:8]:
+                tid  = tk.get("id","")
+                desc = tk.get("description", tk.get("title",""))
+                html += f'<div class="task-row"><span class="task-id">{tid}</span>{desc}</div>'
+        return html
+
+    def breakdown_rows():
+        rows = ""
+        filtered = [b for b in bc.get("breakdown",[])
+                    if b.get("factor","").lower() not in ("build speed","design assets")]
+        for b in filtered:
+            rows += f"""
+            <tr>
+              <td>{b.get('factor','').title()}</td>
+              <td class="mono center">{b.get('points','')}</td>
+              <td>{(b.get('note','') or '').capitalize()}</td>
+            </tr>"""
+        return rows
+
+    cover_label = "Client Delivery Certificate" if pdf_type == "client" else "Internal Build Report"
+
+    # Scoring block — shown in both PDFs
+    scoring_html = ""
+    if scoring:
+        scoring_html = f"""
+        <div class="section-title">Quality Scores</div>
+        <div class="score-grid">
+          <div class="score-card" style="border-top: 3px solid {score_color(pq_score)};">
+            <div class="score-label">Prompt Quality
+              <span class="watson-badge">Powered by IBM Watson NLU</span>
+            </div>
+            <div class="score-number" style="color:{score_color(pq_score)};">{pq_score if pq_score is not None else '\u2014'}</div>
+            <div class="score-sub">/100</div>
+            <span class="badge {badge_class(pq_label)}">{pq_label}</span>
+            <div class="score-meta">How clearly your idea was communicated to the AI pipeline</div>
+          </div>
+          <div class="score-card" style="border-top: 3px solid {score_color(bc_score)};">
+            <div class="score-label">Build Confidence
+              <span class="archon-badge">Archon Engine</span>
+            </div>
+            <div class="score-number" style="color:{score_color(bc_score)};">{bc_score if bc_score is not None else '\u2014'}</div>
+            <div class="score-sub">/100</div>
+            <span class="badge {badge_class(bc_label)}">{bc_label}</span>
+            <div class="score-meta">Based on code output, archetype detection, and pipeline success</div>
+          </div>
+        </div>
+        """
+        if pdf_type == "internal" and bc.get("breakdown"):
+            scoring_html += f"""
+            <div class="sub-section">
+              <div class="sub-title">Build Score Breakdown</div>
+              <table>
+                <thead><tr><th>Factor</th><th>Points</th><th>Note</th></tr></thead>
+                <tbody>{breakdown_rows()}</tbody>
+              </table>
+              <div class="footnote">
+                Scoring Methodology: Prompt Quality is measured by IBM Watson NLU \u2014 keyword density,
+                domain relevance, and entity extraction from the user\u2019s original prompt (scale 0\u2013100).
+                Build Confidence is computed by Archon\u2019s governance engine from pipeline outputs \u2014
+                files generated, archetype detection success, and pipeline completion status.
+              </div>
+            </div>
+            """
+
+    # Internal-only pipeline section
+    pipeline_html = ""
+    if pdf_type == "internal":
+        seq = " \u2192 ".join(
+            a.upper() if a == "pm" else a.capitalize()
+            for a in pipeline.get("agent_sequence", [])
+        )
         duration = pipeline.get("duration_seconds")
-        dur_str = f"{duration}s" if duration else "—"
-        rows = [["Status", "UI Archetype", "Duration", "Agent Sequence"],
-                [pipeline.get("status","").capitalize(),
-                 (pipeline.get("ui_archetype") or "Auto").capitalize(),
-                 dur_str, seq]]
-        story.append(tbl(rows, [usable*0.15, usable*0.20, usable*0.15, usable*0.50]))
-        story.append(Spacer(1, 4*mm))
+        dur_str = f"{duration}s" if duration else "\u2014"
+        pipeline_html = f"""
+        <div class="section-title">Pipeline</div>
+        <table>
+          <thead><tr><th>Status</th><th>UI Archetype</th><th>Duration</th><th>Agent Sequence</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-green">{pipeline.get('status','').capitalize()}</span></td>
+              <td>{archetype}</td>
+              <td class="mono">{dur_str}</td>
+              <td class="mono">{seq}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="sub-section">
+          <div class="sub-title">Usage</div>
+          <table>
+            <thead><tr><th>Credits Used</th><th>Tokens Used</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="mono">{usage.get('credits_used') or '\u2014'}</td>
+                <td class="mono">{usage.get('tokens_used') or '\u2014'}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        """
 
-        story.append(Paragraph("AI Models", h2))
-        if models:
-            rows = [["Agent Role", "Model", "Provider"]]
-            for m in models:
-                rows.append([m.get("agent_role",""), m.get("model",""), m.get("provider","")])
-            story.append(tbl(rows, [usable*0.30, usable*0.45, usable*0.25]))
-        story.append(Spacer(1, 4*mm))
+    # Brief section
+    brief_html = ""
+    if prd:
+        overview = prd.get("overview","")
+        goals    = prd.get("goals", [])
+        features = prd.get("core_features_mvp", prd.get("core_features", []))
+        brief_html = f'<div class="section-title">Brief</div>'
+        if overview:
+            brief_html += f'<p class="overview">{overview}</p>'
+        if goals:
+            brief_html += '<div class="sub-title">Goals</div><ul>'
+            for g in goals[:5]:
+                brief_html += f'<li>{g}</li>'
+            brief_html += '</ul>'
+        if features:
+            brief_html += '<div class="sub-title">Core Features</div><ul>'
+            for f in features[:6]:
+                brief_html += f'<li>{f}</li>'
+            brief_html += '</ul>'
 
-        usage = factsheet.get("usage", {})
-        story.append(Paragraph("Usage & Cost", h2))
-        rows = [["Tokens Used", "Estimated Cost (USD)", "Credits Used"],
-                [str(usage.get("tokens_used") or "—"),
-                 f"${usage.get('estimated_cost_usd'):.4f}" if usage.get("estimated_cost_usd") else "—",
-                 str(usage.get("credits_used") or "—")]]
-        story.append(tbl(rows, [usable/3, usable/3, usable/3]))
-        story.append(Spacer(1, 4*mm))
+    # Plan section
+    plan_html = ""
+    if milestones:
+        plan_html = f'<div class="section-title">Build Plan</div><div class="milestones">{milestone_rows()}</div>'
 
-        scoring = factsheet.get("scoring", {})
-        if scoring:
-            story.append(Paragraph("Scoring", h2))
-            pq = scoring.get("prompt_quality", {})
-            bc = scoring.get("build_confidence", {})
-            rows = [["Metric", "Score", "Label"],
-                    ["Prompt Quality", str(pq.get("score","—")), (pq.get("label") or "—").capitalize()],
-                    ["Build Confidence", str(bc.get("score","—")), (bc.get("label") or "—").capitalize()]]
-            story.append(tbl(rows, [usable*0.50, usable*0.25, usable*0.25]))
+    # Warning box
+    warning_html = ""
+    if human_review:
+        if pdf_type == "client":
+            msg = ("This build\u2019s quality scores indicate that a human review is recommended before "
+                   "client delivery. Please have a team member verify the generated output meets "
+                   "your quality standards.")
+        else:
+            msg = (f"Automated scoring flagged this build for review \u2014 "
+                   f"Prompt Quality {pq_score}/100 \xb7 Build Confidence {bc_score}/100. "
+                   f"Review threshold: 50/100. Verify output quality before delivery.")
+        warning_html = f"""
+        <div class="warning-box">
+          <div class="warning-title">\u26a0 Human Review Recommended</div>
+          <div class="warning-body">{msg}</div>
+        </div>"""
 
-            breakdown = [b for b in bc.get("breakdown", [])
-                         if b.get("factor","").lower() not in ("build speed","design assets")]
-            if breakdown:
-                story.append(Spacer(1, 3*mm))
-                story.append(Paragraph("Build Score Breakdown", ParagraphStyle("h3", fontSize=10, textColor=SLATE, spaceBefore=6, spaceAfter=3, fontName="Helvetica-Bold")))
-                rows = [["Factor", "Points", "Note"]]
-                for b in breakdown:
-                    rows.append([b.get("factor","").title(), str(b.get("points","")), b.get("note","").capitalize()])
-                story.append(tbl(rows, [usable*0.40, usable*0.15, usable*0.45]))
-            story.append(Spacer(1, 4*mm))
+    html = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-        story.append(Paragraph("Outputs", h2))
-        rows = [["Files Generated", "Images Generated"],
-                [str(outputs.get("files_generated", 0)), str(outputs.get("images_generated", 0))]]
-        story.append(tbl(rows, [usable/2, usable/2]))
-        story.append(Spacer(1, 4*mm))
+  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
 
-        qi = [q for q in factsheet.get("quality_indicators", [])
-              if q.get("indicator","").lower() != "build speed"]
-        if qi:
-            story.append(Paragraph("Quality Indicators", h2))
-            rows = [["Indicator", "Status", "Value"]]
-            for q in qi:
-                rows.append([" ".join(w.capitalize() for w in q.get("indicator","").split("_")),
-                              q.get("status","").capitalize(),
-                              q.get("value","")])
-            story.append(tbl(rows, [usable*0.40, usable*0.20, usable*0.40]))
-            story.append(Spacer(1, 4*mm))
+  body {{
+    font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 9pt;
+    color: #334155;
+    background: white;
+    padding: 0;
+  }}
 
-        story.append(Paragraph("Compliance", h2))
-        comp_rows = [["Requirement", "Status"]]
-        for key, val in compliance.items():
-            label_str = " ".join(w.capitalize() for w in key.split("_"))
-            comp_rows.append([label_str, "Pass" if val else "Review Required"])
-        story.append(tbl(comp_rows, [usable*0.65, usable*0.35]))
+  .cover {{
+    background: #4F46E5;
+    padding: 12px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }}
+  .cover-left {{ color: white; font-size: 11pt; font-weight: 700; letter-spacing: 0.05em; }}
+  .cover-right {{ color: #A5B4FC; font-size: 9pt; }}
 
-    doc.build(story)
+  .header {{ padding: 0 24px 16px 24px; border-bottom: 1px solid #E2E8F0; margin-bottom: 20px; }}
+  .project-name {{ font-size: 22pt; font-weight: 700; color: #0F172A; margin-bottom: 4px; }}
+  .project-sub {{ font-size: 12pt; font-weight: 600; color: #4F46E5; margin-bottom: 3px; }}
+  .project-meta {{ font-size: 8pt; color: #94A3B8; }}
+
+  .content {{ padding: 0 24px; }}
+
+  .section {{ margin-bottom: 20px; }}
+  .section-title {{
+    font-size: 11pt; font-weight: 700; color: #0F172A;
+    margin-bottom: 10px; padding-bottom: 5px;
+    border-bottom: 1px solid #E2E8F0;
+  }}
+  .sub-section {{ margin-top: 12px; }}
+  .sub-title {{ font-size: 9pt; font-weight: 600; color: #475569; margin-bottom: 6px; margin-top: 8px; }}
+
+  /* Score cards */
+  .score-grid {{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+  }}
+  .score-card {{
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    padding: 14px;
+    background: #F8FAFC;
+  }}
+  .score-label {{
+    font-size: 9pt; font-weight: 600; color: #0F172A;
+    margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }}
+  .score-number {{
+    font-size: 32pt; font-weight: 700; line-height: 1;
+    display: inline;
+  }}
+  .score-sub {{ font-size: 10pt; color: #94A3B8; display: inline; margin-left: 3px; }}
+  .score-meta {{ font-size: 7.5pt; color: #94A3B8; margin-top: 6px; line-height: 1.4; }}
+
+  /* Badges */
+  .badge {{
+    display: inline-block;
+    font-size: 7.5pt; font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-top: 4px;
+  }}
+  .badge-green {{ background: #ECFDF5; color: #059669; border: 1px solid #6EE7B7; }}
+  .badge-amber {{ background: #FFFBEB; color: #D97706; border: 1px solid #FCD34D; }}
+  .badge-red   {{ background: #FEF2F2; color: #DC2626; border: 1px solid #FCA5A5; }}
+  .badge-blue  {{ background: #EFF6FF; color: #2563EB; border: 1px solid #93C5FD; }}
+
+  .watson-badge {{
+    font-size: 7pt; font-weight: 500;
+    background: #EFF6FF; color: #2563EB;
+    border: 1px solid #BFDBFE;
+    padding: 1px 6px; border-radius: 10px;
+  }}
+  .archon-badge {{
+    font-size: 7pt; font-weight: 500;
+    background: #F5F3FF; color: #7C3AED;
+    border: 1px solid #DDD6FE;
+    padding: 1px 6px; border-radius: 10px;
+  }}
+
+  /* Tables */
+  table {{
+    width: 100%; border-collapse: collapse;
+    font-size: 8.5pt; margin-bottom: 4px;
+  }}
+  thead tr {{ background: #F8FAFC; }}
+  th {{
+    text-align: left; font-weight: 600; font-size: 7.5pt;
+    color: #94A3B8; text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 7px 10px; border-bottom: 1px solid #E2E8F0;
+  }}
+  td {{ padding: 8px 10px; border-bottom: 1px solid #F1F5F9; color: #334155; }}
+  tr:last-child td {{ border-bottom: none; }}
+  tbody tr:nth-child(even) {{ background: #F8FAFC; }}
+  .mono {{ font-family: 'Courier New', monospace; font-size: 8pt; }}
+  .center {{ text-align: center; }}
+
+  table {{ border: 1px solid #E2E8F0; border-radius: 6px; overflow: hidden; }}
+
+  /* Output stat boxes */
+  .stat-grid {{
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 4px;
+  }}
+  .stat-box {{
+    border: 1px solid #E2E8F0; border-radius: 6px;
+    padding: 10px 12px; background: #F8FAFC;
+  }}
+  .stat-box-label {{ font-size: 7.5pt; color: #94A3B8; font-weight: 500; margin-bottom: 4px; }}
+  .stat-box-value {{ font-size: 13pt; font-weight: 700; color: #0F172A; }}
+
+  /* Compliance */
+  .compliance-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }}
+  .compliance-row {{
+    display: flex; align-items: center; gap: 8px;
+    font-size: 8.5pt; color: #334155;
+    padding: 6px 0;
+    border-bottom: 1px solid #F1F5F9;
+  }}
+  .check-pass {{ color: #059669; font-size: 11pt; font-weight: 700; }}
+  .check-fail {{ color: #DC2626; font-size: 11pt; font-weight: 700; }}
+
+  /* Brief / Plan */
+  .overview {{ color: #475569; line-height: 1.6; margin-bottom: 8px; font-size: 8.5pt; }}
+  ul {{ padding-left: 16px; margin-bottom: 6px; }}
+  li {{ color: #475569; line-height: 1.7; font-size: 8.5pt; }}
+
+  .milestones {{ margin-top: 4px; }}
+  .milestone-title {{
+    font-size: 8.5pt; font-weight: 700; color: #0F172A;
+    margin: 10px 0 4px 0;
+  }}
+  .task-row {{ display: flex; gap: 8px; padding: 3px 0; font-size: 8pt; color: #475569; }}
+  .task-id {{
+    font-family: monospace; font-size: 7.5pt; font-weight: 600;
+    color: #4F46E5; background: #EEF2FF;
+    padding: 1px 5px; border-radius: 3px;
+    white-space: nowrap; flex-shrink: 0;
+    align-self: flex-start; margin-top: 1px;
+  }}
+
+  /* Warning */
+  .warning-box {{
+    border: 1px solid #FCA5A5; border-radius: 6px;
+    background: #FEF2F2; padding: 12px 14px;
+    margin-top: 12px;
+  }}
+  .warning-title {{ font-size: 9pt; font-weight: 700; color: #DC2626; margin-bottom: 4px; }}
+  .warning-body  {{ font-size: 8pt; color: #991B1B; line-height: 1.5; }}
+
+  /* Footnote */
+  .footnote {{
+    font-size: 7.5pt; color: #94A3B8; line-height: 1.5;
+    margin-top: 8px; padding-top: 8px;
+    border-top: 1px solid #F1F5F9;
+    font-style: italic;
+  }}
+
+  /* Footer */
+  .footer {{
+    margin-top: 28px; padding: 12px 24px;
+    border-top: 1px solid #E2E8F0;
+    text-align: center;
+    font-size: 7.5pt; color: #94A3B8;
+  }}
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="cover-left">ARCHON</div>
+  <div class="cover-right">{cover_label}</div>
+</div>
+
+<div class="header">
+  <div class="project-name">{project_name}</div>
+  <div class="project-sub">AI Build Factsheet \xb7 Version {ver}</div>
+  <div class="project-meta">Generated {ts} \xb7 Archon Governed Pipeline</div>
+</div>
+
+<div class="content">
+
+  <div class="section">
+    {scoring_html}
+  </div>
+
+  <div class="section">
+    {brief_html}
+  </div>
+
+  <div class="section">
+    {plan_html}
+  </div>
+
+  <div class="section">
+    <div class="section-title">AI Models Used</div>
+    <table>
+      <thead><tr><th>Agent Role</th><th>Model</th><th>Provider</th></tr></thead>
+      <tbody>{model_rows()}</tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Build Output</div>
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="stat-box-label">UI Archetype</div>
+        <div class="stat-box-value" style="font-size:11pt;">{archetype}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-label">Files Generated</div>
+        <div class="stat-box-value">{outputs.get('files_generated', 0)}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-label">Images Generated</div>
+        <div class="stat-box-value">{outputs.get('images_generated', 0)}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-label">Credits Used</div>
+        <div class="stat-box-value">{usage.get('credits_used') or '\u2014'}</div>
+      </div>
+    </div>
+  </div>
+
+  {pipeline_html}
+
+  <div class="section">
+    <div class="section-title">Compliance</div>
+    <p style="font-size:8pt; color:#64748B; font-style:italic; margin-bottom:10px;">
+      This build was generated by a governed, auditable AI pipeline.
+      All decisions are version-controlled and available for review.
+    </p>
+    <div class="compliance-grid">
+      {compliance_rows()}
+    </div>
+    {warning_html}
+  </div>
+
+</div>
+
+<div class="footer">
+  Archon AI Build Platform \xb7 Version {ver} \xb7 {ts} \xb7 archon.build
+</div>
+
+</body>
+</html>"""
+
+    pdf_bytes = HTML(string=html).write_pdf()
+    buf = io.BytesIO(pdf_bytes)
     buf.seek(0)
 
     label = "client" if pdf_type == "client" else "internal"
-    filename = f"archon-factsheet-{project_name.lower().replace(' ','-')}-v{ver}-{label}.pdf"
+    safe_name = project_name.lower().replace(" ", "-")[:30]
+    filename = f"archon-{safe_name}-v{ver}-{label}.pdf"
     return send_file(buf, mimetype="application/pdf", as_attachment=True, download_name=filename)
 
 
