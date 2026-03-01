@@ -444,7 +444,15 @@ Impact:
 - 🔴 Each version's artifacts + factsheet printable per version (Brief + Plan + Code + Factsheet)
 - 🔴 Solves Phase 8.2 client audit trail requirement
 
-#### 17.5 — Delivery Readiness Gate (🔴 Planned)
+#### 17.3 — Dashboard Governance Metrics (🔴 Planned)
+- 🔴 Replace "Pipelines Today" header stat with **Avg Prompt Score** (Sparkles icon, /100 suffix)
+- 🔴 Replace "Lines Generated" header stat with **Avg Build Score** (Shield icon, /100 suffix)
+- 🔴 New backend endpoint: GET /api/dashboard/stats — queries all executions, parses governance_log JSON, averages prompt + build scores
+- 🔴 Nulls skipped in average (pre-v1.1 builds without factsheet show "—" not 0)
+- 🔴 Frontend header pulls from endpoint and displays live averages
+- 🔴 Both Enterprise (frontend-v4) and Studio (frontend/) dashboards updated
+
+#### 17.4 — Dual PDF Export (🔴 Planned)
 - 🔴 Configurable quality threshold per project (default 85/100)
 - 🔴 Version flagged as "Client Ready" or "Needs Iteration" based on combined score
 - 🔴 Visible indicator on Versions timeline (green checkmark vs yellow flag)

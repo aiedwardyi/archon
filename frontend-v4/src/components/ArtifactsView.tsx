@@ -585,6 +585,21 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
   if (error) return <div className="text-sm text-muted-foreground italic py-8 text-center">{error}</div>;
   if (!factsheet) return <div className="text-sm text-muted-foreground italic py-8 text-center">No factsheet data.</div>;
 
+  const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+  const titleCase = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase());
+  const formatAgentPill = (val: string) => val === 'pm' ? 'PM' : capitalize(val);
+
+  const formatQualityIndicator = (indicator: string, value: string) => {
+    const label = indicator.replace(/\b\w/g, c => c.toUpperCase());
+    const match = value.match(/^([\d,]+)\s+(.+)$/);
+    if (!match) return `${label}: ${value}`;
+    const num = match[1];
+    const rawUnit = match[2].replace(/\(s\)/, '');
+    const count = parseInt(num.replace(/,/g, ''), 10);
+    const unit = count === 1 ? rawUnit.replace(/s$/, '') : rawUnit.endsWith('s') ? rawUnit : rawUnit + 's';
+    return `${label}: ${num} ${unit.charAt(0).toUpperCase() + unit.slice(1)}`;
+  };
+
   const ts = factsheet.generated_at ? new Date(factsheet.generated_at).toLocaleString() : "Unknown";
 
   return (
@@ -622,19 +637,19 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
             <span className="text-muted-foreground text-xs">Status</span>
             <div className="mt-0.5">
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-emerald-300 text-emerald-600 dark:text-emerald-400 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10">
-                {factsheet.pipeline.status}
+                {capitalize(factsheet.pipeline.status)}
               </span>
             </div>
           </div>
           <div>
             <span className="text-muted-foreground text-xs">UI Archetype</span>
-            <p className="mt-0.5 text-foreground">{factsheet.pipeline.ui_archetype || "Auto-detected"}</p>
+            <p className="mt-0.5 text-foreground">{factsheet.pipeline.ui_archetype ? capitalize(factsheet.pipeline.ui_archetype) : "Auto-detected"}</p>
           </div>
           <div className="col-span-2">
             <span className="text-muted-foreground text-xs">Agent Sequence</span>
             <div className="mt-0.5 flex flex-wrap gap-1">
               {factsheet.pipeline.agent_sequence.map((a) => (
-                <span key={a} className="text-[10px] font-medium bg-secondary text-muted-foreground px-1.5 py-0.5 rounded">{a}</span>
+                <span key={a} className="text-[10px] font-medium bg-secondary text-muted-foreground px-1.5 py-0.5 rounded">{formatAgentPill(a)}</span>
               ))}
             </div>
           </div>
@@ -664,18 +679,16 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
                       ? "border-amber-300 text-amber-600 dark:text-amber-400 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10"
                       : "border-red-300 text-red-600 dark:text-red-400 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10"
                   }`}>
-                    {factsheet.scoring.prompt_quality.label}
+                    {capitalize(factsheet.scoring.prompt_quality.label)}
                   </span>
                 </div>
-                <div className="space-y-1.5 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Domain</span>
-                    <span className="text-foreground">{factsheet.scoring.prompt_quality.domain}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Keywords</span>
-                    <span className="text-foreground">{factsheet.scoring.prompt_quality.keywords.length > 0 ? factsheet.scoring.prompt_quality.keywords.join(", ") : "—"}</span>
-                  </div>
+                <div className="flex flex-col gap-1 mb-3">
+                  <span className="text-xs text-muted-foreground">Domain</span>
+                  <span className="text-sm font-normal text-foreground">{capitalize(factsheet.scoring.prompt_quality.domain)}</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs text-muted-foreground">Keywords</span>
+                  <span className="text-sm font-normal text-foreground leading-relaxed">{factsheet.scoring.prompt_quality.keywords.length > 0 ? factsheet.scoring.prompt_quality.keywords.map(k => capitalize(k)).join(", ") : "—"}</span>
                 </div>
                 <div className="absolute top-3 right-3">
                   <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30">
@@ -705,19 +718,19 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
                     <span className="text-3xl font-bold text-foreground">{displayScore}</span>
                     <span className="text-sm text-muted-foreground mb-1">/100</span>
                     <span className={`ml-2 text-[10px] font-semibold px-2 py-0.5 rounded border mb-1 ${labelColor}`}>
-                      {displayLabel}
+                      {capitalize(displayLabel)}
                     </span>
                   </div>
                   {filteredBreakdown.length > 0 && (
                     <div className="border border-border rounded overflow-hidden">
-                      <div className="grid grid-cols-3 gap-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground bg-secondary/40 px-3 py-1.5">
+                      <div className="grid gap-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground bg-secondary/40 px-3 py-1.5" style={{ gridTemplateColumns: '1fr 60px 1fr' }}>
                         <span>Factor</span><span>Points</span><span>Note</span>
                       </div>
                       {filteredBreakdown.map((b) => (
-                        <div key={b.factor} className="grid grid-cols-3 gap-0 text-xs px-3 py-1.5 border-t border-border">
-                          <span className="text-foreground">{b.factor}</span>
+                        <div key={b.factor} className="grid gap-0 text-xs px-3 py-1.5 border-t border-border" style={{ gridTemplateColumns: '1fr 60px 1fr' }}>
+                          <span className="text-foreground">{titleCase(b.factor)}</span>
                           <span className="text-muted-foreground font-mono">{b.points}</span>
-                          <span className="text-muted-foreground">{b.note}</span>
+                          <span className="text-muted-foreground">{capitalize(b.note)}</span>
                         </div>
                       ))}
                     </div>
@@ -793,7 +806,7 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
                     : "border-amber-300 text-amber-600 dark:text-amber-400 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10"
                 }`}
               >
-                {qi.indicator}: {qi.value}
+                {formatQualityIndicator(qi.indicator, qi.value)}
               </span>
             ))}
           </div>
