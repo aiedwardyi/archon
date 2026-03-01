@@ -1715,6 +1715,42 @@ def watson_tts():
         print(f"Watson TTS error: {e}")
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/dashboard/stats", methods=["GET"])
+def dashboard_stats():
+    """Return average governance scores across all scored builds."""
+    session = get_session()
+    try:
+        executions = session.query(Execution).all()
+        prompt_scores = []
+        build_scores = []
+
+        for ex in executions:
+            if not ex.governance_log:
+                continue
+            try:
+                factsheet = json.loads(ex.governance_log)
+                scoring = factsheet.get("scoring", {})
+                ps = scoring.get("prompt_quality", {}).get("score")
+                bs = scoring.get("build_confidence", {}).get("score")
+                if ps is not None:
+                    prompt_scores.append(ps)
+                if bs is not None:
+                    build_scores.append(bs)
+            except Exception:
+                continue
+
+        avg_prompt = round(sum(prompt_scores) / len(prompt_scores)) if prompt_scores else None
+        avg_build = round(sum(build_scores) / len(build_scores)) if build_scores else None
+
+        return jsonify({
+            "avg_prompt_score": avg_prompt,
+            "avg_build_score": avg_build,
+            "scored_builds": len(prompt_scores),
+        })
+    finally:
+        session.close()
+
+
 if __name__ == "__main__":
     init_db()
     print(f"Flask server starting...")
