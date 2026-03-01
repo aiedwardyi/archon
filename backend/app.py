@@ -1929,6 +1929,14 @@ def download_factsheet_pdf(project_id: int, version: int):
         return rows
 
     cover_label = "Client Delivery Certificate" if pdf_type == "client" else "Internal Build Report"
+    DASH = "\u2014"
+
+    credits_val = usage.get("credits_used") or DASH
+    credits_stat = "" if pdf_type == "client" else f'''
+      <div class="stat-box">
+        <div class="stat-box-label">Credits Used</div>
+        <div class="stat-box-value">{credits_val}</div>
+      </div>'''
 
     # Scoring block — shown in both PDFs
     scoring_html = ""
@@ -1936,20 +1944,20 @@ def download_factsheet_pdf(project_id: int, version: int):
         scoring_html = f"""
         <div class="section-title">Quality Scores</div>
         <div class="score-grid">
-          <div class="score-card" style="border-top: 3px solid {score_color(pq_score)};">
+          <div class="score-card" style="border-top: 3px solid #2563EB;">
             <div class="score-label">Prompt Quality
               <span class="watson-badge">Powered by IBM Watson NLU</span>
             </div>
-            <div class="score-number" style="color:{score_color(pq_score)};">{pq_score if pq_score is not None else '\u2014'}</div>
+            <div class="score-number" style="color:{score_color(pq_score)};">{pq_score if pq_score is not None else DASH}</div>
             <div class="score-sub">/100</div>
             <span class="badge {badge_class(pq_label)}">{pq_label}</span>
             <div class="score-meta">How clearly your idea was communicated to the AI pipeline</div>
           </div>
-          <div class="score-card" style="border-top: 3px solid {score_color(bc_score)};">
+          <div class="score-card" style="border-top: 3px solid #2563EB;">
             <div class="score-label">Build Confidence
               <span class="archon-badge">Archon Engine</span>
             </div>
-            <div class="score-number" style="color:{score_color(bc_score)};">{bc_score if bc_score is not None else '\u2014'}</div>
+            <div class="score-number" style="color:{score_color(bc_score)};">{bc_score if bc_score is not None else DASH}</div>
             <div class="score-sub">/100</div>
             <span class="badge {badge_class(bc_label)}">{bc_label}</span>
             <div class="score-meta">Based on code output, archetype detection, and pipeline success</div>
@@ -1998,11 +2006,10 @@ def download_factsheet_pdf(project_id: int, version: int):
         <div class="sub-section">
           <div class="sub-title">Usage</div>
           <table>
-            <thead><tr><th>Credits Used</th><th>Tokens Used</th></tr></thead>
+            <thead><tr><th>Credits Used</th></tr></thead>
             <tbody>
               <tr>
-                <td class="mono">{usage.get('credits_used') or '\u2014'}</td>
-                <td class="mono">{usage.get('tokens_used') or '\u2014'}</td>
+                <td class="mono">{usage.get('credits_used') or DASH}</td>
               </tr>
             </tbody>
           </table>
@@ -2069,20 +2076,41 @@ def download_factsheet_pdf(project_id: int, version: int):
   }}
 
   .cover {{
-    background: #4F46E5;
+    background: #0F172A;
     padding: 12px 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 24px;
   }}
-  .cover-left {{ color: white; font-size: 11pt; font-weight: 700; letter-spacing: 0.05em; }}
-  .cover-right {{ color: #A5B4FC; font-size: 9pt; }}
+  .cover-left {{ display: flex; align-items: center; gap: 0; color: white; font-size: 11pt; font-weight: 600; }}
+  .cover-right {{ color: #94A3B8; font-size: 9pt; }}
 
-  .header {{ padding: 0 24px 16px 24px; border-bottom: 1px solid #E2E8F0; margin-bottom: 20px; }}
+  .header {{ padding: 16px 24px 12px 24px; margin-bottom: 0; }}
+  .divider {{ border: none; border-top: 1px solid #E2E8F0; margin: 0 24px 20px 24px; }}
+  .header * {{ max-width: 100%; }}
+  .header-top {{ display: flex; align-items: flex-start; gap: 14px; }}
+  .shield-icon {{ width: 44px; height: 44px; flex-shrink: 0; margin-top: 4px; }}
   .project-name {{ font-size: 22pt; font-weight: 700; color: #0F172A; margin-bottom: 4px; }}
-  .project-sub {{ font-size: 12pt; font-weight: 600; color: #4F46E5; margin-bottom: 3px; }}
+  .project-sub {{ font-size: 12pt; font-weight: 600; color: #2563EB; margin-bottom: 3px; }}
   .project-meta {{ font-size: 8pt; color: #94A3B8; }}
+  .trust-strip {{
+    display: flex; gap: 16px; margin-top: 10px;
+    padding: 8px 0; border-top: 1px solid #E2E8F0;
+    flex-wrap: wrap;
+  }}
+  .trust-item {{
+    font-size: 7.5pt; color: #2563EB; font-weight: 500;
+  }}
+
+  .header-badges {{ display: flex; gap: 8px; margin-top: 10px; max-width: fit-content; }}
+  .hbadge {{
+    font-size: 7.5pt; font-weight: 600;
+    padding: 3px 11px; border-radius: 12px;
+    display: inline-block; gap: 5px;
+  }}
+  .hbadge-green {{ color: #059669; background: #ECFDF5; border: 1.5px solid #6EE7B7; }}
+  .hbadge-blue  {{ color: #2563EB; background: #EFF6FF; border: 1.5px solid #BFDBFE; }}
 
   .content {{ padding: 0 24px; }}
 
@@ -2136,14 +2164,14 @@ def download_factsheet_pdf(project_id: int, version: int):
   .watson-badge {{
     font-size: 7pt; font-weight: 500;
     background: #EFF6FF; color: #2563EB;
-    border: 1px solid #BFDBFE;
-    padding: 1px 6px; border-radius: 10px;
+    padding: 2px 7px; border-radius: 10px;
+    border: none;
   }}
   .archon-badge {{
     font-size: 7pt; font-weight: 500;
     background: #F5F3FF; color: #7C3AED;
-    border: 1px solid #DDD6FE;
-    padding: 1px 6px; border-radius: 10px;
+    padding: 2px 7px; border-radius: 10px;
+    border: none;
   }}
 
   /* Tables */
@@ -2168,7 +2196,7 @@ def download_factsheet_pdf(project_id: int, version: int):
   /* Output stat boxes */
   .stat-grid {{
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 8px;
     margin-bottom: 4px;
   }}
@@ -2200,13 +2228,28 @@ def download_factsheet_pdf(project_id: int, version: int):
     font-size: 8.5pt; font-weight: 700; color: #0F172A;
     margin: 10px 0 4px 0;
   }}
-  .task-row {{ display: flex; gap: 8px; padding: 3px 0; font-size: 8pt; color: #475569; }}
+  .task-row {{
+    display: grid;
+    grid-template-columns: minmax(68px, auto) 1fr;
+    gap: 10px;
+    padding: 4px 0;
+    font-size: 8pt;
+    color: #475569;
+    align-items: start;
+  }}
   .task-id {{
-    font-family: monospace; font-size: 7.5pt; font-weight: 600;
-    color: #4F46E5; background: #EEF2FF;
-    padding: 1px 5px; border-radius: 3px;
-    white-space: nowrap; flex-shrink: 0;
-    align-self: flex-start; margin-top: 1px;
+    font-family: monospace;
+    font-size: 7pt;
+    font-weight: 600;
+    color: #4F46E5;
+    background: #EEF2FF;
+    padding: 2px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-align: center;
+    display: inline-block;
+    width: 100%;
+    box-sizing: border-box;
   }}
 
   /* Warning */
@@ -2238,15 +2281,49 @@ def download_factsheet_pdf(project_id: int, version: int):
 <body>
 
 <div class="cover">
-  <div class="cover-left">ARCHON</div>
+  <div class="cover-left">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block; vertical-align:middle; margin-right:8px; flex-shrink:0;">
+      <polygon points="12,2 20.66,7 20.66,17 12,22 3.34,17 3.34,7"
+               fill="none" stroke="white" stroke-width="2.5" stroke-linejoin="round"/>
+    </svg>
+    <span style="font-family: Inter, -apple-system, 'Segoe UI', sans-serif; font-weight: 600; letter-spacing: -0.02em; vertical-align: middle; font-size: 11pt;">Archon</span>
+  </div>
   <div class="cover-right">{cover_label}</div>
 </div>
 
 <div class="header">
-  <div class="project-name">{project_name}</div>
-  <div class="project-sub">AI Build Factsheet \xb7 Version {ver}</div>
-  <div class="project-meta">Generated {ts} \xb7 Archon Governed Pipeline</div>
+  <div class="header-top">
+    <svg class="shield-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2L3 7V12C3 16.55 6.84 20.74 12 22C17.16 20.74 21 16.55 21 12V7L12 2Z"
+            fill="#EFF6FF" stroke="#2563EB" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M9 12L11 14L15 10" stroke="#2563EB" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      <div class="project-name">{project_name}</div>
+      <div class="project-sub">AI Build Factsheet \xb7 Version {ver}</div>
+      <div class="project-meta">Generated {ts} \xb7 Archon Governed Pipeline</div>
+    </div>
+  </div>
+  <div class="trust-strip">
+    <span class="trust-item">&#10003; Audit Trail</span>
+    <span class="trust-item">&#10003; Version Controlled</span>
+    <span class="trust-item">&#10003; AI Governed</span>
+    <span class="trust-item">&#10003; Immutable Record</span>
+  </div>
+  <div class="header-badges">
+    <span class="hbadge hbadge-green">&#10004; Verified</span>
+    <span class="hbadge hbadge-blue">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" style="display:inline;vertical-align:middle;margin-right:3px;">
+        <path d="M12 2L3 7V12C3 16.55 6.84 20.74 12 22C17.16 20.74 21 16.55 21 12V7L12 2Z"
+              fill="#EFF6FF" stroke="#2563EB" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M9 12L11 14L15 10" stroke="#2563EB" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>Auditable
+    </span>
+  </div>
 </div>
+<hr class="divider">
 
 <div class="content">
 
@@ -2285,10 +2362,7 @@ def download_factsheet_pdf(project_id: int, version: int):
         <div class="stat-box-label">Images Generated</div>
         <div class="stat-box-value">{outputs.get('images_generated', 0)}</div>
       </div>
-      <div class="stat-box">
-        <div class="stat-box-label">Credits Used</div>
-        <div class="stat-box-value">{usage.get('credits_used') or '\u2014'}</div>
-      </div>
+      {credits_stat}
     </div>
   </div>
 
