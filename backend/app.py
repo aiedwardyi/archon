@@ -1934,6 +1934,25 @@ def download_factsheet_pdf(project_id: int, version: int):
     cover_label = "Client Delivery Certificate" if pdf_type == "client" else "Internal Build Report"
     DASH = "\u2014"
 
+    # Quality tier badge for badges row
+    quality_tier = (factsheet.get("readiness") or {}).get("quality_tier")
+    combined_score = (factsheet.get("readiness") or {}).get("combined_score")
+    _tier_colors = {"high": "#3b82f6", "good": "#10b981", "low": "#ef4444"}
+    if quality_tier and quality_tier in _tier_colors:
+        _tc = _tier_colors[quality_tier]
+        _tl = quality_tier.capitalize()
+        quality_tier_row = (
+            f'<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0;'
+            f' display: flex; align-items: center; gap: 12px;">'
+            f'<span style="color: {_tc}; font-size: 12px; font-weight: 700;'
+            f' letter-spacing: 0.05em;">'
+            f'\u2726 {_tl} Quality</span>'
+            f'<span style="color: #64748b; font-size: 11px;">'
+            f'\u2014 Overall Score {combined_score}/100</span></div>'
+        )
+    else:
+        quality_tier_row = ""
+
     credits_val = usage.get("credits_used") or DASH
     credits_stat = "" if pdf_type == "client" else f'''
       <div class="stat-box">
@@ -2325,6 +2344,7 @@ def download_factsheet_pdf(project_id: int, version: int):
       </svg>Auditable
     </span>
   </div>
+  {quality_tier_row}
 </div>
 <hr class="divider">
 
