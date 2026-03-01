@@ -16,7 +16,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await authService.login(email, password);
-      router.push("/");
+      const token = authService.getToken();
+      window.location.href = `http://localhost:8080?token=${token}`;
     } catch (err: any) {
       setError(err.message);
     } finally {
