@@ -53,7 +53,7 @@ export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectNam
       {/* Left: Logo + Nav */}
       <div className="flex items-center gap-5">
         <div className="flex items-center gap-2 font-semibold text-foreground tracking-tight text-sm">
-          <Hexagon className="h-5 w-5 text-primary" strokeWidth={2.5} />
+          <Hexagon className="h-5 w-5 text-blue-500 dark:text-primary" strokeWidth={2.5} />
           <span>Archon</span>
         </div>
 
