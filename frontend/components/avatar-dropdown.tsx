@@ -50,7 +50,7 @@ export function AvatarDropdown() {
       <div className="relative" ref={ref}>
         <button
           onClick={() => setOpen((o) => !o)}
-          className="h-7 w-7 rounded-full bg-primary flex items-center justify-center hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+          className="h-7 w-7 rounded-full bg-primary flex items-center justify-center hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 cursor-pointer"
         >
           <span className="text-primary-foreground text-xs font-semibold select-none">JD</span>
         </button>
@@ -66,21 +66,21 @@ export function AvatarDropdown() {
             <div className="py-1">
               <button
                 onClick={() => openModal("profile")}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors"
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors cursor-pointer"
               >
                 <User className="h-4 w-4 text-muted-foreground shrink-0" />
                 {t("profile")}
               </button>
               <button
                 onClick={() => openModal("settings")}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors"
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors cursor-pointer"
               >
                 <Settings className="h-4 w-4 text-muted-foreground shrink-0" />
                 {t("settings")}
               </button>
               <button
                 onClick={() => openModal("pricing")}
-                className="w-full flex items-center justify-between px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors"
+                className="w-full flex items-center justify-between px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors cursor-pointer"
               >
                 <span className="flex items-center gap-2.5">
                   <DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -108,14 +108,14 @@ export function AvatarDropdown() {
               <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
                 <button
                   onClick={() => setTheme("light")}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all ${!isDark ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${!isDark ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   <Sun className="h-3.5 w-3.5" />
                   {t("light")}
                 </button>
                 <button
                   onClick={() => setTheme("dark")}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all ${isDark ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${isDark ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   <Moon className="h-3.5 w-3.5" />
                   {t("dark")}
@@ -141,14 +141,14 @@ export function AvatarDropdown() {
                     if (token) params.set("token", token);
                     window.location.href = `http://localhost:8080?${params.toString()}`;
                   }}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all text-muted-foreground hover:text-foreground"
+                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all text-muted-foreground hover:text-foreground cursor-pointer"
                 >
                   <Building2 className="h-3.5 w-3.5" />
                   {t("enterprise")}
                 </button>
                 <button
                   onClick={() => setOpen(false)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all bg-card text-foreground shadow-sm"
+                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all bg-card text-foreground shadow-sm cursor-pointer"
                 >
                   <Paintbrush className="h-3.5 w-3.5" />
                   {t("studio")}
@@ -169,7 +169,7 @@ export function AvatarDropdown() {
             <div className="border-t border-border p-2">
               <button
                 onClick={() => openModal("pricing")}
-                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors cursor-pointer"
               >
                 <Zap className="h-3.5 w-3.5" />
                 {t("upgradeToPro")}
@@ -179,7 +179,7 @@ export function AvatarDropdown() {
             <div className="border-t border-border py-1">
               <button
                 onClick={handleSignOut}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-destructive hover:bg-accent transition-colors"
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-destructive hover:bg-accent transition-colors cursor-pointer"
               >
                 <LogOut className="h-4 w-4" />
                 {t("signOut")}
