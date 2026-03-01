@@ -36,6 +36,8 @@ export const translations = {
   backendOffline: { en: "Backend offline", ko: "백엔드 오프라인" },
   pipelinesToday: { en: "Pipelines Today", ko: "오늘 파이프라인" },
   linesGenerated: { en: "Lines Generated", ko: "생성된 라인" },
+  avgPromptScore: { en: "Avg Prompt Score", ko: "평균 프롬프트 점수" },
+  avgBuildScore: { en: "Avg Build Score", ko: "평균 빌드 점수" },
   versionsShipped: { en: "Versions Shipped", ko: "배포된 버전" },
   avgBuildTime: { en: "Avg Build Time", ko: "평균 빌드 시간" },
 

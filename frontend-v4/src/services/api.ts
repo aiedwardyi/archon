@@ -149,6 +149,40 @@ export function usePlatformStats(pollMs = 30000) {
   return stats;
 }
 
+// ── Dashboard Governance Stats ──
+
+export interface DashboardStats {
+  avg_prompt_score: number | null;
+  avg_build_score: number | null;
+  scored_builds: number;
+}
+
+export async function fetchDashboardStats(): Promise<DashboardStats | null> {
+  try {
+    const res = await fetch(`${API_BASE}/dashboard/stats`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+
+export function useDashboardStats(pollMs = 30000) {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      const data = await fetchDashboardStats();
+      if (!cancelled) setStats(data);
+    };
+    load();
+    intervalRef.current = setInterval(load, pollMs);
+    return () => { cancelled = true; if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [pollMs]);
+
+  return stats;
+}
+
 // ── Activity Feed ──
 
 export interface ActivityItem {
