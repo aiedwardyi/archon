@@ -1799,6 +1799,606 @@ def dashboard_stats():
         session.close()
 
 
+@app.route("/api/projects/<int:project_id>/versions/<int:version>/factsheet/pdf", methods=["GET"])
+def download_factsheet_pdf(project_id: int, version: int):
+    """Generate enterprise-style PDF using WeasyPrint HTML renderer."""
+    import io
+    from datetime import datetime as _dt
+    from weasyprint import HTML, CSS
+
+    pdf_type = request.args.get("type", "internal")
+
+    # Load factsheet
+    factsheet_path = get_version_dir(project_id, version) / "last_factsheet.json"
+    factsheet = read_json_file(factsheet_path)
+    if not factsheet:
+        session = get_session()
+        try:
+            execution = session.query(Execution).filter(
+                Execution.project_id == project_id, Execution.version == version
+            ).first()
+            if execution and execution.governance_log:
+                factsheet = json.loads(execution.governance_log)
+        finally:
+            session.close()
+    if not factsheet:
+        return jsonify({"error": "Factsheet not available"}), 404
+
+    prd_data  = read_json_file(get_version_dir(project_id, version) / "last_prd.json")
+    plan_data = read_json_file(get_version_dir(project_id, version) / "last_plan.json")
+
+    # Extract data
+    proj         = factsheet.get("project", {})
+    project_name = proj.get("name", "Project")
+    ver          = proj.get("version", version)
+    gen_at       = factsheet.get("generated_at", "")
+    pipeline     = factsheet.get("pipeline", {})
+    model_reg    = factsheet.get("model_registry", [])
+    usage        = factsheet.get("usage", {})
+    outputs      = factsheet.get("outputs", {})
+    scoring      = factsheet.get("scoring", {})
+    compliance   = factsheet.get("compliance", {})
+    human_review = compliance.get("human_review_required", False)
+    archetype    = (pipeline.get("ui_archetype") or "Auto-detected").capitalize()
+    prd          = (prd_data.get("prd", prd_data) if prd_data else {}) or {}
+    milestones   = (plan_data.get("milestones", []) if plan_data else []) or []
+
+    ts = ""
+    if gen_at:
+        try:
+            ts = _dt.fromisoformat(gen_at.replace("Z","")).strftime("%B %d, %Y")
+        except Exception:
+            ts = gen_at
+
+    pq = scoring.get("prompt_quality", {}) or {}
+    bc = scoring.get("build_confidence", {}) or {}
+    pq_score = pq.get("score")
+    bc_score = bc.get("score")
+    pq_label = (pq.get("label") or "").capitalize()
+    bc_label = (
+        "Excellent" if isinstance(bc_score, (int,float)) and bc_score >= 90 else
+        "Good"      if isinstance(bc_score, (int,float)) and bc_score >= 75 else
+        "Fair"      if isinstance(bc_score, (int,float)) and bc_score >= 50 else
+        "Low"
+    )
+
+    def score_color(score):
+        if score is None: return "#64748B"
+        if score >= 75: return "#059669"
+        if score >= 50: return "#D97706"
+        return "#DC2626"
+
+    def score_bg(score):
+        if score is None: return "#F8FAFC"
+        if score >= 75: return "#ECFDF5"
+        if score >= 50: return "#FFFBEB"
+        return "#FEF2F2"
+
+    def badge_class(label):
+        l = label.lower()
+        if l in ("high","excellent","good","pass"): return "badge-green"
+        if l in ("medium","fair","warn","warning"):  return "badge-amber"
+        return "badge-red"
+
+    def compliance_rows():
+        items = [
+            ("audit_trail",        "Audit Trail"),
+            ("version_history",    "Version History"),
+            ("artifact_retention", "Artifact Retention"),
+        ]
+        rows = ""
+        for key, label in items:
+            val = compliance.get(key, False)
+            icon = "\u2713" if val else "\u2717"
+            cls  = "check-pass" if val else "check-fail"
+            rows += f'<div class="compliance-row"><span class="{cls}">{icon}</span>{label}</div>'
+        return rows
+
+    def model_rows():
+        rows = ""
+        for m in model_reg:
+            rows += f"""
+            <tr>
+              <td>{m.get('agent_role','')}</td>
+              <td class="mono">{m.get('model','')}</td>
+              <td>{m.get('provider','')}</td>
+            </tr>"""
+        return rows
+
+    def milestone_rows():
+        html = ""
+        for m in milestones:
+            html += f'<div class="milestone-title">{m.get("name","")}</div>'
+            for tk in m.get("tasks", [])[:8]:
+                tid  = tk.get("id","")
+                desc = tk.get("description", tk.get("title",""))
+                html += f'<div class="task-row"><span class="task-id">{tid}</span>{desc}</div>'
+        return html
+
+    def breakdown_rows():
+        rows = ""
+        filtered = [b for b in bc.get("breakdown",[])
+                    if b.get("factor","").lower() not in ("build speed","design assets")]
+        for b in filtered:
+            rows += f"""
+            <tr>
+              <td>{b.get('factor','').title()}</td>
+              <td class="mono center">{b.get('points','')}</td>
+              <td>{(b.get('note','') or '').capitalize()}</td>
+            </tr>"""
+        return rows
+
+    cover_label = "Client Delivery Certificate" if pdf_type == "client" else "Internal Build Report"
+    DASH = "\u2014"
+
+    credits_val = usage.get("credits_used") or DASH
+    credits_stat = "" if pdf_type == "client" else f'''
+      <div class="stat-box">
+        <div class="stat-box-label">Credits Used</div>
+        <div class="stat-box-value">{credits_val}</div>
+      </div>'''
+
+    # Scoring block — shown in both PDFs
+    scoring_html = ""
+    if scoring:
+        scoring_html = f"""
+        <div class="section-title">Quality Scores</div>
+        <div class="score-grid">
+          <div class="score-card" style="border-top: 3px solid #2563EB;">
+            <div class="score-label">Prompt Quality
+              <span class="watson-badge">Powered by IBM Watson NLU</span>
+            </div>
+            <div class="score-number" style="color:{score_color(pq_score)};">{pq_score if pq_score is not None else DASH}</div>
+            <div class="score-sub">/100</div>
+            <span class="badge {badge_class(pq_label)}">{pq_label}</span>
+            <div class="score-meta">How clearly your idea was communicated to the AI pipeline</div>
+          </div>
+          <div class="score-card" style="border-top: 3px solid #2563EB;">
+            <div class="score-label">Build Confidence
+              <span class="archon-badge">Archon Engine</span>
+            </div>
+            <div class="score-number" style="color:{score_color(bc_score)};">{bc_score if bc_score is not None else DASH}</div>
+            <div class="score-sub">/100</div>
+            <span class="badge {badge_class(bc_label)}">{bc_label}</span>
+            <div class="score-meta">Based on code output, archetype detection, and pipeline success</div>
+          </div>
+        </div>
+        """
+        if pdf_type == "internal" and bc.get("breakdown"):
+            scoring_html += f"""
+            <div class="sub-section">
+              <div class="sub-title">Build Score Breakdown</div>
+              <table>
+                <thead><tr><th>Factor</th><th>Points</th><th>Note</th></tr></thead>
+                <tbody>{breakdown_rows()}</tbody>
+              </table>
+              <div class="footnote">
+                Scoring Methodology: Prompt Quality is measured by IBM Watson NLU \u2014 keyword density,
+                domain relevance, and entity extraction from the user\u2019s original prompt (scale 0\u2013100).
+                Build Confidence is computed by Archon\u2019s governance engine from pipeline outputs \u2014
+                files generated, archetype detection success, and pipeline completion status.
+              </div>
+            </div>
+            """
+
+    # Internal-only pipeline section
+    pipeline_html = ""
+    if pdf_type == "internal":
+        seq = " \u2192 ".join(
+            a.upper() if a == "pm" else a.capitalize()
+            for a in pipeline.get("agent_sequence", [])
+        )
+        duration = pipeline.get("duration_seconds")
+        dur_str = f"{duration}s" if duration else "\u2014"
+        pipeline_html = f"""
+        <div class="section-title">Pipeline</div>
+        <table>
+          <thead><tr><th>Status</th><th>UI Archetype</th><th>Duration</th><th>Agent Sequence</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-green">{pipeline.get('status','').capitalize()}</span></td>
+              <td>{archetype}</td>
+              <td class="mono">{dur_str}</td>
+              <td class="mono">{seq}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="sub-section">
+          <div class="sub-title">Usage</div>
+          <table>
+            <thead><tr><th>Credits Used</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="mono">{usage.get('credits_used') or DASH}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        """
+
+    # Brief section
+    brief_html = ""
+    if prd:
+        overview = prd.get("overview","")
+        goals    = prd.get("goals", [])
+        features = prd.get("core_features_mvp", prd.get("core_features", []))
+        brief_html = f'<div class="section-title">Brief</div>'
+        if overview:
+            brief_html += f'<p class="overview">{overview}</p>'
+        if goals:
+            brief_html += '<div class="sub-title">Goals</div><ul>'
+            for g in goals[:5]:
+                brief_html += f'<li>{g}</li>'
+            brief_html += '</ul>'
+        if features:
+            brief_html += '<div class="sub-title">Core Features</div><ul>'
+            for f in features[:6]:
+                brief_html += f'<li>{f}</li>'
+            brief_html += '</ul>'
+
+    # Plan section
+    plan_html = ""
+    if milestones:
+        plan_html = f'<div class="section-title">Build Plan</div><div class="milestones">{milestone_rows()}</div>'
+
+    # Warning box
+    warning_html = ""
+    if human_review:
+        if pdf_type == "client":
+            msg = ("This build\u2019s quality scores indicate that a human review is recommended before "
+                   "client delivery. Please have a team member verify the generated output meets "
+                   "your quality standards.")
+        else:
+            msg = (f"Automated scoring flagged this build for review \u2014 "
+                   f"Prompt Quality {pq_score}/100 \xb7 Build Confidence {bc_score}/100. "
+                   f"Review threshold: 50/100. Verify output quality before delivery.")
+        warning_html = f"""
+        <div class="warning-box">
+          <div class="warning-title">\u26a0 Human Review Recommended</div>
+          <div class="warning-body">{msg}</div>
+        </div>"""
+
+    html = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+
+  body {{
+    font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 9pt;
+    color: #334155;
+    background: white;
+    padding: 0;
+  }}
+
+  .cover {{
+    background: #0F172A;
+    padding: 12px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }}
+  .cover-left {{ display: flex; align-items: center; gap: 0; color: white; font-size: 11pt; font-weight: 600; }}
+  .cover-right {{ color: #94A3B8; font-size: 9pt; }}
+
+  .header {{ padding: 16px 24px 12px 24px; margin-bottom: 0; }}
+  .divider {{ border: none; border-top: 1px solid #E2E8F0; margin: 0 24px 20px 24px; }}
+  .header * {{ max-width: 100%; }}
+  .header-top {{ display: flex; align-items: flex-start; gap: 14px; }}
+  .shield-icon {{ width: 44px; height: 44px; flex-shrink: 0; margin-top: 4px; }}
+  .project-name {{ font-size: 22pt; font-weight: 700; color: #0F172A; margin-bottom: 4px; }}
+  .project-sub {{ font-size: 12pt; font-weight: 600; color: #2563EB; margin-bottom: 3px; }}
+  .project-meta {{ font-size: 8pt; color: #94A3B8; }}
+  .trust-strip {{
+    display: flex; gap: 16px; margin-top: 10px;
+    padding: 8px 0; border-top: 1px solid #E2E8F0;
+    flex-wrap: wrap;
+  }}
+  .trust-item {{
+    font-size: 7.5pt; color: #2563EB; font-weight: 500;
+  }}
+
+  .header-badges {{ display: flex; gap: 8px; margin-top: 10px; max-width: fit-content; }}
+  .hbadge {{
+    font-size: 7.5pt; font-weight: 600;
+    padding: 3px 11px; border-radius: 12px;
+    display: inline-block; gap: 5px;
+  }}
+  .hbadge-green {{ color: #059669; background: #ECFDF5; border: 1.5px solid #6EE7B7; }}
+  .hbadge-blue  {{ color: #2563EB; background: #EFF6FF; border: 1.5px solid #BFDBFE; }}
+
+  .content {{ padding: 0 24px; }}
+
+  .section {{ margin-bottom: 20px; }}
+  .section-title {{
+    font-size: 11pt; font-weight: 700; color: #0F172A;
+    margin-bottom: 10px; padding-bottom: 5px;
+    border-bottom: 1px solid #E2E8F0;
+  }}
+  .sub-section {{ margin-top: 12px; }}
+  .sub-title {{ font-size: 9pt; font-weight: 600; color: #475569; margin-bottom: 6px; margin-top: 8px; }}
+
+  /* Score cards */
+  .score-grid {{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+  }}
+  .score-card {{
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    padding: 14px;
+    background: #F8FAFC;
+  }}
+  .score-label {{
+    font-size: 9pt; font-weight: 600; color: #0F172A;
+    margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }}
+  .score-number {{
+    font-size: 32pt; font-weight: 700; line-height: 1;
+    display: inline;
+  }}
+  .score-sub {{ font-size: 10pt; color: #94A3B8; display: inline; margin-left: 3px; }}
+  .score-meta {{ font-size: 7.5pt; color: #94A3B8; margin-top: 6px; line-height: 1.4; }}
+
+  /* Badges */
+  .badge {{
+    display: inline-block;
+    font-size: 7.5pt; font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-top: 4px;
+  }}
+  .badge-green {{ background: #ECFDF5; color: #059669; border: 1px solid #6EE7B7; }}
+  .badge-amber {{ background: #FFFBEB; color: #D97706; border: 1px solid #FCD34D; }}
+  .badge-red   {{ background: #FEF2F2; color: #DC2626; border: 1px solid #FCA5A5; }}
+  .badge-blue  {{ background: #EFF6FF; color: #2563EB; border: 1px solid #93C5FD; }}
+
+  .watson-badge {{
+    font-size: 7pt; font-weight: 500;
+    background: #EFF6FF; color: #2563EB;
+    padding: 2px 7px; border-radius: 10px;
+    border: none;
+  }}
+  .archon-badge {{
+    font-size: 7pt; font-weight: 500;
+    background: #F5F3FF; color: #7C3AED;
+    padding: 2px 7px; border-radius: 10px;
+    border: none;
+  }}
+
+  /* Tables */
+  table {{
+    width: 100%; border-collapse: collapse;
+    font-size: 8.5pt; margin-bottom: 4px;
+  }}
+  thead tr {{ background: #F8FAFC; }}
+  th {{
+    text-align: left; font-weight: 600; font-size: 7.5pt;
+    color: #94A3B8; text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 7px 10px; border-bottom: 1px solid #E2E8F0;
+  }}
+  td {{ padding: 8px 10px; border-bottom: 1px solid #F1F5F9; color: #334155; }}
+  tr:last-child td {{ border-bottom: none; }}
+  tbody tr:nth-child(even) {{ background: #F8FAFC; }}
+  .mono {{ font-family: 'Courier New', monospace; font-size: 8pt; }}
+  .center {{ text-align: center; }}
+
+  table {{ border: 1px solid #E2E8F0; border-radius: 6px; overflow: hidden; }}
+
+  /* Output stat boxes */
+  .stat-grid {{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+    margin-bottom: 4px;
+  }}
+  .stat-box {{
+    border: 1px solid #E2E8F0; border-radius: 6px;
+    padding: 10px 12px; background: #F8FAFC;
+  }}
+  .stat-box-label {{ font-size: 7.5pt; color: #94A3B8; font-weight: 500; margin-bottom: 4px; }}
+  .stat-box-value {{ font-size: 13pt; font-weight: 700; color: #0F172A; }}
+
+  /* Compliance */
+  .compliance-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }}
+  .compliance-row {{
+    display: flex; align-items: center; gap: 8px;
+    font-size: 8.5pt; color: #334155;
+    padding: 6px 0;
+    border-bottom: 1px solid #F1F5F9;
+  }}
+  .check-pass {{ color: #059669; font-size: 11pt; font-weight: 700; }}
+  .check-fail {{ color: #DC2626; font-size: 11pt; font-weight: 700; }}
+
+  /* Brief / Plan */
+  .overview {{ color: #475569; line-height: 1.6; margin-bottom: 8px; font-size: 8.5pt; }}
+  ul {{ padding-left: 16px; margin-bottom: 6px; }}
+  li {{ color: #475569; line-height: 1.7; font-size: 8.5pt; }}
+
+  .milestones {{ margin-top: 4px; }}
+  .milestone-title {{
+    font-size: 8.5pt; font-weight: 700; color: #0F172A;
+    margin: 10px 0 4px 0;
+  }}
+  .task-row {{
+    display: grid;
+    grid-template-columns: minmax(68px, auto) 1fr;
+    gap: 10px;
+    padding: 4px 0;
+    font-size: 8pt;
+    color: #475569;
+    align-items: start;
+  }}
+  .task-id {{
+    font-family: monospace;
+    font-size: 7pt;
+    font-weight: 600;
+    color: #4F46E5;
+    background: #EEF2FF;
+    padding: 2px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-align: center;
+    display: inline-block;
+    width: 100%;
+    box-sizing: border-box;
+  }}
+
+  /* Warning */
+  .warning-box {{
+    border: 1px solid #FCA5A5; border-radius: 6px;
+    background: #FEF2F2; padding: 12px 14px;
+    margin-top: 12px;
+  }}
+  .warning-title {{ font-size: 9pt; font-weight: 700; color: #DC2626; margin-bottom: 4px; }}
+  .warning-body  {{ font-size: 8pt; color: #991B1B; line-height: 1.5; }}
+
+  /* Footnote */
+  .footnote {{
+    font-size: 7.5pt; color: #94A3B8; line-height: 1.5;
+    margin-top: 8px; padding-top: 8px;
+    border-top: 1px solid #F1F5F9;
+    font-style: italic;
+  }}
+
+  /* Footer */
+  .footer {{
+    margin-top: 28px; padding: 12px 24px;
+    border-top: 1px solid #E2E8F0;
+    text-align: center;
+    font-size: 7.5pt; color: #94A3B8;
+  }}
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="cover-left">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block; vertical-align:middle; margin-right:8px; flex-shrink:0;">
+      <polygon points="12,2 20.66,7 20.66,17 12,22 3.34,17 3.34,7"
+               fill="none" stroke="white" stroke-width="2.5" stroke-linejoin="round"/>
+    </svg>
+    <span style="font-family: Inter, -apple-system, 'Segoe UI', sans-serif; font-weight: 600; letter-spacing: -0.02em; vertical-align: middle; font-size: 11pt;">Archon</span>
+  </div>
+  <div class="cover-right">{cover_label}</div>
+</div>
+
+<div class="header">
+  <div class="header-top">
+    <svg class="shield-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2L3 7V12C3 16.55 6.84 20.74 12 22C17.16 20.74 21 16.55 21 12V7L12 2Z"
+            fill="#EFF6FF" stroke="#2563EB" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M9 12L11 14L15 10" stroke="#2563EB" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      <div class="project-name">{project_name}</div>
+      <div class="project-sub">AI Build Factsheet \xb7 Version {ver}</div>
+      <div class="project-meta">Generated {ts} \xb7 Archon Governed Pipeline</div>
+    </div>
+  </div>
+  <div class="trust-strip">
+    <span class="trust-item">&#10003; Audit Trail</span>
+    <span class="trust-item">&#10003; Version Controlled</span>
+    <span class="trust-item">&#10003; AI Governed</span>
+    <span class="trust-item">&#10003; Immutable Record</span>
+  </div>
+  <div class="header-badges">
+    <span class="hbadge hbadge-green">&#10004; Verified</span>
+    <span class="hbadge hbadge-blue">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" style="display:inline;vertical-align:middle;margin-right:3px;">
+        <path d="M12 2L3 7V12C3 16.55 6.84 20.74 12 22C17.16 20.74 21 16.55 21 12V7L12 2Z"
+              fill="#EFF6FF" stroke="#2563EB" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M9 12L11 14L15 10" stroke="#2563EB" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>Auditable
+    </span>
+  </div>
+</div>
+<hr class="divider">
+
+<div class="content">
+
+  <div class="section">
+    {scoring_html}
+  </div>
+
+  <div class="section">
+    {brief_html}
+  </div>
+
+  <div class="section">
+    {plan_html}
+  </div>
+
+  <div class="section">
+    <div class="section-title">AI Models Used</div>
+    <table>
+      <thead><tr><th>Agent Role</th><th>Model</th><th>Provider</th></tr></thead>
+      <tbody>{model_rows()}</tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Build Output</div>
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="stat-box-label">UI Archetype</div>
+        <div class="stat-box-value" style="font-size:11pt;">{archetype}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-label">Files Generated</div>
+        <div class="stat-box-value">{outputs.get('files_generated', 0)}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-label">Images Generated</div>
+        <div class="stat-box-value">{outputs.get('images_generated', 0)}</div>
+      </div>
+      {credits_stat}
+    </div>
+  </div>
+
+  {pipeline_html}
+
+  <div class="section">
+    <div class="section-title">Compliance</div>
+    <p style="font-size:8pt; color:#64748B; font-style:italic; margin-bottom:10px;">
+      This build was generated by a governed, auditable AI pipeline.
+      All decisions are version-controlled and available for review.
+    </p>
+    <div class="compliance-grid">
+      {compliance_rows()}
+    </div>
+    {warning_html}
+  </div>
+
+</div>
+
+<div class="footer">
+  Archon AI Build Platform \xb7 Version {ver} \xb7 {ts} \xb7 archon.build
+</div>
+
+</body>
+</html>"""
+
+    pdf_bytes = HTML(string=html).write_pdf()
+    buf = io.BytesIO(pdf_bytes)
+    buf.seek(0)
+
+    label = "client" if pdf_type == "client" else "internal"
+    safe_name = project_name.lower().replace(" ", "-")[:30]
+    filename = f"archon-{safe_name}-v{ver}-{label}.pdf"
+    return send_file(buf, mimetype="application/pdf", as_attachment=True, download_name=filename)
+
+
 if __name__ == "__main__":
     init_db()
     print(f"Flask server starting...")
