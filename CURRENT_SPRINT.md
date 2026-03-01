@@ -221,6 +221,7 @@ main (enterprise-ui merged and deleted)
 - ✅ /api/dashboard/stats endpoint — averages scores from governance_log across all executions (Mar 1, 2026)
 - ✅ Dashboard icon colors — Sparkles text-purple-400, Shield text-blue-400 (Mar 1, 2026)
 - ✅ Backend build_confidence key fix in dashboard_stats() (Mar 1, 2026)
+- ✅ README updated with Watson Governance section, architecture diagram, full roadmap table (Mar 1, 2026)
 - 🔴 17.4 Dual PDF Export — "Download Client PDF" + "Download Internal PDF" buttons on Governance tab
 - 🔴 17.5 Delivery Readiness Gate — configurable 85/100 threshold, flags version as Client Ready or Needs Iteration
 - 🔴 /api/governance/summary cross-run analytics (future)
@@ -246,6 +247,35 @@ main (enterprise-ui merged and deleted)
 - Enterprise plan: frontend-v4 (default) + optional Studio (frontend/) toggle — dark/light mode, full pipeline controls
 
 ---
+
+## ✅ Parallel DALL-E Image Generation (Mar 1, 2026)
+- Replaced sequential for loop in `agents/design_agent.py` with `concurrent.futures.ThreadPoolExecutor(max_workers=4)`
+- All images now generate simultaneously — confirmed in Flask terminal (all 4 `-> Generating:` lines appear at once)
+- Build time for image-heavy projects reduced significantly
+- Tested: FF8 build generated 3/4 images in parallel (character_zell blocked by DALL-E content filter — see bug below)
+
+## ✅ Stuck Build Reset Button (Mar 1, 2026)
+- POST `/api/projects/<id>/reset-build` endpoint — marks stuck running execution as failed in DB
+- Reset button appears in Enterprise (frontend-v4) and Studio (frontend/) pipeline chat after 8 min of no completion
+- Red filled button matching Send button style, hidden during normal builds
+- On click: calls reset endpoint, stops polling, clears sending state, resets agent cards
+
+## ✅ UI Polish — Governance Shield Blue (Mar 1, 2026)
+- Shield icon blue (text-blue-500) in Governance tab bar, factsheet header — Enterprise + Studio, light + dark mode
+- Hexagon logo blue in light mode (text-blue-500), keeps primary color in dark mode — Enterprise + Studio
+
+## 🔴 Known Bug — DALL-E Content Filter on Character Names
+- Character name "Zell" (FF8) triggers DALL-E content policy violation (error 400)
+- Other characters in same build (Squall, Rinoa) generate fine
+- Root cause: DALL-E flags certain proper nouns as policy violations unpredictably
+- Fix: add fallback prompt that strips character name and uses description only if content filter fires
+- Test: FF8 character page build — Zell image should generate with fallback prompt
+
+## 🔴 Known Bug — Chat Messages Disappear During Build When Switching UIs
+- Messages sent during an active build are lost when switching Studio ↔ Enterprise
+- Messages reappear after build completes (they save to DB on pipeline completion, not on send)
+- Fix: save chat messages to DB immediately on send, not after pipeline completes
+- Affects: messages sent to actively building projects only
 
 ## 🔴 Known Quality Bug — Image Generation Regression
 

@@ -527,6 +527,35 @@ guessing. Tour design will be driven by real friction points, not assumptions.
 
 ---
 
+## ✅ Parallel DALL-E Image Generation (Mar 1, 2026)
+- `agents/design_agent.py` — replaced sequential for loop with `concurrent.futures.ThreadPoolExecutor(max_workers=4)`
+- All images generate simultaneously — confirmed in Flask terminal
+- Significant build time reduction for image-heavy projects
+- Merged via PR from `feat/parallel-image-generation`
+
+## ✅ Stuck Build Reset Button (Mar 1, 2026)
+- `POST /api/projects/<id>/reset-build` — marks stuck running execution as failed in DB
+- Reset button in Enterprise + Studio pipeline chat — appears after 8 min build with no completion
+- Red filled button, hidden during normal operation
+- Merged via PR from `feat/reset-button`
+
+## ✅ UI Polish — Governance Shield Blue (Mar 1, 2026)
+- Shield icon `text-blue-500` in Governance tab + factsheet header — Enterprise + Studio, light + dark mode
+- Hexagon logo `text-blue-500` in light mode, `text-primary` in dark mode — Enterprise + Studio
+
+## 🔴 Known Bug — DALL-E Content Filter on Character Names
+- Certain character names (e.g. "Zell" from FF8) trigger DALL-E content policy error 400
+- Other characters in the same build generate fine (Squall, Rinoa passed)
+- Root cause: DALL-E flags specific proper nouns unpredictably as policy violations
+- **Fix:** Add fallback in `_generate_one()` — on content_policy_violation error, retry with description-only prompt (strip character name)
+- **Test:** FF8 character page build — Zell image should generate via fallback
+
+## 🔴 Known Bug — Chat Messages Disappear During Build When Switching UIs
+- Messages sent during an active build disappear when switching Studio ↔ Enterprise
+- Messages reappear after build completes (save to DB on pipeline completion, not on send)
+- **Fix:** Save chat messages to DB immediately on send, not after pipeline completes
+- Affects: messages sent to actively building projects only
+
 ## Known Quality Bug — Image Generation Regression (🔴 Active)
 
 **Problem:** DALL-E character images stopped matching character descriptions accurately after scoped iteration enforcement was added (Phase 14). Previously generated highly accurate character likenesses (e.g. FF7 Cloud/Barrett). Now produces generic mid-tier outputs.
