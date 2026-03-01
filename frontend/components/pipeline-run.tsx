@@ -20,6 +20,7 @@ import {
   Cpu,
   Hash,
   Clock,
+  X,
 } from "lucide-react"
 import { useLanguage } from "@/contexts/LanguageContext"
 
@@ -85,6 +86,8 @@ export function PipelineRun() {
   const versionRef = useRef<number | null>(null)
   const isRunningRef = useRef(false)
   const newRunRef = useRef(false)
+  const buildStartTimeRef = useRef<number | null>(null)
+  const [isStuck, setIsStuck] = useState(false)
 
   const searchParams = useSearchParams()
 
@@ -602,6 +605,27 @@ export function PipelineRun() {
 
   useEffect(() => { return () => stopPolling() }, [])
 
+  // Track build start time and detect stuck builds (> 5 min)
+  useEffect(() => {
+    if (isRunning && !buildStartTimeRef.current) {
+      buildStartTimeRef.current = Date.now()
+    }
+    if (!isRunning) {
+      buildStartTimeRef.current = null
+      setIsStuck(false)
+    }
+  }, [isRunning])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const interval = setInterval(() => {
+      if (buildStartTimeRef.current && Date.now() - buildStartTimeRef.current > 5 * 60 * 1000) {
+        setIsStuck(true)
+      }
+    }, 10_000)
+    return () => clearInterval(interval)
+  }, [isRunning])
+
   // Auto-scroll chat to bottom when messages load or change
   useEffect(() => {
     if (chatEndRef.current) {
@@ -934,6 +958,27 @@ export function PipelineRun() {
                   <Mic className="h-3.5 w-3.5" />
                 )}
               </button>
+              {isStuck && projectId && (
+                <button
+                  onClick={async () => {
+                    try {
+                      await fetch(`${API_BASE}/api/projects/${projectId}/reset-build`, { method: "POST" })
+                    } catch {}
+                    stopPolling()
+                    setIsRunning(false)
+                    isRunningRef.current = false
+                    buildStartTimeRef.current = null
+                    setIsStuck(false)
+                    setPipelineStatus("failed")
+                    sessionStorage.setItem("archon_pipeline_status", "failed")
+                  }}
+                  className="bg-red-500 hover:bg-red-600 text-white font-medium rounded-md px-4 py-2 text-sm flex items-center gap-1.5 transition-colors"
+                  title="Reset stuck build"
+                >
+                  <X className="h-3 w-3" />
+                  Reset
+                </button>
+              )}
               <button
                 onClick={handleSend}
                 disabled={!inputValue.trim() || isRunning || !projectId}
