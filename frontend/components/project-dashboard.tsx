@@ -7,7 +7,7 @@ import {
   Search,
   MoreHorizontal,
   ArrowUpDown,
-  Folder,
+
   Clock,
   ChevronDown,
   Download,
@@ -330,7 +330,7 @@ export function ProjectDashboard() {
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-md bg-accent flex items-center justify-center">
-                      <Folder className="h-4 w-4 text-accent-foreground" />
+                      <svg className="h-4 w-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-foreground font-mono">{project.name}</p>
