@@ -14,6 +14,13 @@ export interface Project {
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
+  const lang = localStorage.getItem("archon-language") || "en";
+  if (lang === "ko") {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}.${m}.${day}`;
+  }
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
