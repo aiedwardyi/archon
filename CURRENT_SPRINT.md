@@ -203,13 +203,19 @@ main (enterprise-ui merged and deleted)
 - 🔴 /api/credits/balance endpoint (pre-auth mock: 500 Pro credits minus all used)
 - 🔴 Enterprise BuildDetailsCard live refresh post-build (UX polish)
 
-#### 17.2 — Governance Agent (AI Factsheets)
-- 🔴 GovernanceAgent runs once per pipeline completion
-- 🔴 Factsheet per version: models, tokens, cost, duration, archetype, quality
-- 🔴 governance_log JSON column on Execution model
-- 🔴 Governance sub-tab in Artifacts page
-- 🔴 PDF export — solves Phase 8.2 client audit trail
-- 🔴 /api/governance/summary cross-run analytics endpoint
+#### 17.2 — Governance Agent (AI Factsheets) (✅ Complete Mar 1, 2026)
+- ✅ GovernanceAgent wired into pipeline success block (non-fatal try/except)
+- ✅ Factsheet: models, tokens, cost, duration, archetype, quality indicators, compliance flags
+- ✅ governance_log TEXT column on Execution model + safe migration
+- ✅ Governance sub-tab in Artifacts — Enterprise + Studio, with empty state for old builds
+- ✅ /api/projects/<id>/versions/<ver>/factsheet endpoint
+- ✅ Korean/English i18n keys
+- ✅ Watson NLU prompt quality scoring (0-100) — IBM Watson NLU API
+- ✅ Build confidence scoring (0-100) — files, archetype, images, speed
+- ✅ Human Review Required auto-triggers when score < 50
+- ✅ Factsheet v1.1 — scoring UI added non-destructively to existing layout
+- 🔴 PDF export — solves Phase 8.2 (future)
+- 🔴 /api/governance/summary cross-run analytics (future)
 
 ### Phase 16.5 — Authentication (🔴 Planned)
 - 🔴 Sign up / Login pages

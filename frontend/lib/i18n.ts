@@ -135,6 +135,7 @@ export const translations = {
   tasks: { en: "Tasks", ko: "작업" },
   logs: { en: "Logs", ko: "로그" },
   preview: { en: "Preview", ko: "미리보기" },
+  governance: { en: "Governance", ko: "거버넌스" },
   publish: { en: "Publish", ko: "배포" },
   downloadCode: { en: "Download Code", ko: "코드 다운로드" },
   rawData: { en: "Raw Data", ko: "원시 데이터" },

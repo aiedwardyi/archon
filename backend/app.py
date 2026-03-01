@@ -523,6 +523,53 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
                     project.updated_at = datetime.now(timezone.utc)
                     session.commit()
 
+        # Governance Agent — generate AI Factsheet
+        try:
+            from agents.governance_agent import GovernanceAgent
+            gov_agent = GovernanceAgent()
+
+            result_data = read_json_file(version_dir / "last_execution_result.json") or {}
+            files_count = result_data.get("outputs", {}).get("files_generated", 0)
+            assets_data = read_json_file(version_dir / "last_design_assets.json") or {}
+            images_count = len(assets_data.get("assets", []))
+
+            exec_for_gov = session.get(Execution, execution_id)
+            prompt_text = task_description
+
+            factsheet = gov_agent.generate_factsheet(
+                project_id=project_id,
+                project_name=project.name if project else "Unknown",
+                version=version,
+                execution_id=execution_id,
+                prompt=prompt_text,
+                ui_archetype=project.locked_ui_archetype if project else None,
+                models_used={
+                    "Requirements Agent": "GPT-4o-mini",
+                    "Architecture Agent": "Gemini 2.5 Flash",
+                    "Design Agent": "DALL-E 3",
+                    "Build Agent": "Claude Sonnet 4.6",
+                },
+                tokens_used=exec_for_gov.tokens_used if exec_for_gov else None,
+                estimated_cost=exec_for_gov.estimated_cost if exec_for_gov else None,
+                credits_used=exec_for_gov.credits_used if exec_for_gov else None,
+                duration_seconds=exec_for_gov.duration_seconds if exec_for_gov else None,
+                files_generated=files_count,
+                images_generated=images_count,
+                agent_sequence=["pm", "planner", "design", "engineer"],
+                status="success",
+            )
+
+            write_json_file(version_dir / "last_factsheet.json", factsheet)
+
+            exec_for_gov = session.get(Execution, execution_id)
+            if exec_for_gov:
+                exec_for_gov.governance_log = json.dumps(factsheet)
+                session.commit()
+
+            add_log("Governance Agent: Factsheet recorded.")
+        except Exception as gov_err:
+            print(f"GovernanceAgent failed (non-fatal): {gov_err}")
+
     except Exception as e:
         error_msg = str(e)
         short_msg = error_msg.split("\n")[0][:200]
@@ -1295,6 +1342,27 @@ def get_credits_balance():
             "credits_used": int(used),
             "credits_remaining": balance
         })
+    finally:
+        session.close()
+
+
+@app.route("/api/projects/<int:project_id>/versions/<int:version>/factsheet", methods=["GET"])
+def get_factsheet(project_id: int, version: int):
+    """Returns the AI Factsheet for a specific version."""
+    factsheet_path = get_version_dir(project_id, version) / "last_factsheet.json"
+    data = read_json_file(factsheet_path)
+    if data:
+        return jsonify(data), 200
+    session = get_session()
+    try:
+        execution = (
+            session.query(Execution)
+            .filter(Execution.project_id == project_id, Execution.version == version)
+            .first()
+        )
+        if execution and execution.governance_log:
+            return jsonify(json.loads(execution.governance_log)), 200
+        return jsonify({"error": "Factsheet not available for this version"}), 404
     finally:
         session.close()
 

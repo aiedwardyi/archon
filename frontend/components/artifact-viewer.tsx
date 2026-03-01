@@ -17,6 +17,7 @@ import {
   Eye,
   Loader2,
   CheckCircle2,
+  Circle,
 } from "lucide-react"
 import { PreviewPanel } from "@/components/preview-panel"
 import { useLanguage } from "@/contexts/LanguageContext"
@@ -30,6 +31,7 @@ const tabDefs = [
   { id: "tasks", key: "tasks" as const, icon: ListChecks },
   { id: "logs", key: "logs" as const, icon: ScrollText },
   { id: "preview", key: "preview" as const, icon: Eye },
+  { id: "governance", key: "governance" as const, icon: Shield },
 ]
 
 type FileNode = {
@@ -746,6 +748,179 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion,
           <PreviewPanel projectId={projectId} version={version} />
         )}
 
+        {activeTab === "governance" && (
+          <div className="flex-1 overflow-auto p-6">
+            <GovernanceTab projectId={projectId} version={version} />
+          </div>
+        )}
+
+      </div>
+    </div>
+  )
+}
+
+interface StudioFactsheet {
+  factsheet_version: string;
+  generated_at: string;
+  project: { id: number; name: string; version: number; execution_id: number };
+  prompt_summary: string;
+  pipeline: { status: string; agent_sequence: string[]; duration_seconds: number | null; ui_archetype: string | null };
+  model_registry: Array<{ agent_role: string; model: string; provider: string }>;
+  usage: { tokens_used: number | null; estimated_cost_usd: number | null; credits_used: number | null };
+  outputs: { files_generated: number; images_generated: number };
+  quality_indicators: Array<{ indicator: string; status: string; value: string }>;
+  compliance: { audit_trail: boolean; version_history: boolean; artifact_retention: boolean; human_review_required: boolean };
+}
+
+function GovernanceTab({ projectId, version }: { projectId: number | null; version: number | null }) {
+  const [factsheet, setFactsheet] = useState<StudioFactsheet | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!projectId || !version) return
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    ;(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/projects/${projectId}/versions/${version}/factsheet`)
+        if (!res.ok) throw new Error("not found")
+        const data = await res.json()
+        if (!cancelled) setFactsheet(data)
+      } catch {
+        if (!cancelled) setError("Factsheet not available for this version. Run a new build to generate one.")
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [projectId, version])
+
+  if (loading) return <div className="flex items-center gap-2 py-8 justify-center"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /><span className="text-sm text-muted-foreground">Loading factsheet...</span></div>
+  if (error) return <div className="text-sm text-muted-foreground italic py-8 text-center">{error}</div>
+  if (!factsheet) return <div className="text-sm text-muted-foreground italic py-8 text-center">No factsheet data.</div>
+
+  const ts = factsheet.generated_at ? new Date(factsheet.generated_at).toLocaleString() : "Unknown"
+
+  return (
+    <div className="max-w-3xl space-y-4">
+      <div>
+        <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+          <Shield className="h-5 w-5 text-primary" />
+          AI Factsheet — v{factsheet.project.version}
+        </h2>
+        <p className="text-xs text-muted-foreground mt-1">Generated {ts} · Factsheet v{factsheet.factsheet_version}</p>
+      </div>
+
+      <div className="bg-card border border-border rounded-lg p-5">
+        <h3 className="text-sm font-semibold text-foreground mb-3">Pipeline</h3>
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <span className="text-muted-foreground text-xs">Status</span>
+            <div className="mt-0.5"><span className="text-xs px-2 py-0.5 rounded border border-success/40 bg-success/10 text-success">{factsheet.pipeline.status}</span></div>
+          </div>
+          <div>
+            <span className="text-muted-foreground text-xs">Duration</span>
+            <p className="mt-0.5 text-foreground">{factsheet.pipeline.duration_seconds ? `${factsheet.pipeline.duration_seconds.toFixed(1)}s` : "N/A"}</p>
+          </div>
+          <div>
+            <span className="text-muted-foreground text-xs">UI Archetype</span>
+            <p className="mt-0.5 text-foreground">{factsheet.pipeline.ui_archetype || "Auto-detected"}</p>
+          </div>
+          <div>
+            <span className="text-muted-foreground text-xs">Agent Sequence</span>
+            <div className="mt-0.5 flex flex-wrap gap-1">
+              {factsheet.pipeline.agent_sequence.map((a) => (
+                <span key={a} className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{a}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-card border border-border rounded-lg p-5">
+        <h3 className="text-sm font-semibold text-foreground mb-3">Model Registry</h3>
+        <div className="border border-border rounded-lg overflow-hidden">
+          <div className="grid grid-cols-3 gap-0 text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/40 px-3 py-2">
+            <span>Agent Role</span><span>Model</span><span>Provider</span>
+          </div>
+          {factsheet.model_registry.map((m) => (
+            <div key={m.agent_role} className="grid grid-cols-3 gap-0 text-sm px-3 py-2 border-t border-border">
+              <span className="text-foreground">{m.agent_role}</span>
+              <span className="text-muted-foreground font-mono text-xs">{m.model}</span>
+              <span className="text-muted-foreground">{m.provider}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-card border border-border rounded-lg p-5">
+        <h3 className="text-sm font-semibold text-foreground mb-3">Usage</h3>
+        <div className="grid grid-cols-3 gap-4 text-sm">
+          <div>
+            <span className="text-muted-foreground text-xs">Tokens</span>
+            <p className="mt-0.5 text-foreground font-mono">{factsheet.usage.tokens_used ? factsheet.usage.tokens_used.toLocaleString() : "N/A"}</p>
+          </div>
+          <div>
+            <span className="text-muted-foreground text-xs">Est. Cost</span>
+            <p className="mt-0.5 text-foreground font-mono">{factsheet.usage.estimated_cost_usd != null ? `$${factsheet.usage.estimated_cost_usd.toFixed(4)}` : "N/A"}</p>
+          </div>
+          <div>
+            <span className="text-muted-foreground text-xs">Credits</span>
+            <p className="mt-0.5 text-foreground font-mono">{factsheet.usage.credits_used ?? "N/A"}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-card border border-border rounded-lg p-5">
+        <h3 className="text-sm font-semibold text-foreground mb-3">Outputs</h3>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <span className="text-muted-foreground text-xs">Files Generated</span>
+            <p className="mt-0.5 text-foreground font-mono">{factsheet.outputs.files_generated}</p>
+          </div>
+          <div>
+            <span className="text-muted-foreground text-xs">Images Generated</span>
+            <p className="mt-0.5 text-foreground font-mono">{factsheet.outputs.images_generated}</p>
+          </div>
+        </div>
+      </div>
+
+      {factsheet.quality_indicators.length > 0 && (
+        <div className="bg-card border border-border rounded-lg p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-3">Quality Indicators</h3>
+          <div className="flex flex-wrap gap-2">
+            {factsheet.quality_indicators.map((qi) => (
+              <span
+                key={qi.indicator}
+                className={`text-xs px-2.5 py-1 rounded border ${
+                  qi.status === "pass"
+                    ? "border-success/40 bg-success/10 text-success"
+                    : "border-warning/40 bg-warning/10 text-warning"
+                }`}
+              >
+                {qi.indicator}: {qi.value}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="bg-card border border-border rounded-lg p-5">
+        <h3 className="text-sm font-semibold text-foreground mb-3">Compliance</h3>
+        <div className="grid grid-cols-2 gap-2">
+          {Object.entries(factsheet.compliance).map(([key, val]) => (
+            <div key={key} className="flex items-center gap-2 text-sm">
+              {val ? (
+                <CheckCircle2 className="h-4 w-4 text-success" />
+              ) : (
+                <Circle className="h-4 w-4 text-muted-foreground" />
+              )}
+              <span className="text-foreground">{key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )

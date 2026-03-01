@@ -419,15 +419,22 @@ Impact:
 - 🔴 /api/credits/balance endpoint (pre-auth mock: 500 Pro credits minus all used)
 - ✅ Enterprise BuildDetailsCard live refresh post-build (Feb 28, 2026)
 
-#### 17.2 — Governance Agent (AI Factsheets)
-- 🔴 GovernanceAgent runs once per pipeline completion
-- 🔴 Writes structured Factsheet per version: models used, tokens, cost, duration, archetype, intent, quality indicators
-- 🔴 Stored in DB (governance_log JSON column on Execution)
-- 🔴 Factsheet visible in Artifacts tab (new Governance sub-tab)
-- 🔴 Exportable as PDF — solves Phase 8.2 client audit trail
-- 🔴 Cross-run analytics endpoint: /api/governance/summary
-- IBM credential: Watson Studio AI Factsheets or local structured logging
-- Resume value: governed, auditable AI pipeline — rare even among senior IBM AEs
+#### 17.2 — Governance Agent (AI Factsheets) (✅ Complete Mar 1, 2026)
+- ✅ GovernanceAgent runs after every successful pipeline completion
+- ✅ Structured Factsheet per version: models used, tokens, cost, duration, archetype, quality indicators, compliance flags
+- ✅ governance_log TEXT column on Execution model (safe ALTER TABLE migration)
+- ✅ Factsheet saved to disk (last_factsheet.json) + DB (governance_log JSON)
+- ✅ Governance sub-tab in Artifacts page — Enterprise (frontend-v4) + Studio (frontend/)
+- ✅ Empty state message for old builds pre-dating GovernanceAgent
+- ✅ /api/projects/<id>/versions/<ver>/factsheet endpoint (disk-first, DB fallback, 404 graceful)
+- ✅ Korean/English i18n keys added in both frontends
+- ✅ Watson NLU prompt quality scoring (0-100) — powered by IBM Watson NLU API (Mar 1, 2026)
+- ✅ Build confidence scoring (0-100) — computed from files, archetype, images, speed (Mar 1, 2026)
+- ✅ Human Review Required flag auto-triggers when prompt or build score < 50 (Mar 1, 2026)
+- ✅ Factsheet v1.1 — scoring section added to existing layout (non-destructive)
+- 🔴 PDF export of Factsheet — solves Phase 8.2 client audit trail (future)
+- 🔴 Cross-run analytics endpoint: /api/governance/summary (future)
+- Resume value: governed, auditable AI pipeline with IBM Watson scoring — rare even among senior IBM AEs
 - ✅ Expanded planner.txt from 10 → 25 archetypes
 - ✅ Added render_path A/B field for Tailwind vs Raw CSS routing
 - ✅ Layout + content contracts for all 15 new archetypes

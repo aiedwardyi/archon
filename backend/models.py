@@ -108,6 +108,7 @@ class Execution(Base):
     credits_used = Column(Integer, nullable=True)
     duration_seconds = Column(Float, nullable=True)
     model_used = Column(String(100), nullable=True)
+    governance_log = Column(Text, nullable=True)  # JSON Factsheet
 
     # Relationships
     project = relationship("Project", back_populates="executions")
@@ -141,6 +142,7 @@ class Execution(Base):
             "credits_used": self.credits_used,
             "duration_seconds": self.duration_seconds,
             "model_used": self.model_used,
+            "governance_log": json.loads(self.governance_log) if self.governance_log else None,
         }
 
 
@@ -183,6 +185,7 @@ def init_db():
                 ("credits_used", "INTEGER"),
                 ("duration_seconds", "REAL"),
                 ("model_used", "VARCHAR(100)"),
+                ("governance_log", "TEXT"),
             ]:
                 if col_name not in cols:
                     conn.execute(text(f"ALTER TABLE executions ADD COLUMN {col_name} {col_type}"))
