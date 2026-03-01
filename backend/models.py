@@ -109,6 +109,8 @@ class Execution(Base):
     duration_seconds = Column(Float, nullable=True)
     model_used = Column(String(100), nullable=True)
     governance_log = Column(Text, nullable=True)  # JSON Factsheet
+    readiness_score = Column(Float, nullable=True)
+    quality_tier = Column(String(10), nullable=True)
 
     # Relationships
     project = relationship("Project", back_populates="executions")
@@ -143,6 +145,8 @@ class Execution(Base):
             "duration_seconds": self.duration_seconds,
             "model_used": self.model_used,
             "governance_log": json.loads(self.governance_log) if self.governance_log else None,
+            "readiness_score": self.readiness_score,
+            "quality_tier": self.quality_tier,
         }
 
 
@@ -186,6 +190,8 @@ def init_db():
                 ("duration_seconds", "REAL"),
                 ("model_used", "VARCHAR(100)"),
                 ("governance_log", "TEXT"),
+                ("readiness_score", "REAL"),
+                ("quality_tier", "VARCHAR(10)"),
             ]:
                 if col_name not in cols:
                     conn.execute(text(f"ALTER TABLE executions ADD COLUMN {col_name} {col_type}"))

@@ -14,6 +14,8 @@ interface Version {
   prompt?: string;
   buildSummary?: string;
   filesGenerated?: number;
+  qualityTier?: string | null;
+  readinessScore?: number | null;
 }
 
 const StatusIcon = ({ status }: { status: "completed" | "failed" }) =>
@@ -61,6 +63,8 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
           filesChanged: fileCount,
           prompt: lastUserMsg,
           filesGenerated: fileCount,
+          qualityTier: v.quality_tier ?? null,
+          readinessScore: v.readiness_score ?? null,
           buildSummary: isSuccess
             ? parts.length > 0
               ? parts.join(" · ") + " generated"
@@ -152,6 +156,15 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
                   </div>
                   <p className="text-xs text-foreground mt-1.5 truncate leading-tight">{v.description}</p>
                   <p className="text-[11px] text-muted-foreground mt-1">{v.filesChanged} {t("filesChanged")}</p>
+                  {v.qualityTier === "high" && (
+                    <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 border border-blue-400/40 shadow-[0_0_6px_rgba(59,130,246,0.4)]">High Quality</span>
+                  )}
+                  {v.qualityTier === "good" && (
+                    <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-400/40">Good Quality</span>
+                  )}
+                  {v.qualityTier === "low" && (
+                    <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-500 border border-red-400/40">Low Quality</span>
+                  )}
                 </button>
               );
             })}

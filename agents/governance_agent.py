@@ -204,6 +204,18 @@ class GovernanceAgent:
                 "provider": "IBM",
             })
 
+        # Delivery readiness gate
+        prompt_quality_score = prompt_score["score"] or 0
+        build_confidence_score = build_score["score"]
+        combined_score = (prompt_quality_score + build_confidence_score) / 2
+
+        if combined_score >= 85:
+            quality_tier = "high"
+        elif combined_score >= 60:
+            quality_tier = "good"
+        else:
+            quality_tier = "low"
+
         factsheet = {
             "factsheet_version": "1.1",
             "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -235,6 +247,10 @@ class GovernanceAgent:
                 "build_confidence": build_score,
             },
             "quality_indicators": quality_indicators,
+            "readiness": {
+                "combined_score": round(combined_score, 1),
+                "quality_tier": quality_tier,
+            },
             "compliance": {
                 "audit_trail": True,
                 "version_history": True,
