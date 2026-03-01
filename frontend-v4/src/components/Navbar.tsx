@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useTheme } from "./ThemeProvider";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { authService } from "@/lib/auth";
 import { ProfileModal } from "./ProfileModal";
 import { SettingsModal } from "./SettingsModal";
 import { PricingModal } from "./PricingModal";
@@ -196,7 +197,10 @@ export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectNam
 
               {/* Sign out */}
               <div className="border-t border-border py-1">
-                <button className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-destructive hover:bg-secondary transition-colors">
+                <button
+                  onClick={() => { authService.logout(); window.location.href = "/login"; }}
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-destructive hover:bg-secondary transition-colors"
+                >
                   <LogOut className="h-3.5 w-3.5" /> {t("signOut")}
                 </button>
               </div>
