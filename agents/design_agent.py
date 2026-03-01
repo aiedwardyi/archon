@@ -1,4 +1,4 @@
-﻿import concurrent.futures
+import concurrent.futures
 import json
 import os
 import re
@@ -34,7 +34,6 @@ def _generate_one(req, client, save_dir):
         url = img_response.data[0].url
         print(f"  + {req['key']}: {url[:60]}...")
 
-        # Download image to disk so it doesn't expire
         local_path = None
         if save_dir:
             save_dir.mkdir(parents=True, exist_ok=True)
@@ -61,11 +60,6 @@ def _generate_one(req, client, save_dir):
 
 
 class DesignAgent:
-    """
-    Generates images via DALL-E 3 based on PRD content.
-    Returns a list of {key, url, local_path, purpose} dicts for the Build Agent.
-    """
-
     def __init__(self, api_key: str | None = None):
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         if not self.api_key:
@@ -95,7 +89,7 @@ class DesignAgent:
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
             futures = [executor.submit(_generate_one, req, client, save_dir) for req in image_requests]
-            results = [r for r in (f.result() for f in futures) if r is not None]
+            results = [f.result() for f in concurrent.futures.as_completed(futures) if f.result() is not None]
 
         print(f"DesignAgent: {len(results)}/{len(image_requests)} images generated.")
         return results
