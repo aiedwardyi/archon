@@ -302,6 +302,18 @@ main (enterprise-ui merged and deleted)
 - ✅ Studio ↔ Enterprise theme toggle passes token — Mar 1, 2026
 - 🔴 Google OAuth frontend wiring (needs Google Client ID)
 
+## 🔴 Known Bug — Enterprise Tab Not Restoring on Switch from Studio
+- When switching Studio → Enterprise, Enterprise loads the previously cached tab (e.g. Versions) instead of the tab Studio was on
+- Root cause: `activeTab` useState initializer reads localStorage before URL param effect runs
+- Fix: initialize activeTab from `?tab=` URL param first, fall back to localStorage
+- Branch: fix/enterprise-tab-switch (in progress)
+
+## 🔴 Known Bug — Enterprise Shows "Failed" Status During Active Build
+- When a build is running in Studio and user switches to Enterprise, Enterprise shows "Failed" badge on the version card
+- Actual status is Running — corrects itself to Completed when build finishes
+- Root cause: Enterprise VersionsView reads stale DB status on load; DB version record shows last failed state until pipeline writes COMPLETED
+- Fix needed: suppress "Failed" badge if a live build is currently running for that project (check execution-status endpoint on load)
+
 ## 🔴 Known Bug — DALL-E Content Filter on Character Names
 - Character name "Zell" (FF8) triggers DALL-E content policy violation (error 400)
 - Other characters in same build (Squall, Rinoa) generate fine
