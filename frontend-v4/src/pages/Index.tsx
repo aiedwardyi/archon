@@ -24,7 +24,10 @@ import {
 import { Search, Plus, Trash2, Mic, MicOff, Send, Volume2, VolumeX, Filter, Loader2, AlertCircle, X } from "lucide-react";
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState(() => localStorage.getItem("archon_active_tab") || "projects");
+  const [activeTab, setActiveTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("tab") || localStorage.getItem("archon_active_tab") || "projects";
+  });
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
   const [artifactTab, setArtifactTab] = useState<"brief" | "plan" | "code">("brief");
