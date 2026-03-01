@@ -296,7 +296,9 @@ main (enterprise-ui merged and deleted)
 - ✅ Post-login/register redirect to Enterprise dark mode (Mar 1, 2026)
 - ✅ Cross-origin token handoff via ?token= URL param — Studio → Enterprise (Mar 1, 2026)
 - ✅ Enterprise defaults to dark mode on first visit (ThemeProvider fallback) (Mar 1, 2026)
-- 🔴 Enterprise (frontend-v4) auth pages (login, register, forgot-password)
+- ✅ Enterprise (frontend-v4) auth pages (login, register, forgot-password) — Mar 1, 2026
+- ✅ Enterprise AuthGuard — redirects to /login if no token — Mar 1, 2026
+- ✅ Enterprise Sign Out wired (authService.logout + redirect to /login) — Mar 1, 2026
 - 🔴 Studio ↔ Enterprise theme toggle button in navbar
 - 🔴 Google OAuth frontend wiring (needs Google Client ID)
 
