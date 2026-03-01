@@ -759,6 +759,28 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion,
   )
 }
 
+interface StudioPromptQuality {
+  score: number | null;
+  label: string;
+  sentiment: string;
+  sentiment_score: number;
+  keywords: string[];
+  domain: string;
+  powered_by: string;
+}
+
+interface StudioBuildBreakdown {
+  factor: string;
+  points: number;
+  note: string;
+}
+
+interface StudioBuildConfidence {
+  score: number;
+  label: string;
+  breakdown: StudioBuildBreakdown[];
+}
+
 interface StudioFactsheet {
   factsheet_version: string;
   generated_at: string;
@@ -768,6 +790,7 @@ interface StudioFactsheet {
   model_registry: Array<{ agent_role: string; model: string; provider: string }>;
   usage: { tokens_used: number | null; estimated_cost_usd: number | null; credits_used: number | null };
   outputs: { files_generated: number; images_generated: number };
+  scoring?: { prompt_quality: StudioPromptQuality; build_confidence: StudioBuildConfidence };
   quality_indicators: Array<{ indicator: string; status: string; value: string }>;
   compliance: { audit_trail: boolean; version_history: boolean; artifact_retention: boolean; human_review_required: boolean };
 }
@@ -838,6 +861,88 @@ function GovernanceTab({ projectId, version }: { projectId: number | null; versi
           </div>
         </div>
       </div>
+
+      {/* Scoring */}
+      {factsheet.scoring && (
+        <div className="grid grid-cols-2 gap-4">
+          {/* Prompt Quality */}
+          <div className="bg-card border border-border rounded-lg p-5 relative">
+            <h3 className="text-sm font-semibold text-foreground mb-3">Prompt Quality</h3>
+            {factsheet.scoring.prompt_quality.powered_by === "unavailable" ? (
+              <p className="text-xs text-muted-foreground italic">
+                Watson NLU credentials not configured — add WATSON_NLU_API_KEY and WATSON_NLU_URL to backend/.env to enable prompt scoring.
+              </p>
+            ) : (
+              <>
+                <div className="flex items-end gap-2 mb-3">
+                  <span className="text-3xl font-bold text-foreground">{factsheet.scoring.prompt_quality.score}</span>
+                  <span className="text-sm text-muted-foreground mb-1">/100</span>
+                  <span className={`ml-2 text-[10px] font-semibold px-2 py-0.5 rounded border mb-1 ${
+                    factsheet.scoring.prompt_quality.label === "high"
+                      ? "border-success/40 bg-success/10 text-success"
+                      : factsheet.scoring.prompt_quality.label === "medium"
+                      ? "border-warning/40 bg-warning/10 text-warning"
+                      : "border-destructive/40 bg-destructive/10 text-destructive"
+                  }`}>
+                    {factsheet.scoring.prompt_quality.label}
+                  </span>
+                </div>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Domain</span>
+                    <span className="text-foreground">{factsheet.scoring.prompt_quality.domain}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Sentiment</span>
+                    <span className="text-foreground">{factsheet.scoring.prompt_quality.sentiment} ({factsheet.scoring.prompt_quality.sentiment_score})</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Keywords</span>
+                    <span className="text-foreground">{factsheet.scoring.prompt_quality.keywords.length > 0 ? factsheet.scoring.prompt_quality.keywords.join(", ") : "—"}</span>
+                  </div>
+                </div>
+                <div className="absolute top-3 right-3">
+                  <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-info/10 text-info border border-info/30">
+                    Powered by IBM Watson NLU
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Build Confidence */}
+          <div className="bg-card border border-border rounded-lg p-5">
+            <h3 className="text-sm font-semibold text-foreground mb-3">Build Confidence</h3>
+            <div className="flex items-end gap-2 mb-3">
+              <span className="text-3xl font-bold text-foreground">{factsheet.scoring.build_confidence.score}</span>
+              <span className="text-sm text-muted-foreground mb-1">/100</span>
+              <span className={`ml-2 text-[10px] font-semibold px-2 py-0.5 rounded border mb-1 ${
+                factsheet.scoring.build_confidence.label === "high"
+                  ? "border-success/40 bg-success/10 text-success"
+                  : factsheet.scoring.build_confidence.label === "medium"
+                  ? "border-warning/40 bg-warning/10 text-warning"
+                  : "border-destructive/40 bg-destructive/10 text-destructive"
+              }`}>
+                {factsheet.scoring.build_confidence.label}
+              </span>
+            </div>
+            {factsheet.scoring.build_confidence.breakdown.length > 0 && (
+              <div className="border border-border rounded-lg overflow-hidden">
+                <div className="grid grid-cols-3 gap-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground bg-muted/40 px-3 py-1.5">
+                  <span>Factor</span><span>Points</span><span>Note</span>
+                </div>
+                {factsheet.scoring.build_confidence.breakdown.map((b) => (
+                  <div key={b.factor} className="grid grid-cols-3 gap-0 text-xs px-3 py-1.5 border-t border-border">
+                    <span className="text-foreground">{b.factor}</span>
+                    <span className="text-muted-foreground font-mono">{b.points}</span>
+                    <span className="text-muted-foreground">{b.note}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="bg-card border border-border rounded-lg p-5">
         <h3 className="text-sm font-semibold text-foreground mb-3">Model Registry</h3>

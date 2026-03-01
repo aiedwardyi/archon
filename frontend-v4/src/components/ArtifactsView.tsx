@@ -520,6 +520,28 @@ const PreviewTab = ({ device, onDeviceChange, projectId, version }: { device: "d
   </div>
 );
 
+interface PromptQuality {
+  score: number | null;
+  label: string;
+  sentiment: string;
+  sentiment_score: number;
+  keywords: string[];
+  domain: string;
+  powered_by: string;
+}
+
+interface BuildBreakdown {
+  factor: string;
+  points: number;
+  note: string;
+}
+
+interface BuildConfidence {
+  score: number;
+  label: string;
+  breakdown: BuildBreakdown[];
+}
+
 interface Factsheet {
   factsheet_version: string;
   generated_at: string;
@@ -529,6 +551,7 @@ interface Factsheet {
   model_registry: Array<{ agent_role: string; model: string; provider: string }>;
   usage: { tokens_used: number | null; estimated_cost_usd: number | null; credits_used: number | null };
   outputs: { files_generated: number; images_generated: number };
+  scoring?: { prompt_quality: PromptQuality; build_confidence: BuildConfidence };
   quality_indicators: Array<{ indicator: string; status: string; value: string }>;
   compliance: { audit_trail: boolean; version_history: boolean; artifact_retention: boolean; human_review_required: boolean };
 }
@@ -606,6 +629,88 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
         </div>
       </div>
 
+      {/* Scoring */}
+      {factsheet.scoring && (
+        <div className="grid grid-cols-2 gap-4">
+          {/* Prompt Quality */}
+          <div className="border border-border rounded-md p-5 relative">
+            <h2 className="text-sm font-bold text-foreground mb-3">Prompt Quality</h2>
+            {factsheet.scoring.prompt_quality.powered_by === "unavailable" ? (
+              <p className="text-xs text-muted-foreground italic">
+                Watson NLU credentials not configured — add WATSON_NLU_API_KEY and WATSON_NLU_URL to backend/.env to enable prompt scoring.
+              </p>
+            ) : (
+              <>
+                <div className="flex items-end gap-2 mb-3">
+                  <span className="text-3xl font-bold text-foreground">{factsheet.scoring.prompt_quality.score}</span>
+                  <span className="text-sm text-muted-foreground mb-1">/100</span>
+                  <span className={`ml-2 text-[10px] font-semibold px-2 py-0.5 rounded border mb-1 ${
+                    factsheet.scoring.prompt_quality.label === "high"
+                      ? "border-emerald-300 text-emerald-600 dark:text-emerald-400 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10"
+                      : factsheet.scoring.prompt_quality.label === "medium"
+                      ? "border-amber-300 text-amber-600 dark:text-amber-400 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10"
+                      : "border-red-300 text-red-600 dark:text-red-400 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10"
+                  }`}>
+                    {factsheet.scoring.prompt_quality.label}
+                  </span>
+                </div>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Domain</span>
+                    <span className="text-foreground">{factsheet.scoring.prompt_quality.domain}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Sentiment</span>
+                    <span className="text-foreground">{factsheet.scoring.prompt_quality.sentiment} ({factsheet.scoring.prompt_quality.sentiment_score})</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Keywords</span>
+                    <span className="text-foreground">{factsheet.scoring.prompt_quality.keywords.length > 0 ? factsheet.scoring.prompt_quality.keywords.join(", ") : "—"}</span>
+                  </div>
+                </div>
+                <div className="absolute top-3 right-3">
+                  <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30">
+                    Powered by IBM Watson NLU
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Build Confidence */}
+          <div className="border border-border rounded-md p-5">
+            <h2 className="text-sm font-bold text-foreground mb-3">Build Confidence</h2>
+            <div className="flex items-end gap-2 mb-3">
+              <span className="text-3xl font-bold text-foreground">{factsheet.scoring.build_confidence.score}</span>
+              <span className="text-sm text-muted-foreground mb-1">/100</span>
+              <span className={`ml-2 text-[10px] font-semibold px-2 py-0.5 rounded border mb-1 ${
+                factsheet.scoring.build_confidence.label === "high"
+                  ? "border-emerald-300 text-emerald-600 dark:text-emerald-400 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10"
+                  : factsheet.scoring.build_confidence.label === "medium"
+                  ? "border-amber-300 text-amber-600 dark:text-amber-400 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10"
+                  : "border-red-300 text-red-600 dark:text-red-400 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10"
+              }`}>
+                {factsheet.scoring.build_confidence.label}
+              </span>
+            </div>
+            {factsheet.scoring.build_confidence.breakdown.length > 0 && (
+              <div className="border border-border rounded overflow-hidden">
+                <div className="grid grid-cols-3 gap-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground bg-secondary/40 px-3 py-1.5">
+                  <span>Factor</span><span>Points</span><span>Note</span>
+                </div>
+                {factsheet.scoring.build_confidence.breakdown.map((b) => (
+                  <div key={b.factor} className="grid grid-cols-3 gap-0 text-xs px-3 py-1.5 border-t border-border">
+                    <span className="text-foreground">{b.factor}</span>
+                    <span className="text-muted-foreground font-mono">{b.points}</span>
+                    <span className="text-muted-foreground">{b.note}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Model Registry */}
       <div className="border border-border rounded-md p-5">
         <h2 className="text-sm font-bold text-foreground mb-3">Model Registry</h2>
@@ -668,6 +773,8 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
                 className={`text-[11px] font-medium px-2.5 py-1 rounded border ${
                   qi.status === "pass"
                     ? "border-emerald-300 text-emerald-600 dark:text-emerald-400 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10"
+                    : qi.status === "fail"
+                    ? "border-red-300 text-red-600 dark:text-red-400 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10"
                     : "border-amber-300 text-amber-600 dark:text-amber-400 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10"
                 }`}
               >

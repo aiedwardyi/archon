@@ -432,9 +432,25 @@ Impact:
 - ✅ Build confidence scoring (0-100) — computed from files, archetype, images, speed (Mar 1, 2026)
 - ✅ Human Review Required flag auto-triggers when prompt or build score < 50 (Mar 1, 2026)
 - ✅ Factsheet v1.1 — scoring section added to existing layout (non-destructive)
-- 🔴 PDF export of Factsheet — solves Phase 8.2 client audit trail (future)
+- 🔴 PDF export — two variants: Client PDF (clean certificate) + Internal PDF (full metrics) (Phase 17.4)
+- 🔴 Delivery Readiness Gate — configurable score threshold (default 85/100), flags version as client-ready (Phase 17.5)
 - 🔴 Cross-run analytics endpoint: /api/governance/summary (future)
 - Resume value: governed, auditable AI pipeline with IBM Watson scoring — rare even among senior IBM AEs
+
+#### 17.4 — Dual PDF Export (🔴 Planned)
+- 🔴 Two buttons on Governance tab: "Download Client PDF" + "Download Internal PDF"
+- 🔴 Client PDF: project name, AI models used, compliance badges, files/images generated. No scores, no cost, no tokens.
+- 🔴 Internal PDF: full factsheet — scores, tokens, cost, duration, iteration history, pass/fail indicators
+- 🔴 Each version's artifacts + factsheet printable per version (Brief + Plan + Code + Factsheet)
+- 🔴 Solves Phase 8.2 client audit trail requirement
+
+#### 17.5 — Delivery Readiness Gate (🔴 Planned)
+- 🔴 Configurable quality threshold per project (default 85/100)
+- 🔴 Version flagged as "Client Ready" or "Needs Iteration" based on combined score
+- 🔴 Visible indicator on Versions timeline (green checkmark vs yellow flag)
+- 🔴 Requires output evaluation agent to score how well build matched intent
+- 🔴 Note: current scores (prompt clarity + build quality) are good signals but not perfect pass/fail gates
+  — output evaluation (send prompt + HTML to AI for match scoring) needed for full accuracy
 - ✅ Expanded planner.txt from 10 → 25 archetypes
 - ✅ Added render_path A/B field for Tailwind vs Raw CSS routing
 - ✅ Layout + content contracts for all 15 new archetypes

@@ -214,7 +214,8 @@ main (enterprise-ui merged and deleted)
 - ✅ Build confidence scoring (0-100) — files, archetype, images, speed
 - ✅ Human Review Required auto-triggers when score < 50
 - ✅ Factsheet v1.1 — scoring UI added non-destructively to existing layout
-- 🔴 PDF export — solves Phase 8.2 (future)
+- 🔴 17.4 Dual PDF Export — "Download Client PDF" + "Download Internal PDF" buttons on Governance tab
+- 🔴 17.5 Delivery Readiness Gate — configurable 85/100 threshold, flags version as Client Ready or Needs Iteration
 - 🔴 /api/governance/summary cross-run analytics (future)
 
 ### Phase 16.5 — Authentication (🔴 Planned)
