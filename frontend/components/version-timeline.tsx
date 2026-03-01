@@ -28,6 +28,8 @@ type Version = {
   date: string
   status: "completed" | "failed" | "running" | "pending"
   filesChanged: number
+  qualityTier?: string | null
+  readinessScore?: number | null
 }
 
 function parseVersions(raw: any[]): Version[] {
@@ -55,6 +57,8 @@ function parseVersions(raw: any[]): Version[] {
       id: e.id, version: e.version, prompt: promptRaw,
       timestamp: date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
       date: dateLabel, status: statusMap[e.status] ?? "pending", filesChanged: e.files_generated ?? 0,
+      qualityTier: e.quality_tier ?? null,
+      readinessScore: e.readiness_score ?? null,
     }
   })
 }
@@ -189,6 +193,15 @@ export function VersionTimeline() {
                       <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                         <span>{v.filesChanged} {t("filesChanged")}</span>
                       </div>
+                      {v.qualityTier === "high" && (
+                        <span className="inline-block mt-1.5 bg-blue-500/10 text-blue-500 border border-blue-400/40 shadow-[0_0_6px_rgba(59,130,246,0.4)] text-[10px] px-1.5 py-0.5 rounded">High Quality</span>
+                      )}
+                      {v.qualityTier === "good" && (
+                        <span className="inline-block mt-1.5 bg-emerald-500/10 text-emerald-600 border border-emerald-400/40 text-[10px] px-1.5 py-0.5 rounded">Good Quality</span>
+                      )}
+                      {v.qualityTier === "low" && (
+                        <span className="inline-block mt-1.5 bg-red-500/10 text-red-500 border border-red-400/40 text-[10px] px-1.5 py-0.5 rounded">Low Quality</span>
+                      )}
                     </button>
                   )
                 })}

@@ -793,6 +793,7 @@ interface StudioFactsheet {
   scoring?: { prompt_quality: StudioPromptQuality; build_confidence: StudioBuildConfidence };
   quality_indicators: Array<{ indicator: string; status: string; value: string }>;
   compliance: { audit_trail: boolean; version_history: boolean; artifact_retention: boolean; human_review_required: boolean };
+  readiness?: { quality_tier: string | null; readiness_score: number | null } | null;
 }
 
 function GovernanceTab({ projectId, version }: { projectId: number | null; version: number | null }) {
@@ -841,8 +842,26 @@ function GovernanceTab({ projectId, version }: { projectId: number | null; versi
 
   const ts = factsheet.generated_at ? new Date(factsheet.generated_at).toLocaleString() : "Unknown"
 
+  const qualityTier = factsheet.readiness?.quality_tier ?? null
+
   return (
     <div className="max-w-3xl space-y-4">
+      {qualityTier === "high" && (
+        <div className="rounded-lg border border-blue-400/40 bg-blue-500/10 px-4 py-2.5 text-sm text-blue-500 font-medium">
+          High Quality — This build meets the quality standard.
+        </div>
+      )}
+      {qualityTier === "good" && (
+        <div className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-600 font-medium">
+          Good Quality — This build is solid but has room to improve.
+        </div>
+      )}
+      {qualityTier === "low" && (
+        <div className="rounded-lg border border-red-400/40 bg-red-500/10 px-4 py-2.5 text-sm text-red-500 font-medium">
+          Low Quality — Consider rebuilding with a more detailed prompt.
+        </div>
+      )}
+
       <div>
         <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
           <Shield className="h-5 w-5 text-blue-500" />
