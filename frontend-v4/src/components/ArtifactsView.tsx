@@ -611,25 +611,13 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
           <Shield className="h-5 w-5 text-blue-500" />
           AI Factsheet — v{factsheet.project.version}
         </h1>
-        <p className="text-xs text-muted-foreground mt-1">Generated {ts} · Factsheet v{factsheet.factsheet_version}</p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Generated {ts} · Factsheet v{factsheet.factsheet_version}
+          {factsheet.readiness?.quality_tier === "high" && <>{" · "}<span className="text-blue-500 font-semibold">✦ High Quality</span>{factsheet.readiness?.combined_score != null && <>{" · "}<span className="text-muted-foreground">Score {factsheet.readiness.combined_score}/100</span></>}</>}
+          {factsheet.readiness?.quality_tier === "good" && <>{" · "}<span className="text-emerald-500 font-semibold">✦ Good Quality</span>{factsheet.readiness?.combined_score != null && <>{" · "}<span className="text-muted-foreground">Score {factsheet.readiness.combined_score}/100</span></>}</>}
+          {factsheet.readiness?.quality_tier === "low" && <>{" · "}<span className="text-red-500 font-semibold">✦ Low Quality</span>{factsheet.readiness?.combined_score != null && <>{" · "}<span className="text-muted-foreground">Score {factsheet.readiness.combined_score}/100</span></>}</>}
+        </p>
       </div>
-
-      {/* Readiness Banner */}
-      {factsheet.readiness?.quality_tier === "high" && (
-        <div className="px-4 py-3 rounded-md bg-blue-500/10 border border-blue-400/40 shadow-[0_0_6px_rgba(59,130,246,0.4)]">
-          <p className="text-sm font-semibold text-blue-500">High Quality — This build meets the quality standard.</p>
-        </div>
-      )}
-      {factsheet.readiness?.quality_tier === "good" && (
-        <div className="px-4 py-3 rounded-md bg-emerald-500/10 border border-emerald-400/40">
-          <p className="text-sm font-semibold text-emerald-500">Good Quality — This build is solid but has room to improve.</p>
-        </div>
-      )}
-      {factsheet.readiness?.quality_tier === "low" && (
-        <div className="px-4 py-3 rounded-md bg-red-500/10 border border-red-400/40">
-          <p className="text-sm font-semibold text-red-500">Low Quality — Consider rebuilding with a more detailed prompt.</p>
-        </div>
-      )}
 
       {/* PDF Download Buttons */}
       <div className="flex items-center gap-2">
