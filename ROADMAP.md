@@ -438,7 +438,7 @@ Impact:
 - ✅ Dashboard icon colors — Sparkles text-purple-400, Shield text-blue-400 (Mar 1, 2026)
 - ✅ Backend build_confidence key fix in dashboard_stats() (Mar 1, 2026)
 - 🔴 PDF export — two variants: Client PDF (clean certificate) + Internal PDF (full metrics) (Phase 17.4)
-- ✅ 17.5 Delivery Readiness Gate — Quality Tier badges (High/Good/Low) on Versions timeline + Governance tab banner (Mar 1, 2026)
+- ✅ 17.5 Delivery Readiness Gate — Quality Tier badges + inline metadata + PDF header placement (Mar 1, 2026)
 - 🔴 Cross-run analytics endpoint: /api/governance/summary (future)
 - Resume value: governed, auditable AI pipeline with IBM Watson scoring — rare even among senior IBM AEs
 
