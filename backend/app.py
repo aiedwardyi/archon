@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="sqlalchemy")
 
 from models import Project, Execution, get_session, init_db, get_next_version
+from auth import auth_bp, init_jwt
 
 # NLU Agent — sentiment + keyword analysis before pipeline routing
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -28,6 +29,8 @@ nlu_agent = NLUAgent()
 app = Flask(__name__)
 
 CORS(app, origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:8080"])
+app.register_blueprint(auth_bp)
+jwt = init_jwt(app)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PUBLIC_DIR = REPO_ROOT / "generated"

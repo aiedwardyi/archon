@@ -1,7 +1,7 @@
 ﻿"use client"
 
 import { useState, useRef, useEffect } from "react"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import {
   Sun, Moon, LogOut, Settings, BookOpen,
@@ -9,6 +9,7 @@ import {
   Building2, Paintbrush,
 } from "lucide-react"
 import { ProfileModal, SettingsModal, PricingModal } from "@/components/account-modals"
+import { authService } from "@/lib/auth"
 import { useLanguage } from "@/contexts/LanguageContext"
 
 export function AvatarDropdown() {
@@ -16,8 +17,15 @@ export function AvatarDropdown() {
   const [modal, setModal] = useState<"profile" | "settings" | "pricing" | null>(null)
   const { resolvedTheme, setTheme } = useTheme()
   const pathname = usePathname()
+  const router = useRouter()
   const ref = useRef<HTMLDivElement>(null)
   const { language, t } = useLanguage()
+
+  function handleSignOut() {
+    authService.logout()
+    setOpen(false)
+    router.push("/login")
+  }
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -168,7 +176,7 @@ export function AvatarDropdown() {
 
             <div className="border-t border-border py-1">
               <button
-                onClick={() => setOpen(false)}
+                onClick={handleSignOut}
                 className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-destructive hover:bg-accent transition-colors"
               >
                 <LogOut className="h-4 w-4" />

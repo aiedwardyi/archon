@@ -15,12 +15,15 @@ Base = declarative_base()
 
 
 class User(Base):
-    """User account -- foundation for future auth (Phase 13)."""
+    """User account with JWT auth (Phase 16.5)."""
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     email = Column(String(255), nullable=False, unique=True)
     name = Column(String(255), nullable=True)
+    password_hash = Column(String(255), nullable=True)
+    reset_token = Column(String(255), nullable=True)
+    reset_token_expires = Column(DateTime, nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
     projects = relationship("Project", back_populates="owner")
@@ -198,6 +201,20 @@ def init_db():
             conn.commit()
     except Exception as e:
         print(f"Warning: could not ensure build metrics columns: {e}")
+    # Migration: add auth columns to users table if missing
+    try:
+        with engine.connect() as conn:
+            cols = [row[1] for row in conn.execute(text("PRAGMA table_info(users)")).fetchall()]
+            for col_name, col_type in [
+                ("password_hash", "VARCHAR(255)"),
+                ("reset_token", "VARCHAR(255)"),
+                ("reset_token_expires", "DATETIME"),
+            ]:
+                if col_name not in cols:
+                    conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}"))
+            conn.commit()
+    except Exception as e:
+        print(f"Warning: could not ensure auth columns: {e}")
     print(f"Database initialized at: {DB_PATH}")
 
 
