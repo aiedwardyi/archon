@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { MoreHorizontal, FolderOpen, Download, ChevronUp, ChevronDown, ArrowUpDown } from "lucide-react";
+import { MoreHorizontal, Download, ChevronUp, ChevronDown, ArrowUpDown } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { DeleteProjectModal } from "@/components/DeleteProjectModal";
 
@@ -165,7 +165,7 @@ export const ProjectTable = ({ projects, onProjectSelect }: ProjectTableProps) =
 
               <div className="flex items-center gap-2.5 min-w-0 cursor-pointer py-2.5">
                 <div className="h-8 w-8 rounded-md bg-secondary flex items-center justify-center flex-shrink-0">
-                  <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                  <svg className="h-4 w-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
                 </div>
                 <div className="min-w-0">
                   <div className="text-sm font-medium text-foreground truncate leading-tight">{p.name}</div>

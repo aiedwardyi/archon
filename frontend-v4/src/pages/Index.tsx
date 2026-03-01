@@ -21,7 +21,7 @@ import {
   fetchLogs,
   type ChatMessage,
 } from "@/services/api";
-import { Search, Plus, Trash2, Zap, Mic, MicOff, Send, Volume2, VolumeX, Filter, Loader2, AlertCircle, X } from "lucide-react";
+import { Search, Plus, Trash2, Mic, MicOff, Send, Volume2, VolumeX, Filter, Loader2, AlertCircle, X } from "lucide-react";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem("archon_active_tab") || "projects");
@@ -307,7 +307,7 @@ const Index = () => {
       }
 
       // Build intent — start pipeline
-      const assistantMsg: ChatMessage = { role: "assistant", content: "Got it! Starting the build now… ⚡", timestamp: Date.now() };
+      const assistantMsg: ChatMessage = { role: "assistant", content: "Got it! Starting the build now.", timestamp: Date.now() };
       setChatMessages((prev) => [...prev, assistantMsg]);
 
       const allMessages = [...chatMessages, userMsg];
@@ -501,7 +501,7 @@ const Index = () => {
                     <div>
                       <div className="flex items-center gap-2.5">
                         <div className="h-8 w-8 rounded-md bg-secondary flex items-center justify-center">
-                          <Zap className="h-4 w-4 text-muted-foreground" />
+                          <svg className="h-4 w-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
@@ -575,7 +575,7 @@ const Index = () => {
                           ) : (
                             <div key={i} className="flex justify-start gap-2.5">
                               <span className="flex-shrink-0 h-7 w-7 rounded-lg bg-secondary flex items-center justify-center mt-5">
-                                <Zap className="h-3.5 w-3.5 text-muted-foreground" />
+                                <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
                               </span>
                               <div className="max-w-md">
                                 <div className="text-[10px] font-medium text-muted-foreground mb-1">

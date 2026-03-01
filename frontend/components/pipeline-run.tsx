@@ -10,8 +10,8 @@ import {
   Send,
   Terminal,
   ChevronDown,
-  Zap,
-  Bot,
+
+
   User,
   Mic,
   MicOff,
@@ -515,7 +515,7 @@ export function PipelineRun() {
       const buildMsg: ChatMessage = {
         id: `msg-${Date.now()}-archon`,
         role: "archon",
-        content: "Got it! Starting the build now... ⚡",
+        content: "Got it! Starting the build now.",
         timestamp: Date.now(),
       }
       setMessages(prev => [...prev, buildMsg])
@@ -780,7 +780,7 @@ export function PipelineRun() {
       <div className="flex-1 flex flex-col p-6 gap-4 overflow-auto">
         <div className="bg-card border border-border rounded-lg p-5">
           <div className="flex items-center gap-2 mb-4">
-            <Zap className="h-4 w-4 text-primary" />
+            <svg className="h-4 w-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
             <h3 className="text-sm font-semibold text-foreground">{t("agentPipeline")}</h3>
           </div>
           <div className="flex items-stretch gap-0">
@@ -831,7 +831,7 @@ export function PipelineRun() {
 
         <div className="bg-card border border-border rounded-lg flex flex-col">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-            <Bot className="h-4 w-4 text-muted-foreground" />
+            <svg className="h-4 w-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
             <h3 className="text-sm font-semibold text-foreground">{t("conversation")}</h3>
           </div>
           <div className="p-4 flex flex-col gap-3 max-h-[55vh] overflow-y-auto">
@@ -848,7 +848,7 @@ export function PipelineRun() {
                 <div className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center ${
                   msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                 }`}>
-                  {msg.role === "user" ? <User className="h-3.5 w-3.5" /> : <Bot className="h-3.5 w-3.5" />}
+                  {msg.role === "user" ? <User className="h-3.5 w-3.5" /> : <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>}
                 </div>
                 <div className={`max-w-[75%] rounded-xl px-4 py-2.5 text-sm ${
                   msg.role === "user"
