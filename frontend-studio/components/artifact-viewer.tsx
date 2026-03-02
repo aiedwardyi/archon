@@ -21,6 +21,7 @@ import {
 } from "lucide-react"
 import { PreviewPanel } from "@/components/preview-panel"
 import { useLanguage } from "@/contexts/LanguageContext"
+import { authService } from "@/lib/auth"
 
 const API_BASE = "http://localhost:5000"
 
@@ -801,6 +802,23 @@ function GovernanceTab({ projectId, version }: { projectId: number | null; versi
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const downloadPdf = async (type: "client" | "internal") => {
+    if (!projectId || !version) return
+    const token = authService.getToken()
+    const res = await fetch(
+      `${API_BASE}/api/projects/${projectId}/versions/${version}/factsheet/pdf?type=${type}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+    if (!res.ok) { alert("PDF download failed"); return }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `archon-v${version}-${type}.pdf`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   useEffect(() => {
     if (!projectId || !version) return
     let cancelled = false
@@ -862,20 +880,18 @@ function GovernanceTab({ projectId, version }: { projectId: number | null; versi
 
       {/* PDF Download Buttons */}
       <div className="flex items-center gap-2">
-        <a
-          href={projectId && version ? `http://localhost:5000/api/projects/${projectId}/versions/${version}/factsheet/pdf?type=client` : "#"}
-          download
-          className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-muted transition-colors flex items-center gap-1.5 no-underline"
+        <button
+          onClick={() => downloadPdf("client")}
+          className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-muted transition-colors flex items-center gap-1.5 cursor-pointer"
         >
           <FileText className="h-3.5 w-3.5" /> Download Client PDF
-        </a>
-        <a
-          href={projectId && version ? `http://localhost:5000/api/projects/${projectId}/versions/${version}/factsheet/pdf?type=internal` : "#"}
-          download
-          className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-muted transition-colors flex items-center gap-1.5 no-underline"
+        </button>
+        <button
+          onClick={() => downloadPdf("internal")}
+          className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-muted transition-colors flex items-center gap-1.5 cursor-pointer"
         >
           <FileText className="h-3.5 w-3.5" /> Download Internal PDF
-        </a>
+        </button>
       </div>
 
       <div className="bg-card border border-border rounded-lg p-5">
