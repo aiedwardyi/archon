@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
+import { useNotificationSound } from '../hooks/useNotificationSound';
 import { backend, normalizePrd, normalizePlan, buildTasksFromResult } from '../services/orchestrator';
 import { Project, Artifact, LogEntry, EngineerTask } from '../types';
 import ArtifactViewer from '../components/ArtifactViewer';
@@ -696,6 +697,8 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
   const [localTasks, setLocalTasks] = useState<EngineerTask[]>([]);
   const logsEndRef = useRef<HTMLDivElement>(null);
   const progressInitializedRef = useRef<string | null>(null);
+  const { playSuccess, playFailure } = useNotificationSound();
+  const prevBuildStatusRef = useRef<string | undefined>(undefined);
 
   // Reset local state when switching projects
   useEffect(() => {
@@ -790,6 +793,14 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId }) => {
       timers.forEach(t => clearTimeout(t));
     };
   }, [project?.status, projectId]);
+
+  // Build completion notification sounds
+  useEffect(() => {
+    if (!project) return;
+    if (project.status === 'COMPLETED' && prevBuildStatusRef.current === 'RUNNING') playSuccess();
+    if (project.status === 'FAILED' && prevBuildStatusRef.current === 'RUNNING') playFailure();
+    prevBuildStatusRef.current = project.status;
+  }, [project?.status]);
 
   // Fetch artifacts directly from API when orchestrator cache is empty (survives Flask restarts)
   useEffect(() => {

@@ -44,6 +44,7 @@ cd frontend-consumer && pnpm dev
 - Never write to `backend/.env` directly — Eddie manages keys manually
 
 ## Git
+- **NEVER** run any git commands (commit, branch, push, checkout, etc.) — Eddie handles all git operations manually.
 - **NEVER** add `Co-Authored-By: Claude` (or any Co-Authored-By line) to commit messages.
 
 ## Notifications
