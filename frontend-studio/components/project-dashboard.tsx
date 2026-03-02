@@ -39,6 +39,13 @@ type ConfirmModal = {
 export function ProjectDashboard() {
   const router = useRouter()
   const { t, language } = useLanguage()
+
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem("archon_token")
+    return token
+      ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+      : { "Content-Type": "application/json" }
+  }
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
@@ -57,9 +64,11 @@ export function ProjectDashboard() {
 
   const fetchProjects = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/projects`)
+      const res = await fetch(`${API_BASE}/api/projects`, {
+        headers: getAuthHeaders(),
+      })
       const data = await res.json()
-      setProjects(data)
+      setProjects(Array.isArray(data) ? data : [])
     } catch (e) {
       setError("Could not connect to backend")
     } finally {
@@ -85,7 +94,7 @@ export function ProjectDashboard() {
     try {
       const res = await fetch(`${API_BASE}/api/projects`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ name: newProjectName.trim() }),
       })
       const project = await res.json()
@@ -134,7 +143,10 @@ export function ProjectDashboard() {
   const handleDeleteProject = async (projectId: number) => {
     setDeleting(true)
     try {
-      await fetch(`${API_BASE}/api/projects/${projectId}`, { method: "DELETE" })
+      await fetch(`${API_BASE}/api/projects/${projectId}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      })
       setProjects((prev) => prev.filter((p) => p.id !== projectId))
       if (sessionStorage.getItem("archon_current_project_id") === String(projectId)) {
         sessionStorage.removeItem("archon_current_project_id")
@@ -153,7 +165,10 @@ export function ProjectDashboard() {
     setDeleting(true)
     try {
       await Promise.all(
-        projects.map((p) => fetch(`${API_BASE}/api/projects/${p.id}`, { method: "DELETE" }))
+        projects.map((p) => fetch(`${API_BASE}/api/projects/${p.id}`, {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+        }))
       )
       setProjects([])
       sessionStorage.removeItem("archon_current_project_id")
