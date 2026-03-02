@@ -300,13 +300,20 @@ main (enterprise-ui merged and deleted)
 - ✅ Enterprise AuthGuard — redirects to /login if no token — Mar 1, 2026
 - ✅ Enterprise Sign Out wired (authService.logout + redirect to /login) — Mar 1, 2026
 - ✅ Studio ↔ Enterprise theme toggle passes token — Mar 1, 2026
+- ✅ Folder rename refactor — frontend-v4→frontend, frontend→frontend-studio, frontend-consumer2→frontend-consumer (Mar 2, 2026)
+- ✅ backend/requirements.txt updated — flask-jwt-extended and bcrypt added (Mar 2, 2026)
+- ✅ Post-login redirect fixed — always lands on Enterprise projects page via ?tab=projects URL param (Mar 2, 2026)
+- ✅ First-time login defaults to dark mode, repeat users keep their theme preference (Mar 2, 2026)
+- ✅ Cross-origin theme handoff — Studio passes ?theme= to Enterprise on login (Mar 2, 2026)
+- ✅ Studio favicon added — hexagon SVG in browser tab (Mar 2, 2026)
+- ✅ Enterprise favicon color fixed — blue #3b82f6 (Mar 2, 2026)
+- ✅ .vite/ added to .gitignore (Mar 2, 2026)
 - 🔴 Google OAuth frontend wiring (needs Google Client ID)
 
-## 🔴 Known Bug — Enterprise Tab Not Restoring on Switch from Studio
-- When switching Studio → Enterprise, Enterprise loads the previously cached tab (e.g. Versions) instead of the tab Studio was on
-- Root cause: `activeTab` useState initializer reads localStorage before URL param effect runs
-- Fix: initialize activeTab from `?tab=` URL param first, fall back to localStorage
-- Branch: fix/enterprise-tab-switch (in progress)
+## 🔴 Known Bug — Enterprise Tab Not Restoring on Switch from Studio (Partial)
+- Login now correctly lands on projects tab ✅
+- Remaining: when switching Studio → Enterprise mid-session, Enterprise loads previously cached tab instead of Studio's current tab
+- Root cause: activeTab useState initializer reads localStorage before URL param effect runs
 
 ## 🔴 Known Bug — Enterprise Shows "Failed" Status During Active Build
 - When a build is running in Studio and user switches to Enterprise, Enterprise shows "Failed" badge on the version card
