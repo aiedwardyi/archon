@@ -2,6 +2,7 @@
 JWT Authentication routes for Archon.
 Phase 16.5 — register, login, forgot-password, reset-password, /me
 """
+import os
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import (
     JWTManager, create_access_token, jwt_required, get_jwt_identity
@@ -9,15 +10,19 @@ from flask_jwt_extended import (
 import bcrypt
 import secrets
 from datetime import datetime, timedelta, timezone
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
 from models import User, Project, get_session
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
 
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+
+
 def init_jwt(app):
     """Call this from app.py to wire JWT into Flask."""
-    import os
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "archon-dev-secret-change-in-prod")
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=7)
     return JWTManager(app)
@@ -87,6 +92,46 @@ def login():
         token = create_access_token(identity=str(user.id))
         return jsonify({
             "token": token,
+            "user": {"id": user.id, "email": user.email, "name": user.name},
+        }), 200
+    finally:
+        db.close()
+
+
+# ── Google OAuth ─────────────────────────────────────────────────────────────
+
+@auth_bp.route("/google", methods=["POST"])
+def google_login():
+    data = request.get_json()
+    credential = (data or {}).get("token") or ""
+    if not credential:
+        return jsonify({"error": "No Google token provided"}), 400
+
+    try:
+        idinfo = id_token.verify_oauth2_token(
+            credential, google_requests.Request(), GOOGLE_CLIENT_ID
+        )
+    except ValueError:
+        return jsonify({"error": "Invalid Google token"}), 401
+
+    email = idinfo.get("email", "").lower()
+    name = idinfo.get("name", email.split("@")[0])
+
+    if not email:
+        return jsonify({"error": "Google account has no email"}), 400
+
+    db = get_session()
+    try:
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            user = User(email=email, name=name, password_hash=None)
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+        token = create_access_token(identity=str(user.id))
+        return jsonify({
+            "access_token": token,
             "user": {"id": user.id, "email": user.email, "name": user.name},
         }), 200
     finally:
