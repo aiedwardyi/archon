@@ -10,6 +10,7 @@ import { NewProjectModal } from "@/components/NewProjectModal";
 import { VersionsView } from "@/components/VersionsView";
 import { ArtifactsView } from "@/components/ArtifactsView";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useNotificationSound } from "@/hooks/useNotificationSound";
 import {
   useProjects,
   usePipelineStatus,
@@ -78,6 +79,8 @@ const Index = () => {
   const buildStartTimeRef = useRef<number | null>(null);
   const [isStuck, setIsStuck] = useState(false);
   const pipeline = usePipelineStatus(selectedProjectId, activeTab === "pipeline" && sending);
+  const { playSuccess, playFailure } = useNotificationSound();
+  const prevPipelineStatusRef = useRef<string | null>(null);
   // Restore pipeline card state from DB when no live build is running
   const [historicalStatus, setHistoricalStatus] = useState<string | null>(null);
   const [historicalLogs, setHistoricalLogs] = useState<Array<{ id: string; timestamp: number; message: string }>>([]);
@@ -219,6 +222,9 @@ const Index = () => {
 
   // Stop sending state when pipeline finishes
   useEffect(() => {
+    if (pipeline.status === "COMPLETED" && prevPipelineStatusRef.current !== "COMPLETED") playSuccess();
+    if (pipeline.status === "FAILED" && prevPipelineStatusRef.current !== "FAILED") playFailure();
+
     if (pipeline.status === "COMPLETED" || pipeline.status === "FAILED") {
       setSending(false);
       sendingRef.current = false;
@@ -234,6 +240,8 @@ const Index = () => {
         });
       }
     }
+
+    prevPipelineStatusRef.current = pipeline.status;
   }, [pipeline.status]);
 
   useEffect(() => {

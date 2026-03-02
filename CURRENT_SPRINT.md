@@ -319,6 +319,14 @@ main (enterprise-ui merged and deleted)
 
 - ✅ Governance PDF downloads fixed — Client and Internal PDFs now fetch with auth header (Mar 2, 2026)
 
+## ✅ Notification Sound — Pipeline Completion (Mar 2, 2026)
+- useNotificationSound hook — Web Audio API, synthesized tones, no audio files
+- Success sound: two ascending tones (440Hz → 660Hz) — confirmed working
+- Failure sound: single descending tone (330Hz → 220Hz) — confirmed working
+- All 3 hook files created: frontend/src/hooks/, frontend-studio/hooks/, frontend-consumer/hooks/
+- Wired into Enterprise (Index.tsx), Studio (pipeline-run.tsx), Consumer (ProjectDetailPage.tsx)
+- 🔴 NOT YET COMMITTED — next worker must: git checkout -b feat/notification-bell → git add -A → commit → push → PR
+
 ## 🔴 Known Bug — Enterprise Shows "Failed" Status During Active Build
 - When a build is running in Studio and user switches to Enterprise, Enterprise shows "Failed" badge on the version card
 - Actual status is Running — corrects itself to Completed when build finishes
