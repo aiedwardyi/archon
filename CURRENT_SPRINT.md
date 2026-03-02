@@ -308,12 +308,14 @@ main (enterprise-ui merged and deleted)
 - ✅ Studio favicon added — hexagon SVG in browser tab (Mar 2, 2026)
 - ✅ Enterprise favicon color fixed — blue #3b82f6 (Mar 2, 2026)
 - ✅ .vite/ added to .gitignore (Mar 2, 2026)
+- ✅ Enterprise→Studio token handoff — Studio button in Enterprise Navbar now passes ?token= (Mar 2, 2026)
+- ✅ Studio ↔ Enterprise theme toggle fully working — token passed in both directions, no re-auth required (Mar 2, 2026)
 - 🔴 Google OAuth frontend wiring (needs Google Client ID)
 
-## 🔴 Known Bug — Enterprise Tab Not Restoring on Switch from Studio (Partial)
+## ✅ Known Bug FIXED — Enterprise Tab Not Restoring (Mar 2, 2026)
 - Login now correctly lands on projects tab ✅
-- Remaining: when switching Studio → Enterprise mid-session, Enterprise loads previously cached tab instead of Studio's current tab
-- Root cause: activeTab useState initializer reads localStorage before URL param effect runs
+- Studio→Enterprise mid-session tab switch now passes correct tab via URL param ✅
+- Studio AvatarDropdown passes ?tab=, ?projectId=, ?token=, ?lang= to Enterprise
 
 ## 🔴 Known Bug — Enterprise Shows "Failed" Status During Active Build
 - When a build is running in Studio and user switches to Enterprise, Enterprise shows "Failed" badge on the version card
