@@ -325,7 +325,50 @@ main (enterprise-ui merged and deleted)
 - Failure sound: single descending tone (330Hz → 220Hz) — confirmed working
 - All 3 hook files created: frontend/src/hooks/, frontend-studio/hooks/, frontend-consumer/hooks/
 - Wired into Enterprise (Index.tsx), Studio (pipeline-run.tsx), Consumer (ProjectDetailPage.tsx)
-- 🔴 NOT YET COMMITTED — next worker must: git checkout -b feat/notification-bell → git add -A → commit → push → PR
+- ✅ Committed and merged via PR #31 (Mar 2, 2026)
+
+## 🔴 Known Bug — Cross-Origin Auth State (Mar 2, 2026)
+
+**Problem:** localStorage is per-origin. Each port (8080, 3000, 3030) has its own isolated localStorage. This causes 3 symptoms:
+
+### Symptom 1: Logout on one port doesn't log out other ports
+- Log out on localhost:3030 (Studio) → go to localhost:8080 (Enterprise) → still logged in
+- Root cause: logout only calls `localStorage.removeItem()` on the current port
+- Attempted fix: fire a fetch ping to other port with `?logout=1` param — didn't work reliably because fetch doesn't execute JS on the target origin
+- **Correct fix (not yet implemented):** Server-side JWT blacklist — `POST /api/auth/logout` invalidates the token in DB. All ports check token validity on each request. Token dead = logged out everywhere.
+
+### Symptom 2: "Unknown user" after switching to Studio
+- Login as email 3 on 8080 → click "Studio" → navbar shows "..." or wrong user
+- Root cause: token is passed via `?token=` URL param and saved to localStorage, but `archon_user` object is NOT saved. Navbar renders before the `/api/auth/me` fetch completes.
+- Attempted fix: fetch `/me` in AuthGuard after saving token, save result to `archon_user` — partially worked but introduced new bugs
+- **Current state:** Reverted. Still broken.
+- **Correct fix (not yet implemented):** In `frontend-studio/components/auth-guard.tsx`, when `isSwitch=1` and `urlToken` is present, do a synchronous-style fetch to `/api/auth/me` and await it BEFORE setting `checked=true`. This ensures user object is in localStorage before any component renders.
+
+### Symptom 3: Auto-login after visiting a port directly
+- Log out on 3030 → type localhost:8080 directly → already logged in
+- Root cause: 8080 never had its token cleared (Symptom 1)
+- Same fix as Symptom 1
+
+### Testing sequence that exposed all 3 bugs:
+```
+1. Login email1 @ 8080 → switch to Studio → shows UNKNOWN USER with email1 projects
+2. Switch back to Enterprise → email1 correct → switch to Studio → email1 correct (second switch works)
+3. Logout → go to 8080 directly → auto-logged in as email1 (token never cleared)
+4. Login email3 @ 8080 → switch to Studio → UNKNOWN USER with email1 projects
+5. Switch back to Enterprise → email3 correct
+```
+
+### What IS working (committed Mar 2, 2026):
+- ✅ owner_id scoping — each user sees only their own projects
+- ✅ Enterprise auth headers — fetchProjects() sends Bearer token
+- ✅ Second switch (Enterprise→Studio→Enterprise→Studio) shows correct user
+
+### What needs proper fix:
+- 🔴 Server-side JWT logout endpoint (blacklist token in DB)
+- 🔴 AuthGuard await /me before render on token sync
+- **Do NOT attempt cross-origin localStorage hacks — they don't work reliably**
+
+---
 
 ## 🔴 Known Bug — Enterprise Shows "Failed" Status During Active Build
 - When a build is running in Studio and user switches to Enterprise, Enterprise shows "Failed" badge on the version card
