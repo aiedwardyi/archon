@@ -317,6 +317,8 @@ main (enterprise-ui merged and deleted)
 - Studio→Enterprise mid-session tab switch now passes correct tab via URL param ✅
 - Studio AvatarDropdown passes ?tab=, ?projectId=, ?token=, ?lang= to Enterprise
 
+- ✅ Governance PDF downloads fixed — Client and Internal PDFs now fetch with auth header (Mar 2, 2026)
+
 ## 🔴 Known Bug — Enterprise Shows "Failed" Status During Active Build
 - When a build is running in Studio and user switches to Enterprise, Enterprise shows "Failed" badge on the version card
 - Actual status is Running — corrects itself to Completed when build finishes
@@ -348,3 +350,4 @@ DALL-E character images stopped matching character descriptions accurately after
 - Ensure `iteration_context` only affects EngineerAgent, not DesignAgent
 - Restore DALL-E prompt format that worked pre-Phase 14
 - Test with: "Final Fantasy 7 character selection page with Cloud Strife and Barrett"
+
