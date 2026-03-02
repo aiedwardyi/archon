@@ -161,10 +161,10 @@ export default function LoginPage() {
             </h1>
             <ul className="space-y-5">
               {[
-                "Deliver client apps in hours, not weeks",
-                "Every build is IBM Watson-certified for quality",
-                "Show clients exactly what was built and why",
-                "One-click sign-off reports for every client",
+                "Instant app delivery, production-ready",
+                "Quality-verified. IBM Watson-certified.",
+                "Immutable audit trail from prompt to production",
+                "One-click audit report — every build, every version",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-3">
                   <svg
@@ -197,3 +197,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
