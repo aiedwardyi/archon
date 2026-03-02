@@ -310,7 +310,7 @@ main (enterprise-ui merged and deleted)
 - ✅ .vite/ added to .gitignore (Mar 2, 2026)
 - ✅ Enterprise→Studio token handoff — Studio button in Enterprise Navbar now passes ?token= (Mar 2, 2026)
 - ✅ Studio ↔ Enterprise theme toggle fully working — token passed in both directions, no re-auth required (Mar 2, 2026)
-- 🔴 Google OAuth frontend wiring (needs Google Client ID)
+- ✅ Google OAuth frontend wiring — Studio + Enterprise login pages, google-auth in requirements.txt (Mar 2, 2026)
 
 ## ✅ Known Bug FIXED — Enterprise Tab Not Restoring (Mar 2, 2026)
 - Login now correctly lands on projects tab ✅

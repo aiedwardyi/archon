@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { LanguageProvider } from '@/contexts/LanguageContext'
 import { Navbar } from '@/components/navbar'
 import { AuthGuard } from '@/components/auth-guard'
+import { GoogleOAuthWrapper } from '@/components/google-oauth-provider'
 import './globals.css'
 
 const geistSans = Geist({ subsets: ["latin"] });
@@ -42,12 +43,14 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <LanguageProvider>
-            <div className="min-h-screen flex flex-col bg-background">
-              <Navbar />
-              <main className="flex-1 flex flex-col"><AuthGuard>{children}</AuthGuard></main>
-            </div>
-          </LanguageProvider>
+          <GoogleOAuthWrapper>
+            <LanguageProvider>
+              <div className="min-h-screen flex flex-col bg-background">
+                <Navbar />
+                <main className="flex-1 flex flex-col"><AuthGuard>{children}</AuthGuard></main>
+              </div>
+            </LanguageProvider>
+          </GoogleOAuthWrapper>
         </ThemeProvider>
         <Analytics />
       </body>
