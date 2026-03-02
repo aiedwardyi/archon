@@ -19,6 +19,9 @@ const ibmPlexSans = IBM_Plex_Sans({
 export const metadata: Metadata = {
   title: 'Archon - Studio Build',
   description: 'Enterprise AI code generation with multi-agent pipelines, version control, and full audit trails.',
+  icons: {
+    icon: '/favicon.svg',
+  },
 }
 
 export const viewport: Viewport = {
