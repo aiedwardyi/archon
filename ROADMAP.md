@@ -153,8 +153,8 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - ✅ Four-agent pipeline (Requirements → Architecture → Design → Build)
 - ✅ Build Agent: Claude Sonnet 4.5 (primary), Gemini fallback
 - ✅ Flask backend (port 5000), SQLite, full persistence
-- ✅ Enterprise UI — frontend/ (port 3000), light + dark mode
-- ✅ Consumer UI — frontend-consumer2/ (port 3002), Korean/English i18n
+- ✅ Enterprise UI — frontend-studio/ (port 3000), light + dark mode
+- ✅ Consumer UI — frontend-consumer/ (port 3002), Korean/English i18n
 - ✅ Iterative pipeline with full version history
 - ✅ Iteration mode hardened (scope enforcement, ancestor chain walk, asset reuse)
 - ✅ Live preview iframe (Versions + Artifacts pages)
@@ -169,7 +169,7 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - ✅ Consumer Versions page — timeline + split panel + preview per version (THE MOAT)
 - ✅ Consumer frontend polished — Archon branding, newest-first timeline, glow effects, full Korean i18n
 - 🔧 Consumer UX bug fixes — stale state, code tab fixed, failed overlay fixed, progress bar restored (smooth animation, minor edge cases remain), preview iframe regression pending fix
-- ✅ Phase 15.4 — Enterprise UI (frontend-v4) — Vite + React + shadcn/ui on port 8080, real API wiring, 4-theme foundation
+- ✅ Phase 15.4 — Enterprise UI (frontend) — Vite + React + shadcn/ui on port 8080, real API wiring, 4-theme foundation
 - ✅ Phase 15.5.S — Studio dashboard reviewed — kept minimal (no stats bar, no activity feed)
 - 🔧 Phase 15.5 — Enterprise UI polish — Pipeline tab chat UI done, stats/activity/publish wired, modals still needed
 - 🔴 PDF Export + Client Read-Only Link (Phase 8 remaining)
@@ -243,7 +243,7 @@ Impact:
 - Strengthen iteration_context in engineer prompt (5 strict surgical edit rules, placed before main prompt)
 
 ### Phase 15 — Consumer Frontend v2 (✅ Completed Feb 2026)
-- Copied and wired Projects/frontend to repo as frontend-consumer2 (port 3002)
+- Copied and wired Projects/frontend to repo as frontend-consumer (port 3002)
 - Connected to Flask backend via orchestrator.ts service layer
 - Real iframe preview with desktop/mobile viewport toggle
 - **Versions page (THE MOAT)** — timeline + split panel + live preview per version
@@ -281,10 +281,10 @@ Impact:
 - Preview iframe regression: sometimes reverts to placeholder after build — pending fix
 
 
-## Phase 15.4 - Enterprise UI (frontend-v4) COMPLETED Feb 27, 2026
+## Phase 15.4 - Enterprise UI (frontend) COMPLETED Feb 27, 2026
 
 ### What was built
-- Copied Lovable-generated Enterprise design (archon-v4) to frontend-v4/
+- Copied Lovable-generated Enterprise design (archon-v4) to frontend/
 - Vite + React + TypeScript + Tailwind + shadcn/ui running on port 8080
 - 4-theme system foundation (Enterprise Light/Dark, Studio Light/Dark)
 - Korean/English language toggle with localStorage persistence
@@ -302,18 +302,18 @@ Impact:
 ## Phase 15.5.S - Studio Dashboard Review (✅ Feb 28, 2026)
 - Stats bar and Recent Activity feed were prototyped then reverted — not shipping
 - Studio Projects page intentionally kept minimal: project count cards (Total/Running/Completed/Failed) + search/filter + full-width table
-- Enterprise (frontend-v4) retains its own stats bar and activity feed via `/api/stats` and `/api/activity` endpoints
+- Enterprise (frontend) retains its own stats bar and activity feed via `/api/stats` and `/api/activity` endpoints
 
 ## Phase 16 — UI Parity, Auth & Polish (🔧 In Progress Feb 2026)
 
 ### 16.2 — Branding (✅ Complete Feb 28, 2026)
 - ✅ Tab titles: "Archon - Studio Build", "Archon - Consumer Build"
-- ✅ Hexagon logo in frontend-v4 and frontend-consumer2
-- ✅ Hexagon SVG favicon in frontend-v4 and frontend-consumer2
+- ✅ Hexagon logo in frontend and frontend-consumer
+- ✅ Hexagon SVG favicon in frontend and frontend-consumer
 - ✅ load_dotenv fixed to always load backend/.env
 
 ### 16.4 — Watson STT/TTS for Enterprise (✅ Complete Feb 28, 2026)
-- ✅ Mic (STT) + speaker (TTS) buttons in frontend-v4 pipeline
+- ✅ Mic (STT) + speaker (TTS) buttons in frontend pipeline
 - ✅ Fixed WATSON_TTS_API_KEY / WATSON_STT_API_KEY env var mismatch
 
 ## Phase 15.5 - Enterprise UI Polish (🔧 IN PROGRESS)
@@ -360,12 +360,12 @@ Impact:
 
 ### 16.2 — Branding (✅ Complete Feb 28, 2026)
 - ✅ Tab titles: "Archon - Studio Build", "Archon - Consumer Build"
-- ✅ Hexagon logo in frontend-v4 and frontend-consumer2
-- ✅ Hexagon SVG favicon in frontend-v4 and frontend-consumer2
+- ✅ Hexagon logo in frontend and frontend-consumer
+- ✅ Hexagon SVG favicon in frontend and frontend-consumer
 - ✅ load_dotenv fixed to always load backend/.env
 
 ### 16.4 — Watson STT/TTS for Enterprise (✅ Complete Feb 28, 2026)
-- ✅ Mic (STT) + speaker (TTS) buttons in frontend-v4 pipeline
+- ✅ Mic (STT) + speaker (TTS) buttons in frontend pipeline
 - ✅ Fixed WATSON_TTS_API_KEY / WATSON_STT_API_KEY env var mismatch
 
 ### 16.3 — Studio Feature Parity (✅ Complete Feb 28, 2026)
@@ -424,7 +424,7 @@ Impact:
 - ✅ Structured Factsheet per version: models used, tokens, cost, duration, archetype, quality indicators, compliance flags
 - ✅ governance_log TEXT column on Execution model (safe ALTER TABLE migration)
 - ✅ Factsheet saved to disk (last_factsheet.json) + DB (governance_log JSON)
-- ✅ Governance sub-tab in Artifacts page — Enterprise (frontend-v4) + Studio (frontend/)
+- ✅ Governance sub-tab in Artifacts page — Enterprise (frontend) + Studio (frontend-studio/)
 - ✅ Empty state message for old builds pre-dating GovernanceAgent
 - ✅ /api/projects/<id>/versions/<ver>/factsheet endpoint (disk-first, DB fallback, 404 graceful)
 - ✅ Korean/English i18n keys added in both frontends
@@ -447,7 +447,7 @@ Impact:
 - ✅ Replaced "Lines Generated" with Avg Build Score (Shield icon, blue, /100 suffix)
 - ✅ GET /api/dashboard/stats endpoint — averages prompt + build scores from governance_log
 - ✅ Nulls skipped — pre-v1.1 builds show "—" not 0
-- ✅ Enterprise dashboard (frontend-v4 WelcomeBanner) updated
+- ✅ Enterprise dashboard (frontend WelcomeBanner) updated
 - ✅ Studio had no equivalent header cards — no changes needed
 
 #### 17.4 — Dual PDF Export (✅ Complete Mar 1, 2026)
@@ -470,7 +470,7 @@ Impact:
 - 🔴 New backend endpoint: GET /api/dashboard/stats — queries all executions, parses governance_log JSON, averages prompt + build scores
 - 🔴 Nulls skipped in average (pre-v1.1 builds without factsheet show "—" not 0)
 - 🔴 Frontend header pulls from endpoint and displays live averages
-- 🔴 Both Enterprise (frontend-v4) and Studio (frontend/) dashboards updated
+- 🔴 Both Enterprise (frontend) and Studio (frontend-studio/) dashboards updated
 
 #### 17.4 — Dual PDF Export (🔴 Planned)
 - 🔴 Configurable quality threshold per project (default 85/100)
@@ -499,9 +499,9 @@ guessing. Tour design will be driven by real friction points, not assumptions.
 - Pattern choice (modal overlay vs spotlight tooltip) decided post-testing
 
 ### Planned sub-phases (scope pending user research)
-- 🔴 19.1 Enterprise (frontend-v4) — welcome moment + optional per-page tips
-- 🔴 19.2 Studio (frontend/) — minimal, same pattern as Enterprise
-- 🔴 19.3 Consumer (frontend-consumer2) — fuller guidance + Korean i18n
+- 🔴 19.1 Enterprise (frontend) — welcome moment + optional per-page tips
+- 🔴 19.2 Studio (frontend-studio/) — minimal, same pattern as Enterprise
+- 🔴 19.3 Consumer (frontend-consumer) — fuller guidance + Korean i18n
 
 **Tech candidate:** Shepherd.js (spotlight tooltips, React-compatible, free)
 **Revisit:** After first round of beta user sessions
@@ -514,20 +514,20 @@ guessing. Tour design will be driven by real friction points, not assumptions.
 
 | Plan | UI | Features |
 |------|----|---------|
-| Consumer | frontend-consumer2 (simplified) | Light theme only, standard builds, version history |
-| Enterprise | frontend-v4 or frontend/ (power) | Light + Dark mode, Studio or Enterprise design toggle, advanced pipeline controls |
+| Consumer | frontend-consumer (simplified) | Light theme only, standard builds, version history |
+| Enterprise | frontend or frontend-studio/ (power) | Light + Dark mode, Studio or Enterprise design toggle, advanced pipeline controls |
 
 **Flow:**
 - User signs up → picks Consumer or Enterprise plan
 - Routed to correct UI automatically based on plan
-- Enterprise users can toggle between Studio (frontend/) and Enterprise (frontend-v4) designs
+- Enterprise users can toggle between Studio (frontend-studio/) and Enterprise (frontend) designs
 - Upgrade path: Consumer → Enterprise unlocks full UI switcher
 - Same Flask backend serves both
 
 **Key principle:** Consumer UI is simplified for non-technical clients. Enterprise UI is for agencies and power users who need full audit trail, pipeline controls, and theme flexibility.
 
 - 🔴 18.1 Landing/pricing page with plan selector (Consumer vs Enterprise)
-- 🔴 18.2 Auth gates: Consumer login → frontend-consumer2, Enterprise login → frontend-v4
+- 🔴 18.2 Auth gates: Consumer login → frontend-consumer, Enterprise login → frontend
 - 🔴 18.3 Enterprise design switcher (Studio ↔ Enterprise toggle in navbar)
 - 🔴 18.4 Plan-aware credit limits (Consumer: 100/mo, Enterprise: 500/mo)
 - 🔴 18.5 Upgrade flow: Consumer → Enterprise upsell modal
@@ -551,8 +551,8 @@ guessing. Tour design will be driven by real friction points, not assumptions.
 - Hexagon logo `text-blue-500` in light mode, `text-primary` in dark mode — Enterprise + Studio
 
 ## ✅ UI Polish — Hexagon Icons + Emoji Cleanup (Mar 1, 2026)
-- Replaced all Zap/lightning bolt icons in Studio (frontend/) with Archon hexagon SVG
-- Replaced all Zap/lightning bolt icons in Enterprise (frontend-v4/) with Archon hexagon SVG
+- Replaced all Zap/lightning bolt icons in Studio (frontend-studio/) with Archon hexagon SVG
+- Replaced all Zap/lightning bolt icons in Enterprise (frontend/) with Archon hexagon SVG
 - Replaced Bot icon in agent chat bubbles (Studio + Enterprise) with hexagon SVG
 - Removed ⚡ emoji from "Got it! Starting the build now." agent reply — Studio + Enterprise
 - Hexagon color: text-primary (blue) in both light and dark mode across all surfaces
@@ -566,9 +566,9 @@ guessing. Tour design will be driven by real friction points, not assumptions.
 ## 🔇 Phase 16.5 — Authentication (In Progress)
 - ✅ Backend JWT auth — register, login, me, forgot-password, reset-password
 - ✅ Google OAuth backend endpoint /api/auth/google
-- ✅ frontend/lib/auth.ts — authService with localStorage token management
+- ✅ frontend-studio/lib/auth.ts — authService with localStorage token management
 - ✅ AuthGuard — redirects unauthenticated users to /login
-- ✅ Login, Register, Forgot Password pages — Studio (frontend/)
+- ✅ Login, Register, Forgot Password pages — Studio (frontend-studio/)
 - ✅ Sign out wired — closes dropdown + redirects to /login
 - ✅ Login page redesign — dark split-layout, IBM Plex Sans, agency-owner copy (Mar 1, 2026)
 - ✅ Register page redesign — dark split-layout matching login (Mar 1, 2026)
@@ -577,7 +577,7 @@ guessing. Tour design will be driven by real friction points, not assumptions.
 - ✅ Post-login/register redirect to Enterprise dark mode (Mar 1, 2026)
 - ✅ Cross-origin token handoff via ?token= URL param — Studio → Enterprise (Mar 1, 2026)
 - ✅ Enterprise defaults to dark mode on first visit (Mar 1, 2026)
-- ✅ Enterprise (frontend-v4) auth pages (login, register, forgot-password) — Mar 1, 2026
+- ✅ Enterprise (frontend) auth pages (login, register, forgot-password) — Mar 1, 2026
 - ✅ Enterprise AuthGuard + Sign Out wired — Mar 1, 2026
 - 🔴 Studio ↔ Enterprise theme toggle button in navbar
 - 🔴 Google OAuth frontend wiring (needs Google Client ID)

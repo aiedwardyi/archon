@@ -1,7 +1,7 @@
-# Current Sprint — Phase 15.4-15.5: Enterprise UI (frontend-v4)
+# Current Sprint — Phase 15.4-15.5: Enterprise UI (frontend)
 
 ## Sprint Goal
-Ship enterprise frontend-v4 with real API wiring, Pipeline tab chat UI, and full project management features.
+Ship enterprise frontend with real API wiring, Pipeline tab chat UI, and full project management features.
 
 ## Working Directory
 C:\Users\mredw\OneDrive\Desktop\ai-dev-team\
@@ -24,7 +24,7 @@ main (enterprise-ui merged and deleted)
 - Strengthened `iteration_context` in engineer prompt (5 strict surgical edit rules, placed before main prompt)
 
 ### Phase 15 — Consumer Frontend v2 ✅
-- Copied and wired Projects/frontend to repo as `frontend-consumer2/` (port 3002)
+- Copied and wired Projects/frontend to repo as `frontend-consumer/` (port 3002)
 - Connected to Flask backend via `orchestrator.ts` service layer
 - Real iframe preview with desktop/mobile viewport toggle
 - **Versions page (THE MOAT)** — timeline + split panel + live preview per version
@@ -73,8 +73,8 @@ main (enterprise-ui merged and deleted)
 
 ---
 
-### Phase 15.4 — Enterprise UI (frontend-v4) ✅
-- Copied Lovable-generated Enterprise design (archon-v4) to `frontend-v4/`
+### Phase 15.4 — Enterprise UI (frontend) ✅
+- Copied Lovable-generated Enterprise design (archon-v4) to `frontend/`
 - Vite + React + TypeScript + Tailwind + shadcn/ui running on port 8080
 - 4-theme system foundation (Enterprise Light/Dark, Studio Light/Dark)
 - Korean/English language toggle with localStorage persistence
@@ -128,17 +128,17 @@ main (enterprise-ui merged and deleted)
 ## Current Sprint — Phase 16: UI Parity, Auth & Polish (🔧 In Progress Feb 2026)
 
 ### Phase 16.2 — Branding & Tab Titles (✅ Complete Feb 28, 2026)
-- ✅ Chrome tab title: "Archon - Studio Build" (frontend/)
-- ✅ Chrome tab title: "Archon - Consumer Build" (frontend-consumer2/)
-- ✅ Hexagon logo in frontend-v4 navbar (replaced lightning bolt)
-- ✅ Hexagon logo in frontend-consumer2 sidebar (replaced Zap icon)
-- ✅ Inline SVG hexagon favicon in frontend-v4
-- ✅ Inline SVG hexagon favicon in frontend-consumer2
+- ✅ Chrome tab title: "Archon - Studio Build" (frontend-studio/)
+- ✅ Chrome tab title: "Archon - Consumer Build" (frontend-consumer/)
+- ✅ Hexagon logo in frontend navbar (replaced lightning bolt)
+- ✅ Hexagon logo in frontend-consumer sidebar (replaced Zap icon)
+- ✅ Inline SVG hexagon favicon in frontend
+- ✅ Inline SVG hexagon favicon in frontend-consumer
 - ✅ Fixed load_dotenv to resolve backend/.env path correctly
 
 ### Phase 16.4 — Watson STT/TTS for Enterprise (✅ Complete Feb 28, 2026)
-- ✅ Mic button (STT) in frontend-v4 pipeline chat input
-- ✅ Speaker button (TTS) on Archon reply bubbles in frontend-v4
+- ✅ Mic button (STT) in frontend pipeline chat input
+- ✅ Speaker button (TTS) on Archon reply bubbles in frontend
 - ✅ Fixed WATSON_TTS_API_KEY / WATSON_STT_API_KEY env var mismatch in backend/app.py
 
 ### Phase 16.3 — Studio Feature Parity (✅ Complete Feb 28, 2026)
@@ -240,14 +240,14 @@ main (enterprise-ui merged and deleted)
 
 ### Phase 18 — Unified Auth + Plan-Based UI Routing (🔴 Planned)
 - 🔴 18.1 Landing/pricing page — Consumer vs Enterprise plan selector
-- 🔴 18.2 Auth gates: Consumer login → frontend-consumer2, Enterprise login → frontend-v4
+- 🔴 18.2 Auth gates: Consumer login → frontend-consumer, Enterprise login → frontend
 - 🔴 18.3 Enterprise design switcher (Studio ↔ Enterprise toggle in navbar)
 - 🔴 18.4 Plan-aware credit limits (Consumer: 100/mo, Enterprise: 500/mo)
 - 🔴 18.5 Upgrade flow: Consumer → Enterprise upsell modal
 
 **Plan breakdown:**
-- Consumer plan: frontend-consumer2 — simplified UI, light theme only
-- Enterprise plan: frontend-v4 (default) + optional Studio (frontend/) toggle — dark/light mode, full pipeline controls
+- Consumer plan: frontend-consumer — simplified UI, light theme only
+- Enterprise plan: frontend (default) + optional Studio (frontend-studio/) toggle — dark/light mode, full pipeline controls
 
 ---
 
@@ -259,7 +259,7 @@ main (enterprise-ui merged and deleted)
 
 ## ✅ Stuck Build Reset Button (Mar 1, 2026)
 - POST `/api/projects/<id>/reset-build` endpoint — marks stuck running execution as failed in DB
-- Reset button appears in Enterprise (frontend-v4) and Studio (frontend/) pipeline chat after 8 min of no completion
+- Reset button appears in Enterprise (frontend) and Studio (frontend-studio/) pipeline chat after 8 min of no completion
 - Red filled button matching Send button style, hidden during normal builds
 - On click: calls reset endpoint, stops polling, clears sending state, resets agent cards
 
@@ -281,9 +281,9 @@ main (enterprise-ui merged and deleted)
 ## 🔧 Phase 16.5 Authentication (In Progress)
 - ✅ Backend JWT auth — register, login, me, forgot-password, reset-password (Mar 1, 2026)
 - ✅ Google OAuth backend endpoint /api/auth/google (Mar 1, 2026)
-- ✅ frontend/lib/auth.ts — authService with localStorage token management (Mar 1, 2026)
+- ✅ frontend-studio/lib/auth.ts — authService with localStorage token management (Mar 1, 2026)
 - ✅ AuthGuard — redirects unauthenticated users to /login (Mar 1, 2026)
-- ✅ Login, Register, Forgot Password pages — Studio (frontend/) (Mar 1, 2026)
+- ✅ Login, Register, Forgot Password pages — Studio (frontend-studio/) (Mar 1, 2026)
 - ✅ Sign out wired — closes dropdown + redirects to /login (Mar 1, 2026)
 - ✅ Login page redesign — dark split-layout (form left, value props right) (Mar 1, 2026)
 - ✅ IBM Plex Sans font applied via next/font/google — enterprise-grade typography (Mar 1, 2026)
@@ -296,7 +296,7 @@ main (enterprise-ui merged and deleted)
 - ✅ Post-login/register redirect to Enterprise dark mode (Mar 1, 2026)
 - ✅ Cross-origin token handoff via ?token= URL param — Studio → Enterprise (Mar 1, 2026)
 - ✅ Enterprise defaults to dark mode on first visit (ThemeProvider fallback) (Mar 1, 2026)
-- ✅ Enterprise (frontend-v4) auth pages (login, register, forgot-password) — Mar 1, 2026
+- ✅ Enterprise (frontend) auth pages (login, register, forgot-password) — Mar 1, 2026
 - ✅ Enterprise AuthGuard — redirects to /login if no token — Mar 1, 2026
 - ✅ Enterprise Sign Out wired (authService.logout + redirect to /login) — Mar 1, 2026
 - ✅ Studio ↔ Enterprise theme toggle passes token — Mar 1, 2026
