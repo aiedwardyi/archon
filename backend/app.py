@@ -18,7 +18,8 @@ from datetime import datetime, timezone
 # Suppress SQLAlchemy legacy Query.get() deprecation warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="sqlalchemy")
 
-from models import Project, Execution, get_session, init_db, get_next_version
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from models import Project, Execution, User, get_session, init_db, get_next_version
 from auth import auth_bp, init_jwt
 
 # NLU Agent — sentiment + keyword analysis before pipeline routing
@@ -619,10 +620,15 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
 # ============================================================================
 
 @app.route("/api/projects", methods=["GET"])
+@jwt_required(optional=True)
 def list_projects():
     session = get_session()
     try:
-        projects = session.query(Project).order_by(Project.updated_at.desc()).all()
+        uid = get_jwt_identity()
+        query = session.query(Project).order_by(Project.updated_at.desc())
+        if uid:
+            query = query.filter(Project.owner_id == int(uid))
+        projects = query.all()
         return jsonify([p.to_dict() for p in projects]), 200
     finally:
         session.close()
@@ -706,16 +712,19 @@ def get_activity():
 
 
 @app.route("/api/projects", methods=["POST"])
+@jwt_required(optional=True)
 def create_project():
     session = get_session()
     try:
         data = request.get_json()
         if not data or not data.get("name"):
             return jsonify({"error": "Project name is required"}), 400
+        uid = get_jwt_identity()
         project = Project(
             name=data["name"],
             description=data.get("description", ""),
             status="pending",
+            owner_id=int(uid) if uid else None,
         )
         session.add(project)
         session.commit()

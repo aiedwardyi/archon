@@ -2,6 +2,13 @@ import { useState, useEffect, useRef, useCallback } from "react";
 
 const API_BASE = "http://localhost:5000/api";
 
+function getAuthHeaders(): Record<string, string> {
+  const token = localStorage.getItem("archon_token");
+  return token
+    ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+    : { "Content-Type": "application/json" };
+}
+
 export interface Project {
   id: number;
   name: string;
@@ -35,7 +42,7 @@ function mapStatus(raw: string): Project["status"] {
 export async function createProject(name: string, description: string): Promise<Project> {
   const res = await fetch(`${API_BASE}/projects`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ name, description }),
   });
   if (!res.ok) {
@@ -55,7 +62,7 @@ export async function createProject(name: string, description: string): Promise<
 }
 
 export async function fetchProjects(): Promise<Project[]> {
-  const res = await fetch(`${API_BASE}/projects`);
+  const res = await fetch(`${API_BASE}/projects`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
   const list: any[] = Array.isArray(data) ? data : data.projects || [];
