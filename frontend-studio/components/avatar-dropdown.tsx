@@ -153,6 +153,7 @@ export function AvatarDropdown() {
                     if (language === "ko") params.set("lang", "ko");
                     const token = localStorage.getItem("archon_token");
                     if (token) params.set("token", token);
+                    params.set("switch", "1");
                     window.location.href = `http://localhost:8080?${params.toString()}`;
                   }}
                   className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all text-muted-foreground hover:text-foreground cursor-pointer"

@@ -179,8 +179,10 @@ export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectNam
                   <button
                     onClick={() => {
                       const tab = activeTab || 'projects';
-                      console.log('[v4] switching to studio, activeTab:', tab);
                       const params = new URLSearchParams();
+                      const token = localStorage.getItem("archon_token");
+                      if (token) params.set("token", token);
+                      params.set("switch", "1");
                       if (selectedProjectId) params.set("pid", String(selectedProjectId));
                       if (language === "ko") params.set("lang", "ko");
                       const qs = params.toString() ? "?" + params.toString() : "";

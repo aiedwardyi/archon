@@ -4,8 +4,9 @@ export default function TokenHandler() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
+    const isSwitch = params.get("switch") === "1";
     const theme = params.get("theme");
-    if (token) {
+    if (token && isSwitch) {
       localStorage.setItem("archon_token", token);
       localStorage.setItem("archon_active_tab", "projects");
       if (theme) {
