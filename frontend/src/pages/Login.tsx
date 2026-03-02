@@ -13,7 +13,11 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await authService.login(email, password);
-      window.location.href = "/";
+      if (!localStorage.getItem("theme")) {
+        localStorage.setItem("theme", "dark");
+      }
+      localStorage.setItem("archon_active_tab", "projects");
+      window.location.href = "/?tab=projects";
     } catch (err: any) {
       setError(err.message);
     } finally {

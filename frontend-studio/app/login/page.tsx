@@ -16,8 +16,9 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await authService.login(email, password);
+      const theme = localStorage.getItem("theme") || "dark";
       const token = authService.getToken();
-      window.location.href = `http://localhost:8080?token=${token}`;
+      window.location.href = `http://localhost:8080?token=${token}&theme=${theme}&tab=projects`;
     } catch (err: any) {
       setError(err.message);
     } finally {

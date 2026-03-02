@@ -17,8 +17,9 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await authService.register(email, password, name);
+      const theme = localStorage.getItem("theme") || "dark";
       const token = authService.getToken();
-      window.location.href = `http://localhost:8080?token=${token}`;
+      window.location.href = `http://localhost:8080?token=${token}&theme=${theme}&tab=projects`;
     } catch (err: any) {
       setError(err.message);
     } finally {

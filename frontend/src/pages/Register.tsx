@@ -14,7 +14,11 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await authService.register(email, password, name);
-      window.location.href = "/";
+      if (!localStorage.getItem("theme")) {
+        localStorage.setItem("theme", "dark");
+      }
+      localStorage.setItem("archon_active_tab", "projects");
+      window.location.href = "/?tab=projects";
     } catch (err: any) {
       setError(err.message);
     } finally {
