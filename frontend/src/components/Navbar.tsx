@@ -23,9 +23,23 @@ export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectNam
   const [open, setOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<"profile" | "settings" | "pricing" | null>(null);
   const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
+  const [userEmail, setUserEmail] = useState<string>("...");
   const menuRef = useRef<HTMLDivElement>(null);
   const { colorMode, setColorMode } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
+
+  const initials = userEmail === "..." ? "..." : userEmail.slice(0, 2).toUpperCase();
+
+  useEffect(() => {
+    const token = localStorage.getItem("archon_token");
+    if (!token) return;
+    fetch("http://localhost:5000/api/auth/me", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.json())
+      .then(d => { if (d.email) setUserEmail(d.email); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch("http://localhost:5000/api/credits/balance")
@@ -112,7 +126,7 @@ export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectNam
             onClick={() => setOpen(!open)}
             className="h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[11px] font-semibold cursor-pointer hover:opacity-90 transition-opacity ring-2 ring-background"
           >
-            JD
+            {initials}
           </button>
 
           {open && (
@@ -120,7 +134,7 @@ export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectNam
               {/* Header */}
               <div className="px-4 py-3 border-b border-border bg-secondary/30">
                 <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{t("signedInAs")}</div>
-                <div className="text-sm font-semibold text-foreground mt-0.5">archon@archon.dev</div>
+                <div className="text-sm font-semibold text-foreground mt-0.5">{userEmail}</div>
               </div>
 
               {/* Menu items */}

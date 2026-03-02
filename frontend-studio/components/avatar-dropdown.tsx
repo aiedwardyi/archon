@@ -15,11 +15,25 @@ import { useLanguage } from "@/contexts/LanguageContext"
 export function AvatarDropdown() {
   const [open, setOpen] = useState(false)
   const [modal, setModal] = useState<"profile" | "settings" | "pricing" | null>(null)
+  const [userEmail, setUserEmail] = useState<string>("...")
   const { resolvedTheme, setTheme } = useTheme()
   const pathname = usePathname()
   const router = useRouter()
   const ref = useRef<HTMLDivElement>(null)
   const { language, t } = useLanguage()
+
+  const initials = userEmail === "..." ? "..." : userEmail.slice(0, 2).toUpperCase()
+
+  useEffect(() => {
+    const token = localStorage.getItem("archon_token")
+    if (!token) return
+    fetch("http://localhost:5000/api/auth/me", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.json())
+      .then(d => { if (d.email) setUserEmail(d.email) })
+      .catch(() => {})
+  }, [])
 
   function handleSignOut() {
     authService.logout()
@@ -52,7 +66,7 @@ export function AvatarDropdown() {
           onClick={() => setOpen((o) => !o)}
           className="h-7 w-7 rounded-full bg-primary flex items-center justify-center hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 cursor-pointer"
         >
-          <span className="text-primary-foreground text-xs font-semibold select-none">JD</span>
+          <span className="text-primary-foreground text-xs font-semibold select-none">{initials}</span>
         </button>
 
         {open && (
@@ -60,7 +74,7 @@ export function AvatarDropdown() {
 
             <div className="px-3 py-3 border-b border-border">
               <p className="text-xs text-muted-foreground">{t("signedInAs")}</p>
-              <p className="text-sm font-semibold text-foreground truncate mt-0.5">archon@archon.dev</p>
+              <p className="text-sm font-semibold text-foreground truncate mt-0.5">{userEmail}</p>
             </div>
 
             <div className="py-1">
