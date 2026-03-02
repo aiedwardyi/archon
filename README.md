@@ -61,11 +61,11 @@ python -m venv venv
 .\venv\Scripts\Activate
 pip install -r requirements.txt
 
-cd frontend
+cd frontend-studio
 npm install
-cd ../frontend-consumer2
+cd ../frontend-consumer
 npm install
-cd ../frontend-v4
+cd ../frontend
 npm install
 cd ..
 ```
@@ -90,15 +90,15 @@ $env:WATSON_NLU_APIKEY = "your_api_key"
 python backend/app.py
 
 # Terminal 2 — Studio UI (port 3000)
-cd frontend
+cd frontend-studio
 npm run dev
 
 # Terminal 3 — Consumer UI (port 3002)
-cd frontend-consumer2
+cd frontend-consumer
 npm run dev
 
 # Terminal 4 — Enterprise UI (port 8080)
-cd frontend-v4
+cd frontend
 npm run dev
 ```
 
@@ -115,9 +115,9 @@ Enterprise UI:  http://localhost:8080
 
 | Frontend | Port | Description |
 |----------|------|-------------|
-| `frontend/` | 3000 | Studio UI — full admin dashboard, 10 screens, light + dark mode |
-| `frontend-consumer2/` | 3002 | Consumer UI — chat-first interface, Versions page, Korean/English toggle |
-| `frontend-v4/` | 8080 | Enterprise UI — Vite + React + shadcn/ui, 4-theme system, governance dashboard |
+| `frontend-studio/` | 3000 | Studio UI — full admin dashboard, 10 screens, light + dark mode |
+| `frontend-consumer/` | 3002 | Consumer UI — chat-first interface, Versions page, Korean/English toggle |
+| `frontend/` | 8080 | Enterprise UI — Vite + React + shadcn/ui, 4-theme system, governance dashboard |
 
 All three connect to the same Flask backend on port 5000.
 
@@ -137,15 +137,15 @@ ai-dev-team/
 │   ├── app.py                # Flask API (port 5000)
 │   ├── models.py             # SQLAlchemy models (Project, Execution, User)
 │   └── database.py           # DB init
-├── frontend/                 # Studio UI (port 3000)
+├── frontend-studio/          # Studio UI (port 3000)
 │   ├── components/
 │   └── pages/
-├── frontend-consumer2/       # Consumer UI (port 3002)
+├── frontend-consumer/       # Consumer UI (port 3002)
 │   ├── pages/
 │   ├── i18n.ts               # Korean/English translations
 │   └── services/
 │       └── orchestrator.ts   # Backend API client
-├── frontend-v4/              # Enterprise UI (port 8080)
+├── frontend/                 # Enterprise UI (port 8080)
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── WelcomeBanner.tsx    # Dashboard header — Avg Prompt/Build scores
@@ -267,7 +267,7 @@ A prominent banner also appears at the top of the Governance tab with plain-Engl
 | 13 | ✅ | Chat persistence + user model |
 | 14 | ✅ | Iteration mode fixes |
 | 15 | ✅ | Consumer frontend v2 |
-| 15.4 | ✅ | Enterprise UI (frontend-v4, shadcn/ui) |
+| 15.4 | ✅ | Enterprise UI (frontend, shadcn/ui) |
 | 16.1 | ✅ | Bug fixes — chat persistence, JSON repair, build lock |
 | 16.2 | ✅ | Branding — hexagon logo + favicon across all UIs |
 | 16.3 | ✅ | Studio feature parity — sort, i18n, build details |
