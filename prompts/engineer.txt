@@ -137,6 +137,14 @@ If the task JSON contains a "ui_archetype" field with a non-null value:
       required_states -> implement ALL listed states (loading shimmer, empty state, error state)
 If "ui_archetype" is absent or null: proceed normally from STEP 1.
 
+QUALITY TARGET — HARD REQUIREMENTS (CHECK AFTER ARCHETYPE LOCK):
+If the task contains a "QUALITY TARGET" section, treat EVERY line as a hard requirement:
+  - visual_style: This IS the visual direction. Match the described colors, typography, imagery mood, and cultural references EXACTLY. Do not substitute generic alternatives.
+  - key_sections: Every listed section MUST appear in the HTML, in the specified order. Do not skip any. Do not add unrelated marketing sections.
+  - must_have_content: Every listed item MUST appear as real content in the output. Use these exact names, labels, and data points. NEVER replace with lorem ipsum or generic placeholders.
+  - avoid: Every listed anti-pattern is BANNED. If something is in the avoid list, it must NOT appear anywhere in your output.
+The quality target describes what a GREAT version of this specific app looks like. It is more important than generic archetype defaults when they conflict. The archetype provides the structural shell; the quality target provides the domain-specific soul.
+
 STEP 1 - IDENTIFY THE PRIMARY USER ACTION:
 Before writing a single line of code, ask: "What is the ONE thing a user primarily does in this app?"
 That action determines the shell. Never default to a landing page unless the task is explicitly a marketing site.

@@ -321,6 +321,18 @@ class EngineerAgent:
                 )
             archetype_block = f"ui_archetype: {task.ui_archetype}\narchetype_rules:{rules_str}\n"
 
+        quality_target_block = ""
+        if task.quality_target:
+            qt = task.quality_target
+            quality_target_block = (
+                f"\n--- QUALITY TARGET (what success looks like for THIS specific build) ---\n"
+                f"visual_style: {qt.visual_style}\n"
+                f"key_sections: {qt.key_sections}\n"
+                f"must_have_content: {qt.must_have_content}\n"
+                f"avoid: {qt.avoid}\n"
+                f"--- END QUALITY TARGET ---\n"
+            )
+
         contents = (
             f"{iteration_context}"
             f"{prompt}\n\n"
@@ -333,6 +345,7 @@ class EngineerAgent:
             f"output_files: {task.output_files}\n"
             f"task_type: {task.task_type}\n"
             f"{archetype_block}"
+            f"{quality_target_block}"
             f"--- TASK END ---"
         )
 

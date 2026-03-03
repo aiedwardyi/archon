@@ -43,6 +43,12 @@ Schema (informal):
               "seed_rows": int,
               "required_states": ["loading", "empty", "error"]
             }
+          } | null,
+          "quality_target": {
+            "visual_style": "string — specific visual direction for THIS build (colors, typography, imagery style, mood, cultural references)",
+            "key_sections": ["string", "..."] — sections that MUST appear, in priority order,
+            "must_have_content": ["string", "..."] — concrete content items that must be present (real names, real data, domain-specific details),
+            "avoid": ["string", "..."] — anti-patterns to avoid for this specific build
           } | null
         }
       ]
@@ -150,6 +156,32 @@ UI archetype rules (CRITICAL):
     fintech      -> required_blocks: [“ticker_rows”,”kpi_cards”,”candlestick_chart”,”asset_table”,”watchlist”,”news_feed”], required_interactions: [“filter”,”sort”,”watchlist_add”], avoid: [“hero_marketing”,”testimonials”,”reservation_form”]
     music        -> required_blocks: [“hero_artist”,”latest_release”,”tour_dates”,”discography”,”newsletter”], required_interactions: [“tour_cta_click”,”audio_player_visual”], avoid: [“sidebar”,”data_table”,”reservation_form”]
     fitness      -> required_blocks: [“hero_bold”,”stat_rings”,”class_schedule”,”trainer_profiles”,”pricing_plans”], required_interactions: [“class_filter”,”trainer_detail”,”pricing_toggle”], avoid: [“hero_marketing_soft”,”reservation_form”,”data_table”]
+Quality target rules (CRITICAL — this is the single biggest quality lever):
+- quality_target is REQUIRED on the scaffold task — never null for scaffold tasks
+- quality_target tells the engineer EXACTLY what a great version of this specific app looks like
+- Think about the user's request domain, audience, and purpose, then describe what makes a GREAT version of it
+- visual_style: Be specific to the domain. “warm reds and oranges, food photography hero, Korean typography” NOT “modern and clean”
+- key_sections: List the sections a real version of this app would have, in scroll order
+- must_have_content: List CONCRETE content. Real dish names, real feature names, real data labels — NOT generic placeholders
+- avoid: List the specific failure modes for this type of app. What would make it look generic or wrong?
+- Set quality_target: null on all non-scaffold tasks
+
+Examples:
+  Korean BBQ restaurant -> visual_style: “warm reds/oranges/charcoal, food photography hero with grilled meat, Korean + English text, wooden textures”
+                           key_sections: [“hero with reservation CTA”, “menu with Korean dish names and prices”, “photo gallery of dishes”, “reservation form”, “location map”]
+                           must_have_content: [“restaurant name in Korean and English”, “bulgogi”, “galbi”, “bibimbap”, “kimchi jjigae”, “phone number”, “address”]
+                           avoid: [“generic stock photos”, “lorem ipsum”, “blue corporate palette”, “Western food imagery”]
+
+  crypto portfolio tracker -> visual_style: “dark theme #0d1117, green/red for gains/losses, tabular monospace numbers, real-time feel”
+                              key_sections: [“KPI cards with portfolio value”, “price chart with area fill”, “holdings table with live prices”, “activity feed”]
+                              must_have_content: [“BTC”, “ETH”, “SOL”, “real prices”, “24h change percentages”, “portfolio total value”]
+                              avoid: [“light backgrounds”, “marketing copy”, “testimonials”, “hero banner”]
+
+  AI writing assistant landing -> visual_style: “dark zinc-950, violet accent, Space Grotesk headings, glassmorphism nav, browser mockup”
+                                  key_sections: [“hero with email capture”, “logo cloud”, “bento feature grid”, “testimonials”, “pricing toggle”, “FAQ accordion”]
+                                  must_have_content: [“product name”, “AI model names”, “pricing tiers with real prices”, “feature descriptions”, “social proof numbers”]
+                                  avoid: [“generic purple gradients”, “flat navbar”, “empty skeleton sections”, “stock photos”]
+
 - ui_archetype and archetype_rules are REQUIRED on the scaffold task â€” never null for scaffold tasks
 - render_path is REQUIRED on the scaffold task: set “A” for all Tailwind archetypes (saas_landing, restaurant, medical, wedding, news, real_estate, education, photography, travel, legal, nonprofit, crypto, ai_product, agency, job_board, food_delivery, dev_docs, startup, blog, landing, ecommerce, portfolio, feed, form, kanban, chat, editor), set “B” for Raw CSS archetypes (fintech, music, fitness, game, dashboard), set null on all non-scaffold tasks
 - Set ui_archetype: null and archetype_rules: null on all non-scaffold tasks
