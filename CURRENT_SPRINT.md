@@ -229,10 +229,14 @@ main (enterprise-ui merged and deleted)
 - ✅ 17.5.3 Quality tier in PDF exports — Verified/Auditable badges row, overall score shown in both Client + Internal PDF (Mar 1, 2026)
 - 🔴 /api/governance/summary cross-run analytics (future)
 
-### Phase 16.5 — Authentication (🔴 Planned)
-- 🔴 Sign up / Login pages
-- 🔴 JWT + protected routes
-- 🔴 User-scoped projects (owner_id already in DB schema)
+### Phase 16.5 — Authentication (✅ Complete Mar 3, 2026)
+- ✅ Sign up / Login pages — Studio + Enterprise
+- ✅ JWT + protected routes — AuthGuard on both frontends
+- ✅ User-scoped projects (owner_id)
+- ✅ Cross-origin token handoff via ?token= param
+- ✅ Correct user shown on switch (URL token fallback, skip stale cache)
+- ✅ JWT blacklist logout — server-side token invalidation
+- ✅ Concurrent pipeline — per-project execution state
 
 ### Phase 19 — Product Tour & Onboarding Walkthrough (🔴 Deferred — post beta testing)
 - Scope and pattern TBD after recruiting 3-5 beta users
@@ -364,9 +368,31 @@ main (enterprise-ui merged and deleted)
 - ✅ Second switch (Enterprise→Studio→Enterprise→Studio) shows correct user
 
 ### What needs proper fix:
-- 🔴 Server-side JWT logout endpoint (blacklist token in DB)
-- 🔴 AuthGuard await /me before render on token sync
+- ✅ Server-side JWT logout endpoint (blacklist token in DB) — Mar 3, 2026
+- ✅ AuthGuard + AvatarDropdown await /me before render on token sync — Mar 3, 2026
 - **Do NOT attempt cross-origin localStorage hacks — they don't work reliably**
+
+### Phase 16.5 Auth — Remaining Known Issues (Mar 3, 2026)
+
+#### ✅ Fixed (Mar 3, 2026)
+- Cross-origin "Unknown user" bug — Studio and Enterprise now show correct user on switch
+- JWT blacklist logout — logout on one port kills token server-side, other ports redirect to /login
+- Concurrent pipeline — per-project execution state, multiple users can build simultaneously
+- AvatarDropdown stale cache bug — skip cache on ?token= switch, always fetch fresh /me
+- Enterprise Navbar loadUser — same URL token fallback + storage event listener as Studio
+
+#### 🔴 Logout All Sessions (Phase 18 scope)
+- Current behavior: each login creates one token. Logging out blacklists THAT token only.
+- If user manually logged in on both ports separately, each has its own independent token.
+- Logging out on one port does NOT log out the other if tokens are different.
+- The intended flow (login on Studio → auto-redirect to Enterprise via ?token=) shares ONE token, so logout works correctly across both ports in that flow.
+- Full "logout everywhere" requires storing all active tokens per user in DB and blacklisting all on logout.
+- Defer to Phase 18 (Unified Auth). Do not attempt partial fix — it adds complexity without solving the root cause.
+
+#### 🔴 /api/activity not owner-scoped (Mar 3, 2026)
+- Enterprise WelcomeBanner Recent Activity feed shows ALL users' builds, not just the logged-in user's
+- Root cause: /api/activity endpoint has no owner_id filter
+- Fix: add owner_id filter to /api/activity query in backend/app.py (same pattern as /api/projects)
 
 ---
 
