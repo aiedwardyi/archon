@@ -32,10 +32,18 @@ export function Navbar() {
   const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null)
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/credits/balance")
-      .then(r => r.json())
-      .then(d => setCreditsRemaining(d.credits_remaining))
-      .catch(() => {})
+    const load = () => {
+      const token = localStorage.getItem("archon_token")
+      fetch("http://localhost:5000/api/credits/balance", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      })
+        .then(r => r.json())
+        .then(d => setCreditsRemaining(d.credits_remaining))
+        .catch(() => {})
+    }
+    load()
+    const interval = setInterval(load, 30000)
+    return () => clearInterval(interval)
   }, [])
 
   useEffect(() => {

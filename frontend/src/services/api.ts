@@ -143,7 +143,7 @@ export interface PlatformStats {
 
 export async function fetchPlatformStats(): Promise<PlatformStats | null> {
   try {
-    const res = await fetch(`${API_BASE}/stats`);
+    const res = await fetch(`${API_BASE}/stats`, { headers: getAuthHeaders() });
     if (!res.ok) return null;
     return await res.json();
   } catch { return null; }
@@ -177,7 +177,7 @@ export interface DashboardStats {
 
 export async function fetchDashboardStats(): Promise<DashboardStats | null> {
   try {
-    const res = await fetch(`${API_BASE}/dashboard/stats`);
+    const res = await fetch(`${API_BASE}/dashboard/stats`, { headers: getAuthHeaders() });
     if (!res.ok) return null;
     return await res.json();
   } catch { return null; }

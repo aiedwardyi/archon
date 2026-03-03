@@ -499,7 +499,7 @@ const PreviewTab = ({ device, onDeviceChange, projectId, version }: { device: "d
             <div className="ml-3 h-4 w-56 bg-secondary rounded-sm" />
           </div>
           <iframe
-            src={projectId && version ? `http://localhost:5000/api/preview/${projectId}/${version}` : "about:blank"}
+            src={projectId && version ? `http://localhost:5000/api/preview/${projectId}/${version}` : ""}
             className="w-full flex-1 border-0"
           />
         </div>
@@ -510,7 +510,7 @@ const PreviewTab = ({ device, onDeviceChange, projectId, version }: { device: "d
           </div>
           <div className="mx-2 mb-2 rounded-2xl overflow-hidden border border-border flex-1">
             <iframe
-              src={projectId && version ? `http://localhost:5000/api/preview/${projectId}/${version}` : "about:blank"}
+              src={projectId && version ? `http://localhost:5000/api/preview/${projectId}/${version}` : ""}
               className="w-full h-full border-0"
             />
           </div>

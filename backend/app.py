@@ -725,29 +725,33 @@ def list_projects():
 
 
 @app.route("/api/stats", methods=["GET"])
+@jwt_required(optional=True)
 def get_stats():
     from sqlalchemy import func
+    uid = get_jwt_identity()
     session = get_session()
     try:
-        # versions_shipped: sum of max version per project
-        version_counts = (
-            session.query(Execution.project_id, func.max(Execution.version))
-            .group_by(Execution.project_id)
-            .all()
-        )
+        base_q = session.query(Execution.project_id, func.max(Execution.version))
+        if uid:
+            base_q = base_q.join(Project).filter(Project.owner_id == int(uid))
+        version_counts = base_q.group_by(Execution.project_id).all()
         versions_shipped = sum(v for _, v in version_counts)
 
         # avg_build_time_seconds from completed executions that have duration
-        avg_row = (
-            session.query(func.avg(Execution.duration_seconds))
-            .filter(Execution.status == "success", Execution.duration_seconds.isnot(None))
-            .scalar()
+        avg_q = session.query(func.avg(Execution.duration_seconds)).filter(
+            Execution.status == "success", Execution.duration_seconds.isnot(None)
         )
+        if uid:
+            avg_q = avg_q.join(Project).filter(Project.owner_id == int(uid))
+        avg_row = avg_q.scalar()
         avg_build_time_seconds = round(avg_row, 1) if avg_row else None
 
         # lines_generated: walk all version code dirs and count lines
         total_lines = 0
-        all_execs = session.query(Execution.project_id, Execution.version).filter(Execution.status == "success").all()
+        lines_q = session.query(Execution.project_id, Execution.version).filter(Execution.status == "success")
+        if uid:
+            lines_q = lines_q.join(Project).filter(Project.owner_id == int(uid))
+        all_execs = lines_q.all()
         for pid, ver in all_execs:
             code_dir = get_version_dir(pid, ver) / "code"
             if code_dir.exists():
@@ -760,11 +764,10 @@ def get_stats():
 
         # pipelines_today: executions created today
         today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-        pipelines_today = (
-            session.query(func.count(Execution.id))
-            .filter(Execution.created_at >= today_start)
-            .scalar() or 0
-        )
+        today_q = session.query(func.count(Execution.id)).filter(Execution.created_at >= today_start)
+        if uid:
+            today_q = today_q.join(Project).filter(Project.owner_id == int(uid))
+        pipelines_today = today_q.scalar() or 0
 
         return jsonify({
             "versions_shipped": versions_shipped,
@@ -1459,6 +1462,27 @@ def get_preview(project_id: int, version: int):
     return Response(PREVIEW_PLACEHOLDER, mimetype="text/html", status=200)
 
 
+@app.route("/api/projects/<int:project_id>/versions/<int:version>/debug-files", methods=["GET"])
+def debug_version_files(project_id: int, version: int):
+    version_dir = get_version_dir(project_id, version)
+    result = {}
+    for subdir in ["code", "assets"]:
+        d = version_dir / subdir
+        result[subdir] = {"exists": d.exists(), "files": []}
+        if d.exists():
+            for f in sorted(d.rglob("*")):
+                if f.is_file():
+                    result[subdir]["files"].append({
+                        "path": str(f.relative_to(d)).replace("\\", "/"),
+                        "size": f.stat().st_size
+                    })
+    return jsonify({
+        "version_dir": str(version_dir),
+        "exists": version_dir.exists(),
+        "subdirs": result
+    }), 200
+
+
 @app.route("/api/projects/<int:project_id>/head", methods=["GET"])
 def get_project_head(project_id: int):
     """Returns the active head execution for a project."""
@@ -1758,13 +1782,14 @@ def serve_published(slug: str):
         return "Published app not found", 404
 
     html = Path(html_file).read_text(encoding="utf-8", errors="replace")
-    css_file = Path(html_file).parent / "style.css"
-    if css_file.exists():
-        css = css_file.read_text(encoding="utf-8", errors="replace")
-        html = html.replace(
-            '<link rel="stylesheet" href="./style.css">',
-            f"<style>{css}</style>"
-        )
+    src_dir = Path(html_file).parent
+    for css_path in sorted(src_dir.glob("*.css")):
+        css = css_path.read_text(encoding="utf-8", errors="replace")
+        link_tag = f'<link rel="stylesheet" href="./{css_path.name}">'
+        if link_tag in html:
+            html = html.replace(link_tag, f"<style>{css}</style>")
+        elif "</head>" in html:
+            html = html.replace("</head>", f"<style>{css}</style>\n</head>")
     return Response(html, mimetype="text/html")
 
 
@@ -1891,11 +1916,16 @@ def watson_tts():
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/dashboard/stats", methods=["GET"])
+@jwt_required(optional=True)
 def dashboard_stats():
-    """Return average governance scores across all scored builds."""
+    """Return average governance scores for the logged-in user's builds."""
+    uid = get_jwt_identity()
     session = get_session()
     try:
-        executions = session.query(Execution).all()
+        q = session.query(Execution)
+        if uid:
+            q = q.join(Project).filter(Project.owner_id == int(uid))
+        executions = q.all()
         prompt_scores = []
         build_scores = []
 

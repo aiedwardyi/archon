@@ -191,8 +191,12 @@ export function PipelineRun() {
           }
           const restored = statusMap[latest.status]
           if (restored) {
-            setPipelineStatus(restored)
-            sessionStorage.setItem("archon_pipeline_status", restored)
+            // Don't flash Failed on projects with no conversation history
+            const hasHistory = messages.length > 0 || promptHistory.length > 0
+            if (restored !== "failed" || hasHistory) {
+              setPipelineStatus(restored)
+              sessionStorage.setItem("archon_pipeline_status", restored)
+            }
           }
           if (restored === "complete") {
             setCurrentStage("engineer")
@@ -670,8 +674,10 @@ export function PipelineRun() {
             pollRef.current = setInterval(pollStatus, POLL_INTERVAL_MS)
           }
         } else if (data.status === "FAILED") {
-          // Only apply FAILED if it's definitively this project's failure
-          setPipelineStatus("failed")
+          // Only show Failed if this project has actually been built before
+          if (data.logs && data.logs.length > 0) {
+            setPipelineStatus("failed")
+          }
           setIsRunning(false)
           isRunningRef.current = false
         }

@@ -16,6 +16,7 @@ export function AvatarDropdown() {
   const [open, setOpen] = useState(false)
   const [modal, setModal] = useState<"profile" | "settings" | "pricing" | null>(null)
   const [userEmail, setUserEmail] = useState<string>("...")
+  const [credits, setCredits] = useState<number | null>(null)
   const { resolvedTheme, setTheme } = useTheme()
   const pathname = usePathname()
   const router = useRouter()
@@ -53,6 +54,21 @@ export function AvatarDropdown() {
     loadUser();
     window.addEventListener("storage", loadUser);
     return () => window.removeEventListener("storage", loadUser);
+  }, [])
+
+  useEffect(() => {
+    const loadCredits = () => {
+      const token = localStorage.getItem("archon_token")
+      fetch("http://localhost:5000/api/credits/balance", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      })
+        .then(r => r.json())
+        .then(d => setCredits(d.credits_remaining ?? null))
+        .catch(() => {})
+    }
+    loadCredits()
+    const interval = setInterval(loadCredits, 30000)
+    return () => clearInterval(interval)
   }, [])
 
   function handleSignOut() {
@@ -197,7 +213,7 @@ export function AvatarDropdown() {
                   <Coins className="h-4 w-4 text-amber-500" />
                   {t("credits")}
                 </span>
-                <span className="text-sm font-semibold text-foreground">1,250</span>
+                <span className="text-sm font-semibold text-foreground">{credits !== null ? credits.toLocaleString() : "—"}</span>
               </div>
             </div>
 
