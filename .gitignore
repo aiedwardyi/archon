@@ -54,3 +54,4 @@ pnpm-lock.yaml
 # Claude Code
 .claude/
 CLAUDE.md.vite/
+frontend-studio/next-env.d.ts
