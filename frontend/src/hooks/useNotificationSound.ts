@@ -32,8 +32,25 @@ export function useNotificationSound() {
   );
 
   const playSuccess = useCallback(() => {
-    playTone([440, 660], 150, 0.25);
-  }, [playTone]);
+    // 3-tone ascending chime matching notify.ps1: C5 → E5 → G5
+    const ctx = new AudioContext();
+    const now = ctx.currentTime;
+    const notes: [number, number][] = [[523, 0.15], [659, 0.15], [784, 0.3]];
+    let offset = 0;
+    for (const [freq, dur] of notes) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.25, now + offset);
+      gain.gain.linearRampToValueAtTime(0, now + offset + dur);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + offset);
+      osc.stop(now + offset + dur + 0.01);
+      offset += dur;
+    }
+  }, []);
 
   const playFailure = useCallback(() => {
     const ctx = new AudioContext();
