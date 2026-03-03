@@ -14,7 +14,7 @@ sys.path.insert(0, str(repo_root))
 
 from agents.pm_agent import PMAgent
 from agents.planner_agent import PlannerAgent
-from google import genai
+from utils.genai_client import get_genai_client
 from schemas.plan_schema import Plan
 from schemas.prd_schema import PRDArtifact
 
@@ -50,7 +50,6 @@ def orchestrate_multi_agent(
     user_requirements: str,
     artifacts_dir: Path,
     openai_api_key: str | None = None,
-    genai_api_key: str | None = None,
 ) -> Dict[str, Any]:
     """
     Production multi-agent orchestrator.
@@ -61,7 +60,6 @@ def orchestrate_multi_agent(
         user_requirements: Raw user input describing what to build
         artifacts_dir: Path to artifacts directory (e.g., apps/offline-vite-react/public)
         openai_api_key: OpenAI API key (defaults to OPENAI_API_KEY env var)
-        genai_api_key: Google GenAI API key (defaults to GENAI_API_KEY env var)
     
     Returns:
         Summary dict with paths to all generated artifacts
@@ -102,14 +100,7 @@ def orchestrate_multi_agent(
     print("[2/3] Planner Agent: Generating Plan from PRD...")
     agent_sequence.append("planner")
     
-    genai_key = genai_api_key or os.getenv("GENAI_API_KEY")
-    if not genai_key:
-        raise ValueError(
-            "Google GenAI API key required. Set GENAI_API_KEY environment variable "
-            "or pass genai_api_key parameter."
-        )
-    
-    genai_client = genai.Client(api_key=genai_key)
+    genai_client = get_genai_client()
     planner_agent = PlannerAgent(genai_client)
     
     plan = planner_agent.run_from_prd_artifact(prd_path)

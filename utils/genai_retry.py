@@ -18,7 +18,12 @@ def call_with_retry(fn: Callable[[], T], max_retries: int = 2) -> T:
             return fn()
         except ClientError as e:
             msg = str(e)
-            if "RESOURCE_EXHAUSTED" not in msg and "429" not in msg:
+            is_retryable = (
+                "RESOURCE_EXHAUSTED" in msg
+                or "429" in msg
+                or "INVALID_ARGUMENT" in msg
+            )
+            if not is_retryable:
                 raise
 
             delay = _extract_retry_delay_seconds(msg) or 30

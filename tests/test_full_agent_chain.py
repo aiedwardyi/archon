@@ -2,24 +2,19 @@ import sys
 sys.path.insert(0, '.')
 
 from pathlib import Path
-from google import genai
 from openai import OpenAI
 from agents.pm_agent import PMAgent
 from agents.planner_agent import PlannerAgent
 from agents.engineer_agent import EngineerAgent
+from utils.genai_client import get_genai_client
 import json
 import os
 
 # Check API keys
 openai_key = os.getenv("OPENAI_API_KEY")
-gemini_key = os.getenv("GENAI_API_KEY")
 
 if not openai_key:
     print("❌ OPENAI_API_KEY not set!")
-    sys.exit(1)
-
-if not gemini_key:
-    print("❌ GENAI_API_KEY not set!")
     sys.exit(1)
 
 print("=" * 60)
@@ -47,7 +42,7 @@ print(f"   Saved to: {prd_path}")
 
 # Step 2: Planner consumes PRD, generates Plan
 print("\n[2/3] PLANNER AGENT: Generating Plan from PRD...")
-gemini_client = genai.Client(api_key=gemini_key)
+gemini_client = get_genai_client()
 planner = PlannerAgent(gemini_client)
 
 plan = planner.run_from_prd_artifact(prd_path)

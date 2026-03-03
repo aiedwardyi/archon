@@ -2,20 +2,13 @@ import sys
 sys.path.insert(0, '.')
 
 from pathlib import Path
-from google import genai
 from agents.planner_agent import PlannerAgent
+from utils.genai_client import get_genai_client
 import json
 import os
 
-# Check Gemini API key
-api_key = os.getenv("GENAI_API_KEY")
-if not api_key:
-    print("❌ GENAI_API_KEY not set!")
-    print("Set it with: $env:GENAI_API_KEY='your_key_here'")
-    sys.exit(1)
-
-# Initialize planner with Gemini client
-client = genai.Client(api_key=api_key)
+# Initialize planner with Gemini client (Vertex AI or AI Studio)
+client = get_genai_client()
 planner = PlannerAgent(client)
 
 # Read PRD artifact from PM agent
