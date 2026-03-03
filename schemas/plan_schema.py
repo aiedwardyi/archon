@@ -52,7 +52,14 @@ class Task(BaseModel):
     execution_hint: Literal["engineer", "defer"] = Field(default="defer")
     task_type: Optional[Literal["scaffold", "single_file", "doc"]] = Field(default=None)
     output_files: Optional[List[str]] = Field(default=None)
-    ui_archetype: Optional[Literal["dashboard", "landing", "ecommerce", "kanban", "chat", "editor", "feed", "form", "game", "portfolio"]] = Field(default=None)
+    ui_archetype: Optional[Literal[
+        "dashboard", "landing", "ecommerce", "kanban", "chat", "editor",
+        "feed", "form", "game", "portfolio", "saas_landing", "restaurant",
+        "medical", "wedding", "news", "real_estate", "education",
+        "photography", "travel", "legal", "nonprofit", "crypto",
+        "ai_product", "agency", "job_board", "food_delivery", "dev_docs",
+        "startup", "blog", "fintech", "music", "fitness",
+    ]] = Field(default=None)
     archetype_rules: Optional[ArchetypeRules] = Field(default=None)
 
     def model_post_init(self, __context) -> None:

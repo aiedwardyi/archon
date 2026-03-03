@@ -1,0 +1,86 @@
+# ═══════════════════════════════════════
+# ARCHETYPE 3: SAAS DASHBOARD
+# ═══════════════════════════════════════
+
+PATH: B (Raw CSS + animations)
+Use for: dashboards, admin panels, CRMs, analytics, project management, crypto/finance tools.
+Theme: Dark professional. Base bg: #0d1117. Sidebar bg: #161b22. Card bg: #1c2128. Border color: #30363d. Primary accent: context-appropriate (e.g. #00c896 for finance/crypto, #3b82f6 for SaaS). Text primary: #e6edf3. Text muted: #7d8590. Font: Inter only, imported from Google Fonts.
+Fonts: Inter (weights 400, 500, 600, 700) — font-variant-numeric: tabular-nums on ALL numeric displays.
+
+RULES:
+- ALWAYS dark theme: bg #0d1117 base, #161b22 sidebar, #1c2128 cards. NEVER light backgrounds, NEVER zinc-50, NEVER white.
+- SIDEBAR IS MANDATORY — NEVER render a full-width layout without a left sidebar. A dashboard without sidebar navigation is NOT a dashboard.
+- NEVER place a scrolling ticker bar as the primary header — it competes with the logo and creates two focal points. If a ticker is used, place it BELOW the top header bar as a secondary strip with bg #161b22 and border-bottom 1px solid #30363d.
+- NEVER show fewer than 6 rows in any data table — hardcode all rows, do NOT rely on dynamic rendering.
+- NEVER use purple (#7c3aed, #8b5cf6 range) as the chart stroke color on finance/crypto apps — use #00c896 green for positive performance.
+- NEVER add heavy outer glows — max box-shadow: 0 0 0 1px #30363d, 0 4px 16px rgba(0,0,0,0.5).
+- NEVER use rgba border opacity below 0.6 — card borders must be 1px solid #30363d at full opacity.
+- NEVER mix chart types in one panel — ONE chart type per panel only.
+- NEVER leave the area chart without a gradient fill — fill MUST use linearGradient, stop1 opacity 0.15 top, stop2 opacity 0.0 bottom.
+- Card borders: 1px solid #30363d always visible. Card bg: #1c2128. Card padding: 20px. Card border-radius: 8px.
+- KPI card icons: 32px icon box top-right, accent color bg at 15% opacity, accent color icon stroke — matches Nexus reference style exactly.
+- Sidebar: exactly 220px wide, position fixed, full viewport height, bg #161b22, border-right 1px solid #30363d. NEVER collapse or hide it.
+- All font sizes: nav group labels 10px uppercase letter-spacing 0.08em color #7d8590, nav items 13px font-weight 500, body/table 13px, KPI values 32px font-weight 700, KPI labels 11px uppercase tracking-widest, section headers 15px font-weight 600, table headers 11px uppercase tracking-widest color #7d8590.
+- Table rows: minimum height 48px, alternating bg transparent / rgba(255,255,255,0.02), hover state bg #21262d transition 150ms.
+- Active nav item: bg rgba(accent, 0.12), left border 2px solid accent, text accent color, border-radius 0 6px 6px 0.
+
+LAYOUT GEOMETRY (ENFORCE EXACTLY):
+- Outer wrapper: display flex, flex-direction row, width 100vw, min-height 100vh, overflow hidden.
+- Sidebar: width 220px, flex-shrink 0, position fixed, top 0, left 0, height 100vh, z-index 100.
+- Main content area: margin-left 220px, flex 1, display flex, flex-direction column, min-height 100vh, overflow-y auto.
+- Top header bar: height 64px, width 100%, bg #161b22, border-bottom 1px solid #30363d, display flex, align-items center, padding 0 24px, position sticky, top 0, z-index 50.
+- Page content padding: 24px all sides.
+- KPI row: display grid, grid-template-columns repeat(4, 1fr), gap 16px, margin-bottom 24px.
+- Chart panel: width 100%, margin-bottom 24px, bg #1c2128, border 1px solid #30363d, border-radius 8px, padding 20px.
+- Bottom section: display grid, grid-template-columns 1fr 340px, gap 16px. Table takes left column (flexible), secondary panel fixed 340px right.
+- Full layout MUST be visible at 1280px viewport width with zero horizontal scroll.
+
+MUST include:
+1. SIDEBAR (220px fixed, matches Nexus reference layout exactly):
+   - Top: logo mark (24px colored square/circle with icon) + app name 15px font-weight 700 text #e6edf3, padding 20px 16px, border-bottom 1px solid #30363d.
+   - Nav group "PLATFORM" label: 10px uppercase tracking-widest color #7d8590, margin 20px 16px 8px.
+   - Nav items under PLATFORM: Dashboard (active), Analytics, Customers, Infrastructure — each 36px tall, padding 0 12px, flex align-items center, gap 10px, inline SVG icon 16px.
+   - Nav group "SYSTEM" label: same style, margin-top 20px.
+   - Nav items under SYSTEM: Notifications, Security, Integrations, Settings — same styling.
+   - Bottom: user section, border-top 1px solid #30363d, padding 16px, flex row, gap 10px — 32px avatar circle (accent bg, white initials 12px), name 13px font-weight 500, role 11px color #7d8590.
+
+2. HEADER BAR (sticky top of main, 64px height, NOT a ticker):
+   - Left: page title "Dashboard" 18px font-weight 600 + subtitle "Welcome back. Here's your overview." 13px color #7d8590 — stacked vertically, justify left.
+   - Center: search input, width 280px, bg #0d1117, border 1px solid #30363d, border-radius 6px, height 34px, placeholder "Search anything..." with magnifier icon left, ⌘K hint right in color #7d8590.
+   - Right: notification bell SVG 20px with badge (red circle 8px, number "3"), then user avatar 32px circle, gap 16px between elements.
+
+3. KPI CARDS (4 cards in equal grid, styled exactly like Nexus reference):
+   - Each card: bg #1c2128, border 1px solid #30363d, border-radius 8px, padding 20px, position relative.
+   - Top row: uppercase label 11px tracking-widest color #7d8590 LEFT, square icon 32px with accent bg at 15% opacity + centered SVG icon 16px accent color RIGHT.
+   - Large value: 32px font-weight 700 color #e6edf3, tabular-nums, margin-top 12px.
+   - Delta text: 13px font-weight 500, color #00c896 for positive (+), color #f85149 for negative (−), NO pill background — plain colored text like Nexus reference.
+   - Subtext: 12px color #7d8590, below delta.
+   - NO sparkline inside KPI cards — keep cards clean like Nexus reference. Sparklines belong in the secondary watchlist panel only.
+   - KPI 1: label "TOTAL REVENUE", value "$492,800", delta "+12.5% from last month" (green), icon: dollar sign SVG.
+   - KPI 2: label "ACTIVE USERS", value "24,531", delta "+3.2% from last week" (green), icon: users SVG.
+   - KPI 3: label "GROWTH RATE", value "18.2%", delta "+2.1% from last quarter" (green), icon: trending-up arrow SVG.
+   - KPI 4: label "SYSTEM UPTIME", value "99.98%", delta "0.01% below target" (red), icon: activity/pulse SVG.
+
+4. AREA CHART PANEL (full width, min-height 280px):
+   - Title "Revenue Overview" 15px font-weight 600, subtitle "Monthly revenue & profit" 12px color #7d8590 — top left.
+   - Legend top right: two dots + labels — "Revenue" (accent color dot) + "Profit" (secondary color dot, e.g. #00c896 if accent is blue, or #3b82f6 if accent is green).
+   - Time toggle top right (beside legend): 7D / 1M / 3M / 1Y buttons — active: bg accent, color #fff, border-radius 4px, padding 4px 10px; inactive: bg transparent, color #7d8590.
+   - SVG chart: exactly 12 data points (Jan–Dec), TWO area series plotted (Revenue + Profit), smooth cubic-bezier curves via SVG path commands.
+   - Revenue series stroke: accent color, stroke-width 2px, fill: linearGradient top→bottom opacity 0.15→0.0.
+   - Profit series stroke: #00c896 (or contrasting secondary), stroke-width 2px, fill: linearGradient opacity 0.10→0.0.
+   - Grid lines: 4 horizontal dashed lines, stroke #30363d, stroke-dasharray 4 4.
+   - Y-axis labels: $0k, $2.5k, $5k, $7.5k, $10k — 11px color #7d8590, left side.
+   - X-axis labels: Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec — 11px color #7d8590, bottom.
+   - Revenue data points: 3200, 3800, 5000, 4900, 5200, 5800, 6400, 7100, 7600, 8200, 9100, 9800.
+   - Profit data points: 2500, 2400, 2600, 2800, 3100, 3400, 3800, 4200, 4500, 4800, 5200, 5500.
+
+5. DATA TABLE (left column of bottom grid, min 6 FULLY VISIBLE rows — ALL hardcoded):
+   - Card wrapper: bg #1c2128, border 1px solid #30363d, border-radius 8px, padding 20px.
+   - Header row: "Holdings" 15px font-weight 600 LEFT, search input (width 180px) + sort dropdown + "+ Add" button (accent bg, white text) RIGHT — all on one flex row.
+   - Column headers: ASSET, PRICE, 24H CHANGE, HOLDINGS, VALUE, ACTION — 11px uppercase tracking-widest color #7d8590, border-bottom 1px solid #30363d, padding 10px 12px.
+   - EXACTLY 6 data rows (no fewer), each row height 48px, hover bg #21262d:
+     Row 1: BTC / Bitcoin — $43,250 — +1.82% (green pill) — 2.145 BTC — $92,772 — star icon
+     Row 2: ETH / Ethereum — $2,318 — +2.64% (green pill) — 12.5 ETH — $28,975 — star icon
+     Row 3: SOL / Solana — $182.40 — +8.72% (green pill) — 45 SOL — $8,208 — star icon (filled)
+     Row 4: BNB / BNB Chain — $598.30 — +2.15% (green pill) — 15 BNB — $8,975 — star icon
+     Row 5: AVAX / Avalanche — $38.75 — -1
