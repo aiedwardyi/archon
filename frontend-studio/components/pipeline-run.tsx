@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Circle,
   Loader2,
+  XCircle,
   ArrowRight,
   Send,
   Terminal,
@@ -27,7 +28,7 @@ import { useNotificationSound } from "@/hooks/useNotificationSound"
 
 const API_BASE = "http://localhost:5000"
 const POLL_INTERVAL_MS = 1500
-type AgentStatus = "pending" | "running" | "complete"
+type AgentStatus = "pending" | "running" | "complete" | "failed"
 
 type LogEntry = {
   id: string
@@ -45,6 +46,7 @@ type ChatMessage = {
 
 function AgentStatusIcon({ status }: { status: AgentStatus }) {
   if (status === "complete") return <CheckCircle2 className="h-5 w-5 text-success" />
+  if (status === "failed") return <XCircle className="h-5 w-5 text-destructive" />
   if (status === "running") return <Loader2 className="h-5 w-5 text-info animate-spin" />
   return <Circle className="h-5 w-5 text-muted-foreground/40" />
 }
@@ -52,6 +54,7 @@ function AgentStatusIcon({ status }: { status: AgentStatus }) {
 function AgentStatusLabel({ status }: { status: AgentStatus }) {
   const { t } = useLanguage()
   if (status === "complete") return <span className="text-xs font-medium text-success">{t("done")}</span>
+  if (status === "failed") return <span className="text-xs font-medium text-destructive">{t("failed")}</span>
   if (status === "running") return <span className="text-xs font-medium text-info">{t("building")}</span>
   return <span className="text-xs font-medium text-muted-foreground">{t("pending")}</span>
 }
@@ -733,7 +736,7 @@ export function PipelineRun() {
     if (pipelineStatus === "failed") {
       // All agents before current are done, current is failed, rest are pending
       if (agentIdx < currentIdx) return "complete"
-      if (agentIdx === currentIdx) return "running"
+      if (agentIdx === currentIdx) return "failed"
       return "pending"
     }
     if (pipelineStatus === "running") {

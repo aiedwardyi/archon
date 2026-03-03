@@ -276,7 +276,7 @@ export function VersionTimeline() {
                 <span className="text-xs text-muted-foreground">{selected.timestamp}</span>
               </div>
               <p className="text-sm text-foreground/80 leading-relaxed">
-                {isProjectBuilding ? "Build in progress..." : (selected.filesChanged > 0
+                {isProjectBuilding ? "Build in progress..." : selected.status === "failed" ? "Pipeline failed." : (selected.filesChanged > 0
                   ? `${selected.filesChanged} code file${selected.filesChanged !== 1 ? "s" : ""} generated`
                   : "Pipeline completed successfully.")}
               </p>

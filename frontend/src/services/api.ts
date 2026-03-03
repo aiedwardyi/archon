@@ -213,7 +213,10 @@ export interface ActivityItem {
 
 export async function fetchActivity(): Promise<ActivityItem[]> {
   try {
-    const res = await fetch(`${API_BASE}/activity`);
+    const token = localStorage.getItem("archon_token");
+    const res = await fetch(`${API_BASE}/activity`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
     if (!res.ok) return [];
     return await res.json();
   } catch { return []; }

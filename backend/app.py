@@ -777,15 +777,15 @@ def get_stats():
 
 
 @app.route("/api/activity", methods=["GET"])
+@jwt_required(optional=True)
 def get_activity():
     session = get_session()
     try:
-        recent = (
-            session.query(Execution)
-            .order_by(Execution.created_at.desc())
-            .limit(6)
-            .all()
-        )
+        uid = get_jwt_identity()
+        query = session.query(Execution).order_by(Execution.created_at.desc())
+        if uid:
+            query = query.join(Project).filter(Project.owner_id == int(uid))
+        recent = query.limit(6).all()
         items = []
         for e in recent:
             project = session.get(Project, e.project_id)
@@ -1221,6 +1221,16 @@ def execution_status():
                     db_status = "COMPLETED" if execution.status == "success" else "FAILED"
                     return jsonify({
                         "status": db_status,
+                        "currentStage": "engineer",
+                        "logs": state.get("logs", []),
+                        "engineerTasks": [],
+                        "project_id": project_id,
+                        "execution_id": execution_id,
+                    }), 200
+                # Crash recovery: in-memory says RUNNING but DB was cleaned up on restart
+                if state["running"] and execution.status in ("failed", "error"):
+                    return jsonify({
+                        "status": "FAILED",
                         "currentStage": "engineer",
                         "logs": state.get("logs", []),
                         "engineerTasks": [],
