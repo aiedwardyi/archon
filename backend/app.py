@@ -36,14 +36,21 @@ jwt = init_jwt(app)
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PUBLIC_DIR = REPO_ROOT / "generated"
 
-execution_state = {
-    "running": False,
-    "started_at": None,
-    "current_project_id": None,
-    "current_execution_id": None,
-    "logs": [],
-    "result_ready": False,
-}
+execution_state: dict = {}  # keyed by project_id (int)
+
+def get_project_state(project_id: int) -> dict:
+    if project_id not in execution_state:
+        execution_state[project_id] = {
+            "running": False,
+            "started_at": None,
+            "current_execution_id": None,
+            "logs": [],
+            "result_ready": False,
+        }
+    return execution_state[project_id]
+
+def any_pipeline_running() -> bool:
+    return any(s.get("running") for s in execution_state.values())
 
 
 def read_json_file(filepath: Path) -> Dict[str, Any] | None:
@@ -70,17 +77,19 @@ def write_json_file(filepath: Path, data: Dict[str, Any]) -> bool:
 
 _log_counter = 0
 
-def add_log(message: str, log_type: str = "info"):
+def add_log(message: str, log_type: str = "info", project_id: int = None):
     global _log_counter
     _log_counter += 1
     ts = int(time.time() * 1000)
-    execution_state["logs"].append({
+    print(f"[LOG] {message}")
+    if project_id is None:
+        return
+    get_project_state(project_id)["logs"].append({
         "id": f"log-{ts}-{_log_counter}",
         "timestamp": ts,
         "message": message,
         "type": log_type,
     })
-    print(f"[LOG] {message}")
 
 
 def get_version_dir(project_id: int, version: int) -> Path:
@@ -192,10 +201,14 @@ def resolve_project_version(q_project_id=None, q_version=None):
 
     # Priority 2: fall back to in-memory state only if params not provided
     if not project_id:
-        project_id = execution_state.get("current_project_id")
+        # Find the most recently launched project from per-project state
+        for pid, s in execution_state.items():
+            if s.get("current_execution_id"):
+                project_id = pid
+                break
 
     if not version:
-        execution_id = execution_state.get("current_execution_id")
+        execution_id = get_project_state(project_id).get("current_execution_id") if project_id else None
         if execution_id:
             session = get_session()
             try:
@@ -225,13 +238,13 @@ def resolve_project_version(q_project_id=None, q_version=None):
     return project_id, version
 
 
-def run_full_pipeline_async(task_description: str, prompt_history: list = None):
-    global execution_state
+def run_full_pipeline_async(task_description: str, prompt_history: list = None, project_id: int = None):
+    state = get_project_state(project_id)
 
     sys.path.insert(0, str(REPO_ROOT))
 
     session = get_session()
-    execution_id = execution_state.get("current_execution_id")
+    execution_id = state.get("current_execution_id")
     locked_ui_archetype = None
     pipeline_start_time = time.time()
 
@@ -242,7 +255,6 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
                 execution.status = "running"
                 session.commit()
 
-        project_id = execution_state.get("current_project_id")
         version = None
         if execution_id:
             execution = session.get(Execution, execution_id)
@@ -286,15 +298,15 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
                     else:
                         existing_code = html_content
                     ancestor_version_dir = get_version_dir(project_id, ancestor_exec.version)
-                    add_log(f"Build Agent: Loading v{ancestor_exec.version} for context...")
+                    add_log(f"Build Agent: Loading v{ancestor_exec.version} for context...", project_id=project_id)
                     break
                 ancestor_id = ancestor_exec.parent_execution_id
                 hops += 1
         finally:
             session_check.close()
 
-        add_log("Starting pipeline...")
-        add_log("Requirements Agent: Analyzing your request...")
+        add_log("Starting pipeline...", project_id=project_id)
+        add_log("Requirements Agent: Analyzing your request...", project_id=project_id)
         sys.path.insert(0, str(REPO_ROOT))
         from agents.pm_agent import PMAgent
         pm_agent = PMAgent()
@@ -320,10 +332,10 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
         prd_dict["_agent_sequence"] = ["pm"]
         write_json_file(version_dir / "last_prd.json", prd_dict)
 
-        add_log("Requirements Agent: Brief created.")
+        add_log("Requirements Agent: Brief created.", project_id=project_id)
         print(f"PRD saved: {prd_artifact.prd.document_title}")
 
-        add_log("Architecture Agent: Planning the build...")
+        add_log("Architecture Agent: Planning the build...", project_id=project_id)
 
         from google import genai
         from agents.planner_agent import PlannerAgent
@@ -351,7 +363,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
         write_json_file(version_dir / "last_plan.json", flat_plan)
         write_json_file(version_dir / "last_plan_artifact.json", plan_dict)
 
-        add_log("Architecture Agent: Build plan ready.")
+        add_log("Architecture Agent: Build plan ready.", project_id=project_id)
         milestone_count = len(plan.milestones)
         task_count = sum(len(m.tasks) for m in plan.milestones)
         print(f"Plan saved: {milestone_count} milestones, {task_count} tasks")
@@ -364,14 +376,14 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
                     ancestor_assets_data = read_json_file(ancestor_assets_file) or {}
                     design_assets = ancestor_assets_data.get("assets", [])
                     write_json_file(version_dir / "last_design_assets.json", {"assets": design_assets})
-                    add_log(f"Design Agent: Reusing {len(design_assets)} images from previous version.")
+                    add_log(f"Design Agent: Reusing {len(design_assets)} images from previous version.", project_id=project_id)
                 except Exception as e:
                     print(f"Failed to load ancestor design assets (non-fatal): {e}")
-                    add_log("Design Agent: Could not load previous images, continuing...")
+                    add_log("Design Agent: Could not load previous images, continuing...", project_id=project_id)
             else:
-                add_log("Design Agent: No previous images found, skipping.")
+                add_log("Design Agent: No previous images found, skipping.", project_id=project_id)
         else:
-            add_log("Design Agent: Generating visuals...")
+            add_log("Design Agent: Generating visuals...", project_id=project_id)
             try:
                 from agents.design_agent import DesignAgent
                 prd_data = read_json_file(version_dir / "last_prd.json") or {}
@@ -380,14 +392,14 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
                 design_assets = design_agent.run(prd_data, max_images=6, save_dir=assets_dir)
                 if design_assets:
                     write_json_file(version_dir / "last_design_assets.json", {"assets": design_assets})
-                    add_log(f"Design Agent: {len(design_assets)} images ready.")
+                    add_log(f"Design Agent: {len(design_assets)} images ready.", project_id=project_id)
                 else:
-                    add_log("Design Agent: No images generated, continuing...")
+                    add_log("Design Agent: No images generated, continuing...", project_id=project_id)
             except Exception as design_err:
                 print(f"DesignAgent failed (non-fatal): {design_err}")
-                add_log("Design Agent: Skipped, continuing with build...")
+                add_log("Design Agent: Skipped, continuing with build...", project_id=project_id)
 
-        add_log("Build Agent: Writing your code...")
+        add_log("Build Agent: Writing your code...", project_id=project_id)
 
         engineer_task = None
         fallback_task = None
@@ -448,16 +460,15 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
                     content=file_artifact.content,
                 )
                 writes.append(rec)
-                add_log(f"Build Agent: Created {file_artifact.path}")
+                add_log(f"Build Agent: Created {file_artifact.path}", project_id=project_id)
             except ValueError as skip_err:
                 # In iteration mode, fail hard to keep behavior deterministic and auditable.
                 if is_iteration:
                     raise
                 print(f"Build Agent: Skipped {file_artifact.path} ({skip_err})")
                 print(f"Skipped file: {skip_err}")
-        add_log("Build complete.")
-        execution_state["result_ready"] = True
-        execution_state["result_ready"] = True
+        add_log("Build complete.", project_id=project_id)
+        state["result_ready"] = True
 
         execution_result = {
             "kind": "execution_result",
@@ -482,7 +493,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
             },
             "error": None,
             "_agent_sequence": ["pm", "planner", "engineer"],
-            "logs": list(execution_state.get("logs", [])),
+            "logs": list(state.get("logs", [])),
             "_meta": {
                 "produced_at": datetime.now(timezone.utc).isoformat(),
                 "consumer_version": "v4",
@@ -573,15 +584,15 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
                 exec_for_gov.quality_tier = readiness.get("quality_tier")
                 session.commit()
 
-            add_log("Governance Agent: Factsheet recorded.")
+            add_log("Governance Agent: Factsheet recorded.", project_id=project_id)
         except Exception as gov_err:
             print(f"GovernanceAgent failed (non-fatal): {gov_err}")
 
     except Exception as e:
         error_msg = str(e)
         short_msg = error_msg.split("\n")[0][:200]
-        add_log(f"Something went wrong: {short_msg}")
-        execution_state["result_ready"] = True
+        add_log(f"Something went wrong: {short_msg}", project_id=project_id)
+        state["result_ready"] = True
         print(f"Pipeline error: {error_msg}")
 
         if execution_id:
@@ -610,7 +621,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None):
             })
 
     finally:
-        execution_state["running"] = False
+        state["running"] = False
         session.close()
         print("Pipeline complete")
 
@@ -869,10 +880,10 @@ def get_version_logs(project_id: int, version: int):
 
 @app.route("/api/projects/<int:project_id>/iterate", methods=["POST"])
 def iterate_project(project_id: int):
-    global execution_state
+    state = get_project_state(project_id)
 
-    if execution_state["running"]:
-        return jsonify({"error": "A pipeline is already running"}), 409
+    if state["running"]:
+        return jsonify({"error": "A pipeline is already running for this project"}), 409
 
     session = get_session()
     try:
@@ -947,17 +958,16 @@ def iterate_project(project_id: int):
         execution.chat_messages = json.dumps(existing_msgs)
         session.commit()
 
-        execution_state["running"] = True
-        execution_state["started_at"] = time.time()
-        execution_state["current_project_id"] = project_id
-        execution_state["current_execution_id"] = execution.id
-        execution_state["logs"] = []
-        execution_state["result_ready"] = False
+        state["running"] = True
+        state["started_at"] = time.time()
+        state["current_execution_id"] = execution.id
+        state["logs"] = []
+        state["result_ready"] = False
 
         print(f"Starting iteration v{next_version} for project {project_id}: {prompt}")
         thread = threading.Thread(
             target=run_full_pipeline_async,
-            args=(prompt, prompt_history),
+            args=(prompt, prompt_history, project_id),
             daemon=True,
         )
         thread.start()
@@ -970,7 +980,7 @@ def iterate_project(project_id: int):
         }), 200
 
     except Exception as e:
-        execution_state["running"] = False
+        state["running"] = False
         print(f"Error in iterate_project: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
@@ -1021,8 +1031,6 @@ def restore_execution(execution_id: int):
 
 @app.route("/api/execute-task", methods=["POST"])
 def execute_task():
-    global execution_state
-
     session = get_session()
     try:
         req_data = request.get_json()
@@ -1074,16 +1082,17 @@ def execute_task():
         session.commit()
         session.refresh(execution)
 
-        execution_state["running"] = True
-        execution_state["started_at"] = time.time()
-        execution_state["current_project_id"] = project_id
-        execution_state["current_execution_id"] = execution.id
-        execution_state["logs"] = []
+        state = get_project_state(project_id)
+        state["running"] = True
+        state["started_at"] = time.time()
+        state["current_execution_id"] = execution.id
+        state["logs"] = []
+        state["result_ready"] = False
 
         print(f"Starting v{next_version} for project {project_id}: {task_description}")
         thread = threading.Thread(
             target=run_full_pipeline_async,
-            args=(task_description, initial_history),
+            args=(task_description, initial_history, project_id),
             daemon=True,
         )
         thread.start()
@@ -1096,7 +1105,8 @@ def execute_task():
         }), 200
 
     except Exception as e:
-        execution_state["running"] = False
+        if project_id:
+            get_project_state(project_id)["running"] = False
         print(f"Error in execute_task: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
@@ -1105,9 +1115,21 @@ def execute_task():
 
 @app.route("/api/execution-status", methods=["GET"])
 def execution_status():
-    project_id = execution_state.get("current_project_id")
+    # Get project_id from query param, fall back to finding any running project
+    project_id = request.args.get("project_id", type=int)
+    if not project_id:
+        for pid, s in execution_state.items():
+            if s.get("running"):
+                project_id = pid
+                break
+    if not project_id:
+        # Fall back to most recent project state
+        for pid in execution_state:
+            project_id = pid
+
+    state = get_project_state(project_id) if project_id else {"running": False, "logs": [], "result_ready": False, "current_execution_id": None}
     version = None
-    execution_id = execution_state.get("current_execution_id")
+    execution_id = state.get("current_execution_id")
 
     if execution_id:
         session = get_session()
@@ -1116,12 +1138,12 @@ def execution_status():
             if execution:
                 version = execution.version
                 # 7C.2: DB is ground truth when pipeline not actively running
-                if not execution_state["running"] and execution.status in ("success", "error"):
+                if not state["running"] and execution.status in ("success", "error"):
                     db_status = "COMPLETED" if execution.status == "success" else "FAILED"
                     return jsonify({
                         "status": db_status,
                         "currentStage": "engineer",
-                        "logs": execution_state.get("logs", []),
+                        "logs": state.get("logs", []),
                         "engineerTasks": [],
                         "project_id": project_id,
                         "execution_id": execution_id,
@@ -1141,7 +1163,7 @@ def execution_status():
         "pending": "RUNNING", "running": "RUNNING",
     }
 
-    logs = execution_state.get("logs", [])
+    logs = state.get("logs", [])
     current_stage = "pm"
     for log in reversed(logs):
         msg = log.get("message", "")
@@ -1154,7 +1176,7 @@ def execution_status():
             current_stage = "planner"
             break
 
-    if data is not None and execution_state.get("result_ready", True):
+    if data is not None and state.get("result_ready", True):
         raw_status = str(data.get("status", "success")).lower()
         frontend_status = STATUS_MAP.get(raw_status, "COMPLETED")
         return jsonify({
@@ -1166,7 +1188,7 @@ def execution_status():
             "execution_id": execution_id,
         }), 200
 
-    if execution_state["running"]:
+    if state["running"]:
         return jsonify({
             "status": "RUNNING",
             "currentStage": current_stage,
