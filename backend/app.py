@@ -564,15 +564,15 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None, 
                 execution.plan_path = str(version_dir / "last_plan.json")
                 # Build metrics
                 execution.duration_seconds = round(time.time() - pipeline_start_time, 2)
-                execution.model_used = "Claude Sonnet 4.6"
+                execution.model_used = "Gemini 2.5 Flash"
                 if hasattr(result, "usage") and result.usage:
                     input_tokens = getattr(result.usage, "input_tokens", 0) or 0
                     output_tokens = getattr(result.usage, "output_tokens", 0) or 0
                     execution.tokens_used = input_tokens + output_tokens
                     if execution.tokens_used:
-                        # Claude Sonnet 4.5 pricing: $3/M input, $15/M output
+                        # Gemini 2.5 Flash pricing: $0.15/M input, $0.60/M output (under 200k context)
                         execution.estimated_cost = round(
-                            (input_tokens * 0.000003) + (output_tokens * 0.000015), 4
+                            (input_tokens * 0.00000015) + (output_tokens * 0.0000006), 4
                         )
                     # 1 credit = 2500 tokens, minimum 1
                     execution.credits_used = max(1, round(execution.tokens_used / 2500))
@@ -614,7 +614,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None, 
                     "Requirements Agent": "GPT-4o-mini",
                     "Architecture Agent": "Gemini 2.5 Flash",
                     "Design Agent": "DALL-E 3",
-                    "Build Agent": "Claude Sonnet 4.6",
+                    "Build Agent": "Gemini 2.5 Flash",
                 },
                 tokens_used=exec_for_gov.tokens_used if exec_for_gov else None,
                 estimated_cost=exec_for_gov.estimated_cost if exec_for_gov else None,

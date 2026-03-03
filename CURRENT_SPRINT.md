@@ -180,7 +180,7 @@ main (enterprise-ui merged and deleted)
 - ✅ Studio pipeline page project name fix — fetches name from API when arriving via ?pid= (Feb 28, 2026)
 - 🔴 Live output logs still global (same across all projects) — execution_state is server-wide, architectural fix needed
 
-### Phase 17 — IBM Governance & NLU Integration (🔴 Planned)
+### Phase 17 — IBM Governance & NLU Integration (✅ Complete Mar 1, 2026)
 
 #### 17.1 — Watson NLU Pre-Pipeline Analyzer (✅ Complete Feb 28, 2026)
 - ✅ Watson NLU analyzes user prompt before PM Agent
@@ -199,9 +199,8 @@ main (enterprise-ui merged and deleted)
 - ✅ model_used display updated to "Claude Sonnet 4.6" (Feb 28, 2026)
 - ✅ Navbar credit counter wired to real balance via /api/credits/balance (Feb 28, 2026)
 - ✅ Build Details: "12 credits · 488 remaining" format (Feb 28, 2026)
-- 🔴 Plan tiers: Starter 100/mo, Pro 500/mo, Agency unlimited (post-auth)
-- 🔴 /api/credits/balance endpoint (pre-auth mock: 500 Pro credits minus all used)
-- 🔴 Enterprise BuildDetailsCard live refresh post-build (UX polish)
+- 🔴 Plan tiers: Starter 100/mo, Pro 500/mo, Agency unlimited (Phase 18 scope)
+- ✅ Enterprise BuildDetailsCard live refresh post-build
 
 #### 17.2 — Governance Agent (AI Factsheets) (✅ Complete Mar 1, 2026)
 - ✅ GovernanceAgent wired into pipeline success block (non-fatal try/except)
@@ -282,39 +281,15 @@ main (enterprise-ui merged and deleted)
 - Enterprise + Studio: date format yyyy.mm.dd when language = KO
 - Merged via PR from feat/ko-i18n-polish
 
-## 🔧 Phase 16.5 Authentication (In Progress)
-- ✅ Backend JWT auth — register, login, me, forgot-password, reset-password (Mar 1, 2026)
-- ✅ Google OAuth backend endpoint /api/auth/google (Mar 1, 2026)
-- ✅ frontend-studio/lib/auth.ts — authService with localStorage token management (Mar 1, 2026)
-- ✅ AuthGuard — redirects unauthenticated users to /login (Mar 1, 2026)
-- ✅ Login, Register, Forgot Password pages — Studio (frontend-studio/) (Mar 1, 2026)
-- ✅ Sign out wired — closes dropdown + redirects to /login (Mar 1, 2026)
-- ✅ Login page redesign — dark split-layout (form left, value props right) (Mar 1, 2026)
-- ✅ IBM Plex Sans font applied via next/font/google — enterprise-grade typography (Mar 1, 2026)
-- ✅ Right panel: pill badge, headline, bullets, IBM Watson trust badge — vertically centered (Mar 1, 2026)
-- ✅ Updated value prop copy to agency-owner language (hours not weeks, certified, sign-off) (Mar 1, 2026)
-- ✅ README updated — business case blockquote added at top (Mar 1, 2026)
-- ✅ Register page redesign — dark split-layout matching login (Mar 1, 2026)
-- ✅ Forgot password page redesign — dark split-layout matching login (Mar 1, 2026)
-- ✅ "Forgot password?" link added to login form (Mar 1, 2026)
-- ✅ Post-login/register redirect to Enterprise dark mode (Mar 1, 2026)
-- ✅ Cross-origin token handoff via ?token= URL param — Studio → Enterprise (Mar 1, 2026)
-- ✅ Enterprise defaults to dark mode on first visit (ThemeProvider fallback) (Mar 1, 2026)
-- ✅ Enterprise (frontend) auth pages (login, register, forgot-password) — Mar 1, 2026
-- ✅ Enterprise AuthGuard — redirects to /login if no token — Mar 1, 2026
-- ✅ Enterprise Sign Out wired (authService.logout + redirect to /login) — Mar 1, 2026
-- ✅ Studio ↔ Enterprise theme toggle passes token — Mar 1, 2026
-- ✅ Folder rename refactor — frontend-v4→frontend, frontend→frontend-studio, frontend-consumer2→frontend-consumer (Mar 2, 2026)
-- ✅ backend/requirements.txt updated — flask-jwt-extended and bcrypt added (Mar 2, 2026)
-- ✅ Post-login redirect fixed — always lands on Enterprise projects page via ?tab=projects URL param (Mar 2, 2026)
-- ✅ First-time login defaults to dark mode, repeat users keep their theme preference (Mar 2, 2026)
-- ✅ Cross-origin theme handoff — Studio passes ?theme= to Enterprise on login (Mar 2, 2026)
-- ✅ Studio favicon added — hexagon SVG in browser tab (Mar 2, 2026)
-- ✅ Enterprise favicon color fixed — blue #3b82f6 (Mar 2, 2026)
-- ✅ .vite/ added to .gitignore (Mar 2, 2026)
-- ✅ Enterprise→Studio token handoff — Studio button in Enterprise Navbar now passes ?token= (Mar 2, 2026)
-- ✅ Studio ↔ Enterprise theme toggle fully working — token passed in both directions, no re-auth required (Mar 2, 2026)
-- ✅ Google OAuth frontend wiring — Studio + Enterprise login pages, google-auth in requirements.txt (Mar 2, 2026)
+## ✅ Phase 16.5 Authentication (Complete Mar 3, 2026)
+- ✅ Backend JWT auth — register, login, me, forgot-password, reset-password
+- ✅ Google OAuth — Studio + Enterprise
+- ✅ AuthGuard + Login/Register/Forgot Password pages — dark split-layout, IBM Plex Sans
+- ✅ Cross-origin token handoff via ?token= URL param
+- ✅ JWT blacklist logout — server-side token invalidation
+- ✅ User-scoped projects (owner_id) + concurrent pipeline
+- ✅ Studio ↔ Enterprise theme toggle fully working
+- ✅ Folder rename refactor — frontend-v4→frontend, frontend→frontend-studio, frontend-consumer2→frontend-consumer
 
 ## ✅ Known Bug FIXED — Enterprise Tab Not Restoring (Mar 2, 2026)
 - Login now correctly lands on projects tab ✅
@@ -331,7 +306,7 @@ main (enterprise-ui merged and deleted)
 - Wired into Enterprise (Index.tsx), Studio (pipeline-run.tsx), Consumer (ProjectDetailPage.tsx)
 - ✅ Committed and merged via PR #31 (Mar 2, 2026)
 
-## 🔴 Known Bug — Cross-Origin Auth State (Mar 2, 2026)
+## ✅ Fixed — Cross-Origin Auth State (Mar 2–3, 2026)
 
 **Problem:** localStorage is per-origin. Each port (8080, 3000, 3030) has its own isolated localStorage. This causes 3 symptoms:
 
@@ -476,4 +451,22 @@ main (enterprise-ui merged and deleted)
 - 🔴 Re-run eval loop with rollback logic to push all 3 archetypes toward 90+
 - 🔴 SaaS landing builds unreliable (frequent validation errors + timeouts) — needs prompt stabilization
 - 🔴 Add 3 more archetypes (ecommerce, fintech, portfolio) once first 3 hit 90+
+
+---
+
+## ✅ Gemini Client Centralization + Engineer Switch (Mar 3, 2026)
+- Centralized all Gemini client creation into `utils/genai_client.py` (supports Vertex AI + AI Studio)
+- Replaced scattered `genai.Client(api_key=...)` calls across 8 files with `get_genai_client()`
+- Removed messy 5-key rotation logic from `backend/app.py`
+- Engineer agent switched from Claude Opus → Gemini 2.5 Flash (Opus overloaded)
+- Claude `_run_claude` function preserved in `engineer_agent.py` for future re-enable
+- Added `response_mime_type: "application/json"` to Gemini structured output calls
+- Upgraded `_run_claude` path: Opus 4.6, 64k tokens, retry logic with backoff
+- `utils/genai_retry.py`: added `INVALID_ARGUMENT` to retryable errors
+- `frontend-consumer/hooks/useNotificationSound.ts`: fixed suspended AudioContext bug
+
+## 🔜 Next: Quality Target Enrichment
+- Extend Planner to output a `quality_target` block — tells engineer what "good" looks like per build
+- Only 3 files: `schemas/plan_schema.py`, `prompts/planner.txt`, `prompts/engineer.txt`
+- See `memory/quality_target_design.md` for full design spec
 

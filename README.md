@@ -29,11 +29,11 @@ Prompt History (context continuation)
     ↓
 Requirements Agent (OpenAI GPT-4o)  → Brief artifact (versioned)
     ↓
-Architecture Agent (Gemini)         → Build Plan artifact (versioned)
+Architecture Agent (Gemini 2.5 Flash)    → Build Plan artifact (versioned)
     ↓
-Design Agent (GPT-4o-mini + DALL-E) → Image assets (versioned, reused on iterations)
+Design Agent (GPT-4o-mini + DALL-E 3)   → Image assets (versioned, parallel generation)
     ↓
-Build Agent (Claude Sonnet 4.6)     → Code files (versioned)
+Build Agent (Gemini 2.5 Flash)          → Code files (versioned)
     ↓
 Governance Agent (IBM Watson NLU)   → AI Factsheet (scored, versioned, exportable)
     ↓
@@ -48,9 +48,9 @@ Execution Result → Database + UI + Version Timeline + Live Preview
 - Python 3.11+
 - Node.js 18+
 - OpenAI API key
-- Anthropic API key (Build Agent — Claude Sonnet 4.6)
+- Google Gemini API key (Build Agent + Architecture Agent)
+- Anthropic API key (optional — Claude Opus path preserved but disabled)
 - IBM Watson API keys (STT, TTS, NLU — optional, degrades gracefully)
-- Google Gemini API key (fallback)
 
 ### 1. Clone and install
 ```powershell
@@ -130,7 +130,7 @@ ai-dev-team/
 │   ├── pm_agent.py           # Requirements Agent (OpenAI GPT-4o-mini)
 │   ├── planner_agent.py      # Architecture Agent (Gemini Flash)
 │   ├── design_agent.py       # Design Agent (GPT-4o-mini + DALL-E 3)
-│   ├── engineer_agent.py     # Build Agent (Claude Sonnet 4.6, Gemini fallback)
+│   ├── engineer_agent.py     # Build Agent (Gemini 2.5 Flash, Claude Opus path preserved)
 │   ├── nlu_agent.py          # NLU Agent (IBM Watson — sentiment + keyword analysis)
 │   └── governance_agent.py   # Governance Agent (IBM Watson NLU — AI Factsheets + scoring)
 ├── backend/
@@ -230,7 +230,7 @@ Archon includes an enterprise-grade AI governance layer powered by IBM Watson NL
 - Prompt Quality Score (IBM Watson NLU)
 - Build Confidence Score (output quality signals)
 - Human Review Required flag (auto-triggered when either score < 50)
-- Model Registry — every AI model used: OpenAI (PM Agent), Google Gemini (Architecture), Anthropic Claude (Build), IBM Watson NLU (Governance)
+- Model Registry — every AI model used: OpenAI (PM Agent), Google Gemini (Architecture + Build), IBM Watson NLU (Governance)
 - Compliance flags: data_privacy, bias_check, content_moderation
 - Archetype, token usage, build duration
 
@@ -277,9 +277,8 @@ A prominent banner also appears at the top of the Governance tab with plain-Engl
 | 17.3 | ✅ | Dashboard governance metrics (Avg Prompt + Build scores) |
 | 17.4 | ✅ | Dual PDF export — Client PDF + Internal PDF |
 | 17.5 | ✅ | Delivery Readiness Gate — Quality Tier badges (High/Good/Low) on Versions timeline |
-| 16.5 | 🔴 | Authentication (JWT + protected routes) |
+| 16.5 | ✅ | Authentication — JWT, Google OAuth, blacklist logout, concurrent pipeline |
 | 18 | 🔴 | Unified auth + plan-based UI routing |
-| 8.2 | 🔴 | PDF export of full build history |
 | 8.3 | 🔴 | Client shareable read-only link |
 
 ---

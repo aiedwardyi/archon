@@ -32,15 +32,19 @@ Non-technical agency owner or project lead who:
 ```
 User Input (Chat Panel)
     ↓
+Watson NLU Pre-Analyzer (IBM Watson NLU — sentiment routing, keyword extraction)
+    ↓
 Prompt History (context continuation)
     ↓
-Requirements Agent (OpenAI GPT-4o-mini) → Brief artifact (versioned)
+Requirements Agent (OpenAI GPT-4o)  → Brief artifact (versioned)
     ↓
-Architecture Agent (Gemini Flash)        → Build Plan artifact (versioned)
+Architecture Agent (Gemini 2.5 Flash)    → Build Plan artifact (versioned)
     ↓
-Design Agent (GPT-4o-mini + DALL-E 3)   → Image assets (versioned, served locally)
+Design Agent (GPT-4o-mini + DALL-E 3)   → Image assets (versioned, parallel generation)
     ↓
-Build Agent (Claude Sonnet 4.5)          → Code files (versioned)
+Build Agent (Gemini 2.5 Flash)          → Code files (versioned)
+    ↓
+Governance Agent (IBM Watson NLU)        → AI Factsheet (scored, versioned, exportable)
     ↓
 Execution Result → Database + UI + Version Timeline + Live Preview
 ```
@@ -117,7 +121,7 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - ✅ 8.1 One-click Publish — shareable hosted URL
 - ✅ 8.UI.1 Artifact cards link to Artifacts page with tab pre-selection
 - ✅ 8.UI.2 Account modals — Profile, Settings, Pricing, Documentation
-- 🔴 8.2 PDF export of full build history (client audit trail)
+- ✅ 8.2 PDF export — done via Phase 17.4 Dual PDF Export
 - 🔴 8.3 Client shareable read-only link
 - 🔴 8.4 White-label option (agency branding)
 
@@ -148,31 +152,25 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 
 ---
 
-## Current State (Feb 2026)
+## Current State (Mar 2026)
 
-- ✅ Four-agent pipeline (Requirements → Architecture → Design → Build)
-- ✅ Build Agent: Claude Sonnet 4.5 (primary), Gemini fallback
+- ✅ Five-agent pipeline (Requirements → Architecture → Design → Build → Governance)
+- ✅ Build Agent: Gemini 2.5 Flash (primary), Claude Opus path preserved for future re-enable
 - ✅ Flask backend (port 5000), SQLite, full persistence
-- ✅ Enterprise UI — frontend-studio/ (port 3000), light + dark mode
-- ✅ Consumer UI — frontend-consumer/ (port 3002), Korean/English i18n
+- ✅ Three frontends: Studio (3000), Consumer (3002), Enterprise (8080)
+- ✅ JWT authentication — login, register, Google OAuth, JWT blacklist logout
+- ✅ User-scoped projects (owner_id) + concurrent pipeline
+- ✅ IBM Watson governance — NLU scoring, AI Factsheets, Quality Tier badges
+- ✅ Dual PDF export — Client PDF + Internal PDF
 - ✅ Iterative pipeline with full version history
-- ✅ Iteration mode hardened (scope enforcement, ancestor chain walk, asset reuse)
 - ✅ Live preview iframe (Versions + Artifacts pages)
-- ✅ Conversational chatbox — Archon talks back, advises, routes build vs chat
-- ✅ Download project as zip with assets
-- ✅ Design Agent — DALL-E 3 images, locally served, reused on iterations
-- ✅ Engineer prompt — 10-shell layout intelligence, CSS design seed
-- ✅ One-click publish — shareable hosted URL
-- ✅ Artifact cards link to Artifacts page with tab pre-selection
-- ✅ Account modals — Profile, Settings, Pricing, Documentation
-- ✅ Chat message persistence (DB-backed, survives refresh)
-- ✅ Consumer Versions page — timeline + split panel + preview per version (THE MOAT)
-- ✅ Consumer frontend polished — Archon branding, newest-first timeline, glow effects, full Korean i18n
-- 🔧 Consumer UX bug fixes — stale state, code tab fixed, failed overlay fixed, progress bar restored (smooth animation, minor edge cases remain), preview iframe regression pending fix
-- ✅ Phase 15.4 — Enterprise UI (frontend) — Vite + React + shadcn/ui on port 8080, real API wiring, 4-theme foundation
-- ✅ Phase 15.5.S — Studio dashboard reviewed — kept minimal (no stats bar, no activity feed)
-- 🔧 Phase 15.5 — Enterprise UI polish — Pipeline tab chat UI done, stats/activity/publish wired, modals still needed
-- 🔴 PDF Export + Client Read-Only Link (Phase 8 remaining)
+- ✅ Conversational chatbox — routes build vs chat, DB-persisted
+- ✅ Design Agent — DALL-E 3 parallel image generation, content filter fallback
+- ✅ 25 archetypes with domain-specific layout + content contracts
+- ✅ Credit system — 1 credit = 2,500 tokens, navbar balance display
+- ✅ Korean/English i18n across all three frontends
+- ✅ Watson STT/TTS voice input/output in Enterprise UI
+- ✅ Centralized Gemini client (`utils/genai_client.py`) — supports Vertex AI + AI Studio
 
 ### Phase 9 — Pipeline Page & Classifier Improvements (⬜ Planned)
 - ✅ Classifier too sensitive — opinion questions triggering builds
@@ -354,7 +352,7 @@ Impact:
 - ✅ Live output + agent pipeline no longer bleeds across projects (pipeline state resets on project switch)
 - ✅ Chat messages persist via sessionStorage keyed by project ID (survives tab/project switching)
 - ✅ Pipeline tab scroll-to-top fixed (container ref + triple scroll target)
-- 🔴 JSON repair bug — intermittent EngineerAgent \escape error (prompts/engineer.txt fix)
+- ✅ JSON repair bug — fixed with json_repair + char-walking backslash fixer
 
 ## Phase 16 — UI Parity, Auth & Polish (🔧 In Progress Feb 2026)
 
@@ -388,14 +386,18 @@ Impact:
 - ✅ Studio build details stat row displays after build completes (Feb 28, 2026)
 - 🔴 Live output logs still global (execution_state is server-wide — architectural fix needed)
 
-### 16.5 — Authentication (🔴 Planned)
-- 🔴 Sign up / Login pages
-- 🔴 JWT + protected routes
-- 🔴 User-scoped projects (owner_id already in DB schema)
+### 16.5 — Authentication (✅ Complete Mar 3, 2026)
+- ✅ Sign up / Login pages — Studio + Enterprise
+- ✅ JWT + protected routes — AuthGuard on both frontends
+- ✅ User-scoped projects (owner_id)
+- ✅ Cross-origin token handoff via ?token= param
+- ✅ JWT blacklist logout — server-side token invalidation
+- ✅ Google OAuth — Studio + Enterprise
+- ✅ Concurrent pipeline — per-project execution state
 
 ### 16.6 — Planner Archetype Expansion (✅ Complete Feb 28, 2026)
 
-### Phase 17 — IBM Governance & NLU Integration (🔧 In Progress)
+### Phase 17 — IBM Governance & NLU Integration (✅ Complete Mar 1, 2026)
 
 #### 17.1 — Watson NLU Pre-Pipeline Analyzer (✅ Complete Feb 28, 2026)
 - ✅ Watson NLU analyzes user prompt before PM Agent
@@ -415,8 +417,8 @@ Impact:
 - ✅ model_used display updated to "Claude Sonnet 4.6" (Feb 28, 2026)
 - ✅ Navbar credit counter wired to real balance via /api/credits/balance (Feb 28, 2026)
 - ✅ Build Details: "12 credits · 488 remaining" format (Feb 28, 2026)
-- 🔴 Plan tiers: Starter 100/mo, Pro 500/mo, Agency unlimited (post-auth)
-- 🔴 /api/credits/balance endpoint (pre-auth mock: 500 Pro credits minus all used)
+- 🔴 Plan tiers: Starter 100/mo, Pro 500/mo, Agency unlimited (Phase 18 scope)
+- ✅ /api/credits/balance endpoint — wired to navbar in Enterprise + Studio
 - ✅ Enterprise BuildDetailsCard live refresh post-build (Feb 28, 2026)
 
 #### 17.2 — Governance Agent (AI Factsheets) (✅ Complete Mar 1, 2026)
@@ -437,7 +439,7 @@ Impact:
 - ✅ Watson NLU added to Model Registry in factsheet (Mar 1, 2026)
 - ✅ Dashboard icon colors — Sparkles text-purple-400, Shield text-blue-400 (Mar 1, 2026)
 - ✅ Backend build_confidence key fix in dashboard_stats() (Mar 1, 2026)
-- 🔴 PDF export — two variants: Client PDF (clean certificate) + Internal PDF (full metrics) (Phase 17.4)
+- ✅ PDF export — Client PDF + Internal PDF via WeasyPrint (Phase 17.4)
 - ✅ 17.5 Delivery Readiness Gate — Quality Tier badges + inline metadata + PDF header placement (Mar 1, 2026)
 - 🔴 Cross-run analytics endpoint: /api/governance/summary (future)
 - Resume value: governed, auditable AI pipeline with IBM Watson scoring — rare even among senior IBM AEs
@@ -464,21 +466,7 @@ Impact:
 - ✅ Dark navy header (IBM enterprise aesthetic), hexagon logo
 - ✅ Solves Phase 8.2 client audit trail requirement
 
-#### 17.3 — Dashboard Governance Metrics (🔴 Planned)
-- 🔴 Replace "Pipelines Today" header stat with **Avg Prompt Score** (Sparkles icon, /100 suffix)
-- 🔴 Replace "Lines Generated" header stat with **Avg Build Score** (Shield icon, /100 suffix)
-- 🔴 New backend endpoint: GET /api/dashboard/stats — queries all executions, parses governance_log JSON, averages prompt + build scores
-- 🔴 Nulls skipped in average (pre-v1.1 builds without factsheet show "—" not 0)
-- 🔴 Frontend header pulls from endpoint and displays live averages
-- 🔴 Both Enterprise (frontend) and Studio (frontend-studio/) dashboards updated
-
-#### 17.4 — Dual PDF Export (🔴 Planned)
-- 🔴 Configurable quality threshold per project (default 85/100)
-- 🔴 Version flagged as "Client Ready" or "Needs Iteration" based on combined score
-- 🔴 Visible indicator on Versions timeline (green checkmark vs yellow flag)
-- 🔴 Requires output evaluation agent to score how well build matched intent
-- 🔴 Note: current scores (prompt clarity + build quality) are good signals but not perfect pass/fail gates
-  — output evaluation (send prompt + HTML to AI for match scoring) needed for full accuracy
+#### 16.6 — Planner Archetype Expansion (✅ Complete Feb 28, 2026)
 - ✅ Expanded planner.txt from 10 → 25 archetypes
 - ✅ Added render_path A/B field for Tailwind vs Raw CSS routing
 - ✅ Layout + content contracts for all 15 new archetypes
@@ -563,54 +551,23 @@ guessing. Tour design will be driven by real friction points, not assumptions.
 - Enterprise + Studio: date format yyyy.mm.dd in Korean mode
 - Merged via PR from feat/ko-i18n-polish
 
-## 🔇 Phase 16.5 — Authentication (In Progress)
+## ✅ Phase 16.5 — Authentication (Complete Mar 3, 2026)
 - ✅ Backend JWT auth — register, login, me, forgot-password, reset-password
-- ✅ Google OAuth backend endpoint /api/auth/google
-- ✅ frontend-studio/lib/auth.ts — authService with localStorage token management
+- ✅ Google OAuth — Studio + Enterprise
 - ✅ AuthGuard — redirects unauthenticated users to /login
-- ✅ Login, Register, Forgot Password pages — Studio (frontend-studio/)
-- ✅ Sign out wired — closes dropdown + redirects to /login
-- ✅ Login page redesign — dark split-layout, IBM Plex Sans, agency-owner copy (Mar 1, 2026)
-- ✅ Register page redesign — dark split-layout matching login (Mar 1, 2026)
-- ✅ Forgot password page redesign — dark split-layout matching login (Mar 1, 2026)
-- ✅ "Forgot password?" link added to login form (Mar 1, 2026)
-- ✅ Post-login/register redirect to Enterprise dark mode (Mar 1, 2026)
-- ✅ Cross-origin token handoff via ?token= URL param — Studio → Enterprise (Mar 1, 2026)
-- ✅ Enterprise defaults to dark mode on first visit (Mar 1, 2026)
-- ✅ Enterprise (frontend) auth pages (login, register, forgot-password) — Mar 1, 2026
-- ✅ Enterprise AuthGuard + Sign Out wired — Mar 1, 2026
-- ✅ Folder rename refactor — frontend-v4→frontend, frontend→frontend-studio, frontend-consumer2→frontend-consumer (Mar 2, 2026)
-- ✅ backend/requirements.txt updated — flask-jwt-extended and bcrypt added (Mar 2, 2026)
-- ✅ Post-login redirect fixed — always lands on Enterprise projects page via ?tab=projects URL param (Mar 2, 2026)
-- ✅ First-time login defaults to dark mode, repeat users keep their theme preference (Mar 2, 2026)
-- ✅ Cross-origin theme handoff — Studio passes ?theme= to Enterprise on login (Mar 2, 2026)
-- ✅ Studio favicon added — hexagon SVG in browser tab (Mar 2, 2026)
-- ✅ Enterprise favicon color fixed — blue #3b82f6 (Mar 2, 2026)
-- ✅ .vite/ added to .gitignore (Mar 2, 2026)
-- 🔴 Studio ↔ Enterprise theme toggle button in navbar
-- 🔴 Google OAuth frontend wiring (needs Google Client ID)
+- ✅ Login/Register/Forgot Password pages — dark split-layout, IBM Plex Sans
+- ✅ Cross-origin token handoff via ?token= URL param
+- ✅ JWT blacklist logout — server-side token invalidation
+- ✅ User-scoped projects (owner_id)
+- ✅ Concurrent pipeline — per-project execution state
+- ✅ Studio ↔ Enterprise theme toggle button in navbar
+- ✅ Folder rename refactor — frontend-v4→frontend, frontend→frontend-studio, frontend-consumer2→frontend-consumer
 
-## 🔴 Known Bug — DALL-E Content Filter on Character Names
-- Certain character names (e.g. "Zell" from FF8) trigger DALL-E content policy error 400
-- Other characters in the same build generate fine (Squall, Rinoa passed)
-- Root cause: DALL-E flags specific proper nouns unpredictably as policy violations
-- **Fix:** Add fallback in `_generate_one()` — on content_policy_violation error, retry with description-only prompt (strip character name)
-- **Test:** FF8 character page build — Zell image should generate via fallback
+## ✅ DALL-E Content Filter Fallback (Mar 3, 2026)
+- On content_policy_violation (error 400), retries with description-only prompt (character name stripped)
+- Zell (FF8) and similar proper nouns now generate via fallback instead of failing
 
-## ✅ Chat Persistence — Partial Fix (Mar 1, 2026)
-- User messages now save to DB immediately on send (before pipeline starts)
-- Persists correctly when switching Studio ↔ Enterprise mid-build
-- 🔴 Remaining bug: Agent reply disappears during build, returns after completion
-- Fix later: cache agent reply in sessionStorage immediately, sync to DB on completion
-
-## Known Quality Bug — Image Generation Regression (🔴 Active)
-
-**Problem:** DALL-E character images stopped matching character descriptions accurately after scoped iteration enforcement was added (Phase 14). Previously generated highly accurate character likenesses (e.g. FF7 Cloud/Barrett). Now produces generic mid-tier outputs.
-
-**Root cause hypothesis:** Iteration enforcement rules placed BEFORE the main prompt in `engineer.txt` are interfering with the Design Agent's image prompt generation path, or the Design Agent's prompt context is being compressed/truncated.
-
-**Fix needed:**
-- Audit Design Agent prompt construction — ensure character names + descriptions flow in fully
-- Separate iteration_context injection so it only affects EngineerAgent, not DesignAgent
-- Consider restoring the exact DALL-E prompt format that produced high-quality results pre-Phase 14
-- Test: prompt "Final Fantasy 7 character selection page with Cloud Strife and Barrett" and verify image accuracy
+## ✅ Image Generation Regression Fix (Mar 3, 2026)
+- iteration_context now only injected into EngineerAgent, not DesignAgent
+- DALL-E prompt format restored to pre-Phase 14 quality
+- Character likenesses accurate again (FF7 Cloud/Barrett confirmed)
