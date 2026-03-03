@@ -1,0 +1,20 @@
+[33m2933abf[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeat/enterprise-failed-badge[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m docs: mark Phase 16.5 auth complete, log remaining known issues
+[33m674b3ee[m Merge pull request #34 from aiedwardyi/feat/server-side-jwt-blacklist
+[33m4d4d414[m[33m ([m[1;31morigin/feat/server-side-jwt-blacklist[m[33m)[m fix: cross-origin auth - correct user on switch, JWT blacklist logout
+[33m0a902ed[m Merge pull request #33 from aiedwardyi/fix/cross-origin-auth-bug
+[33m7fd25ab[m[33m ([m[1;31morigin/fix/cross-origin-auth-bug[m[33m)[m fix: show correct user on cross-origin Studio switch
+[33m4793b13[m fix: await /me before render on Studio auth switch
+[33m948826a[m Merge pull request #32 from aiedwardyi/feat/backend-concurrency-fix
+[33m3e237c3[m[33m ([m[1;31morigin/feat/backend-concurrency-fix[m[33m)[m chore: remove stale frontend-v4 and frontend-consumer2 folders
+[33mea3e459[m feat: per-project execution state for concurrent builds
+[33m9bd3c2e[m docs: log cross-origin auth bugs with root cause and correct fix approach
+[33m00f54d1[m fix: owner_id project scoping and auth headers for project API
+[33m6a13d3f[m Merge pull request #31 from aiedwardyi/feat/notification-bell
+[33m3274fd3[m[33m ([m[1;31morigin/feat/notification-bell[m[33m)[m feat: pipeline completion notification sound (all 3 frontends)
+[33m67491d7[m Merge pull request #30 from aiedwardyi/fix/governance-pdf-auth
+[33m847992a[m fix: governance PDF downloads use fetch with auth header
+[33m22c0791[m Merge pull request #29 from aiedwardyi/fix/token-sync-explicit-only
+[33m6a0ee97[m fix: only sync token on explicit switch, not every page load
+[33meebde9e[m Show real logged-in user email in avatar dropdowns
+[33m82a181a[m fix: add JWT auth headers to all Studio API calls and guard setProjects
+[33m5c7ca34[m Merge pull request #28 from aiedwardyi/feat/google-oauth-integration
