@@ -147,6 +147,8 @@ const Index = () => {
       });
     fetchVersions(selectedProjectId).then((versions) => {
       if (cancelled || versions.length === 0) return;
+      // Never overwrite status while a build is actively sending
+      if (sendingRef.current) return;
       const latest = versions[0];
       const latestStatus = latest.status?.toUpperCase() || null;
       // Never show stale RUNNING or FAILED on a fresh project load
@@ -224,7 +226,12 @@ const Index = () => {
   // Stop sending state when pipeline finishes
   useEffect(() => {
     if (pipeline.status === "COMPLETED" && prevPipelineStatusRef.current !== "COMPLETED" && sendingRef.current) playSuccess();
-    if (pipeline.status === "FAILED" && prevPipelineStatusRef.current !== "FAILED" && sendingRef.current) playFailure();
+    // Only play failure sound if build was genuinely running for >5 seconds — suppresses false flash
+    if (pipeline.status === "FAILED" && prevPipelineStatusRef.current !== "FAILED" && sendingRef.current) {
+      if (buildStartTimeRef.current && Date.now() - buildStartTimeRef.current > 5000) {
+        playFailure();
+      }
+    }
 
     if (pipeline.status === "COMPLETED" || pipeline.status === "FAILED") {
       setSending(false);
@@ -276,12 +283,19 @@ const Index = () => {
     const userMsg: ChatMessage = { role: "user", content: prompt, timestamp: Date.now() };
     setChatMessages((prev) => [...prev, userMsg]);
 
+    // Clear stale pipeline/historical status immediately so "Failed" doesn't linger
+    // during the ~0.5s chat intent classification
+    const savedHistoricalStatus = historicalStatus;
+    setHistoricalStatus(null);
+    pipeline.reset();
+
     try {
       // Classify intent via /chat
       const chatResult = await projectChat(selectedProjectId, prompt);
 
       if (chatResult.response_type === "chat") {
-        // Pure chat reply — no build triggered
+        // Pure chat reply — restore previous status
+        setHistoricalStatus(savedHistoricalStatus);
         const assistantMsg: ChatMessage = { role: "assistant", content: chatResult.message || "", timestamp: Date.now() };
         setChatMessages((prev) => [...prev, assistantMsg]);
         return;
@@ -289,6 +303,7 @@ const Index = () => {
 
       // Check global build lock — show clean reply, no optimistic "building" message
       if (globalBuildBlocked) {
+        setHistoricalStatus(savedHistoricalStatus);
         const replyMsg: ChatMessage = { role: "assistant", content: "A build is already in progress. Send this again when it finishes.", timestamp: Date.now() };
         setChatMessages((prev) => [...prev, replyMsg]);
         return;
@@ -301,6 +316,7 @@ const Index = () => {
         if (statusData.status === "RUNNING" && statusData.project_id !== selectedProjectId) {
           setGlobalBuildBlocked(true);
           setBlockingProjectId(statusData.project_id);
+          setHistoricalStatus(savedHistoricalStatus);
           const replyMsg: ChatMessage = { role: "assistant", content: "A build is already in progress. Send this again when it finishes.", timestamp: Date.now() };
           setChatMessages((prev) => [...prev, replyMsg]);
           return;
@@ -309,6 +325,7 @@ const Index = () => {
 
       // Don't start another build if one is already running for THIS project
       if (sendingRef.current) {
+        setHistoricalStatus(savedHistoricalStatus);
         const busyMsg: ChatMessage = {
           role: "assistant",
           content: "A build is already running for this project. Wait for it to finish, then try again.",
@@ -339,6 +356,7 @@ const Index = () => {
     } catch (err: any) {
       sendingRef.current = false;
       setSending(false);
+      setHistoricalStatus(savedHistoricalStatus);
       // Detect ANY 409 / pipeline lock error — show banner, never show red error
       const errMsg = (err.message || "").toLowerCase();
       const is409 = errMsg.includes("409") || errMsg.includes("build already running") || errMsg.includes("pipeline already running") || errMsg.includes("already running");
@@ -360,7 +378,7 @@ const Index = () => {
         setPipelineError(err.message || "Failed to start build");
       }
     }
-  }, [chatInput, selectedProjectId, sending, chatMessages]);
+  }, [chatInput, selectedProjectId, sending, chatMessages, historicalStatus, pipeline]);
 
   const API_BASE = "http://localhost:5000";
 
@@ -465,8 +483,8 @@ const Index = () => {
     }
 
     // Live build just finished this session
-    if (pipeline.status === "COMPLETED") return "done";
-    if (pipeline.status === "FAILED") {
+    if (pipeline.status === "COMPLETED" && pipeline.projectId === selectedProjectId) return "done";
+    if (pipeline.status === "FAILED" && pipeline.projectId === selectedProjectId) {
       const currentIdx = stageOrder.indexOf(pipeline.stage);
       return agentIdx < currentIdx ? "done" : agentIdx === currentIdx ? "failed" : "pending";
     }
@@ -543,12 +561,12 @@ const Index = () => {
                           <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
                           {t("building")}
                         </span>
-                      ) : pipeline.status === "COMPLETED" ? (
+                      ) : pipeline.status === "COMPLETED" && pipeline.projectId === selectedProjectId ? (
                         <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10">
                           <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
                           {t("completed")}
                         </span>
-                      ) : pipeline.status === "FAILED" && !sending ? (
+                      ) : pipeline.status === "FAILED" && !sending && pipeline.projectId === selectedProjectId ? (
                         <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10">
                           <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-500" />
                           {t("failed")}

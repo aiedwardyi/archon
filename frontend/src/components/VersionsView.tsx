@@ -115,6 +115,8 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
   }, [projectId]);
 
   const version = versions.find((v) => v.id === selected);
+  const latestVersionId = versions.length > 0 ? versions[0].id : null; // versions sorted descending
+  const isBuildingSelected = isProjectBuilding && selected === latestVersionId;
 
   if (!projectId) {
     return (
@@ -165,8 +167,10 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
         <div className="px-3 py-3">
           <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2 py-1.5 mb-1">{t("yesterday")}</div>
           <div className="space-y-1">
-            {versions.map((v) => {
+            {versions.map((v, idx) => {
               const isActive = v.id === selected;
+              const isLatestVersion = idx === 0; // versions sorted descending — idx 0 is newest
+              const isBuildingThis = isProjectBuilding && isLatestVersion;
               return (
                 <button
                   key={v.id}
@@ -183,7 +187,7 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
                     }`}>
                       {v.label}
                     </span>
-                    {isProjectBuilding ? <Loader2 className="h-4 w-4 text-blue-500 animate-spin flex-shrink-0" /> : <StatusIcon status={v.status} />}
+                    {isBuildingThis ? <Loader2 className="h-4 w-4 text-blue-500 animate-spin flex-shrink-0" /> : <StatusIcon status={v.status} />}
                     <span className="text-[10px] text-muted-foreground ml-auto">{v.time}</span>
                   </div>
                   <p className="text-xs text-foreground mt-1.5 truncate leading-tight">{v.description}</p>
@@ -222,8 +226,8 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
               V{version.id}
             </span>
             <div className="flex items-center gap-1.5">
-              {isProjectBuilding ? <Loader2 className="h-4 w-4 text-blue-500 animate-spin flex-shrink-0" /> : <StatusIcon status={version.status} />}
-              {isProjectBuilding ? <span className="text-xs font-medium text-blue-500">Building</span> : <span className="text-xs font-medium text-foreground capitalize">{version.status === "completed" ? t("completed") : t("failed")}</span>}
+              {isBuildingSelected ? <Loader2 className="h-4 w-4 text-blue-500 animate-spin flex-shrink-0" /> : <StatusIcon status={version.status} />}
+              {isBuildingSelected ? <span className="text-xs font-medium text-blue-500">Building</span> : <span className="text-xs font-medium text-foreground capitalize">{version.status === "completed" ? t("completed") : t("failed")}</span>}
             </div>
             <span className="text-xs text-muted-foreground">{t("yesterday")} at {version.time}</span>
           </div>
@@ -251,7 +255,7 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
             <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">
               {t("whatWasBuilt")} {version.time}
             </div>
-            <p className="text-sm text-foreground">{isProjectBuilding ? "Build in progress..." : version.buildSummary}</p>
+            <p className="text-sm text-foreground">{isBuildingSelected ? "Build in progress..." : version.buildSummary}</p>
           </div>
 
           {/* Artifacts Row */}

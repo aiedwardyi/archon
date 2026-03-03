@@ -3,6 +3,7 @@
 import json
 import os
 import re
+import time
 from pathlib import Path
 
 try:
@@ -12,6 +13,7 @@ except ImportError:
     _JSON_REPAIR_AVAILABLE = False
 
 from google import genai
+from pydantic import ValidationError
 
 from schemas.plan_schema import Task
 from schemas.engineering_schema import EngineeringResult, FileArtifact
@@ -163,25 +165,76 @@ def _run_claude(contents: str) -> EngineeringResult:
     return result
 
 
+def _validate_parsed_result(parsed: object) -> EngineeringResult:
+    """Validate that response.parsed has proper FileArtifacts (not raw strings/ints)."""
+    if not isinstance(parsed, EngineeringResult):
+        raise ValueError(f"Expected EngineeringResult, got {type(parsed)}")
+    for i, f in enumerate(parsed.files):
+        if not isinstance(f, FileArtifact) or not isinstance(f.path, str) or not isinstance(f.content, str):
+            raise ValueError(f"files[{i}] is not a valid FileArtifact: {type(f)}")
+    return parsed
+
+
+_ENGINEER_MAX_RETRIES = 3
+
+
 def _run_gemini(client: genai.Client, contents: str) -> EngineeringResult:
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=contents,
-        config={
-            "response_schema": EngineeringResult,
-            "temperature": 0.7,
-            "max_output_tokens": 65536,
-        },
-    )
-    if response.parsed is not None:
-        result = response.parsed
-        result.files = _deduplicate_files(result.files)
-        return result
-    raw = getattr(response, "text", "") or ""
-    data = _repair_json(raw)
-    result = EngineeringResult.model_validate(data)
-    result.files = _deduplicate_files(result.files)
-    return result
+    last_err = None
+    for attempt in range(_ENGINEER_MAX_RETRIES):
+        if attempt > 0:
+            # Fresh client on retry (picks up Vertex AI or AI Studio from env)
+            from utils.genai_client import get_genai_client
+            client = get_genai_client()
+            print(f"EngineerAgent: retry {attempt}/{_ENGINEER_MAX_RETRIES}")
+
+        try:
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=contents,
+                config={
+                    "response_schema": EngineeringResult,
+                    "temperature": 0.7,
+                    "max_output_tokens": 65536,
+                },
+            )
+
+            # Try structured output first, but validate it
+            if response.parsed is not None:
+                try:
+                    result = _validate_parsed_result(response.parsed)
+                    result.files = _deduplicate_files(result.files)
+                    return result
+                except (ValidationError, ValueError, TypeError) as ve:
+                    print(f"EngineerAgent: response.parsed malformed ({ve}), falling back to raw text")
+
+            # Fallback: parse raw text
+            raw = getattr(response, "text", "") or ""
+            if raw.strip():
+                data = _repair_json(raw)
+                result = EngineeringResult.model_validate(data)
+                result.files = _deduplicate_files(result.files)
+                return result
+
+            raise RuntimeError("EngineerAgent: empty response from Gemini (no parsed data and no text)")
+
+        except Exception as e:
+            last_err = e
+            err_str = str(e)
+            is_rate_limit = "429" in err_str or "RESOURCE_EXHAUSTED" in err_str
+            is_validation = "validation error" in err_str.lower() or isinstance(e, (ValidationError, ValueError))
+
+            if is_rate_limit or is_validation:
+                wait = 2 ** attempt  # 1s, 2s, 4s
+                print(f"EngineerAgent: attempt {attempt + 1} failed ({type(e).__name__}), retrying in {wait}s...")
+                time.sleep(wait)
+                continue
+
+            # Non-retryable error — raise immediately
+            raise
+
+    raise RuntimeError(
+        f"EngineerAgent: all {_ENGINEER_MAX_RETRIES} attempts failed. Last error: {last_err}"
+    ) from last_err
 
 
 class EngineerAgent:

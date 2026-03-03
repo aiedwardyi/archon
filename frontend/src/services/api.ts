@@ -523,5 +523,17 @@ export function usePipelineStatus(projectId: number | null, enabled: boolean) {
     return stopPolling;
   }, [enabled, projectId, startPolling, stopPolling]);
 
-  return { ...state, startPolling, stopPolling };
+  const reset = useCallback(() => {
+    stopPolling();
+    setState({
+      running: false,
+      stage: "idle",
+      status: "IDLE",
+      logs: [],
+      projectId: null,
+      executionId: null,
+    });
+  }, [stopPolling]);
+
+  return { ...state, startPolling, stopPolling, reset };
 }
