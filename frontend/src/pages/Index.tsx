@@ -111,6 +111,9 @@ const Index = () => {
     setHistoricalLogs([]); // reset logs too
     setGlobalBuildBlocked(false);
     setBlockingProjectId(null);
+    setSending(false);
+    sendingRef.current = false;
+    prevPipelineStatusRef.current = null;
     if (!selectedProjectId) return;
     let cancelled = false;
     // On project switch, verify build is actually running — clear stuck state and update block status
@@ -148,11 +151,6 @@ const Index = () => {
       const latest = versions[0];
       const latestStatus = latest.status?.toUpperCase() || null;
       setHistoricalStatus(latestStatus);
-      // If DB shows running, re-enable sending so polling restarts
-      if (latestStatus === "RUNNING" || latestStatus === "IN_PROGRESS") {
-        setSending(true);
-        sendingRef.current = true;
-      }
       // Load historical logs for completed/failed projects (not currently building)
       if (!pipeline.running) {
         fetchLogs(selectedProjectId, latest.version).then((logStrings) => {
@@ -222,8 +220,8 @@ const Index = () => {
 
   // Stop sending state when pipeline finishes
   useEffect(() => {
-    if (pipeline.status === "COMPLETED" && prevPipelineStatusRef.current !== "COMPLETED") playSuccess();
-    if (pipeline.status === "FAILED" && prevPipelineStatusRef.current !== "FAILED") playFailure();
+    if (pipeline.status === "COMPLETED" && prevPipelineStatusRef.current !== "COMPLETED" && sendingRef.current) playSuccess();
+    if (pipeline.status === "FAILED" && prevPipelineStatusRef.current !== "FAILED" && sendingRef.current) playFailure();
 
     if (pipeline.status === "COMPLETED" || pipeline.status === "FAILED") {
       setSending(false);
