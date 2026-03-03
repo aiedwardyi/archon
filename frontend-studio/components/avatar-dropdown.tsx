@@ -31,12 +31,15 @@ export function AvatarDropdown() {
       const token = localStorage.getItem("archon_token") || urlToken;
       if (!token) return;
 
-      const cached = localStorage.getItem("archon_user");
-      if (cached) {
-        try {
-          const u = JSON.parse(cached);
-          if (u?.email) { setUserEmail(u.email); return; }
-        } catch {}
+      // If switching (token in URL), skip cache and always fetch fresh
+      if (!urlToken) {
+        const cached = localStorage.getItem("archon_user");
+        if (cached) {
+          try {
+            const u = JSON.parse(cached);
+            if (u?.email) { setUserEmail(u.email); return; }
+          } catch {}
+        }
       }
 
       fetch("http://localhost:5000/api/auth/me", {

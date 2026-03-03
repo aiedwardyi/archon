@@ -6,12 +6,19 @@ Tables:
 - Project: Named projects that group related executions
 - Execution: Individual task executions linked to projects
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime, Text, Boolean, ForeignKey, text
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from pathlib import Path
 
 Base = declarative_base()
+
+
+class TokenBlocklist(Base):
+    __tablename__ = "token_blocklist"
+    id = Column(Integer, primary_key=True)
+    jti = Column(String, nullable=False, unique=True, index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
 class User(Base):
