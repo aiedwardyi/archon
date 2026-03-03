@@ -143,26 +143,55 @@ def _repair_json(raw: str) -> dict:
         ) from e
 
 
+_ENGINEER_MAX_RETRIES = 5
+
+
 def _run_claude(contents: str) -> EngineeringResult:
     import anthropic
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-    raw = ""
-    usage = None
-    with client.messages.stream(
-        model="claude-sonnet-4-6",
-        max_tokens=32000,
-        messages=[{"role": "user", "content": contents}],
-    ) as stream:
-        for text in stream.text_stream:
-            raw += text
-        final_message = stream.get_final_message()
-        usage = final_message.usage if final_message else None
-    data = _repair_json(raw)
-    result = EngineeringResult.model_validate(data)
-    result.files = _deduplicate_files(result.files)
-    if usage:
-        result.usage = usage
-    return result
+    last_err = None
+    for attempt in range(_ENGINEER_MAX_RETRIES):
+        if attempt > 0:
+            wait = min(4 * (2 ** (attempt - 1)), 30)  # 4s, 8s, 16s, 30s
+            print(f"EngineerAgent (Claude): retry {attempt}/{_ENGINEER_MAX_RETRIES} in {wait}s...")
+            time.sleep(wait)
+        try:
+            raw = ""
+            usage = None
+            with client.messages.stream(
+                model="claude-opus-4-6",
+                max_tokens=64000,
+                messages=[{"role": "user", "content": contents}],
+            ) as stream:
+                for text in stream.text_stream:
+                    raw += text
+                final_message = stream.get_final_message()
+                usage = final_message.usage if final_message else None
+            data = _repair_json(raw)
+            result = EngineeringResult.model_validate(data)
+            result.files = _deduplicate_files(result.files)
+            if usage:
+                result.usage = usage
+            return result
+        except anthropic.APIStatusError as e:
+            last_err = e
+            if e.status_code in (429, 529, 503):
+                print(f"EngineerAgent (Claude): got {e.status_code}, will retry...")
+                continue
+            raise
+        except anthropic.APIConnectionError as e:
+            last_err = e
+            print(f"EngineerAgent (Claude): connection error, will retry...")
+            continue
+        except Exception as e:
+            # Safety net: catch overloaded errors that may not be APIStatusError
+            # (e.g. during streaming, the SDK may wrap differently)
+            if "overloaded" in str(e).lower() or "529" in str(e):
+                last_err = e
+                print(f"EngineerAgent (Claude): overloaded (caught as {type(e).__name__}), will retry...")
+                continue
+            raise
+    raise last_err
 
 
 def _validate_parsed_result(parsed: object) -> EngineeringResult:
@@ -173,9 +202,6 @@ def _validate_parsed_result(parsed: object) -> EngineeringResult:
         if not isinstance(f, FileArtifact) or not isinstance(f.path, str) or not isinstance(f.content, str):
             raise ValueError(f"files[{i}] is not a valid FileArtifact: {type(f)}")
     return parsed
-
-
-_ENGINEER_MAX_RETRIES = 3
 
 
 def _run_gemini(client: genai.Client, contents: str) -> EngineeringResult:
@@ -192,6 +218,7 @@ def _run_gemini(client: genai.Client, contents: str) -> EngineeringResult:
                 model="gemini-2.5-flash",
                 contents=contents,
                 config={
+                    "response_mime_type": "application/json",
                     "response_schema": EngineeringResult,
                     "temperature": 0.7,
                     "max_output_tokens": 65536,
@@ -309,8 +336,10 @@ class EngineerAgent:
             f"--- TASK END ---"
         )
 
-        if os.environ.get("ANTHROPIC_API_KEY"):
-            return _run_claude(contents)
+        # Claude Opus routing disabled — Opus 4.6 overloaded (2025-03-03)
+        # Uncomment to re-enable when Opus stabilizes:
+        # if os.environ.get("ANTHROPIC_API_KEY"):
+        #     return _run_claude(contents)
 
         if self.client is None:
             raise RuntimeError("EngineerAgent: no API client available")
