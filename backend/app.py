@@ -1194,19 +1194,20 @@ def execute_task():
 
 @app.route("/api/execution-status", methods=["GET"])
 def execution_status():
-    # Get project_id from query param, fall back to finding any running project
     project_id = request.args.get("project_id", type=int)
-    if not project_id:
-        for pid, s in execution_state.items():
-            if s.get("running"):
-                project_id = pid
-                break
-    if not project_id:
-        # Fall back to most recent project state
-        for pid in execution_state:
-            project_id = pid
 
-    state = get_project_state(project_id) if project_id else {"running": False, "logs": [], "result_ready": False, "current_execution_id": None}
+    # No project_id = return idle (prevents cross-user status leaking)
+    if not project_id:
+        return jsonify({
+            "status": "IDLE",
+            "currentStage": "pm",
+            "logs": [],
+            "engineerTasks": [],
+            "project_id": None,
+            "execution_id": None,
+        }), 200
+
+    state = get_project_state(project_id)
     version = None
     execution_id = state.get("current_execution_id")
 
