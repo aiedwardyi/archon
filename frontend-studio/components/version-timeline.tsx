@@ -79,6 +79,7 @@ export function VersionTimeline() {
   const [projectName, setProjectName] = useState<string>("Project")
   const [loading, setLoading] = useState(true)
   const [restoring, setRestoring] = useState(false)
+  const [isProjectBuilding, setIsProjectBuilding] = useState(false)
 
   useEffect(() => {
     const pid = sessionStorage.getItem("archon_current_project_id")
@@ -95,6 +96,15 @@ export function VersionTimeline() {
   const fetchVersions = async () => {
     if (!projectId) return
     setLoading(true)
+    try {
+      const statusRes = await fetch(`${API_BASE}/api/execution-status?project_id=${projectId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('archon_token')}` }
+      })
+      const statusData = await statusRes.json()
+      setIsProjectBuilding(statusData.status === 'RUNNING')
+    } catch {
+      setIsProjectBuilding(false)
+    }
     try {
       const res = await fetch(`${API_BASE}/api/projects/${projectId}/versions`)
       const data = await res.json()
@@ -185,7 +195,7 @@ export function VersionTimeline() {
                           }`}>
                             v{v.version}
                           </span>
-                          <VersionStatusIcon status={v.status} />
+                          {isProjectBuilding ? <Loader2 className="h-4 w-4 text-blue-500 animate-spin" /> : <VersionStatusIcon status={v.status} />}
                         </div>
                         <span className="text-xs text-muted-foreground">{v.timestamp}</span>
                       </div>
@@ -226,8 +236,8 @@ export function VersionTimeline() {
                   V{selected.version}
                 </span>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-border text-muted-foreground">
-                  <VersionStatusIcon status={selected.status} />
-                  <span className="capitalize ml-1">{selected.status}</span>
+                  {isProjectBuilding ? <Loader2 className="h-4 w-4 text-blue-500 animate-spin" /> : <VersionStatusIcon status={selected.status} />}
+                  {isProjectBuilding ? <span className="text-xs font-medium text-blue-500 ml-1">Building</span> : <span className="capitalize ml-1">{selected.status}</span>}
                 </span>
                 <span className="text-muted-foreground">{selected.date} at {selected.timestamp}</span>
               </div>
@@ -266,9 +276,9 @@ export function VersionTimeline() {
                 <span className="text-xs text-muted-foreground">{selected.timestamp}</span>
               </div>
               <p className="text-sm text-foreground/80 leading-relaxed">
-                {selected.filesChanged > 0
-                  ? `${t("pipelineSuccess").split(".")[0]}. ${selected.filesChanged} ${t("files")}.`
-                  : t("pipelineSuccess")}
+                {isProjectBuilding ? "Build in progress..." : (selected.filesChanged > 0
+                  ? `${selected.filesChanged} code file${selected.filesChanged !== 1 ? "s" : ""} generated`
+                  : "Pipeline completed successfully.")}
               </p>
             </div>
 

@@ -38,47 +38,60 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
   const [collapsed, setCollapsed] = useState(false);
   const [versions, setVersions] = useState<Version[]>([]);
   const [loadingVersions, setLoadingVersions] = useState(false);
+  const [isProjectBuilding, setIsProjectBuilding] = useState(false);
   const { t } = useLanguage();
 
   useEffect(() => {
     if (!projectId) { setVersions([]); return; }
     let cancelled = false;
     setLoadingVersions(true);
-    fetchVersions(projectId).then((raw) => {
-      if (cancelled) return;
-      const mapped: Version[] = raw.map((v) => {
-        const lastUserMsg = v.prompt_history?.filter(m => m.role === "user").pop()?.content || "";
-        const isSuccess = v.status === "success" || v.status === "completed";
-        const fileCount = v.files_generated ?? 0;
-        const imageCount = v.images_generated ?? 0;
-        const parts: string[] = [];
-        if (fileCount > 0) parts.push(`${fileCount} code file${fileCount !== 1 ? "s" : ""}`);
-        if (imageCount > 0) parts.push(`${imageCount} image${imageCount !== 1 ? "s" : ""}`);
-        return {
-          id: v.version,
-          label: "v" + v.version,
-          status: isSuccess ? "completed" as const : "failed" as const,
-          description: lastUserMsg.length > 40 ? lastUserMsg.slice(0, 40) + "…" : lastUserMsg,
-          time: v.created_at ? new Date(v.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true }) : "",
-          filesChanged: fileCount,
-          prompt: lastUserMsg,
-          filesGenerated: fileCount,
-          qualityTier: v.quality_tier ?? null,
-          readinessScore: v.readiness_score ?? null,
-          buildSummary: isSuccess
-            ? parts.length > 0
-              ? parts.join(" · ") + " generated"
-              : "Pipeline completed successfully."
-            : t("pipelineFailed"),
-        };
-      });
-      mapped.sort((a, b) => b.id - a.id);
-      setVersions(mapped);
-      if (mapped.length > 0 && (selectedVersion === null || !mapped.find(m => m.id === selectedVersion))) {
-        onVersionSelect(mapped[0].id);
+    (async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/execution-status?project_id=${projectId}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('archon_token')}` }
+        });
+        const data = await res.json();
+        if (!cancelled) setIsProjectBuilding(data.status === 'RUNNING');
+      } catch {
+        if (!cancelled) setIsProjectBuilding(false);
       }
-      setLoadingVersions(false);
-    });
+      try {
+        const raw = await fetchVersions(projectId);
+        if (cancelled) return;
+        const mapped: Version[] = raw.map((v) => {
+          const lastUserMsg = v.prompt_history?.filter(m => m.role === "user").pop()?.content || "";
+          const isSuccess = v.status === "success" || v.status === "completed";
+          const fileCount = v.files_generated ?? 0;
+          const imageCount = v.images_generated ?? 0;
+          const parts: string[] = [];
+          if (fileCount > 0) parts.push(`${fileCount} code file${fileCount !== 1 ? "s" : ""}`);
+          if (imageCount > 0) parts.push(`${imageCount} image${imageCount !== 1 ? "s" : ""}`);
+          return {
+            id: v.version,
+            label: "v" + v.version,
+            status: isSuccess ? "completed" as const : "failed" as const,
+            description: lastUserMsg.length > 40 ? lastUserMsg.slice(0, 40) + "…" : lastUserMsg,
+            time: v.created_at ? new Date(v.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true }) : "",
+            filesChanged: fileCount,
+            prompt: lastUserMsg,
+            filesGenerated: fileCount,
+            qualityTier: v.quality_tier ?? null,
+            readinessScore: v.readiness_score ?? null,
+            buildSummary: isSuccess
+              ? parts.length > 0
+                ? parts.join(" · ") + " generated"
+                : "Pipeline completed successfully."
+              : t("pipelineFailed"),
+          };
+        });
+        mapped.sort((a, b) => b.id - a.id);
+        setVersions(mapped);
+        if (mapped.length > 0 && (selectedVersion === null || !mapped.find(m => m.id === selectedVersion))) {
+          onVersionSelect(mapped[0].id);
+        }
+        setLoadingVersions(false);
+      } catch {}
+    })();
     return () => { cancelled = true; };
   }, [projectId]);
 
@@ -151,7 +164,7 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
                     }`}>
                       {v.label}
                     </span>
-                    <StatusIcon status={v.status} />
+                    {isProjectBuilding ? <Loader2 className="h-4 w-4 text-blue-500 animate-spin flex-shrink-0" /> : <StatusIcon status={v.status} />}
                     <span className="text-[10px] text-muted-foreground ml-auto">{v.time}</span>
                   </div>
                   <p className="text-xs text-foreground mt-1.5 truncate leading-tight">{v.description}</p>
@@ -190,8 +203,8 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
               V{version.id}
             </span>
             <div className="flex items-center gap-1.5">
-              <StatusIcon status={version.status} />
-              <span className="text-xs font-medium text-foreground capitalize">{version.status === "completed" ? t("completed") : t("failed")}</span>
+              {isProjectBuilding ? <Loader2 className="h-4 w-4 text-blue-500 animate-spin flex-shrink-0" /> : <StatusIcon status={version.status} />}
+              {isProjectBuilding ? <span className="text-xs font-medium text-blue-500">Building</span> : <span className="text-xs font-medium text-foreground capitalize">{version.status === "completed" ? t("completed") : t("failed")}</span>}
             </div>
             <span className="text-xs text-muted-foreground">{t("yesterday")} at {version.time}</span>
           </div>
@@ -219,7 +232,7 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
             <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">
               {t("whatWasBuilt")} {version.time}
             </div>
-            <p className="text-sm text-foreground">{version.buildSummary}</p>
+            <p className="text-sm text-foreground">{isProjectBuilding ? "Build in progress..." : version.buildSummary}</p>
           </div>
 
           {/* Artifacts Row */}

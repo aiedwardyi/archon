@@ -396,11 +396,20 @@ main (enterprise-ui merged and deleted)
 
 ---
 
-## 🔴 Known Bug — Enterprise Shows "Failed" Status During Active Build
-- When a build is running in Studio and user switches to Enterprise, Enterprise shows "Failed" badge on the version card
-- Actual status is Running — corrects itself to Completed when build finishes
-- Root cause: Enterprise VersionsView reads stale DB status on load; DB version record shows last failed state until pipeline writes COMPLETED
-- Fix needed: suppress "Failed" badge if a live build is currently running for that project (check execution-status endpoint on load)
+## ✅ Fixed — Enterprise/Studio VersionsView During Active Build (Mar 3, 2026)
+- Blue spinner replaces "Failed" badge when build is actively running — Enterprise + Studio
+- No flash: execution-status fetched first, versions rendered after (no brief "Failed" shown)
+- "What Was Built" shows "Build in progress..." instead of stale DB text during active build
+- Build summary format unified: "2 code files generated" in both Enterprise + Studio
+- Notification bell confirmed working (success + failure tones via Web Audio API)
+- usePipelineStatus null-guard fix: COMPLETED/FAILED status always reaches caller even when project_id is null
+
+## 🔴 Known Bug — Stale Pipeline Bleed on Project Switch (Mar 3, 2026)
+- Switching to a new project (especially via New Project modal → Pipeline tab) shows previous project's logs, agent cards, and build details before new project data loads
+- False failure bell fires immediately on switch if previous project had a failed build
+- Root cause: historicalStatus/historicalLogs not cleared synchronously before async fetch on projectId change
+- Fix: reset historicalStatus=null + historicalLogs=[] synchronously at top of projectId useEffect, before any fetch
+- Also: only fire playSuccess/playFailure when sending===true (build started this session)
 
 ## 🔴 Known Bug — DALL-E Content Filter on Character Names
 - Character name "Zell" (FF8) triggers DALL-E content policy violation (error 400)

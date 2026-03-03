@@ -48,5 +48,5 @@ cd frontend-consumer && pnpm dev
 - **NEVER** add `Co-Authored-By: Claude` (or any Co-Authored-By line) to commit messages.
 
 ## Notifications
-- **Bell + taskbar flash**: Run `powershell -NoProfile -ExecutionPolicy Bypass -File "C:/Users/mredw/OneDrive/Desktop/ai-dev-team/scripts/notify.ps1"` whenever you need user approval for a tool call or when you have completed a task/set of tasks. This alerts the user audibly (3-tone chime) and visually (taskbar flashes orange until focused).
+- **Bell + taskbar flash**: Run `powershell -NoProfile -ExecutionPolicy Bypass -File "C:/Users/mredw/Desktop/ai-dev-team/scripts/notify.ps1"` whenever you need user approval for a tool call or when you have completed a task/set of tasks. This alerts the user audibly (3-tone chime) and visually (taskbar flashes orange until focused).
 
