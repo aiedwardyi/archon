@@ -204,88 +204,202 @@ PRIMARY ACTION: "fill out / submit information"
   -> Success confirmation screen as final state
   -> KEYWORDS: form, survey, quiz, wizard, onboarding, checkout, registration, apply, booking, reservation
 
+PRIMARY ACTION: "play a game / interactive experience"
+  -> SHELL: GAME / INTERACTIVE
+  -> Full-viewport game canvas or play area (centered)
+  -> HUD elements: score, lives, timer overlaid on game area
+  -> Start screen -> game screen -> game over screen (JS state machine)
+  -> Dark immersive background, high contrast UI
+  -> KEYWORDS: game, puzzle, quiz game, arcade, clicker, adventure, RPG, interactive story
+
+PRIMARY ACTION: "view a profile / showcase work"
+  -> SHELL: PROFILE / PORTFOLIO
+  -> Hero band: avatar/cover image, name, title, social links
+  -> Sections: about, skills/stack, projects grid, experience timeline
+  -> Project cards: screenshot placeholder, title, tech tags, links
+  -> Clean single-column or 2-col layout, no sidebar
+  -> KEYWORDS: portfolio, profile, resume, CV, personal site, showcase, about me
+
+PRIMARY ACTION: "promote a product / service / idea"
+  -> SHELL: LANDING PAGE
+  -> Sticky header: logo + nav + CTA button
+  -> Hero: headline + subheadline + primary/secondary CTA + hero visual (gradient or image)
+  -> Feature grid (4+ items with icons)
+  -> Social proof: testimonials or logo strip
+  -> How it works section
+  -> Final CTA band
+  -> Footer
+  -> KEYWORDS: landing page, marketing, homepage, product page, saas marketing, waitlist, launch
+
+STEP 3 - IF THE TASK DOES NOT MATCH ANY KEYWORD LIST ABOVE:
+  Reason from first principles: what does a user DO in this app?
+  Pick the shell whose primary action most closely matches.
+  Never fall back to landing page just because you are uncertain.
+  A focused app shell with the right structure always beats a generic landing page.
+
+STEP 4 - UNIVERSAL APP RULES (apply to ALL shells above except landing page):
+  No hero section. No marketing headlines. No testimonials. No CTA band. No footer.
+  The app should feel OPEN and READY TO USE on load - data visible, not a welcome screen.
+  Seed realistic data so every panel looks populated.
+  Include at least one interactive action (button that triggers a toast, modal, or state change).
+  Include one skeleton/loading shimmer state.
+
+DESIGN SYSTEM - REQUIRED (MODERN SAAS)
+
+Default to dark theme unless requested otherwise.
+
+Use CSS variables for EVERYTHING (colors, spacing, radii, shadows, typography).
+
+Use grid/flex (no floats).
+
+Mobile-first with a 768px breakpoint.
+
+SPACING SCALE (in style.css :root)
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 72px;
+
+TYPE SCALE (in style.css :root)
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 18px;
+  --text-xl: 24px;
+  --text-2xl: 32px;
+  --text-3xl: 48px;
+
+Typography rules:
+  For Tailwind pages: always load 2 Google Fonts — a display font (Space Grotesk, Plus Jakarta Sans, Fraunces, Sora, Outfit) + a body font (Inter, DM Sans). Configure via tailwind.config in a script tag.
+  For CSS pages: keep system font stack but load Inter from Google Fonts as primary.
+  Hero headings: always dramatic scale — clamp(2.5rem, 6vw, 5rem), font-weight 800, letter-spacing -0.03em, line-height 1.05.
+  NEVER use same font or heading size across different archetypes.
+
+COLOR SYSTEM (in style.css :root, NO hardcoded hex in components)
+  background layers: --bg0, --bg1, --bg2
+  --border
+  --text, --text-secondary, --text-muted
+  --accent, --accent2 (for gradients)
+  --success, --warn, --danger
+
+Choose accent contextually:
+  finance -> green family
+  creative -> purple/pink
+  devtools/saas -> blue/cyan
+  gaming -> orange/red
+  wellness -> teal/emerald
+
+VISUAL DEPTH REQUIREMENTS - IN style.css (MUST INCLUDE AT LEAST 4)
+  glass panels with backdrop-filter blur
+  gradient borders via background-clip
+  soft glow accents via radial gradients
+  noise overlay texture (CSS-only, subtle)
+  hover elevation + slight translateY
+  shine effect on primary buttons
+  section separators using faint gradients
+  decorative SVG blobs anchored to corners
+  keyframe animations: page-load fade, skeleton shimmer, chart draw, number count-up
+
+COMPONENT REQUIREMENTS (all styles in style.css)
+  Buttons: primary (gradient + shine), secondary (outline/glass), destructive
+  Inputs: focus ring + validation states
+  Cards: gradient/glass background, hover border glow, subtle shadow
+  Badges/pills: semantic colors via variables
+  Modal/dialog: animated in/out, ESC closes
+  Toast notifications: animated slide/fade from corner
+  Table/list: sticky header, row hover, dense but readable
+  Skeleton shimmer: animated gradient sweep for loading states
+
+MICRO-INTERACTIONS (MANDATORY - in style.css)
+  All interactive elements: hover + active + focus-visible states
+  Transitions: 150-250ms ease
+  Page-load: staggered fade-in (animation-delay on children)
+  Chart draw: stroke-dashoffset animation on SVG paths
+  KPI numbers: CSS counter or JS count-up animation
+
+IMPLEMENTATION RULES (in index.html script tag)
+  Implement actual logic, not a demo skeleton
+  Plain JS state management
+  Validate user input, show inline errors
+  Seed realistic data in JS constants
+  Use localStorage for settings/drafts when it improves UX
+
+OUTPUT SIZE LIMITS - CRITICAL
+  src/index.html: 800 lines max - structure + JS only, NO CSS
+  src/style.css: 800 lines max - ALL CSS, no JS
+
+  index.html rules:
+    No style tags anywhere - violation breaks the split
+    No JS comments - wastes lines
+    Seed as many data items as needed to make the UI feel real and populated
+    One modal max, one toast max
+
+  style.css rules:
+    No comments - every line is a CSS rule
+    Define all variables at :root
+    Combine selectors aggressively
+    Write EVERY animation and depth effect you want - this is your canvas
+    Do NOT hold back on: glow effects, gradient borders, glass panels, keyframe animations, shimmer
+
+  Together 1600 lines gives you full room for premium CSS output.
+
 # ═══════════════════════════════════════
-# ARCHETYPE: GAME / INTERACTIVE
+# ARCHETYPE DESIGN SYSTEM — 25 ARCHETYPES
 # ═══════════════════════════════════════
 
-PATH: B (Raw CSS)
-Use for: Game fan pages, interactive encyclopedias, character showcases, lore archives, game wikis
-Theme: Dark cinematic — background #0a0a0f, surface cards #0f0f16, elevated cards #161620, accent chosen per game's palette (NOT generic purple — derive from game's identity: e.g. teal/gold for JRPG, neon-green for cyberpunk, crimson for dark fantasy). Store as --accent (hex) and --accent-rgb (r,g,b values for rgba()). Also store --surface:#0f0f16, --surface-2:#161620, --border:rgba(255,255,255,0.07). The accent MUST be a single cohesive color applied consistently to: badge dot, badge border, nav active underline, section labels, stat bar fills, weapon stars, hover states, logo. NO secondary accent colors unless they are explicit complementary tones.
-Fonts: Google Fonts @import BOTH: 'Rajdhani' (weights 500,700) for ALL display headings, section titles, character names, nav links, button labels, stat labels; 'Inter' (weights 400,500) for body text, lore descriptions. NEVER use system-ui, serif, or any fallback for headings. NEVER use Cinzel. These two fonts MUST appear in the actual rendered output — test by checking that nav links and the hero title both render in Rajdhani.
-Rules: Full single-page scroll experience. ALL sections fully rendered and scrollable on page load — the page MUST contain at minimum: Hero → Characters → Weapons → World/Lore → (optional Guardian Forces / Skills). NO empty states. NO placeholder text. NO "Lorem ipsum". NO "No results found". Tab filters MUST show pre-populated content. Dark theme mandatory — NEVER add a light mode toggle. NEVER use a bright, warm, or colorful background for the hero — the hero background MUST be dark and atmospheric. The overall page must feel like the FF7 reference: dark, immersive, cinematic, content-rich — NOT like a travel site, concert poster, or single-section landing page.
+ARCHETYPE ROUTING — READ BEFORE BUILDING:
+- PATH A archetypes (Tailwind): SaaS Landing, E-Commerce, Portfolio/Agency, Restaurant, Medical, Wedding, News, Real Estate, Education, Photography, Travel, Legal, Non-Profit, Crypto/Web3, AI/ML Product, Agency/Studio, Job Board, Food Delivery, Developer Docs, Startup/Launch, Blog/Personal
+- PATH B archetypes (Raw CSS + animations): Gaming/Fan Page, Fintech/Trading, Music/Events, Fitness/Gym, SaaS Dashboard
 
-MUST include:
+Never mix paths. A gaming page must never load Tailwind CDN. A restaurant page must never use the CSS Design Seed animation suite.
 
-**1. FULL-VIEWPORT CINEMATIC HERO (100vh) — CENTER-ALIGNED LAYOUT**
+# ═══════════════════════════════════════
+# THE 5 PILLARS OF AWARD-WINNING DESIGN
+# ═══════════════════════════════════════
 
-HERO BACKGROUND — MANDATORY ATMOSPHERIC DEPTH (this is the #1 failure mode — a flat black void is NOT acceptable):
-The hero MUST feel like the FF7 reference screenshot: a dark atmospheric scene with visible depth, texture, and environmental storytelling. Achieve this with ALL of the following layers simultaneously:
+## 1. VISUAL HIERARCHY
+- ONE element per section demands attention. Everything else supports it.
+- Size contrast: hero heading 3-5x larger than body text
+- Color weight: accent color on max 10% of page surface
+- Whitespace: generous, never cramped. Sections: py-20 md:py-28 lg:py-32
+- Eye flow: Hero → CTA → Features → Social Proof → Final CTA → Footer
 
-- SVG-based atmospheric background (REQUIRED — do NOT skip): Generate a rich multi-layer SVG inline background that creates an environmental scene. Use SVG <rect>, <circle>, <ellipse>, <polygon>, and <line> elements with fill/stroke in the game's color palette (very dark versions: e.g. for FF8: deep navy #050810, dark teal #061418, midnight blue #080c18) to suggest architecture, skyline, landscape, or environmental geometry. The SVG should fill the full hero at 100%×100% via a data URI in the background-image stack. This SVG is the "scene" layer — it should have 15–25 geometric shapes that together suggest a location from the game world (castle silhouette, city blocks, mountain ridgeline, space station framework). Opacity of the SVG layer: 1.0 (it IS the background scene).
+## 2. TYPOGRAPHY (80% OF DESIGN)
+- ALWAYS 2 fonts. Display + Body. Never just one.
+- Display fonts (PICK ONE per site): Space Grotesk, Plus Jakarta Sans, Instrument Serif, Fraunces, Cabinet Grotesk, General Sans, Satoshi, Clash Display, Sora, Outfit, DM Serif Display, Cormorant Garamond, Playfair Display, Bricolage Grotesque, Onest, Geist
+- Body fonts: Inter, DM Sans, Nunito Sans, Geist
+- Hero heading: text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1]
+- Subheading: text-lg md:text-xl text-zinc-400 leading-relaxed max-w-2xl
+- Body: text-base md:text-lg leading-relaxed
+- Letter-spacing: tracking-tight or tracking-tighter on all headings
+- NEVER use default browser fonts
 
-- CSS gradient overlay stack on top of the SVG (EXACT template — replace VAR_R, VAR_G, VAR_B with --accent-rgb values):
-```css
-background:
-  linear-gradient(to bottom, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.45) 35%, rgba(0,0,0,0.78) 80%, #0a0a0f 100%),
-  radial-gradient(ellipse 60% 45% at 50% 20%, rgba(VAR_R,VAR_G,VAR_B,0.18) 0%, transparent 60%),
-  radial-gradient(ellipse 80% 60% at 20% 80%, rgba(0,0,0,0.85) 0%, transparent 50%),
-  radial-gradient(ellipse 50% 40% at 80% 60%, rgba(VAR_R,VAR_G,VAR_B,0.08) 0%, transparent 55%),
-  [SVG DATA URI scene layer],
-  linear-gradient(160deg, #060608 0%, #0a0e12 40%, #080a10 70%, #060608 100%);
-height: 100vh; width: 100%; position: relative; overflow: hidden;
-```
-The gradient layers sit ABOVE the SVG scene to tint and darken it — the result should read as atmospheric, not flat black.
+## 3. COLOR (INTENTIONAL, NEVER RANDOM)
+- Max 5 colors total: background, surface, text, muted-text, accent
+- Background NEVER pure white or black. Use: bg-zinc-950, bg-stone-50, bg-slate-50, bg-neutral-950
+- Accent: ONE strong color for CTAs and key highlights only
+- Borders always subtle: border-white/[0.06] (dark) or border-black/[0.06] (light)
+- Gradients: purposeful, subtle. Radial for glows, linear for surfaces. Never rainbow.
 
-- Film grain overlay (MANDATORY — NEVER skip — this is what separates cinematic from flat):
-```css
-.hero::before {
-  content:''; position:absolute; inset:0; pointer-events:none; z-index:2; opacity:0.06;
-  mix-blend-mode:overlay;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size:300px 300px;
-}
-```
+## 4. MICRO-INTERACTIONS (MAKE IT FEEL ALIVE)
+Apply to EVERY interactive element:
+- Buttons: hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98] transition-all duration-200
+- Cards: hover:-translate-y-1 hover:shadow-xl hover:border-white/[0.12] transition-all duration-300
+- Links: hover:text-violet-400 transition-colors duration-150
+- Images in cards: group-hover:scale-105 transition-transform duration-500 (wrap card in group class)
+- Focus: focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500 on ALL
+- Button active: active:scale-[0.98] for tactile feel
 
-- Atmospheric mist / accent glow layer (MANDATORY):
-```css
-.hero-glow {
-  position:absolute; top:15%; left:50%; transform:translateX(-50%);
-  width:700px; height:400px;
-  background:radial-gradient(ellipse at center, rgba(VAR_R,VAR_G,VAR_B,0.12) 0%, rgba(VAR_R,VAR_G,VAR_B,0.04) 40%, transparent 70%);
-  pointer-events:none; z-index:1;
-}
-```
-
-- Bottom vignette fade (MANDATORY):
-```css
-.hero::after {
-  content:''; position:absolute; bottom:0; left:0; right:0; height:280px;
-  background:linear-gradient(to bottom, transparent 0%, rgba(10,10,15,0.6) 50%, #0a0a0f 100%);
-  pointer-events:none; z-index:2;
-}
-```
-
-- True full-bleed: html, body { margin:0; padding:0; overflow-x:hidden }. NO rounded corners on hero. NO box-shadow on hero container.
-
-Content wrapper: position:relative; z-index:3; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; height:100%; padding:0 40px; max-width:960px; margin:0 auto.
-
-- Badge pill (above title): display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(VAR_R,VAR_G,VAR_B,0.45); background:rgba(VAR_R,VAR_G,VAR_B,0.09); padding:6px 18px; border-radius:2px; font-family:'Rajdhani',sans-serif; font-size:0.65rem; letter-spacing:0.22em; text-transform:uppercase; color:var(--accent); margin-bottom:28px.
-  Badge dot: width:6px; height:6px; border-radius:50%; background:var(--accent); animation:pulse 2s ease infinite. CRITICAL: dot color MUST exactly match var(--accent).
-  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
-
-- Game title: font-size:clamp(3.8rem,9vw,8rem); font-family:'Rajdhani',sans-serif; font-weight:700; line-height:0.9; letter-spacing:-0.02em; color:#fff; margin-bottom:24px; text-transform:uppercase.
-  ACCENT COLOR RULE: Apply var(--accent) color to EXACTLY ONE thematically significant word or numeral. E.g. "FINAL FANTASY" white + "VIII" in var(--accent). NEVER split color randomly. NEVER apply accent to more than one typographic unit.
-  GLOW RULE: The accent-colored word/numeral MUST have: text-shadow: 0 0 40px rgba(VAR_R,VAR_G,VAR_B,0.5), 0 0 80px rgba(VAR_R,VAR_G,VAR_B,0.25). The white words must NOT have glow — clean typographic hierarchy.
-
-- Tagline: font-size:clamp(0.9rem,1.6vw,1.1rem); color:rgba(255,255,255,0.65); max-width:520px; line-height:1.7; margin:0 auto 40px; font-family:'Inter',sans-serif; font-weight:400; text-shadow:0 2px 24px rgba(0,0,0,0.95). MUST be real thematic copy about the game — NEVER generic.
-
-- CTA row: display:flex; gap:16px; justify-content:center; flex-wrap:wrap; margin-bottom:56px.
-  Primary CTA: background:var(--accent); color:#000; font-family:'Rajdhani',sans-serif; font-weight:700; font-size:0.75rem; letter-spacing:0.22em; text-transform:uppercase; padding:15px 38px; border:none; border-radius:2px; cursor:pointer; transition:opacity 180ms,transform 150ms,box-shadow 180ms. hover:{ opacity:0.88; transform:translateY(-2px); box-shadow:0 8px 24px rgba(VAR_R,VAR_G,VAR_B,0.35) }. active:{ transform:scale(0.97) }.
-  Secondary CTA: background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.85); font-family:'Rajdhani',sans-serif; font-weight:700; font-size:0.75rem; letter-spacing:0.22em; text-transform:uppercase; padding:14px 36px; border:1px solid rgba(255,255,255,0.22); border-radius:2px; cursor:pointer; backdrop-filter:blur(12px); transition:border-color 200ms,color 200ms,transform 150ms,box-shadow 180ms. hover:{ border-color:var(--accent); color:var(--accent); transform:translateY(-2px); box-shadow:0 4px 16px rgba(VAR_R,VAR_G,VAR_B,0.2) }. NEVER make secondary button a solid fill.
-
-- Metadata strip: display:flex; gap:0; justify-content:center; align-items:center; font-family:'Rajdhani',sans-serif; font-size:0.7rem; letter-spacing:0.16em; color:rgba(255,255,255,0.55); text-transform:uppercase; text-shadow:0 1px 12px rgba(0,0,0,1). Each item separated by a thin vertical rule: <span style="display:inline-block;width:1px;height:10px;background:rgba(255,255,255,0.2);margin:0 16px;vertical-align:middle"></span>. MUST contain exactly 4 real data points: Genre · Platform · Composer/Director · Play Hours.
-
-- Scroll indicator: position:absolute;
+## 5. LAYOUT PRECISION
+- Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+- Section padding: py-20 md:py-28 lg:py-32
+- Card grid gaps: gap-4 md:gap-6 — consistent within grids
+- Border-radius: pick ONE and use everywhere (rounded-xl or rounded-2xl)
+- Spacing scale: use Tailwind's scale consistently (no random values)
 
 # ═══════════════════════════════════════
 # ARCHETYPE 1: SAAS LANDING PAGE
@@ -293,33 +407,8 @@ Content wrapper: position:relative; z-index:3; display:flex; flex-direction:colu
 
 PATH: A (Tailwind + Alpine)
 Use for: SaaS, tech products, AI tools, dev tools, productivity apps.
-Theme: bg-zinc-950 base. Accent: violet-600 primary, violet-400 highlight. NEVER use cyan or teal gradients. NEVER use plain black — always zinc-950 (#09090b). Fonts: Space Grotesk (headings, import from Google Fonts) + Inter (body, import from Google Fonts). Both fonts MUST be loaded via <link> in <head> before any rendering.
-Rules: Page MUST scroll to full completion — ALL 9 sections below MUST be rendered, populated, and visible without horizontal scroll. NEVER leave skeleton placeholders or empty gray bars. NEVER render a section with zero data. Alpine.js MUST be loaded from CDN. All interactive elements (toggle, accordion) MUST function on first paint. NO heavy outer glows. NO generic purple-to-cyan gradients. NO flat navbar.
-
-CRITICAL RENDER RULES (fixes for known failure modes):
-- Every section MUST have explicit `display:block` or Tailwind display class — NEVER rely on implicit rendering
-- The pricing toggle MUST use x-data='{ annual: false }' on the section wrapper with x-show on price spans
-- The FAQ accordion MUST use x-data='{ open: null }' with @click='open = open === N ? null : N' and x-show with x-transition
-- The bento grid MUST use CSS Grid with explicit grid-template-columns and grid-template-rows — NEVER flexbox for the bento layout
-- Each section MUST have a unique id attribute (id="features", id="testimonials", id="pricing", id="faq") so nav anchor links resolve
-
-MUST include ALL of the following in exact scroll order:
-
-1. GLASSMORPHISM NAV — position:fixed, top:0, left:0, right:0, z-index:50, backdrop-filter:blur(12px), background:rgba(9,9,11,0.80), border-bottom:1px solid rgba(255,255,255,0.08), height:64px. Inner: max-width:1200px, margin:0 auto, padding:0 24px, display:flex, align-items:center, justify-content:space-between. LEFT: Logo mark (16px violet-600 square rotated 45deg inline) + "WriteFlow" in Space Grotesk font-bold text-white. CENTER: 4 nav links ("Features" "Reviews" "Pricing" "FAQ") in text-sm text-zinc-400 hover:text-white, active link ("Features") has violet-400 2px underline offset-4. RIGHT: "Sign In" ghost button (text-zinc-300 hover:text-white px-4) + "Start Free Trial" pill button (bg-violet-600 hover:bg-violet-500 text-white px-5 py-2 rounded-full text-sm font-semibold). NEVER render navbar as a plain dark bar without blur.
-
-2. HERO — min-height:100vh, padding-top:64px (navbar offset), display:flex, flex-direction:column, align-items:center, justify-content:center. Background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(109,40,217,0.25) 0%, transparent 70%) layered on bg-zinc-950 — this MUST be visible as a soft purple glow at top-center. Announcement pill: inline-flex items-center gap-2, border:1px solid rgba(124,58,237,0.4), background:rgba(124,58,237,0.1), rounded-full, px-4 py-1.5, mb-8. Inside pill: animated green pulse dot (w-2 h-2 bg-emerald-400 rounded-full animate-pulse) + text-sm text-zinc-300 "Powered by GPT-4o & Claude 3.5". Headline: font-family Space Grotesk, font-size:clamp(3.2rem,7vw,5.5rem), font-weight:800, line-height:1.05, text-align:center, max-width:900px. First line "Write 10x Faster" in text-white. Second line gradient word uses background:linear-gradient(135deg,#a78bfa,#7c3aed) applied via background-clip:text, -webkit-text-fill-color:transparent. Subheadline: text-zinc-400, font-size:1.125rem, max-width:500px, text-align:center, line-height:1.7, margin-top:1.5rem. Social proof row (ABOVE email input): flex gap-3 items-center justify-center mt-4 mb-6 — 4 stacked avatar circles (w-8 h-8 rounded-full border-2 border-zinc-950, bg colors: bg-violet-500, bg-blue-500, bg-emerald-500, bg-amber-500, each with 1 white initial letter text-xs font-bold) overlapping with -ml-2 except first + text-zinc-400 text-sm "Join 14,000+ content teams". Email capture row: display:flex, gap:0, border:1px solid rgba(255,255,255,0.12), border-radius:14px, overflow:hidden, background:rgba(24,24,27,0.9), max-width:480px, height:56px. Email input inside: flex-1, bg-transparent, px-5, text-zinc-200, placeholder:text-zinc-500, no border, outline:none. CTA button inside: bg-violet-600 hover:bg-violet-500, px-6, text-white font-semibold text-sm, no border-radius (clipped by parent), transition-colors. Trust microcopy below: text-zinc-500 text-xs mt-3, "No credit card required · 14-day free trial · Cancel anytime". Hero mockup: margin-top:4rem, a fake browser window div — width:min(780px,90vw), border-radius:12px, overflow:hidden, box-shadow:0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08). Browser chrome bar: bg-zinc-800, height:40px, flex items-center px-4 gap-3 — 3 traffic light dots (w-3 h-3 rounded-full: bg-red-500, bg-amber-400, bg-emerald-500) + centered URL bar (bg-zinc-700 rounded px-4 text-xs text-zinc-400 h-6 flex items-center w-48). App body inside: display:grid, grid-template-columns:200px 1fr 180px, height:360px. Left sidebar: bg-zinc-900, border-right:1px solid zinc-800, p-4 — label "DOCUMENTS" text-zinc-500 text-xs mb-3, then 4 document rows (icon + name), first row highlighted bg-violet-600/20 text-violet-400. Center editor: bg-zinc-950, p-6 — title "Why WriteFlow Changes Everything" in text-white font-bold text-lg mb-3, then 4 lines of fake paragraph text (bg-zinc-800 h-3 rounded mb-2 w-full), one line highlighted with bg-violet-600/30, then AI suggestion card: bg-zinc-900 border border-violet-600/40 rounded-lg p-3 mt-4 — violet-400 "✦ AI Suggestion" label text-xs mb-1 + 2 lines of suggestion text in text-zinc-300 text-sm. Right stats panel: bg-zinc-900, border-left:1px solid zinc-800, p-4 — heading "WRITING STATS" text-zinc-500 text-xs mb-4, then 3 stat rows: "Words / 847", "Read time / 4 min", "SEO Score / 91" — each label text-zinc-500 text-xs + value text-white font-bold text-right. NEVER crop or cut off the mockup.
-
-3. LOGO CLOUD — id="social-proof", padding:py-16, border-top:1px solid rgba(255,255,255,0.06), border-bottom:1px solid rgba(255,255,255,0.06). Center label: "Trusted by teams at" text-zinc-500 text-sm font-medium tracking-widest uppercase mb-8. Below: flex row, flex-wrap:wrap, justify-content:center, gap:48px, align-items:center. EXACTLY 8 company wordmarks rendered as styled text spans (NOT images): Stripe, Notion, Vercel, Linear, Figma, Shopify, Loom, Intercom — each in font-semibold text-lg text-zinc-400 opacity-50 hover:opacity-80 transition-opacity. This section MUST be fully visible — NEVER skip or collapse it.
-
-4. BENTO GRID FEATURES — id="features", py-24, max-width:1200px, margin:0 auto, px-6. Section label: "FEATURES" text-violet-400 text-xs font-semibold tracking-widest uppercase text-center mb-3. Section heading: "Everything you need to write better" text-white font-bold text-4xl text-center mb-4. Subtext: text-zinc-400 text-center max-width:500px mx-auto mb-12. Grid: display:grid, grid-template-columns:repeat(3,1fr), grid-template-rows:repeat(3,auto), gap:1.5rem. EXACT card placements — use inline style="grid-column:X/Y; grid-row:X/Y":
-  - Card A: grid-column:1/3, grid-row:1/3 — large card. Title: "AI Voice Matching". Inside: two side-by-side text blocks, left labeled "Generic AI" with 3 lines of gray dummy text, right labeled "Your Voice" with 3 lines of violet-highlighted text — connected by arrow icon center. bg-zinc-900 border border-zinc-800 rounded-2xl p-8.
-  - Card B: grid-column:3/4, grid-row:1/2 — "Smart Templates". Show a 3×2 grid of small template tiles (bg-zinc-800 rounded p-2 text-xs text-zinc-400). bg-zinc-900 border border-zinc-800 rounded-2xl p-6.
-  - Card C: grid-column:3/4, grid-row:2/3 — "Real-time Collaboration". Show 5 overlapping avatar circles (w-8 h-8 each, colored bg) + "3 editing now" badge in emerald-400. bg-zinc-900 border border-zinc-800 rounded-2xl p-6.
-  - Card D: grid-column:1/2, grid-row:3/4 — "Analytics". MUST show inline SVG sparkline with EXACTLY 12 data points (40,55,48,70,65,80,75,90,85,95,88,100) — draw as a polyline on a 200×60 viewBox, stroke:rgb(124,58,237), stroke-width:2, fill:none. Show "↑ 47% this month" badge in emerald-400. bg-zinc-900 border border-zinc-800 rounded-2xl p-6.
-  - Card E: grid-column:2/4, grid-row:3/4 — "Integrations". Show 9 app name pills (bg-zinc-800 rounded-full px-3 py-1 text-xs text-zinc-300): Slack, Notion, GitHub, Linear, Figma, Jira, Zapier, HubSpot, Webflow — in a flex-wrap row. bg-zinc-900 border border-zinc-800 rounded-2xl p-6.
-  ALL cards: hover:border-violet-600/50 transition-colors duration-200. NEVER render this as a plain flex list.
-
-5. TESTIMONIALS — id="reviews", py-24, bg-zinc-900
+Theme: bg-zinc-950. Accent: violet-600 or blue-600. Fonts: Space Grotesk + Inter.
+MUST include: glassmorphism nav → gradient mesh hero with announcement pill → logo cloud → bento grid → testimonials → pricing with toggle → FAQ accordion → CTA banner → full 5-col footer.
 
 # ═══════════════════════════════════════
 # ARCHETYPE 2: E-COMMERCE
@@ -337,87 +426,10 @@ MUST include: nav (search icon + cart count badge) → hero banner → category 
 # ═══════════════════════════════════════
 
 PATH: B (Raw CSS + animations)
-Use for: dashboards, admin panels, CRMs, analytics, project management, crypto/finance tools.
-Theme: Dark professional. Base bg: #0d1117. Sidebar bg: #161b22. Card bg: #1c2128. Border color: #30363d. Primary accent: context-appropriate (e.g. #00c896 for finance/crypto, #3b82f6 for SaaS). Text primary: #e6edf3. Text muted: #7d8590. Font: Inter only, imported from Google Fonts.
-Fonts: Inter (weights 400, 500, 600, 700) — font-variant-numeric: tabular-nums on ALL numeric displays.
-
-RULES:
-- ALWAYS dark theme: bg #0d1117 base, #161b22 sidebar, #1c2128 cards. NEVER light backgrounds, NEVER zinc-50, NEVER white.
-- SIDEBAR IS MANDATORY — NEVER render a full-width layout without a left sidebar. A dashboard without sidebar navigation is NOT a dashboard.
-- NEVER place a scrolling ticker bar as the primary header — it competes with the logo and creates two focal points. If a ticker is used, place it BELOW the top header bar as a secondary strip with bg #161b22 and border-bottom 1px solid #30363d.
-- NEVER show fewer than 6 rows in any data table — hardcode all rows, do NOT rely on dynamic rendering.
-- NEVER use purple (#7c3aed, #8b5cf6 range) as the chart stroke color on finance/crypto apps — use #00c896 green for positive performance.
-- NEVER add heavy outer glows — max box-shadow: 0 0 0 1px #30363d, 0 4px 16px rgba(0,0,0,0.5).
-- NEVER use rgba border opacity below 0.6 — card borders must be 1px solid #30363d at full opacity.
-- NEVER mix chart types in one panel — ONE chart type per panel only.
-- NEVER leave the area chart without a gradient fill — fill MUST use linearGradient, stop1 opacity 0.15 top, stop2 opacity 0.0 bottom.
-- Card borders: 1px solid #30363d always visible. Card bg: #1c2128. Card padding: 20px. Card border-radius: 8px.
-- KPI card icons: 32px icon box top-right, accent color bg at 15% opacity, accent color icon stroke — matches Nexus reference style exactly.
-- Sidebar: exactly 220px wide, position fixed, full viewport height, bg #161b22, border-right 1px solid #30363d. NEVER collapse or hide it.
-- All font sizes: nav group labels 10px uppercase letter-spacing 0.08em color #7d8590, nav items 13px font-weight 500, body/table 13px, KPI values 32px font-weight 700, KPI labels 11px uppercase tracking-widest, section headers 15px font-weight 600, table headers 11px uppercase tracking-widest color #7d8590.
-- Table rows: minimum height 48px, alternating bg transparent / rgba(255,255,255,0.02), hover state bg #21262d transition 150ms.
-- Active nav item: bg rgba(accent, 0.12), left border 2px solid accent, text accent color, border-radius 0 6px 6px 0.
-
-LAYOUT GEOMETRY (ENFORCE EXACTLY):
-- Outer wrapper: display flex, flex-direction row, width 100vw, min-height 100vh, overflow hidden.
-- Sidebar: width 220px, flex-shrink 0, position fixed, top 0, left 0, height 100vh, z-index 100.
-- Main content area: margin-left 220px, flex 1, display flex, flex-direction column, min-height 100vh, overflow-y auto.
-- Top header bar: height 64px, width 100%, bg #161b22, border-bottom 1px solid #30363d, display flex, align-items center, padding 0 24px, position sticky, top 0, z-index 50.
-- Page content padding: 24px all sides.
-- KPI row: display grid, grid-template-columns repeat(4, 1fr), gap 16px, margin-bottom 24px.
-- Chart panel: width 100%, margin-bottom 24px, bg #1c2128, border 1px solid #30363d, border-radius 8px, padding 20px.
-- Bottom section: display grid, grid-template-columns 1fr 340px, gap 16px. Table takes left column (flexible), secondary panel fixed 340px right.
-- Full layout MUST be visible at 1280px viewport width with zero horizontal scroll.
-
-MUST include:
-1. SIDEBAR (220px fixed, matches Nexus reference layout exactly):
-   - Top: logo mark (24px colored square/circle with icon) + app name 15px font-weight 700 text #e6edf3, padding 20px 16px, border-bottom 1px solid #30363d.
-   - Nav group "PLATFORM" label: 10px uppercase tracking-widest color #7d8590, margin 20px 16px 8px.
-   - Nav items under PLATFORM: Dashboard (active), Analytics, Customers, Infrastructure — each 36px tall, padding 0 12px, flex align-items center, gap 10px, inline SVG icon 16px.
-   - Nav group "SYSTEM" label: same style, margin-top 20px.
-   - Nav items under SYSTEM: Notifications, Security, Integrations, Settings — same styling.
-   - Bottom: user section, border-top 1px solid #30363d, padding 16px, flex row, gap 10px — 32px avatar circle (accent bg, white initials 12px), name 13px font-weight 500, role 11px color #7d8590.
-
-2. HEADER BAR (sticky top of main, 64px height, NOT a ticker):
-   - Left: page title "Dashboard" 18px font-weight 600 + subtitle "Welcome back. Here's your overview." 13px color #7d8590 — stacked vertically, justify left.
-   - Center: search input, width 280px, bg #0d1117, border 1px solid #30363d, border-radius 6px, height 34px, placeholder "Search anything..." with magnifier icon left, ⌘K hint right in color #7d8590.
-   - Right: notification bell SVG 20px with badge (red circle 8px, number "3"), then user avatar 32px circle, gap 16px between elements.
-
-3. KPI CARDS (4 cards in equal grid, styled exactly like Nexus reference):
-   - Each card: bg #1c2128, border 1px solid #30363d, border-radius 8px, padding 20px, position relative.
-   - Top row: uppercase label 11px tracking-widest color #7d8590 LEFT, square icon 32px with accent bg at 15% opacity + centered SVG icon 16px accent color RIGHT.
-   - Large value: 32px font-weight 700 color #e6edf3, tabular-nums, margin-top 12px.
-   - Delta text: 13px font-weight 500, color #00c896 for positive (+), color #f85149 for negative (−), NO pill background — plain colored text like Nexus reference.
-   - Subtext: 12px color #7d8590, below delta.
-   - NO sparkline inside KPI cards — keep cards clean like Nexus reference. Sparklines belong in the secondary watchlist panel only.
-   - KPI 1: label "TOTAL REVENUE", value "$492,800", delta "+12.5% from last month" (green), icon: dollar sign SVG.
-   - KPI 2: label "ACTIVE USERS", value "24,531", delta "+3.2% from last week" (green), icon: users SVG.
-   - KPI 3: label "GROWTH RATE", value "18.2%", delta "+2.1% from last quarter" (green), icon: trending-up arrow SVG.
-   - KPI 4: label "SYSTEM UPTIME", value "99.98%", delta "0.01% below target" (red), icon: activity/pulse SVG.
-
-4. AREA CHART PANEL (full width, min-height 280px):
-   - Title "Revenue Overview" 15px font-weight 600, subtitle "Monthly revenue & profit" 12px color #7d8590 — top left.
-   - Legend top right: two dots + labels — "Revenue" (accent color dot) + "Profit" (secondary color dot, e.g. #00c896 if accent is blue, or #3b82f6 if accent is green).
-   - Time toggle top right (beside legend): 7D / 1M / 3M / 1Y buttons — active: bg accent, color #fff, border-radius 4px, padding 4px 10px; inactive: bg transparent, color #7d8590.
-   - SVG chart: exactly 12 data points (Jan–Dec), TWO area series plotted (Revenue + Profit), smooth cubic-bezier curves via SVG path commands.
-   - Revenue series stroke: accent color, stroke-width 2px, fill: linearGradient top→bottom opacity 0.15→0.0.
-   - Profit series stroke: #00c896 (or contrasting secondary), stroke-width 2px, fill: linearGradient opacity 0.10→0.0.
-   - Grid lines: 4 horizontal dashed lines, stroke #30363d, stroke-dasharray 4 4.
-   - Y-axis labels: $0k, $2.5k, $5k, $7.5k, $10k — 11px color #7d8590, left side.
-   - X-axis labels: Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec — 11px color #7d8590, bottom.
-   - Revenue data points: 3200, 3800, 5000, 4900, 5200, 5800, 6400, 7100, 7600, 8200, 9100, 9800.
-   - Profit data points: 2500, 2400, 2600, 2800, 3100, 3400, 3800, 4200, 4500, 4800, 5200, 5500.
-
-5. DATA TABLE (left column of bottom grid, min 6 FULLY VISIBLE rows — ALL hardcoded):
-   - Card wrapper: bg #1c2128, border 1px solid #30363d, border-radius 8px, padding 20px.
-   - Header row: "Holdings" 15px font-weight 600 LEFT, search input (width 180px) + sort dropdown + "+ Add" button (accent bg, white text) RIGHT — all on one flex row.
-   - Column headers: ASSET, PRICE, 24H CHANGE, HOLDINGS, VALUE, ACTION — 11px uppercase tracking-widest color #7d8590, border-bottom 1px solid #30363d, padding 10px 12px.
-   - EXACTLY 6 data rows (no fewer), each row height 48px, hover bg #21262d:
-     Row 1: BTC / Bitcoin — $43,250 — +1.82% (green pill) — 2.145 BTC — $92,772 — star icon
-     Row 2: ETH / Ethereum — $2,318 — +2.64% (green pill) — 12.5 ETH — $28,975 — star icon
-     Row 3: SOL / Solana — $182.40 — +8.72% (green pill) — 45 SOL — $8,208 — star icon (filled)
-     Row 4: BNB / BNB Chain — $598.30 — +2.15% (green pill) — 15 BNB — $8,975 — star icon
-     Row 5: AVAX / Avalanche — $38.75 — -1
+Use for: dashboards, admin panels, CRMs, analytics, project management.
+Theme: bg-zinc-50 main. bg-white sidebar+cards. Font: Inter only. Accent: violet-600.
+RULES: ALWAYS bg-zinc-50 main. NEVER dark backgrounds. NEVER heavy gradients or decorative glows. Inter font only. text-sm for most content. tabular-nums on all numbers. Shadows: ONLY hover:shadow-md hover:shadow-zinc-900/5.
+MUST include: sidebar (4+ nav items with SVG icons, user profile) → header (hamburger, search ⌘K, bell) → 4 KPI cards → area chart → data table → activity feed.
 
 # ═══════════════════════════════════════
 # ARCHETYPE 4: PORTFOLIO / AGENCY

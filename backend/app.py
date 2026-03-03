@@ -30,6 +30,62 @@ nlu_agent = NLUAgent()
 app = Flask(__name__)
 
 CORS(app, origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:8080"])
+
+# ── Smart Request Log Filter ──────────────────────────────────
+# Suppresses noisy duplicate requests from frontend polling while
+# keeping all unique/important requests visible in the console.
+import logging as _logging
+
+class _RequestLogFilter(_logging.Filter):
+    """Filter werkzeug request logs to reduce noise."""
+
+    # Endpoints that get polled repeatedly — only log every Nth occurrence
+    _POLL_ENDPOINTS = {
+        "/api/health",
+        "/api/stats",
+        "/api/activity",
+        "/api/projects",
+        "/api/execution-status",
+    }
+    _POLL_LOG_EVERY = 999  # rely on time-based logging instead
+
+    def __init__(self):
+        super().__init__()
+        self._poll_counts: dict[str, int] = {}
+        self._last_logged: dict[str, float] = {}
+
+    def filter(self, record: _logging.LogRecord) -> bool:
+        msg = record.getMessage()
+
+        # Always suppress OPTIONS preflight requests
+        if '"OPTIONS ' in msg:
+            return False
+
+        # Suppress polling endpoints (log every Nth or every 30s)
+        for endpoint in self._POLL_ENDPOINTS:
+            if endpoint in msg:
+                self._poll_counts[endpoint] = self._poll_counts.get(endpoint, 0) + 1
+                now = time.time()
+                last = self._last_logged.get(endpoint, 0)
+                count = self._poll_counts[endpoint]
+
+                # Log once every 3 seconds per polling endpoint
+                if count == 1 or (now - last) >= 3:
+                    self._last_logged[endpoint] = now
+                    # Annotate with count so you know how many were suppressed
+                    if count > 1:
+                        record.msg = f"{msg}  [×{count}]"
+                        record.args = None  # clear args so %s formatting doesn't break
+                    return True
+                return False
+
+        # Everything else: pass through
+        return True
+
+# Attach filter to werkzeug's logger
+_logging.getLogger("werkzeug").addFilter(_RequestLogFilter())
+# ──────────────────────────────────────────────────────────────
+
 app.register_blueprint(auth_bp)
 jwt = init_jwt(app)
 
@@ -340,17 +396,40 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None, 
         from google import genai
         from agents.planner_agent import PlannerAgent
 
-        genai_key = os.getenv("GENAI_API_KEY")
-        if not genai_key:
-            raise ValueError("GENAI_API_KEY environment variable not set")
+        # Collect all available Gemini API keys
+        _gemini_keys = []
+        for _env_name in ["GENAI_API_KEY", "GENAI_API_KEY2", "GENAI_API_KEY3", "GENAI_API_KEY4", "GENAI_API_KEY5"]:
+            _k = os.getenv(_env_name)
+            if _k:
+                _gemini_keys.append((_env_name, _k))
+        if not _gemini_keys:
+            raise ValueError("No GENAI_API_KEY* environment variables set")
 
-        genai_client = genai.Client(api_key=genai_key)
-        planner = PlannerAgent(genai_client)
-        plan = planner.run_from_prd_artifact(
-            version_dir / "last_prd.json",
-            locked_ui_archetype=locked_ui_archetype,
-            is_iteration=is_iteration,
-        )
+        # Try each key until one works (handles 429 quota errors)
+        plan = None
+        _last_err = None
+        for _key_label, _key in _gemini_keys:
+            try:
+                add_log(f"Architecture Agent: Trying {_key_label}...")
+                genai_client = genai.Client(api_key=_key)
+                planner = PlannerAgent(genai_client)
+                plan = planner.run_from_prd_artifact(
+                    version_dir / "last_prd.json",
+                    locked_ui_archetype=locked_ui_archetype,
+                    is_iteration=is_iteration,
+                )
+                add_log(f"Architecture Agent: Success with {_key_label}")
+                break
+            except Exception as _gemini_err:
+                _last_err = _gemini_err
+                _err_str = str(_gemini_err)
+                if "429" in _err_str or "RESOURCE_EXHAUSTED" in _err_str or "quota" in _err_str.lower():
+                    add_log(f"Architecture Agent: {_key_label} quota exhausted, trying next key...")
+                    continue
+                else:
+                    raise  # Non-quota error, don't retry with different key
+        if plan is None:
+            raise _last_err or ValueError("All Gemini API keys exhausted")
 
         plan_dict = {
             "kind": "plan_artifact",
