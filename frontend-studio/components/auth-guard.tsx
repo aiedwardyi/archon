@@ -11,23 +11,48 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
-    // Sync token from URL when switching between ports
     const params = new URLSearchParams(window.location.search);
     const urlToken = params.get("token");
     const isSwitch = params.get("switch") === "1";
+
+    // Save token synchronously FIRST before anything else runs
     if (urlToken && isSwitch) {
       localStorage.setItem("archon_token", urlToken);
+    }
+
+    const cleanAndCheck = () => {
       params.delete("token");
       params.delete("switch");
       const remaining = params.toString();
       const cleanUrl = window.location.pathname + (remaining ? `?${remaining}` : "");
       window.history.replaceState({}, "", cleanUrl);
-    }
+    };
 
-    if (!PUBLIC_ROUTES.includes(pathname) && !authService.isLoggedIn()) {
-      router.replace("/login");
+    if (urlToken && isSwitch) {
+      fetch("http://localhost:5000/api/auth/me", {
+        headers: { Authorization: `Bearer ${urlToken}` },
+      })
+        .then((r) => r.json())
+        .then((user) => {
+          if (user?.id) {
+            localStorage.setItem("archon_user", JSON.stringify(user));
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          cleanAndCheck();
+          if (!PUBLIC_ROUTES.includes(pathname) && !authService.isLoggedIn()) {
+            router.replace("/login");
+          } else {
+            setChecked(true);
+          }
+        });
     } else {
-      setChecked(true);
+      if (!PUBLIC_ROUTES.includes(pathname) && !authService.isLoggedIn()) {
+        router.replace("/login");
+      } else {
+        setChecked(true);
+      }
     }
   }, [pathname, router]);
 
