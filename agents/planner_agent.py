@@ -51,6 +51,7 @@ class PlannerAgent:
                 model="gemini-2.5-flash",
                 contents=contents,
                 config={
+                    "response_mime_type": "application/json",
                     "response_schema": Plan,
                     "temperature": 0.2,
                 },

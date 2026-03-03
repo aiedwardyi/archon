@@ -7,8 +7,8 @@ from typing import Any, Dict, List, Tuple
 repo_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(repo_root))
 
-from google import genai
 from agents.engineer_agent import EngineerAgent
+from utils.genai_client import get_genai_client
 from schemas.plan_schema import Task
 from scripts.safe_write import WriteRecord, safe_write_text
 
@@ -47,12 +47,7 @@ def execute(
         task = Task.model_validate(task_data)
         
         # Initialize Engineer agent
-        import os
-        genai_key = os.getenv("GENAI_API_KEY")
-        if not genai_key:
-            raise ValueError("GENAI_API_KEY environment variable not set")
-        
-        genai_client = genai.Client(api_key=genai_key)
+        genai_client = get_genai_client()
         engineer = EngineerAgent(genai_client)
         
         # Execute task

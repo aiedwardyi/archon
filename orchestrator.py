@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from google import genai
 from google.genai.errors import ClientError
 
 from agents.pm_agent import PMAgent
 from agents.planner_agent import PlannerAgent
 from agents.engineer_agent import EngineerAgent
 from orchestrator_utils import select_executable_task, write_engineering_result
+from utils.genai_client import get_genai_client
 from utils.plan_cache import load_plan_with_repair, save_plan
 
 class Orchestrator:
@@ -32,12 +32,8 @@ class Orchestrator:
             self.engineer = EngineerAgent(None)
             return
 
-        # ONLINE: require API key + create client
-        api_key = os.getenv("GENAI_API_KEY", "").strip()
-        if not api_key:
-            raise RuntimeError("GENAI_API_KEY not found in environment variables.")
-
-        self.client = genai.Client(api_key=api_key)
+        # ONLINE: create Gemini client (Vertex AI or AI Studio)
+        self.client = get_genai_client()
 
         self.pm = PMAgent(self.client)
         self.planner = PlannerAgent(self.client)

@@ -393,43 +393,16 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None, 
 
         add_log("Architecture Agent: Planning the build...", project_id=project_id)
 
-        from google import genai
         from agents.planner_agent import PlannerAgent
+        from utils.genai_client import get_genai_client
 
-        # Collect all available Gemini API keys
-        _gemini_keys = []
-        for _env_name in ["GENAI_API_KEY", "GENAI_API_KEY2", "GENAI_API_KEY3", "GENAI_API_KEY4", "GENAI_API_KEY5"]:
-            _k = os.getenv(_env_name)
-            if _k:
-                _gemini_keys.append((_env_name, _k))
-        if not _gemini_keys:
-            raise ValueError("No GENAI_API_KEY* environment variables set")
-
-        # Try each key until one works (handles 429 quota errors)
-        plan = None
-        _last_err = None
-        for _key_label, _key in _gemini_keys:
-            try:
-                add_log(f"Architecture Agent: Trying {_key_label}...")
-                genai_client = genai.Client(api_key=_key)
-                planner = PlannerAgent(genai_client)
-                plan = planner.run_from_prd_artifact(
-                    version_dir / "last_prd.json",
-                    locked_ui_archetype=locked_ui_archetype,
-                    is_iteration=is_iteration,
-                )
-                add_log(f"Architecture Agent: Success with {_key_label}")
-                break
-            except Exception as _gemini_err:
-                _last_err = _gemini_err
-                _err_str = str(_gemini_err)
-                if "429" in _err_str or "RESOURCE_EXHAUSTED" in _err_str or "quota" in _err_str.lower():
-                    add_log(f"Architecture Agent: {_key_label} quota exhausted, trying next key...")
-                    continue
-                else:
-                    raise  # Non-quota error, don't retry with different key
-        if plan is None:
-            raise _last_err or ValueError("All Gemini API keys exhausted")
+        genai_client = get_genai_client()
+        planner = PlannerAgent(genai_client)
+        plan = planner.run_from_prd_artifact(
+            version_dir / "last_prd.json",
+            locked_ui_archetype=locked_ui_archetype,
+            is_iteration=is_iteration,
+        )
 
         plan_dict = {
             "kind": "plan_artifact",

@@ -1,9 +1,15 @@
 import { useCallback } from "react";
 
+function ensureAudioContext(): AudioContext {
+  const ctx = new AudioContext();
+  if (ctx.state === "suspended") ctx.resume();
+  return ctx;
+}
+
 export function useNotificationSound() {
   const playTone = useCallback(
     (freqs: [number, number?], durationMs: number, volume = 0.25) => {
-      const ctx = new AudioContext();
+      const ctx = ensureAudioContext();
       const now = ctx.currentTime;
       const dur = durationMs / 1000;
 
@@ -37,7 +43,7 @@ export function useNotificationSound() {
   }, [playTone]);
 
   const playFailure = useCallback(() => {
-    const ctx = new AudioContext();
+    const ctx = ensureAudioContext();
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
