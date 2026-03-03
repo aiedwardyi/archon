@@ -222,7 +222,22 @@ def init_db():
             conn.commit()
     except Exception as e:
         print(f"Warning: could not ensure auth columns: {e}")
+    # Mark any stuck RUNNING executions as FAILED (handles Flask crash mid-build)
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("UPDATE executions SET status = 'failed' WHERE status = 'running'"))
+            conn.execute(text(
+                "UPDATE projects SET status = 'failed' "
+                "WHERE status IN ('running', 'in_progress') "
+                "AND id IN (SELECT DISTINCT project_id FROM executions WHERE status = 'failed')"
+            ))
+            conn.commit()
+    except Exception as e:
+        print(f"Warning: could not clean up stuck executions: {e}")
     print(f"Database initialized at: {DB_PATH}")
+
+
+init_db()
 
 
 def get_session():
