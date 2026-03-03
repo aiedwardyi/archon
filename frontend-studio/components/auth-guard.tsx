@@ -15,6 +15,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     const urlToken = params.get("token");
     const isSwitch = params.get("switch") === "1";
 
+    // Save token synchronously FIRST before anything else runs
+    if (urlToken && isSwitch) {
+      localStorage.setItem("archon_token", urlToken);
+    }
+
     const cleanAndCheck = () => {
       params.delete("token");
       params.delete("switch");
@@ -24,9 +29,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     };
 
     if (urlToken && isSwitch) {
-      // Save token first
-      localStorage.setItem("archon_token", urlToken);
-      // Fetch user before rendering so navbar has archon_user immediately
       fetch("http://localhost:5000/api/auth/me", {
         headers: { Authorization: `Bearer ${urlToken}` },
       })
