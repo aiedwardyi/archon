@@ -78,7 +78,7 @@ const Index = () => {
   const sendingRef = useRef(false);
   const buildStartTimeRef = useRef<number | null>(null);
   const [isStuck, setIsStuck] = useState(false);
-  const pipeline = usePipelineStatus(selectedProjectId, activeTab === "pipeline" && sending);
+  const pipeline = usePipelineStatus(selectedProjectId, sending);
   const { playSuccess, playFailure } = useNotificationSound();
   const prevPipelineStatusRef = useRef<string | null>(null);
   // Restore pipeline card state from DB when no live build is running
@@ -117,7 +117,7 @@ const Index = () => {
     if (!selectedProjectId) return;
     let cancelled = false;
     // On project switch, verify build is actually running — clear stuck state and update block status
-    fetch("http://localhost:5000/api/execution-status")
+    fetch(`http://localhost:5000/api/execution-status?project_id=${selectedProjectId}`)
       .then(r => r.json())
       .then(data => {
         if (cancelled) return;
@@ -147,9 +147,14 @@ const Index = () => {
       });
     fetchVersions(selectedProjectId).then((versions) => {
       if (cancelled || versions.length === 0) return;
-      // versions are returned newest-first from API
+      // Never overwrite status while a build is actively sending
+      if (sendingRef.current) return;
       const latest = versions[0];
       const latestStatus = latest.status?.toUpperCase() || null;
+      // Never show stale RUNNING or FAILED on a fresh project load
+      if (latestStatus === "RUNNING" || latestStatus === "IN_PROGRESS") return;
+      // Only show Failed if there's actual build history (files_generated > 0)
+      if (latestStatus === "FAILED" && !latest.files_generated) return;
       setHistoricalStatus(latestStatus);
       // Load historical logs for completed/failed projects (not currently building)
       if (!pipeline.running) {
@@ -170,7 +175,7 @@ const Index = () => {
   useEffect(() => {
     if (!globalBuildBlocked) return;
     const interval = setInterval(() => {
-      fetch("http://localhost:5000/api/execution-status")
+      fetch(`http://localhost:5000/api/execution-status?project_id=${blockingProjectId || selectedProjectId}`)
         .then(r => r.json())
         .then(data => {
           if (data.status !== "RUNNING") {
@@ -221,7 +226,12 @@ const Index = () => {
   // Stop sending state when pipeline finishes
   useEffect(() => {
     if (pipeline.status === "COMPLETED" && prevPipelineStatusRef.current !== "COMPLETED" && sendingRef.current) playSuccess();
-    if (pipeline.status === "FAILED" && prevPipelineStatusRef.current !== "FAILED" && sendingRef.current) playFailure();
+    // Only play failure sound if build was genuinely running for >5 seconds — suppresses false flash
+    if (pipeline.status === "FAILED" && prevPipelineStatusRef.current !== "FAILED" && sendingRef.current) {
+      if (buildStartTimeRef.current && Date.now() - buildStartTimeRef.current > 5000) {
+        playFailure();
+      }
+    }
 
     if (pipeline.status === "COMPLETED" || pipeline.status === "FAILED") {
       setSending(false);
@@ -273,12 +283,19 @@ const Index = () => {
     const userMsg: ChatMessage = { role: "user", content: prompt, timestamp: Date.now() };
     setChatMessages((prev) => [...prev, userMsg]);
 
+    // Clear stale pipeline/historical status immediately so "Failed" doesn't linger
+    // during the ~0.5s chat intent classification
+    const savedHistoricalStatus = historicalStatus;
+    setHistoricalStatus(null);
+    pipeline.reset();
+
     try {
       // Classify intent via /chat
       const chatResult = await projectChat(selectedProjectId, prompt);
 
       if (chatResult.response_type === "chat") {
-        // Pure chat reply — no build triggered
+        // Pure chat reply — restore previous status
+        setHistoricalStatus(savedHistoricalStatus);
         const assistantMsg: ChatMessage = { role: "assistant", content: chatResult.message || "", timestamp: Date.now() };
         setChatMessages((prev) => [...prev, assistantMsg]);
         return;
@@ -286,6 +303,7 @@ const Index = () => {
 
       // Check global build lock — show clean reply, no optimistic "building" message
       if (globalBuildBlocked) {
+        setHistoricalStatus(savedHistoricalStatus);
         const replyMsg: ChatMessage = { role: "assistant", content: "A build is already in progress. Send this again when it finishes.", timestamp: Date.now() };
         setChatMessages((prev) => [...prev, replyMsg]);
         return;
@@ -293,11 +311,12 @@ const Index = () => {
 
       // Live check in case state is stale
       try {
-        const statusRes = await fetch("http://localhost:5000/api/execution-status");
+        const statusRes = await fetch(`http://localhost:5000/api/execution-status?project_id=${selectedProjectId}`);
         const statusData = await statusRes.json();
         if (statusData.status === "RUNNING" && statusData.project_id !== selectedProjectId) {
           setGlobalBuildBlocked(true);
           setBlockingProjectId(statusData.project_id);
+          setHistoricalStatus(savedHistoricalStatus);
           const replyMsg: ChatMessage = { role: "assistant", content: "A build is already in progress. Send this again when it finishes.", timestamp: Date.now() };
           setChatMessages((prev) => [...prev, replyMsg]);
           return;
@@ -306,6 +325,7 @@ const Index = () => {
 
       // Don't start another build if one is already running for THIS project
       if (sendingRef.current) {
+        setHistoricalStatus(savedHistoricalStatus);
         const busyMsg: ChatMessage = {
           role: "assistant",
           content: "A build is already running for this project. Wait for it to finish, then try again.",
@@ -325,6 +345,8 @@ const Index = () => {
       setSending(true);
       sendingRef.current = true;
       await iterateProject(selectedProjectId, prompt, promptHistory as ChatMessage[]);
+      // Force-start polling immediately — don't wait for next render cycle
+      pipeline.startPolling();
       // New execution is now active head — safe to save
       const msgsSnapshot = [...chatMessages, userMsg, assistantMsg];
       setTimeout(() => {
@@ -334,6 +356,7 @@ const Index = () => {
     } catch (err: any) {
       sendingRef.current = false;
       setSending(false);
+      setHistoricalStatus(savedHistoricalStatus);
       // Detect ANY 409 / pipeline lock error — show banner, never show red error
       const errMsg = (err.message || "").toLowerCase();
       const is409 = errMsg.includes("409") || errMsg.includes("build already running") || errMsg.includes("pipeline already running") || errMsg.includes("already running");
@@ -355,7 +378,7 @@ const Index = () => {
         setPipelineError(err.message || "Failed to start build");
       }
     }
-  }, [chatInput, selectedProjectId, sending, chatMessages]);
+  }, [chatInput, selectedProjectId, sending, chatMessages, historicalStatus, pipeline]);
 
   const API_BASE = "http://localhost:5000";
 
@@ -446,6 +469,11 @@ const Index = () => {
     const stageOrder = ["pm", "planner", "engineer"];
     const agentIdx = stageOrder.indexOf(agentStage);
 
+    // Sending but pipeline not yet polling — show Requirements as running
+    if (sending && !pipeline.running) {
+      return agentStage === "pm" ? "running" : "pending";
+    }
+
     // Live build in progress — use real-time polling data
     if (pipeline.running) {
       const currentIdx = stageOrder.indexOf(pipeline.stage);
@@ -455,8 +483,8 @@ const Index = () => {
     }
 
     // Live build just finished this session
-    if (pipeline.status === "COMPLETED") return "done";
-    if (pipeline.status === "FAILED") {
+    if (pipeline.status === "COMPLETED" && pipeline.projectId === selectedProjectId) return "done";
+    if (pipeline.status === "FAILED" && pipeline.projectId === selectedProjectId) {
       const currentIdx = stageOrder.indexOf(pipeline.stage);
       return agentIdx < currentIdx ? "done" : agentIdx === currentIdx ? "failed" : "pending";
     }
@@ -528,17 +556,27 @@ const Index = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      {pipeline.running ? (
+                      {(pipeline.running || sending) ? (
                         <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10">
                           <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
                           {t("building")}
                         </span>
-                      ) : pipeline.status === "COMPLETED" ? (
+                      ) : pipeline.status === "COMPLETED" && pipeline.projectId === selectedProjectId ? (
                         <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10">
                           <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
                           {t("completed")}
                         </span>
-                      ) : pipeline.status === "FAILED" && !sending ? (
+                      ) : pipeline.status === "FAILED" && !sending && pipeline.projectId === selectedProjectId ? (
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10">
+                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-500" />
+                          {t("failed")}
+                        </span>
+                      ) : historicalStatus === "SUCCESS" || historicalStatus === "COMPLETED" ? (
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10">
+                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                          {t("completed")}
+                        </span>
+                      ) : historicalStatus === "FAILED" || historicalStatus === "ERROR" ? (
                         <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10">
                           <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-500" />
                           {t("failed")}
@@ -546,7 +584,7 @@ const Index = () => {
                       ) : (
                         <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-500/10">
                           <span className="inline-block h-1.5 w-1.5 rounded-full bg-gray-400" />
-                          {projects.find(p => p.id === selectedProjectId)?.status || "Idle"}
+                          Idle
                         </span>
                       )}
                     </div>

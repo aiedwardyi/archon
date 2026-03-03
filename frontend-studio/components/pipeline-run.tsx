@@ -191,8 +191,12 @@ export function PipelineRun() {
           }
           const restored = statusMap[latest.status]
           if (restored) {
-            setPipelineStatus(restored)
-            sessionStorage.setItem("archon_pipeline_status", restored)
+            // Don't flash Failed on projects with no conversation history
+            const hasHistory = messages.length > 0 || promptHistory.length > 0
+            if (restored !== "failed" || hasHistory) {
+              setPipelineStatus(restored)
+              sessionStorage.setItem("archon_pipeline_status", restored)
+            }
           }
           if (restored === "complete") {
             setCurrentStage("engineer")
@@ -361,7 +365,8 @@ export function PipelineRun() {
 
   const pollStatus = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/execution-status`)
+      const currentPid = projectId || sessionStorage.getItem("archon_current_project_id")
+      const res = await fetch(`${API_BASE}/api/execution-status${currentPid ? `?project_id=${currentPid}` : ""}`)
       const data = await res.json()
 
       const newLogs: LogEntry[] = data.logs || []
@@ -643,11 +648,10 @@ export function PipelineRun() {
   useEffect(() => {
     const pid = sessionStorage.getItem("archon_current_project_id")
     if (!pid) return
-    fetch(`${API_BASE}/api/execution-status`)
+    fetch(`${API_BASE}/api/execution-status?project_id=${pid}`)
       .then(r => r.json())
       .then(data => {
         // ONLY act on execution-status if it belongs to THIS project
-        // If project_id is null or different, ignore it entirely — DB restore handles the rest
         if (!data.project_id || Number(data.project_id) !== Number(pid)) {
           // Don't touch pipelineStatus — DB restore useEffect will set it correctly
           return
@@ -670,8 +674,10 @@ export function PipelineRun() {
             pollRef.current = setInterval(pollStatus, POLL_INTERVAL_MS)
           }
         } else if (data.status === "FAILED") {
-          // Only apply FAILED if it's definitively this project's failure
-          setPipelineStatus("failed")
+          // Only show Failed if this project has actually been built before
+          if (data.logs && data.logs.length > 0) {
+            setPipelineStatus("failed")
+          }
           setIsRunning(false)
           isRunningRef.current = false
         }
@@ -681,17 +687,9 @@ export function PipelineRun() {
   }, [])
 
   const checkGlobalBlock = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/execution-status`)
-      const data = await res.json()
-      if (data.status === "RUNNING" && data.project_id && data.project_id !== projectId) {
-        setGloballyBlocked(true)
-        setBlockingProjectId(data.project_id)
-      } else {
-        setGloballyBlocked(false)
-        setBlockingProjectId(null)
-      }
-    } catch {}
+    // Per-project scoping: different users build independently, no global lock
+    setGloballyBlocked(false)
+    setBlockingProjectId(null)
   }
 
   useEffect(() => {

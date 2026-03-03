@@ -143,7 +143,7 @@ export interface PlatformStats {
 
 export async function fetchPlatformStats(): Promise<PlatformStats | null> {
   try {
-    const res = await fetch(`${API_BASE}/stats`);
+    const res = await fetch(`${API_BASE}/stats`, { headers: getAuthHeaders() });
     if (!res.ok) return null;
     return await res.json();
   } catch { return null; }
@@ -177,7 +177,7 @@ export interface DashboardStats {
 
 export async function fetchDashboardStats(): Promise<DashboardStats | null> {
   try {
-    const res = await fetch(`${API_BASE}/dashboard/stats`);
+    const res = await fetch(`${API_BASE}/dashboard/stats`, { headers: getAuthHeaders() });
     if (!res.ok) return null;
     return await res.json();
   } catch { return null; }
@@ -410,8 +410,11 @@ export async function executeTask(projectId: number): Promise<{ status: string; 
 }
 
 /** GET /api/execution-status — poll pipeline progress */
-export async function fetchExecutionStatus(): Promise<ExecutionStatus> {
-  const res = await fetch(`${API_BASE}/execution-status`);
+export async function fetchExecutionStatus(projectId?: number | null): Promise<ExecutionStatus> {
+  const url = projectId
+    ? `${API_BASE}/execution-status?project_id=${projectId}`
+    : `${API_BASE}/execution-status`;
+  const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -467,7 +470,7 @@ export function usePipelineStatus(projectId: number | null, enabled: boolean) {
 
     const poll = async () => {
       try {
-        const data = await fetchExecutionStatus();
+        const data = await fetchExecutionStatus(projectId);
         // Only update if this status belongs to our project
         if (data.project_id !== projectId) return;
         const isRunning = data.status === "RUNNING";
@@ -520,5 +523,17 @@ export function usePipelineStatus(projectId: number | null, enabled: boolean) {
     return stopPolling;
   }, [enabled, projectId, startPolling, stopPolling]);
 
-  return { ...state, startPolling, stopPolling };
+  const reset = useCallback(() => {
+    stopPolling();
+    setState({
+      running: false,
+      stage: "idle",
+      status: "IDLE",
+      logs: [],
+      projectId: null,
+      executionId: null,
+    });
+  }, [stopPolling]);
+
+  return { ...state, startPolling, stopPolling, reset };
 }

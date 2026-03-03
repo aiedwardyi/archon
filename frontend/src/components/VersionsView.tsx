@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { PanelLeftClose, PanelLeftOpen, Loader2 } from "lucide-react";
 import { CheckCircle2, XCircle, Download, RotateCcw, FileText, Blocks, Code2, Monitor, Smartphone } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -39,63 +39,84 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
   const [versions, setVersions] = useState<Version[]>([]);
   const [loadingVersions, setLoadingVersions] = useState(false);
   const [isProjectBuilding, setIsProjectBuilding] = useState(false);
+  const [iframeKey, setIframeKey] = useState(0);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const wasBuilding = useRef(false);
   const { t } = useLanguage();
+
+  const loadVersionData = async (projectId: number, cancelled: { value: boolean }) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/execution-status?project_id=${projectId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('archon_token')}` }
+      });
+      const data = await res.json();
+      if (cancelled.value) return;
+      const building = data.status === 'RUNNING';
+      setIsProjectBuilding(building);
+      if (wasBuilding.current && !building) {
+        setIframeKey(k => k + 1);
+      }
+      wasBuilding.current = building;
+      if (!building && pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    } catch {
+      if (!cancelled.value) setIsProjectBuilding(false);
+    }
+    try {
+      const raw = await fetchVersions(projectId);
+      if (cancelled.value) return;
+      const mapped: Version[] = raw.map((v) => {
+        const lastUserMsg = v.prompt_history?.filter(m => m.role === "user").pop()?.content || "";
+        const isSuccess = v.status === "success" || v.status === "completed";
+        const fileCount = v.files_generated ?? 0;
+        const imageCount = v.images_generated ?? 0;
+        const parts: string[] = [];
+        if (fileCount > 0) parts.push(`${fileCount} code file${fileCount !== 1 ? "s" : ""}`);
+        if (imageCount > 0) parts.push(`${imageCount} image${imageCount !== 1 ? "s" : ""}`);
+        return {
+          id: v.version,
+          label: "v" + v.version,
+          status: isSuccess ? "completed" as const : "failed" as const,
+          description: lastUserMsg.length > 40 ? lastUserMsg.slice(0, 40) + "…" : lastUserMsg,
+          time: v.created_at ? new Date(v.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true }) : "",
+          filesChanged: fileCount,
+          prompt: lastUserMsg,
+          filesGenerated: fileCount,
+          qualityTier: v.quality_tier ?? null,
+          readinessScore: v.readiness_score ?? null,
+          buildSummary: isSuccess
+            ? parts.length > 0
+              ? parts.join(" · ") + " generated"
+              : "Pipeline completed successfully."
+            : t("pipelineFailed"),
+        };
+      });
+      mapped.sort((a, b) => b.id - a.id);
+      setVersions(mapped);
+      if (mapped.length > 0 && (selectedVersion === null || !mapped.find(m => m.id === selectedVersion))) {
+        onVersionSelect(mapped[0].id);
+      }
+      setLoadingVersions(false);
+    } catch {}
+  };
 
   useEffect(() => {
     if (!projectId) { setVersions([]); return; }
-    let cancelled = false;
+    const cancelled = { value: false };
     setLoadingVersions(true);
-    (async () => {
-      try {
-        const res = await fetch(`http://localhost:5000/api/execution-status?project_id=${projectId}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('archon_token')}` }
-        });
-        const data = await res.json();
-        if (!cancelled) setIsProjectBuilding(data.status === 'RUNNING');
-      } catch {
-        if (!cancelled) setIsProjectBuilding(false);
-      }
-      try {
-        const raw = await fetchVersions(projectId);
-        if (cancelled) return;
-        const mapped: Version[] = raw.map((v) => {
-          const lastUserMsg = v.prompt_history?.filter(m => m.role === "user").pop()?.content || "";
-          const isSuccess = v.status === "success" || v.status === "completed";
-          const fileCount = v.files_generated ?? 0;
-          const imageCount = v.images_generated ?? 0;
-          const parts: string[] = [];
-          if (fileCount > 0) parts.push(`${fileCount} code file${fileCount !== 1 ? "s" : ""}`);
-          if (imageCount > 0) parts.push(`${imageCount} image${imageCount !== 1 ? "s" : ""}`);
-          return {
-            id: v.version,
-            label: "v" + v.version,
-            status: isSuccess ? "completed" as const : "failed" as const,
-            description: lastUserMsg.length > 40 ? lastUserMsg.slice(0, 40) + "…" : lastUserMsg,
-            time: v.created_at ? new Date(v.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true }) : "",
-            filesChanged: fileCount,
-            prompt: lastUserMsg,
-            filesGenerated: fileCount,
-            qualityTier: v.quality_tier ?? null,
-            readinessScore: v.readiness_score ?? null,
-            buildSummary: isSuccess
-              ? parts.length > 0
-                ? parts.join(" · ") + " generated"
-                : "Pipeline completed successfully."
-              : t("pipelineFailed"),
-          };
-        });
-        mapped.sort((a, b) => b.id - a.id);
-        setVersions(mapped);
-        if (mapped.length > 0 && (selectedVersion === null || !mapped.find(m => m.id === selectedVersion))) {
-          onVersionSelect(mapped[0].id);
-        }
-        setLoadingVersions(false);
-      } catch {}
-    })();
-    return () => { cancelled = true; };
+    loadVersionData(projectId, cancelled);
+    pollRef.current = setInterval(() => loadVersionData(projectId, cancelled), 3000);
+    return () => {
+      cancelled.value = true;
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    };
   }, [projectId]);
 
   const version = versions.find((v) => v.id === selected);
+  const latestVersionId = versions.length > 0 ? versions[0].id : null; // versions sorted descending
+  const isBuildingSelected = isProjectBuilding && selected === latestVersionId;
 
   if (!projectId) {
     return (
@@ -146,8 +167,10 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
         <div className="px-3 py-3">
           <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2 py-1.5 mb-1">{t("yesterday")}</div>
           <div className="space-y-1">
-            {versions.map((v) => {
+            {versions.map((v, idx) => {
               const isActive = v.id === selected;
+              const isLatestVersion = idx === 0; // versions sorted descending — idx 0 is newest
+              const isBuildingThis = isProjectBuilding && isLatestVersion;
               return (
                 <button
                   key={v.id}
@@ -164,7 +187,7 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
                     }`}>
                       {v.label}
                     </span>
-                    {isProjectBuilding ? <Loader2 className="h-4 w-4 text-blue-500 animate-spin flex-shrink-0" /> : <StatusIcon status={v.status} />}
+                    {isBuildingThis ? <Loader2 className="h-4 w-4 text-blue-500 animate-spin flex-shrink-0" /> : <StatusIcon status={v.status} />}
                     <span className="text-[10px] text-muted-foreground ml-auto">{v.time}</span>
                   </div>
                   <p className="text-xs text-foreground mt-1.5 truncate leading-tight">{v.description}</p>
@@ -203,8 +226,8 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
               V{version.id}
             </span>
             <div className="flex items-center gap-1.5">
-              {isProjectBuilding ? <Loader2 className="h-4 w-4 text-blue-500 animate-spin flex-shrink-0" /> : <StatusIcon status={version.status} />}
-              {isProjectBuilding ? <span className="text-xs font-medium text-blue-500">Building</span> : <span className="text-xs font-medium text-foreground capitalize">{version.status === "completed" ? t("completed") : t("failed")}</span>}
+              {isBuildingSelected ? <Loader2 className="h-4 w-4 text-blue-500 animate-spin flex-shrink-0" /> : <StatusIcon status={version.status} />}
+              {isBuildingSelected ? <span className="text-xs font-medium text-blue-500">Building</span> : <span className="text-xs font-medium text-foreground capitalize">{version.status === "completed" ? t("completed") : t("failed")}</span>}
             </div>
             <span className="text-xs text-muted-foreground">{t("yesterday")} at {version.time}</span>
           </div>
@@ -232,7 +255,7 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
             <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">
               {t("whatWasBuilt")} {version.time}
             </div>
-            <p className="text-sm text-foreground">{isProjectBuilding ? "Build in progress..." : version.buildSummary}</p>
+            <p className="text-sm text-foreground">{isBuildingSelected ? "Build in progress..." : version.buildSummary}</p>
           </div>
 
           {/* Artifacts Row */}
@@ -294,7 +317,7 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
                     <div className="ml-3 h-4 w-48 bg-secondary rounded-sm" />
                   </div>
                   <iframe
-                    src={`http://localhost:5000/api/preview/${projectId}/${selected}`}
+                    src={`http://localhost:5000/api/preview/${projectId}/${selected}?k=${iframeKey}`}
                     className="w-full flex-1 border-0"
                   />
                 </div>
@@ -306,7 +329,7 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
                     </div>
                     <div className="mx-2 mb-2 rounded-xl overflow-hidden border border-border flex-1">
                       <iframe
-                        src={`http://localhost:5000/api/preview/${projectId}/${selected}`}
+                        src={`http://localhost:5000/api/preview/${projectId}/${selected}?k=${iframeKey}`}
                         className="w-full h-full border-0"
                       />
                     </div>
