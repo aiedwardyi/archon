@@ -31,14 +31,31 @@ export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectNam
   const initials = userEmail === "..." ? "..." : userEmail.slice(0, 2).toUpperCase();
 
   useEffect(() => {
-    const token = localStorage.getItem("archon_token");
-    if (!token) return;
-    fetch("http://localhost:5000/api/auth/me", {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(r => r.json())
-      .then(d => { if (d.email) setUserEmail(d.email); })
-      .catch(() => {});
+    const loadUser = () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlToken = params.get("token");
+      const token = localStorage.getItem("archon_token") || urlToken;
+      if (!token) return;
+
+      const cached = localStorage.getItem("archon_user");
+      if (cached) {
+        try {
+          const u = JSON.parse(cached);
+          if (u?.email) { setUserEmail(u.email); return; }
+        } catch {}
+      }
+
+      fetch("http://localhost:5000/api/auth/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((r) => r.json())
+        .then((d) => { if (d.email) setUserEmail(d.email); })
+        .catch(() => {});
+    };
+
+    loadUser();
+    window.addEventListener("storage", loadUser);
+    return () => window.removeEventListener("storage", loadUser);
   }, []);
 
   useEffect(() => {

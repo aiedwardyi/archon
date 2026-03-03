@@ -5,7 +5,7 @@ Phase 16.5 — register, login, forgot-password, reset-password, /me
 import os
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import (
-    JWTManager, create_access_token, jwt_required, get_jwt_identity
+    JWTManager, create_access_token, jwt_required, get_jwt_identity, get_jwt
 )
 import bcrypt
 import secrets
@@ -13,7 +13,7 @@ from datetime import datetime, timedelta, timezone
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 
-from models import User, Project, get_session
+from models import User, Project, TokenBlocklist, get_session
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
@@ -25,7 +25,34 @@ def init_jwt(app):
     """Call this from app.py to wire JWT into Flask."""
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "archon-dev-secret-change-in-prod")
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=7)
-    return JWTManager(app)
+    jwt = JWTManager(app)
+
+    @jwt.token_in_blocklist_loader
+    def check_if_token_revoked(jwt_header, jwt_payload):
+        jti = jwt_payload["jti"]
+        db = get_session()
+        try:
+            token = db.query(TokenBlocklist).filter(TokenBlocklist.jti == jti).first()
+            return token is not None
+        finally:
+            db.close()
+
+    return jwt
+
+
+# ── Logout ────────────────────────────────────────────────────────────────────
+
+@auth_bp.route("/logout", methods=["POST"])
+@jwt_required()
+def logout():
+    jti = get_jwt()["jti"]
+    db = get_session()
+    try:
+        db.add(TokenBlocklist(jti=jti))
+        db.commit()
+        return jsonify({"message": "Logged out"}), 200
+    finally:
+        db.close()
 
 
 # ── Register ──────────────────────────────────────────────────────────────────
