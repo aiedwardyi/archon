@@ -389,10 +389,9 @@ main (enterprise-ui merged and deleted)
 - Full "logout everywhere" requires storing all active tokens per user in DB and blacklisting all on logout.
 - Defer to Phase 18 (Unified Auth). Do not attempt partial fix — it adds complexity without solving the root cause.
 
-#### 🔴 /api/activity not owner-scoped (Mar 3, 2026)
-- Enterprise WelcomeBanner Recent Activity feed shows ALL users' builds, not just the logged-in user's
-- Root cause: /api/activity endpoint has no owner_id filter
-- Fix: add owner_id filter to /api/activity query in backend/app.py (same pattern as /api/projects)
+#### ✅ /api/activity owner-scoped (Mar 3, 2026)
+- Enterprise WelcomeBanner Recent Activity feed now shows only the logged-in user's builds
+- Added owner_id filter to /api/activity query in backend/app.py
 
 ---
 
@@ -404,19 +403,14 @@ main (enterprise-ui merged and deleted)
 - Notification bell confirmed working (success + failure tones via Web Audio API)
 - usePipelineStatus null-guard fix: COMPLETED/FAILED status always reaches caller even when project_id is null
 
-## 🔴 Known Bug — Stale Pipeline Bleed on Project Switch (Mar 3, 2026)
-- Switching to a new project (especially via New Project modal → Pipeline tab) shows previous project's logs, agent cards, and build details before new project data loads
-- False failure bell fires immediately on switch if previous project had a failed build
-- Root cause: historicalStatus/historicalLogs not cleared synchronously before async fetch on projectId change
-- Fix: reset historicalStatus=null + historicalLogs=[] synchronously at top of projectId useEffect, before any fetch
-- Also: only fire playSuccess/playFailure when sending===true (build started this session)
+## ✅ Fixed — Stale Pipeline Bleed on Project Switch (Mar 3, 2026)
+- historicalStatus/historicalLogs now cleared synchronously on projectId change before async fetch
+- playSuccess/playFailure only fires when sending===true (build started this session)
+- No more false failure bell or stale agent cards on project switch
 
-## 🔴 Known Bug — DALL-E Content Filter on Character Names
-- Character name "Zell" (FF8) triggers DALL-E content policy violation (error 400)
-- Other characters in same build (Squall, Rinoa) generate fine
-- Root cause: DALL-E flags certain proper nouns as policy violations unpredictably
-- Fix: add fallback prompt that strips character name and uses description only if content filter fires
-- Test: FF8 character page build — Zell image should generate with fallback prompt
+## ✅ Fixed — DALL-E Content Filter Fallback (Mar 3, 2026)
+- On content_policy_violation (error 400), retries with description-only prompt (character name stripped)
+- Zell (FF8) and similar proper nouns now generate via fallback instead of failing
 
 ## ✅ Chat Persistence — Partial Fix (Mar 1, 2026)
 - User messages now save to DB immediately on send (before pipeline starts)
@@ -425,15 +419,61 @@ main (enterprise-ui merged and deleted)
 - Root cause: agent reply generated at END of /chat — nothing to pre-save
 - Fix later: cache agent reply in sessionStorage immediately, sync to DB on completion
 
-## 🔴 Known Quality Bug — Image Generation Regression
+## ✅ Fixed — Image Generation Regression (Mar 3, 2026)
+- iteration_context now only injected into EngineerAgent, not DesignAgent
+- DALL-E prompt format restored to pre-Phase 14 quality
+- Character likenesses accurate again (FF7 Cloud/Barrett confirmed)
 
-DALL-E character images stopped matching character descriptions accurately after Phase 14 (scoped iteration enforcement). Previously generated highly accurate character likenesses (e.g. FF7 Cloud/Barrett). Now produces generic mid-tier outputs.
+## ✅ Fixed — Studio ↔ Enterprise Theme Toggle (Mar 3, 2026)
+- Toggle button in navbar fully working in both directions
+- Token + theme passed correctly on switch, no re-auth required
 
-**Suspected cause:** `iteration_context` injected before main prompt may be bleeding into or compressing the Design Agent's image prompt context.
+## ✅ Fixed — Google OAuth (Mar 3, 2026)
+- Google login working in Studio + Enterprise
+- Each Google email maps to a unique user in DB
+- owner_id scoping ensures projects are private per Google account
+- Cross-machine: logging in with same Google account on any computer shows the same projects (data lives in server DB, not browser)
 
-**To fix:**
-- Audit `agents/design_agent.py` — verify character name/description passes in fully
-- Ensure `iteration_context` only affects EngineerAgent, not DesignAgent
-- Restore DALL-E prompt format that worked pre-Phase 14
-- Test with: "Final Fantasy 7 character selection page with Cloud Strife and Barrett"
+---
+
+## ✅ Eval Loop + Prompt Optimization (Mar 3, 2026 — overnight run)
+
+### Eval system built (eval/ folder, 10 files)
+- Full automated pipeline: build app → screenshot → score via Claude Vision → rewrite prompts → repeat
+- Scoring model: Claude Vision evaluates generated app against archetype quality criteria
+
+### Bugs found and fixed during eval run
+
+**1. Plan schema mismatch (schemas/plan_schema.py)**
+- ui_archetype Literal only had 10 values but planner.txt told Gemini to pick from 30+
+- Gemini structured output failed every build: "could not produce a valid build plan after 3 attempts"
+- Fixed: Expanded Literal from 10 → 32 archetypes
+
+**2. Eval polling wrong project (eval/api_client.py)**
+- poll_until_done() wasn't passing project_id — polled whatever project happened to be running
+- Fixed: Added project_id param, passes as query param
+
+**3. Prompt improvement regression (eval/eval_runner.py)**
+- Game archetype dropped 74.5 → 57.5 after "improvement" — improver overloaded prompt with constraints
+- Fixed: Rollback logic — if score drops >2 points, reverts to best-known prompt
+
+**4. Convergence too early (eval/eval_runner.py + eval/eval_config.json)**
+- Loop stopped after 2 iterations due to score fluctuation within 1 point (natural variance)
+- Fixed: Threshold 1 → 3, require 3+ iterations before convergence check, build retries 3 → 5
+
+**5. Flask log noise (backend/app.py)**
+- Frontend polling flooded logs (OPTIONS preflights, health checks, stats, projects, activity every second)
+- Fixed: Smart log filter — suppresses OPTIONS entirely, rate-limits polling endpoints to once/3s with [×count] annotations
+
+### Eval scores (current best)
+| Archetype    | Best Score | Target |
+|--------------|------------|--------|
+| Dashboard    | 82/100     | 90     |
+| Game         | 75.5/100   | 90     |
+| SaaS Landing | 71.5/100   | 90     |
+
+### Still pending
+- 🔴 Re-run eval loop with rollback logic to push all 3 archetypes toward 90+
+- 🔴 SaaS landing builds unreliable (frequent validation errors + timeouts) — needs prompt stabilization
+- 🔴 Add 3 more archetypes (ecommerce, fintech, portfolio) once first 3 hit 90+
 
