@@ -32,7 +32,7 @@ Archon shows complete decision history with artifacts and live preview per versi
 
 ## Demo
 
-[![Archon Demo](https://img.youtube.com/vi/ci8xDNnxJKQ/maxresdefault.jpg)](https://youtu.be/ci8xDNnxJKQ)
+[![Archon Demo](docs/screenshots/demo-thumbnail.png)](https://youtu.be/ci8xDNnxJKQ)
 
 > Watch the full demo — from prompt to deployed app in under 5 minutes.
 
