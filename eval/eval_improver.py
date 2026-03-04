@@ -65,8 +65,8 @@ class PromptImprover:
         self.client = anthropic_client
         self.model = model
 
-    def _encode_image(self, image_path: Path, max_bytes: int = 4_500_000) -> dict:
-        """Encode an image for the Anthropic API, compressing if over 5MB."""
+    def _encode_image(self, image_path: Path, max_bytes: int = 3_500_000) -> dict:
+        """Encode an image for the Anthropic API, compressing if needed (3.5MB raw ≈ 4.7MB base64)."""
         data = Path(image_path).read_bytes()
 
         if len(data) <= max_bytes:

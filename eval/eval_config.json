@@ -8,9 +8,9 @@
     "fintech": "Build a stock trading dashboard with candlestick chart, watchlist, and portfolio breakdown",
     "portfolio": "Build a creative developer portfolio with project showcase, skills section, and contact form"
   },
-  "max_iterations": 10,
+  "max_iterations": 20,
   "target_score": 90,
-  "convergence_threshold": 3,
+  "convergence_threshold": 5,
   "backend_url": "http://localhost:5000",
   "preview_base": "http://localhost:5000",
   "screenshot_viewport": [1440, 900],

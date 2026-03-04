@@ -184,8 +184,11 @@ async def run_eval_loop(config: dict = None):
                     output_dir=output_dir,
                     wait_seconds=wait_seconds,
                 )
-                screenshot_path = screenshots["viewport"]
-                logger.info(f"Screenshots captured: {list(screenshots.keys())}")
+                # Use full-page screenshot for scoring so the scorer can see
+                # ALL sections (hero, features, pricing, footer, etc.), not just
+                # the above-fold viewport. This is critical for data_completeness.
+                screenshot_path = screenshots.get("full_page", screenshots["viewport"])
+                logger.info(f"Screenshots captured: {list(screenshots.keys())} — scoring with {'full_page' if 'full_page' in screenshots else 'viewport'}")
             except Exception as e:
                 logger.error(f"Screenshot failed for {archetype}: {e}")
                 save_json({"error": f"Screenshot failed: {e}"}, output_dir / "screenshot_error.json")

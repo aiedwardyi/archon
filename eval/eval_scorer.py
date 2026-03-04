@@ -70,11 +70,11 @@ class DesignScorer:
         self.client = anthropic_client
         self.model = model
 
-    def _encode_image(self, image_path: Path, max_bytes: int = 4_500_000) -> dict:
+    def _encode_image(self, image_path: Path, max_bytes: int = 3_500_000) -> dict:
         """Encode an image file as an Anthropic API image content block.
 
         If the image exceeds max_bytes, it's resized/compressed to fit under the
-        5MB API limit (with some headroom).
+        5MB API limit. Note: base64 adds ~33% overhead, so 3.5MB raw ≈ 4.7MB base64.
         """
         data = Path(image_path).read_bytes()
 
