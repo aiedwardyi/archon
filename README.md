@@ -65,6 +65,12 @@ Archon shows complete decision history with artifacts and live preview per versi
 </details>
 
 <details open>
+<summary><strong>Consumer Frontend — Prompt Interface</strong></summary>
+
+![Consumer Landing](docs/screenshots/consumer-landing.png)
+</details>
+
+<details open>
 <summary><strong>AI Governance — IBM Watson Factsheet</strong></summary>
 
 ![Governance](docs/screenshots/dashboard-governance.png)

@@ -564,7 +564,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None, 
                 execution.plan_path = str(version_dir / "last_plan.json")
                 # Build metrics
                 execution.duration_seconds = round(time.time() - pipeline_start_time, 2)
-                execution.model_used = "Gemini 2.5 Flash"
+                execution.model_used = "Claude Opus 4.6"
                 if hasattr(result, "usage") and result.usage:
                     input_tokens = getattr(result.usage, "input_tokens", 0) or 0
                     output_tokens = getattr(result.usage, "output_tokens", 0) or 0
