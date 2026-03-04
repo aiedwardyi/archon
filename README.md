@@ -1,3 +1,10 @@
+![Claude Opus 4.6](https://img.shields.io/badge/Claude_Opus_4.6-Anthropic-cc785c?style=for-the-badge&logo=anthropic&logoColor=white)
+![IBM Watson](https://img.shields.io/badge/IBM_Watson_NLU-IBM-054ADA?style=for-the-badge&logo=ibm&logoColor=white)
+![Gemini](https://img.shields.io/badge/Gemini_2.5_Flash-Google-4285F4?style=for-the-badge&logo=google&logoColor=white)
+![React](https://img.shields.io/badge/React_18-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![Flask](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+
 # Archon — AI Dev Team Platform
 
 > **Notice:** This repository contains proprietary software. All rights reserved. See [LICENSE](LICENSE) for terms. Unauthorized use, reproduction, or distribution is prohibited.
@@ -20,6 +27,48 @@ client apps to non-technical clients.
 
 **The MOAT:** The Versions page. Competitors show current state only.
 Archon shows complete decision history with artifacts and live preview per version.
+
+---
+
+## Demo
+
+[![Archon Demo](https://img.youtube.com/vi/ci8xDNnxJKQ/maxresdefault.jpg)](https://youtu.be/ci8xDNnxJKQ)
+
+> Watch the full demo — from prompt to deployed app in under 5 minutes.
+
+---
+
+## Screenshots
+
+<details open>
+<summary><strong>Projects Dashboard</strong></summary>
+
+![Projects Dashboard](docs/screenshots/dashboard-projects.png)
+</details>
+
+<details open>
+<summary><strong>Multi-Agent Pipeline</strong></summary>
+
+![Pipeline](docs/screenshots/dashboard-pipeline.png)
+</details>
+
+<details open>
+<summary><strong>Versions & Live Preview</strong></summary>
+
+![Versions](docs/screenshots/dashboard-versions.png)
+</details>
+
+<details open>
+<summary><strong>Artifacts — AI-Generated Brief</strong></summary>
+
+![Brief](docs/screenshots/dashboard-brief.png)
+</details>
+
+<details open>
+<summary><strong>AI Governance — IBM Watson Factsheet</strong></summary>
+
+![Governance](docs/screenshots/dashboard-governance.png)
+</details>
 
 ---
 
