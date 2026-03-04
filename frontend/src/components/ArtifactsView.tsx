@@ -557,7 +557,15 @@ interface Factsheet {
   compliance: { audit_trail: boolean; version_history: boolean; artifact_retention: boolean; human_review_required: boolean };
 }
 
+const complianceLabelMap: Record<string, "govAuditTrail" | "govVersionHistory" | "govArtifactRetention" | "govHumanReviewRequired"> = {
+  audit_trail: "govAuditTrail",
+  version_history: "govVersionHistory",
+  artifact_retention: "govArtifactRetention",
+  human_review_required: "govHumanReviewRequired",
+};
+
 const GovernanceTab = ({ projectId, version }: { projectId: number | null; version: number | null }) => {
+  const { t, language } = useLanguage();
   const [factsheet, setFactsheet] = useState<Factsheet | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -569,7 +577,7 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
       `http://localhost:5000/api/projects/${projectId}/versions/${version}/factsheet/pdf?type=${type}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    if (!res.ok) { alert("PDF download failed"); return; }
+    if (!res.ok) { alert(t("govPdfFailed")); return; }
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -591,7 +599,7 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
         const data = await res.json();
         if (!cancelled) setFactsheet(data);
       } catch {
-        if (!cancelled) setError("Factsheet not available for this version. Run a new build to generate one.");
+        if (!cancelled) setError(t("govFactsheetNotAvailable"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -599,13 +607,26 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
     return () => { cancelled = true; };
   }, [projectId, version]);
 
-  if (loading) return <div className="flex items-center gap-2 py-8 justify-center"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /><span className="text-sm text-muted-foreground">Loading factsheet...</span></div>;
+  if (loading) return <div className="flex items-center gap-2 py-8 justify-center"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /><span className="text-sm text-muted-foreground">{t("govLoadingFactsheet")}</span></div>;
   if (error) return <div className="text-sm text-muted-foreground italic py-8 text-center">{error}</div>;
-  if (!factsheet) return <div className="text-sm text-muted-foreground italic py-8 text-center">No factsheet data.</div>;
+  if (!factsheet) return <div className="text-sm text-muted-foreground italic py-8 text-center">{t("govNoFactsheet")}</div>;
 
   const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
   const titleCase = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase());
   const formatAgentPill = (val: string) => val === 'pm' ? 'PM' : capitalize(val);
+
+  const qualityLabel = (label: string) => {
+    if (label === "high") return language === "ko" ? "높음" : "High";
+    if (label === "medium") return language === "ko" ? "중간" : "Medium";
+    return language === "ko" ? "낮음" : "Low";
+  };
+
+  const buildQualityLabel = (score: number) => {
+    if (score >= 90) return t("govExcellent");
+    if (score >= 75) return language === "ko" ? "양호" : "Good";
+    if (score >= 50) return t("govFair");
+    return language === "ko" ? "낮음" : "Low";
+  };
 
   const formatQualityIndicator = (indicator: string, value: string) => {
     const label = indicator.replace(/\b\w/g, c => c.toUpperCase());
@@ -618,7 +639,23 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
     return `${label}: ${num} ${unit.charAt(0).toUpperCase() + unit.slice(1)}`;
   };
 
-  const ts = factsheet.generated_at ? new Date(factsheet.generated_at).toLocaleString() : "Unknown";
+  const formatAiProcessing = () => {
+    const providers = [...new Set(factsheet!.model_registry.map(m => m.provider))];
+    const count = factsheet!.model_registry.length;
+    if (providers.length === 0) {
+      return language === "ko"
+        ? `이 빌드는 ${count}개 AI 모델로 처리되었습니다.`
+        : `${count} AI model${count !== 1 ? "s" : ""} processed this build.`;
+    }
+    const last = providers[providers.length - 1];
+    const rest = providers.slice(0, -1);
+    const providerStr = providers.length === 1 ? providers[0] : language === "ko" ? `${rest.join(", ")} 및 ${last}` : `${rest.join(", ")}, and ${last}`;
+    return language === "ko"
+      ? `이 빌드는 ${providerStr}의 ${count}개 AI 모델로 처리되었습니다.`
+      : `${count} AI model${count !== 1 ? "s" : ""} processed this build across ${providerStr}.`;
+  };
+
+  const ts = factsheet.generated_at ? new Date(factsheet.generated_at).toLocaleString(language === "ko" ? "ko-KR" : "en-US") : language === "ko" ? "알 수 없음" : "Unknown";
 
   return (
     <div className="max-w-2xl space-y-4">
@@ -626,13 +663,13 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
       <div>
         <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
           <Shield className="h-5 w-5 text-blue-500" />
-          AI Factsheet — v{factsheet.project.version}
+          {t("govFactsheet")} — v{factsheet.project.version}
         </h1>
         <p className="text-xs text-muted-foreground mt-1">
-          Generated {ts} · Factsheet v{factsheet.factsheet_version}
-          {factsheet.readiness?.quality_tier === "high" && <>{" · "}<span className="text-blue-500 font-semibold">✦ High Quality</span>{factsheet.readiness?.combined_score != null && <>{" · "}<span className="text-muted-foreground">Score {factsheet.readiness.combined_score}/100</span></>}</>}
-          {factsheet.readiness?.quality_tier === "good" && <>{" · "}<span className="text-emerald-500 font-semibold">✦ Good Quality</span>{factsheet.readiness?.combined_score != null && <>{" · "}<span className="text-muted-foreground">Score {factsheet.readiness.combined_score}/100</span></>}</>}
-          {factsheet.readiness?.quality_tier === "low" && <>{" · "}<span className="text-red-500 font-semibold">✦ Low Quality</span>{factsheet.readiness?.combined_score != null && <>{" · "}<span className="text-muted-foreground">Score {factsheet.readiness.combined_score}/100</span></>}</>}
+          {t("govGenerated")} {ts} · {t("govFactsheet")} v{factsheet.factsheet_version}
+          {factsheet.readiness?.quality_tier === "high" && <>{" · "}<span className="text-blue-500 font-semibold">✦ {t("govHighQuality")}</span>{factsheet.readiness?.combined_score != null && <>{" · "}<span className="text-muted-foreground">{t("govScore")} {factsheet.readiness.combined_score}/100</span></>}</>}
+          {factsheet.readiness?.quality_tier === "good" && <>{" · "}<span className="text-emerald-500 font-semibold">✦ {t("govGoodQuality")}</span>{factsheet.readiness?.combined_score != null && <>{" · "}<span className="text-muted-foreground">{t("govScore")} {factsheet.readiness.combined_score}/100</span></>}</>}
+          {factsheet.readiness?.quality_tier === "low" && <>{" · "}<span className="text-red-500 font-semibold">✦ {t("govLowQuality")}</span>{factsheet.readiness?.combined_score != null && <>{" · "}<span className="text-muted-foreground">{t("govScore")} {factsheet.readiness.combined_score}/100</span></>}</>}
         </p>
       </div>
 
@@ -642,22 +679,22 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
           onClick={() => downloadPdf("client")}
           className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5 cursor-pointer"
         >
-          <FileText className="h-3.5 w-3.5" /> Download Client PDF
+          <FileText className="h-3.5 w-3.5" /> {t("govDownloadClientPdf")}
         </button>
         <button
           onClick={() => downloadPdf("internal")}
           className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5 cursor-pointer"
         >
-          <FileText className="h-3.5 w-3.5" /> Download Internal PDF
+          <FileText className="h-3.5 w-3.5" /> {t("govDownloadInternalPdf")}
         </button>
       </div>
 
       {/* Pipeline */}
       <div className="border border-border rounded-md p-5">
-        <h2 className="text-sm font-bold text-foreground mb-3">Pipeline</h2>
+        <h2 className="text-sm font-bold text-foreground mb-3">{t("pipeline")}</h2>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <span className="text-muted-foreground text-xs">Status</span>
+            <span className="text-muted-foreground text-xs">{t("status")}</span>
             <div className="mt-0.5">
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-emerald-300 text-emerald-600 dark:text-emerald-400 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10">
                 {capitalize(factsheet.pipeline.status)}
@@ -665,11 +702,11 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
             </div>
           </div>
           <div>
-            <span className="text-muted-foreground text-xs">UI Archetype</span>
-            <p className="mt-0.5 text-foreground">{factsheet.pipeline.ui_archetype ? capitalize(factsheet.pipeline.ui_archetype) : "Auto-detected"}</p>
+            <span className="text-muted-foreground text-xs">{t("govUiArchetype")}</span>
+            <p className="mt-0.5 text-foreground">{factsheet.pipeline.ui_archetype ? capitalize(factsheet.pipeline.ui_archetype) : t("govAutoDetected")}</p>
           </div>
           <div className="col-span-2">
-            <span className="text-muted-foreground text-xs">Agent Sequence</span>
+            <span className="text-muted-foreground text-xs">{t("govAgentSequence")}</span>
             <div className="mt-0.5 flex flex-wrap gap-1">
               {factsheet.pipeline.agent_sequence.map((a) => (
                 <span key={a} className="text-[10px] font-medium bg-secondary text-muted-foreground px-1.5 py-0.5 rounded">{formatAgentPill(a)}</span>
@@ -684,11 +721,11 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
         <div className="grid grid-cols-2 gap-4">
           {/* Prompt Quality */}
           <div className="border border-border rounded-md p-5 relative">
-            <h2 className="text-sm font-bold text-foreground">Prompt Quality</h2>
-            <p className="text-[11px] text-muted-foreground mt-0.5 mb-3">How clearly your idea was communicated to the AI pipeline</p>
+            <h2 className="text-sm font-bold text-foreground">{t("govPromptQuality")}</h2>
+            <p className="text-[11px] text-muted-foreground mt-0.5 mb-3">{t("govPromptQualityDesc")}</p>
             {factsheet.scoring.prompt_quality.powered_by === "unavailable" ? (
               <p className="text-xs text-muted-foreground italic">
-                Watson NLU credentials not configured — add WATSON_NLU_API_KEY and WATSON_NLU_URL to backend/.env to enable prompt scoring.
+                {t("govWatsonNotConfigured")}
               </p>
             ) : (
               <>
@@ -702,20 +739,20 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
                       ? "border-amber-300 text-amber-600 dark:text-amber-400 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10"
                       : "border-red-300 text-red-600 dark:text-red-400 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10"
                   }`}>
-                    {capitalize(factsheet.scoring.prompt_quality.label)}
+                    {qualityLabel(factsheet.scoring.prompt_quality.label)}
                   </span>
                 </div>
                 <div className="flex flex-col gap-1 mb-3">
-                  <span className="text-xs text-muted-foreground">Domain</span>
+                  <span className="text-xs text-muted-foreground">{t("govDomain")}</span>
                   <span className="text-sm font-normal text-foreground">{capitalize(factsheet.scoring.prompt_quality.domain)}</span>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className="text-xs text-muted-foreground">Keywords</span>
+                  <span className="text-xs text-muted-foreground">{t("govKeywords")}</span>
                   <span className="text-sm font-normal text-foreground leading-relaxed">{factsheet.scoring.prompt_quality.keywords.length > 0 ? factsheet.scoring.prompt_quality.keywords.map(k => capitalize(k)).join(", ") : "—"}</span>
                 </div>
                 <div className="absolute top-3 right-3">
                   <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30">
-                    Powered by IBM Watson NLU
+                    {t("govPoweredByWatson")}
                   </span>
                 </div>
               </>
@@ -724,11 +761,10 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
 
           {/* Build Quality Score */}
           <div className="border border-border rounded-md p-5">
-            <h2 className="text-sm font-bold text-foreground">Build Quality Score</h2>
-            <p className="text-[11px] text-muted-foreground mt-0.5 mb-3">Based on code output, archetype detection, and pipeline success</p>
+            <h2 className="text-sm font-bold text-foreground">{t("govBuildQuality")}</h2>
+            <p className="text-[11px] text-muted-foreground mt-0.5 mb-3">{t("govBuildQualityDesc")}</p>
             {(() => {
               const displayScore = factsheet.scoring!.build_confidence.score;
-              const displayLabel = displayScore >= 90 ? "excellent" : displayScore >= 75 ? "good" : displayScore >= 50 ? "fair" : "low";
               const labelColor = displayScore >= 75
                 ? "border-emerald-300 text-emerald-600 dark:text-emerald-400 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10"
                 : displayScore >= 50
@@ -741,13 +777,13 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
                     <span className="text-3xl font-bold text-foreground">{displayScore}</span>
                     <span className="text-sm text-muted-foreground mb-1">/100</span>
                     <span className={`ml-2 text-[10px] font-semibold px-2 py-0.5 rounded border mb-1 ${labelColor}`}>
-                      {capitalize(displayLabel)}
+                      {buildQualityLabel(displayScore)}
                     </span>
                   </div>
                   {filteredBreakdown.length > 0 && (
                     <div className="border border-border rounded overflow-hidden">
                       <div className="grid gap-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground bg-secondary/40 px-3 py-1.5" style={{ gridTemplateColumns: '1fr 60px 1fr' }}>
-                        <span>Factor</span><span>Points</span><span>Note</span>
+                        <span>{t("govFactor")}</span><span>{t("govPoints")}</span><span>{t("govNote")}</span>
                       </div>
                       {filteredBreakdown.map((b) => (
                         <div key={b.factor} className="grid gap-0 text-xs px-3 py-1.5 border-t border-border" style={{ gridTemplateColumns: '1fr 60px 1fr' }}>
@@ -767,10 +803,10 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
 
       {/* Model Registry */}
       <div className="border border-border rounded-md p-5">
-        <h2 className="text-sm font-bold text-foreground mb-3">Model Registry</h2>
+        <h2 className="text-sm font-bold text-foreground mb-3">{t("govModelRegistry")}</h2>
         <div className="border border-border rounded overflow-hidden">
           <div className="grid grid-cols-3 gap-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground bg-secondary/40 px-3 py-2">
-            <span>Agent Role</span><span>Model</span><span>Provider</span>
+            <span>{t("govAgentRole")}</span><span>{t("model")}</span><span>{t("govProvider")}</span>
           </div>
           {factsheet.model_registry.map((m) => (
             <div key={m.agent_role} className="grid grid-cols-3 gap-0 text-sm px-3 py-2 border-t border-border">
@@ -784,30 +820,20 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
 
       {/* AI Processing */}
       <div className="border border-border rounded-md p-5">
-        <h2 className="text-sm font-bold text-foreground mb-3">AI Processing</h2>
-        <p className="text-sm text-muted-foreground">
-          {(() => {
-            const providers = [...new Set(factsheet.model_registry.map(m => m.provider))];
-            const count = factsheet.model_registry.length;
-            if (providers.length === 0) return `${count} AI model${count !== 1 ? "s" : ""} processed this build.`;
-            const last = providers[providers.length - 1];
-            const rest = providers.slice(0, -1);
-            const providerStr = providers.length === 1 ? providers[0] : `${rest.join(", ")}, and ${last}`;
-            return `${count} AI model${count !== 1 ? "s" : ""} processed this build across ${providerStr}.`;
-          })()}
-        </p>
+        <h2 className="text-sm font-bold text-foreground mb-3">{t("govAiProcessing")}</h2>
+        <p className="text-sm text-muted-foreground">{formatAiProcessing()}</p>
       </div>
 
       {/* Outputs */}
       <div className="border border-border rounded-md p-5">
-        <h2 className="text-sm font-bold text-foreground mb-3">Outputs</h2>
+        <h2 className="text-sm font-bold text-foreground mb-3">{t("govOutputs")}</h2>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <span className="text-muted-foreground text-xs">Files Generated</span>
+            <span className="text-muted-foreground text-xs">{t("govFilesGenerated")}</span>
             <p className="mt-0.5 text-foreground font-mono">{factsheet.outputs.files_generated}</p>
           </div>
           <div>
-            <span className="text-muted-foreground text-xs">Images Generated</span>
+            <span className="text-muted-foreground text-xs">{t("govImagesGenerated")}</span>
             <p className="mt-0.5 text-foreground font-mono">{factsheet.outputs.images_generated}</p>
           </div>
         </div>
@@ -816,7 +842,7 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
       {/* Quality Indicators */}
       {factsheet.quality_indicators.length > 0 && (
         <div className="border border-border rounded-md p-5">
-          <h2 className="text-sm font-bold text-foreground mb-3">Quality Indicators</h2>
+          <h2 className="text-sm font-bold text-foreground mb-3">{t("govQualityIndicators")}</h2>
           <div className="flex flex-wrap gap-2">
             {factsheet.quality_indicators.filter((qi) => qi.indicator.toLowerCase() !== "build speed").map((qi) => (
               <span
@@ -838,8 +864,8 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
 
       {/* Compliance */}
       <div className="border border-border rounded-md p-5">
-        <h2 className="text-sm font-bold text-foreground mb-3">Compliance</h2>
-        <p className="text-xs text-muted-foreground italic mb-3">This build was generated by a governed, auditable AI pipeline.</p>
+        <h2 className="text-sm font-bold text-foreground mb-3">{t("govCompliance")}</h2>
+        <p className="text-xs text-muted-foreground italic mb-3">{t("govComplianceDesc")}</p>
         <div className="grid grid-cols-2 gap-2">
           {Object.entries(factsheet.compliance).map(([key, val]) => (
             <div key={key} className="flex items-center gap-2 text-sm">
@@ -848,7 +874,7 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
               ) : (
                 <Circle className="h-4 w-4 text-muted-foreground" />
               )}
-              <span className="text-foreground">{key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</span>
+              <span className="text-foreground">{complianceLabelMap[key] ? t(complianceLabelMap[key]) : key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</span>
             </div>
           ))}
         </div>
