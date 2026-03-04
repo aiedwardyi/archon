@@ -1,9 +1,0 @@
-# ═══════════════════════════════════════
-# ARCHETYPE 3: SAAS DASHBOARD
-# ═══════════════════════════════════════
-
-PATH: B (Raw CSS + animations)
-Use for: dashboards, admin panels, CRMs, analytics, project management.
-Theme: bg-zinc-50 main. bg-white sidebar+cards. Font: Inter only. Accent: violet-600.
-RULES: ALWAYS bg-zinc-50 main. NEVER dark backgrounds. NEVER heavy gradients or decorative glows. Inter font only. text-sm for most content. tabular-nums on all numbers. Shadows: ONLY hover:shadow-md hover:shadow-zinc-900/5.
-MUST include: sidebar (4+ nav items with SVG icons, user profile) → header (hamburger, search ⌘K, bell) → 4 KPI cards → area chart → data table → activity feed.

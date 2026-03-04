@@ -53,5 +53,15 @@ pnpm-lock.yaml
 
 # Claude Code
 .claude/
-CLAUDE.md.vite/
+CLAUDE.md
+
+# Vite
+.vite/
+
+# Next.js auto-generated
 frontend-studio/next-env.d.ts
+
+# Eval loop artifacts (generated during scoring runs)
+eval/results/
+eval/backups/
+eval/FAILURES_LOG.md

@@ -1,5 +1,7 @@
 # Archon — AI Dev Team Platform
 
+> **Notice:** This repository contains proprietary software. All rights reserved. See [LICENSE](LICENSE) for terms. Unauthorized use, reproduction, or distribution is prohibited.
+
 > Digital agencies spend 70% of their time rebuilding and re-explaining decisions to clients. Archon solves this by generating complete web apps with a full audit trail — every decision recorded, every version restorable, every build IBM Watson-certified. Agencies close clients faster and reduce revision cycles by showing exactly what was built, when, and why.
 
 A multi-agent platform that converts product ideas into auditable web applications
@@ -7,11 +9,13 @@ with full version history. Built for digital agencies and enterprises delivering
 client apps to non-technical clients.
 
 **What makes Archon different:**
+- **Claude Opus 4.6** powers the Build Agent — generates production-grade full-stack code from natural language
 - Every prompt creates a full artifact set: Brief + Plan + Code + live preview
 - Complete version history — every decision is auditable and reversible
 - Agencies can show clients exactly what was built and why, version by version
 - Business language UI — no developer jargon anywhere
 - Korean/English language support
+- **Claude Vision** scores design quality in the automated eval loop
 - IBM Watson governance — every build is scored, audited, and factsheet-certified
 
 **The MOAT:** The Versions page. Competitors show current state only.
@@ -29,11 +33,11 @@ Prompt History (context continuation)
     ↓
 Requirements Agent (OpenAI GPT-4o)  → Brief artifact (versioned)
     ↓
-Architecture Agent (Gemini 2.5 Flash)    → Build Plan artifact (versioned)
+Architecture Agent (Gemini 2.5 Flash)     → Build Plan artifact (versioned)
     ↓
 Design Agent (GPT-4o-mini + DALL-E 3)   → Image assets (versioned, parallel generation)
     ↓
-Build Agent (Gemini 2.5 Flash)          → Code files (versioned)
+Build Agent (Claude Opus 4.6)            → Code files (versioned)
     ↓
 Governance Agent (IBM Watson NLU)   → AI Factsheet (scored, versioned, exportable)
     ↓
@@ -48,8 +52,8 @@ Execution Result → Database + UI + Version Timeline + Live Preview
 - Python 3.11+
 - Node.js 18+
 - OpenAI API key
-- Google Gemini API key (Build Agent + Architecture Agent)
-- Anthropic API key (optional — Claude Opus path preserved but disabled)
+- Anthropic API key (Build Agent — Claude Opus 4.6)
+- Google Gemini API key (Architecture Agent)
 - IBM Watson API keys (STT, TTS, NLU — optional, degrades gracefully)
 
 ### 1. Clone and install
@@ -130,7 +134,7 @@ ai-dev-team/
 │   ├── pm_agent.py           # Requirements Agent (OpenAI GPT-4o-mini)
 │   ├── planner_agent.py      # Architecture Agent (Gemini Flash)
 │   ├── design_agent.py       # Design Agent (GPT-4o-mini + DALL-E 3)
-│   ├── engineer_agent.py     # Build Agent (Gemini 2.5 Flash, Claude Opus path preserved)
+│   ├── engineer_agent.py     # Build Agent (Claude Opus 4.6, Gemini fallback)
 │   ├── nlu_agent.py          # NLU Agent (IBM Watson — sentiment + keyword analysis)
 │   └── governance_agent.py   # Governance Agent (IBM Watson NLU — AI Factsheets + scoring)
 ├── backend/
@@ -216,6 +220,31 @@ ai-dev-team/
 
 ---
 
+## Anthropic Claude Integration
+
+Claude is the core intelligence behind Archon's code generation and quality evaluation.
+
+**Build Agent — Claude Opus 4.6:**
+- Primary code generation engine — converts build plans into complete, deployable web applications
+- Streaming responses with 64K token output window for complex multi-file apps
+- Structured JSON output with 5-pass repair pipeline (handles edge cases in large code generation)
+- Retry logic with exponential backoff for rate limits and transient errors
+- Gemini 2.5 Flash available as automatic fallback
+
+**Design Eval Loop — Claude Vision (Sonnet):**
+- Automated design quality scoring — screenshots evaluated against 8 dimensions (hierarchy, typography, color, layout, polish, data completeness, interactivity, overall impression)
+- Reference-based comparison — good/bad example images provided for each archetype
+- Prompt rewriting — Claude analyzes scores and rewrites engineer prompts to fix identified issues
+- Rollback logic — reverts prompt changes that regress scores
+- Target: 90+/100 across all 32 archetypes
+
+**Why Claude:**
+- Opus 4.6 produces significantly higher-quality code output than alternatives — fewer generic templates, more domain-specific design decisions
+- Vision capabilities enable automated design evaluation without human reviewers
+- Streaming support keeps the pipeline responsive for long-running builds
+
+---
+
 ## IBM Watson Governance
 
 Archon includes an enterprise-grade AI governance layer powered by IBM Watson NLU.
@@ -230,7 +259,7 @@ Archon includes an enterprise-grade AI governance layer powered by IBM Watson NL
 - Prompt Quality Score (IBM Watson NLU)
 - Build Confidence Score (output quality signals)
 - Human Review Required flag (auto-triggered when either score < 50)
-- Model Registry — every AI model used: OpenAI (PM Agent), Google Gemini (Architecture + Build), IBM Watson NLU (Governance)
+- Model Registry — every AI model used: OpenAI (PM Agent), Anthropic Claude (Build), Google Gemini (Architecture), IBM Watson NLU (Governance)
 - Compliance flags: data_privacy, bias_check, content_moderation
 - Archetype, token usage, build duration
 
@@ -285,4 +314,4 @@ A prominent banner also appears at the top of the Governance tab with plain-Engl
 
 ## License
 
-Proprietary. All rights reserved.
+Copyright (c) 2025-2026 Edward Yi. All rights reserved. See [LICENSE](LICENSE).
