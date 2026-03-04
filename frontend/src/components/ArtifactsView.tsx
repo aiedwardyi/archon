@@ -564,8 +564,50 @@ const complianceLabelMap: Record<string, "govAuditTrail" | "govVersionHistory" |
   human_review_required: "govHumanReviewRequired",
 };
 
+// Korean translation maps for API data values
+const koStatusMap: Record<string, string> = { success: "성공", failed: "실패", running: "실행 중", pending: "대기 중" };
+const koAgentPillMap: Record<string, string> = { pm: "PM", planner: "설계", design: "디자인", engineer: "빌드", governance: "거버넌스" };
+const koAgentRoleMap: Record<string, string> = {
+  "Requirements Agent": "요구사항 에이전트", "Architecture Agent": "아키텍처 에이전트",
+  "Design Agent": "디자인 에이전트", "Build Agent": "빌드 에이전트", "Governance Agent": "거버넌스 에이전트",
+};
+const koFactorMap: Record<string, string> = {
+  "code files": "코드 파일", "archetype detected": "아키타입 감지", "pipeline success": "파이프라인 성공",
+  "code length": "코드 길이", "design assets": "디자인 에셋", "build speed": "빌드 속도",
+};
+const koNoteMap: Record<string, string> = {
+  "completed without error": "오류 없이 완료", "1 file": "1개 파일", "2 files": "2개 파일",
+  "3 files": "3개 파일", "4 files": "4개 파일", "5 files": "5개 파일",
+  "no files": "파일 없음", "detected": "감지됨", "not detected": "미감지",
+};
+const koArchetypeMap: Record<string, string> = {
+  restaurant: "레스토랑", dashboard: "대시보드", game: "게임", portfolio: "포트폴리오",
+  saas_landing: "SaaS 랜딩", ecommerce: "이커머스", blog: "블로그", social: "소셜",
+  education: "교육", fitness: "피트니스", travel: "여행", music: "음악",
+  news: "뉴스", weather: "날씨", recipe: "레시피", booking: "예약",
+  chat: "채팅", crm: "CRM", analytics: "분석", marketplace: "마켓플레이스",
+  form: "폼", landing: "랜딩", admin: "관리자", survey: "설문",
+  kanban: "칸반", calendar: "캘린더", quiz: "퀴즈", timer: "타이머",
+  tracker: "트래커", inventory: "재고관리", invoice: "인보이스", gallery: "갤러리",
+};
+const koDomainMap: Record<string, string> = {
+  "food & drink": "음식 & 음료", "technology": "기술", "business": "비즈니스",
+  "entertainment": "엔터테인먼트", "education": "교육", "health": "건강",
+  "finance": "금융", "travel": "여행", "sports": "스포츠", "music": "음악",
+  "general": "일반", "lifestyle": "라이프스타일", "real estate": "부동산",
+};
+const koIndicatorMap: Record<string, string> = {
+  "code generated": "생성된 코드", "design assets": "디자인 에셋", "token usage": "토큰 사용량",
+  "prompt clarity": "프롬프트 명확도", "build speed": "빌드 속도",
+};
+const koUnitMap: Record<string, string> = {
+  file: "파일", files: "파일", image: "이미지", images: "이미지",
+  token: "토큰", tokens: "토큰",
+};
+
 const GovernanceTab = ({ projectId, version }: { projectId: number | null; version: number | null }) => {
   const { t, language } = useLanguage();
+  const ko = language === "ko";
   const [factsheet, setFactsheet] = useState<Factsheet | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -613,27 +655,49 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
 
   const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
   const titleCase = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase());
-  const formatAgentPill = (val: string) => val === 'pm' ? 'PM' : capitalize(val);
+
+  // Korean-aware helpers for API data values
+  const trStatus = (s: string) => ko ? (koStatusMap[s.toLowerCase()] || capitalize(s)) : capitalize(s);
+  const trAgentPill = (val: string) => ko ? (koAgentPillMap[val.toLowerCase()] || capitalize(val)) : (val === 'pm' ? 'PM' : capitalize(val));
+  const trAgentRole = (role: string) => ko ? (koAgentRoleMap[role] || role) : role;
+  const trArchetype = (a: string) => ko ? (koArchetypeMap[a.toLowerCase()] || capitalize(a)) : capitalize(a);
+  const trDomain = (d: string) => ko ? (koDomainMap[d.toLowerCase()] || capitalize(d)) : capitalize(d);
+  const trFactor = (f: string) => ko ? (koFactorMap[f.toLowerCase()] || titleCase(f)) : titleCase(f);
+  const trNote = (n: string) => {
+    if (!ko) return capitalize(n);
+    // Try exact match first, then check if it matches an archetype
+    const lower = n.toLowerCase();
+    if (koNoteMap[lower]) return koNoteMap[lower];
+    if (koArchetypeMap[lower]) return koArchetypeMap[lower];
+    // Handle "N file(s)" pattern
+    const fileMatch = n.match(/^(\d+)\s+file/i);
+    if (fileMatch) return `${fileMatch[1]}개 파일`;
+    return capitalize(n);
+  };
 
   const qualityLabel = (label: string) => {
-    if (label === "high") return language === "ko" ? "높음" : "High";
-    if (label === "medium") return language === "ko" ? "중간" : "Medium";
-    return language === "ko" ? "낮음" : "Low";
+    if (label === "high") return ko ? "높음" : "High";
+    if (label === "medium") return ko ? "중간" : "Medium";
+    return ko ? "낮음" : "Low";
   };
 
   const buildQualityLabel = (score: number) => {
     if (score >= 90) return t("govExcellent");
-    if (score >= 75) return language === "ko" ? "양호" : "Good";
+    if (score >= 75) return ko ? "양호" : "Good";
     if (score >= 50) return t("govFair");
-    return language === "ko" ? "낮음" : "Low";
+    return ko ? "낮음" : "Low";
   };
 
   const formatQualityIndicator = (indicator: string, value: string) => {
-    const label = indicator.replace(/\b\w/g, c => c.toUpperCase());
+    const label = ko ? (koIndicatorMap[indicator.toLowerCase()] || indicator.replace(/\b\w/g, c => c.toUpperCase())) : indicator.replace(/\b\w/g, c => c.toUpperCase());
     const match = value.match(/^([\d,]+)\s+(.+)$/);
     if (!match) return `${label}: ${value}`;
     const num = match[1];
     const rawUnit = match[2].replace(/\(s\)/, '');
+    if (ko) {
+      const koUnit = koUnitMap[rawUnit.toLowerCase()] || koUnitMap[rawUnit.replace(/s$/, '').toLowerCase()] || rawUnit;
+      return `${label}: ${num} ${koUnit}`;
+    }
     const count = parseInt(num.replace(/,/g, ''), 10);
     const unit = count === 1 ? rawUnit.replace(/s$/, '') : rawUnit.endsWith('s') ? rawUnit : rawUnit + 's';
     return `${label}: ${num} ${unit.charAt(0).toUpperCase() + unit.slice(1)}`;
@@ -643,19 +707,19 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
     const providers = [...new Set(factsheet!.model_registry.map(m => m.provider))];
     const count = factsheet!.model_registry.length;
     if (providers.length === 0) {
-      return language === "ko"
+      return ko
         ? `이 빌드는 ${count}개 AI 모델로 처리되었습니다.`
         : `${count} AI model${count !== 1 ? "s" : ""} processed this build.`;
     }
     const last = providers[providers.length - 1];
     const rest = providers.slice(0, -1);
-    const providerStr = providers.length === 1 ? providers[0] : language === "ko" ? `${rest.join(", ")} 및 ${last}` : `${rest.join(", ")}, and ${last}`;
-    return language === "ko"
+    const providerStr = providers.length === 1 ? providers[0] : ko ? `${rest.join(", ")} 및 ${last}` : `${rest.join(", ")}, and ${last}`;
+    return ko
       ? `이 빌드는 ${providerStr}의 ${count}개 AI 모델로 처리되었습니다.`
       : `${count} AI model${count !== 1 ? "s" : ""} processed this build across ${providerStr}.`;
   };
 
-  const ts = factsheet.generated_at ? new Date(factsheet.generated_at).toLocaleString(language === "ko" ? "ko-KR" : "en-US") : language === "ko" ? "알 수 없음" : "Unknown";
+  const ts = factsheet.generated_at ? new Date(factsheet.generated_at).toLocaleString(ko ? "ko-KR" : "en-US") : ko ? "알 수 없음" : "Unknown";
 
   return (
     <div className="max-w-2xl space-y-4">
@@ -697,19 +761,19 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
             <span className="text-muted-foreground text-xs">{t("status")}</span>
             <div className="mt-0.5">
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-emerald-300 text-emerald-600 dark:text-emerald-400 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10">
-                {capitalize(factsheet.pipeline.status)}
+                {trStatus(factsheet.pipeline.status)}
               </span>
             </div>
           </div>
           <div>
             <span className="text-muted-foreground text-xs">{t("govUiArchetype")}</span>
-            <p className="mt-0.5 text-foreground">{factsheet.pipeline.ui_archetype ? capitalize(factsheet.pipeline.ui_archetype) : t("govAutoDetected")}</p>
+            <p className="mt-0.5 text-foreground">{factsheet.pipeline.ui_archetype ? trArchetype(factsheet.pipeline.ui_archetype) : t("govAutoDetected")}</p>
           </div>
           <div className="col-span-2">
             <span className="text-muted-foreground text-xs">{t("govAgentSequence")}</span>
             <div className="mt-0.5 flex flex-wrap gap-1">
               {factsheet.pipeline.agent_sequence.map((a) => (
-                <span key={a} className="text-[10px] font-medium bg-secondary text-muted-foreground px-1.5 py-0.5 rounded">{formatAgentPill(a)}</span>
+                <span key={a} className="text-[10px] font-medium bg-secondary text-muted-foreground px-1.5 py-0.5 rounded">{trAgentPill(a)}</span>
               ))}
             </div>
           </div>
@@ -744,7 +808,7 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
                 </div>
                 <div className="flex flex-col gap-1 mb-3">
                   <span className="text-xs text-muted-foreground">{t("govDomain")}</span>
-                  <span className="text-sm font-normal text-foreground">{capitalize(factsheet.scoring.prompt_quality.domain)}</span>
+                  <span className="text-sm font-normal text-foreground">{trDomain(factsheet.scoring.prompt_quality.domain)}</span>
                 </div>
                 <div className="flex flex-col gap-1">
                   <span className="text-xs text-muted-foreground">{t("govKeywords")}</span>
@@ -787,9 +851,9 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
                       </div>
                       {filteredBreakdown.map((b) => (
                         <div key={b.factor} className="grid gap-0 text-xs px-3 py-1.5 border-t border-border" style={{ gridTemplateColumns: '1fr 60px 1fr' }}>
-                          <span className="text-foreground">{titleCase(b.factor)}</span>
+                          <span className="text-foreground">{trFactor(b.factor)}</span>
                           <span className="text-muted-foreground font-mono">{b.points}</span>
-                          <span className="text-muted-foreground">{capitalize(b.note)}</span>
+                          <span className="text-muted-foreground">{trNote(b.note)}</span>
                         </div>
                       ))}
                     </div>
@@ -810,7 +874,7 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
           </div>
           {factsheet.model_registry.map((m) => (
             <div key={m.agent_role} className="grid grid-cols-3 gap-0 text-sm px-3 py-2 border-t border-border">
-              <span className="text-foreground">{m.agent_role}</span>
+              <span className="text-foreground">{trAgentRole(m.agent_role)}</span>
               <span className="text-muted-foreground font-mono text-xs">{m.model}</span>
               <span className="text-muted-foreground">{m.provider}</span>
             </div>
