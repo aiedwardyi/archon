@@ -336,11 +336,11 @@ class EngineerAgent:
             f"--- TASK END ---"
         )
 
-        # Claude Opus routing disabled — Opus 4.6 overloaded (2025-03-03)
-        # Uncomment to re-enable when Opus stabilizes:
-        # if os.environ.get("ANTHROPIC_API_KEY"):
-        #     return _run_claude(contents)
+        # Primary: Claude Opus 4.6
+        if os.environ.get("ANTHROPIC_API_KEY"):
+            return _run_claude(contents)
 
+        # Fallback: Gemini 2.5 Flash (if no Anthropic key)
         if self.client is None:
             raise RuntimeError("EngineerAgent: no API client available")
 
