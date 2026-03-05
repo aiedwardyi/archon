@@ -38,6 +38,36 @@ Archon shows complete decision history with artifacts and live preview per versi
 
 ---
 
+## Generated Examples
+
+Every app is generated from a single prompt — no templates, no manual coding. Here are examples produced by the platform:
+
+### Crypto Portfolio Dashboard
+> Prompt: *"Build a crypto portfolio tracker with real-time prices, holdings table, and activity feed"*
+
+![Crypto Dashboard](docs/screenshots/dashboard-crypto.jpg)
+
+### Final Fantasy VIII Fan Page
+> Prompt: *"Build a Final Fantasy VIII fan page with character profiles, weapons gallery, and world map"*
+
+![FF8 Full Page](docs/screenshots/game-ff8-full.jpg)
+
+*AI-generated character art:*
+
+![FF8 Characters](docs/screenshots/game-ff8-characters.jpg)
+
+### Streetwear E-Commerce Store
+> Prompt: *"Build a premium streetwear store with product grid, cart drawer, and featured collection"*
+
+![Streetwear Store](docs/screenshots/ecommerce-streetwear.jpg)
+
+### Developer Portfolio
+> Prompt: *"Build a creative developer portfolio with project showcase, skills section, and contact form"*
+
+![Developer Portfolio](docs/screenshots/portfolio-developer.jpg)
+
+---
+
 ## Screenshots
 
 <details open>
@@ -65,15 +95,15 @@ Archon shows complete decision history with artifacts and live preview per versi
 </details>
 
 <details open>
-<summary><strong>Consumer Frontend — Prompt Interface</strong></summary>
-
-![Consumer Landing](docs/screenshots/consumer-landing.png)
-</details>
-
-<details open>
 <summary><strong>AI Governance — IBM Watson Factsheet</strong></summary>
 
 ![Governance](docs/screenshots/dashboard-governance.png)
+</details>
+
+<details open>
+<summary><strong>Consumer Frontend — Prompt Interface</strong></summary>
+
+![Consumer Landing](docs/screenshots/consumer-landing.png)
 </details>
 
 ---
@@ -93,6 +123,8 @@ Architecture Agent (Gemini 2.5 Flash)     → Build Plan artifact (versioned)
 Design Agent (GPT-4o-mini + DALL-E 3)   → Image assets (versioned, parallel generation)
     ↓
 Build Agent (Claude Opus 4.6)            → Code files (versioned)
+    ↓
+Eval System (Claude Sonnet 4.6)          → Vision-based quality scoring (8 dimensions)
     ↓
 Governance Agent (IBM Watson NLU)   → AI Factsheet (scored, versioned, exportable)
     ↓
@@ -216,6 +248,15 @@ ai-dev-team/
 ├── schemas/
 ├── scripts/
 │   └── safe_write.py         # Iteration scope enforcement
+├── eval/
+│   ├── eval_runner.py        # Automated build → screenshot → score → improve loop
+│   ├── eval_scorer.py        # Vision-based scoring (Claude Sonnet 4.6)
+│   ├── eval_improver.py      # Prompt improvement based on scoring feedback
+│   ├── scoring_rubric.py     # 8-dimension quality rubric with archetype criteria
+│   ├── screenshotter.py      # Playwright full-page screenshot capture
+│   └── eval_config.json      # Eval loop configuration
+├── docs/
+│   └── screenshots/          # Curated showcase images
 ├── ROADMAP.md
 └── CURRENT_SPRINT.md
 ```
@@ -272,6 +313,7 @@ ai-dev-team/
 | **Human Review Flag** | **Auto-triggers when prompt or build score < 50** |
 | **Dashboard Governance** | **Enterprise header shows live Avg Prompt Score and Avg Build Score across all builds** |
 | **Quality Tier Badges** | **Every version card shows High / Good / Low Quality badge based on combined score** |
+| **Eval System** | **Automated build → screenshot → score → improve loop with vision-based quality assessment (8 dimensions, archetype-specific criteria)** |
 
 ---
 

@@ -65,11 +65,19 @@ class PromptImprover:
         self.client = anthropic_client
         self.model = model
 
-    def _encode_image(self, image_path: Path, max_bytes: int = 4_500_000) -> dict:
-        """Encode an image for the Anthropic API, compressing if over 5MB."""
-        data = Path(image_path).read_bytes()
+    def _encode_image(self, image_path: Path, max_bytes: int = 3_500_000, max_dimension: int = 7900) -> dict:
+        """Encode an image for the Anthropic API, resizing if dimensions exceed 8000px or bytes exceed limit."""
+        from PIL import Image
+        import io
 
-        if len(data) <= max_bytes:
+        # Disable decompression bomb protection — we resize before sending anyway
+        Image.MAX_IMAGE_PIXELS = None
+
+        data = Path(image_path).read_bytes()
+        img = Image.open(io.BytesIO(data))
+        needs_resize = img.width > max_dimension or img.height > max_dimension
+
+        if len(data) <= max_bytes and not needs_resize:
             b64 = base64.standard_b64encode(data).decode("utf-8")
             suffix = Path(image_path).suffix.lower()
             media_type = {
@@ -82,11 +90,10 @@ class PromptImprover:
                 "source": {"type": "base64", "media_type": media_type, "data": b64},
             }
 
-        from PIL import Image
-        import io
-
-        logger.info(f"Compressing {image_path.name} ({len(data)} bytes)")
-        img = Image.open(io.BytesIO(data))
+        logger.info(f"Resizing {image_path.name} ({len(data)} bytes, {img.width}x{img.height}px)")
+        scale = min(max_dimension / max(img.width, 1), max_dimension / max(img.height, 1), 1920 / max(img.width, 1), 1.0)
+        if scale < 1.0:
+            img = img.resize((int(img.width * scale), int(img.height * scale)), Image.LANCZOS)
         if img.width > 1920:
             ratio = 1920 / img.width
             img = img.resize((1920, int(img.height * ratio)), Image.LANCZOS)
@@ -169,12 +176,22 @@ class PromptImprover:
                 content.append(self._encode_image(path))
 
         # Instructions
+        # Identify weak and strong dimensions
+        dim_scores = scores.get("scores", {})
+        weak_dims = [d for d, s in dim_scores.items() if s <= 6]
+        strong_dims = [d for d, s in dim_scores.items() if s >= 8]
+
         content.append({
             "type": "text",
             "text": (
                 f"\nREWRITE the archetype prompt section above to fix the identified issues "
-                f"and improve scores toward 80+. Focus especially on dimensions scoring below 7.\n\n"
-                f"Key constraints:\n"
+                f"and improve scores toward 90+. Focus especially on dimensions scoring below 7.\n\n"
+                f"WEAK dimensions (score <= 6, MUST improve): {', '.join(weak_dims) if weak_dims else 'none'}\n"
+                f"STRONG dimensions (score >= 8, PRESERVE these): {', '.join(strong_dims) if strong_dims else 'none'}\n\n"
+                f"CRITICAL RULES:\n"
+                f"- PRESERVE instructions that produce high-scoring dimensions (8+) — do NOT remove or weaken them\n"
+                f"- Make SURGICAL additions for weak dimensions — add 2-3 specific new instructions per weak dimension\n"
+                f"- Do NOT rewrite instructions that are already producing good results\n"
                 f"- Keep the EXACT same header format (# ═══... / # ARCHETYPE N: NAME / # ═══...)\n"
                 f"- Keep PATH designation (A or B) the same\n"
                 f"- Be MORE specific with CSS values, data requirements, and layout geometry\n"

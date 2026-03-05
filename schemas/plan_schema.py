@@ -43,6 +43,13 @@ class ArchetypeRules(BaseModel):
     content_contract: Optional[ContentContract] = None
 
 
+class QualityTarget(BaseModel):
+    visual_style: str = Field(..., description="Specific visual direction: colors, typography, imagery, mood")
+    key_sections: List[str] = Field(..., description="Sections that must appear, in priority order")
+    must_have_content: List[str] = Field(..., description="Concrete content items that must be present")
+    avoid: List[str] = Field(default_factory=list, description="Anti-patterns to avoid for this specific build")
+
+
 class Task(BaseModel):
     id: str = Field(..., description="Unique task id like PLAN-1, BE-1, FE-3")
     description: str = Field(..., description="Concrete, executable task in one sentence")
@@ -61,6 +68,7 @@ class Task(BaseModel):
         "startup", "blog", "fintech", "music", "fitness",
     ]] = Field(default=None)
     archetype_rules: Optional[ArchetypeRules] = Field(default=None)
+    quality_target: Optional[QualityTarget] = Field(default=None)
 
     def model_post_init(self, __context) -> None:
         if self.execution_hint == "engineer" and self.task_type is None:
