@@ -15,8 +15,8 @@
   "preview_base": "http://localhost:5000",
   "screenshot_viewport": [1440, 900],
   "screenshot_wait_seconds": 3.0,
-  "scorer_model": "claude-sonnet-4-6",
-  "improver_model": "claude-sonnet-4-6",
+  "scorer_model": "gemini-2.5-flash",
+  "improver_model": "gemini-2.5-flash",
   "max_reference_images": 4,
   "build_timeout_seconds": 600,
   "poll_interval_seconds": 3.0

@@ -57,29 +57,30 @@ def save_text(text: str, path: Path) -> None:
     path.write_text(text, encoding="utf-8")
 
 
-def get_anthropic_client():
-    """Create an Anthropic client using the API key from backend/.env or environment."""
+def _load_backend_env():
+    """Load env vars from backend/.env if not already set."""
     import os
+    env_path = Path(__file__).resolve().parent.parent / "backend" / ".env"
+    if env_path.exists():
+        for line in env_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" in line:
+                key, val = line.split("=", 1)
+                key = key.strip()
+                val = val.strip().strip('"').strip("'")
+                if key not in os.environ:
+                    os.environ[key] = val
 
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
 
-    if not api_key:
-        # Try loading from backend/.env
-        env_path = Path(__file__).resolve().parent.parent / "backend" / ".env"
-        if env_path.exists():
-            for line in env_path.read_text(encoding="utf-8").splitlines():
-                line = line.strip()
-                if line.startswith("ANTHROPIC_API_KEY="):
-                    api_key = line.split("=", 1)[1].strip().strip('"').strip("'")
-                    break
-
-    if not api_key:
-        raise RuntimeError(
-            "ANTHROPIC_API_KEY not found. Set it in environment or in backend/.env"
-        )
-
-    import anthropic
-    return anthropic.Anthropic(api_key=api_key)
+def get_genai_client():
+    """Create a Gemini client using the centralized genai_client utility."""
+    _load_backend_env()
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from utils.genai_client import get_genai_client as _get_client
+    return _get_client()
 
 
 async def run_eval_loop(config: dict = None):
@@ -99,10 +100,10 @@ async def run_eval_loop(config: dict = None):
         logger.error("Backend not reachable at %s. Is the Flask server running?", config["backend_url"])
         sys.exit(1)
 
-    # Initialize Claude client + scorers
-    client = get_anthropic_client()
-    scorer = DesignScorer(client, model=config.get("scorer_model", "claude-sonnet-4-6"))
-    improver = PromptImprover(client, model=config.get("improver_model", "claude-sonnet-4-6"))
+    # Initialize Gemini client + scorers
+    client = get_genai_client()
+    scorer = DesignScorer(client, model=config.get("scorer_model", "gemini-2.5-flash"))
+    improver = PromptImprover(client, model=config.get("improver_model", "gemini-2.5-flash"))
 
     archetypes = config.get("archetypes", ["dashboard"])
     test_prompts = config.get("test_prompts", {})

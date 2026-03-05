@@ -1,11 +1,13 @@
 """
-Claude-based prompt rewriter — takes scoring results and rewrites archetype sections.
+Gemini-based prompt rewriter — takes scoring results and rewrites archetype sections.
 """
 
 import json
-import base64
 import logging
 from pathlib import Path
+
+from google import genai
+from google.genai import types
 
 logger = logging.getLogger(__name__)
 
@@ -61,63 +63,29 @@ Output ONLY the rewritten section. No explanation. No markdown fences."""
 
 
 class PromptImprover:
-    def __init__(self, anthropic_client, model: str = "claude-sonnet-4-6"):
-        self.client = anthropic_client
+    def __init__(self, genai_client, model: str = "gemini-2.5-flash"):
+        self.client = genai_client
         self.model = model
 
-    def _encode_image(self, image_path: Path, max_bytes: int = 3_500_000, max_dimension: int = 7900) -> dict:
-        """Encode an image for the Anthropic API, resizing if dimensions exceed 8000px or bytes exceed limit."""
+    def _prepare_image(self, image_path: Path, max_dimension: int = 3072) -> types.Part:
+        """Prepare an image as a Gemini inline_data Part, resizing if needed."""
         from PIL import Image
         import io
 
-        # Disable decompression bomb protection — we resize before sending anyway
         Image.MAX_IMAGE_PIXELS = None
 
-        data = Path(image_path).read_bytes()
-        img = Image.open(io.BytesIO(data))
-        needs_resize = img.width > max_dimension or img.height > max_dimension
+        img = Image.open(image_path)
 
-        if len(data) <= max_bytes and not needs_resize:
-            b64 = base64.standard_b64encode(data).decode("utf-8")
-            suffix = Path(image_path).suffix.lower()
-            media_type = {
-                ".png": "image/png",
-                ".jpg": "image/jpeg",
-                ".jpeg": "image/jpeg",
-            }.get(suffix, "image/png")
-            return {
-                "type": "image",
-                "source": {"type": "base64", "media_type": media_type, "data": b64},
-            }
-
-        logger.info(f"Resizing {image_path.name} ({len(data)} bytes, {img.width}x{img.height}px)")
-        scale = min(max_dimension / max(img.width, 1), max_dimension / max(img.height, 1), 1920 / max(img.width, 1), 1.0)
-        if scale < 1.0:
+        if img.width > max_dimension or img.height > max_dimension:
+            scale = min(max_dimension / max(img.width, 1), max_dimension / max(img.height, 1))
             img = img.resize((int(img.width * scale), int(img.height * scale)), Image.LANCZOS)
-        if img.width > 1920:
-            ratio = 1920 / img.width
-            img = img.resize((1920, int(img.height * ratio)), Image.LANCZOS)
+
         if img.mode in ("RGBA", "P"):
             img = img.convert("RGB")
 
-        for quality in [85, 70, 55, 40]:
-            buf = io.BytesIO()
-            img.save(buf, format="JPEG", quality=quality)
-            if len(buf.getvalue()) <= max_bytes:
-                b64 = base64.standard_b64encode(buf.getvalue()).decode("utf-8")
-                return {
-                    "type": "image",
-                    "source": {"type": "base64", "media_type": "image/jpeg", "data": b64},
-                }
-
-        img = img.resize((img.width // 2, img.height // 2), Image.LANCZOS)
         buf = io.BytesIO()
-        img.save(buf, format="JPEG", quality=60)
-        b64 = base64.standard_b64encode(buf.getvalue()).decode("utf-8")
-        return {
-            "type": "image",
-            "source": {"type": "base64", "media_type": "image/jpeg", "data": b64},
-        }
+        img.save(buf, format="JPEG", quality=80)
+        return types.Part.from_bytes(data=buf.getvalue(), mime_type="image/jpeg")
 
     def improve(
         self,
@@ -127,91 +95,67 @@ class PromptImprover:
         screenshot_path: Path = None,
         good_references: list[tuple[str, Path]] = None,
     ) -> str:
-        """Rewrite an archetype prompt section to fix identified issues.
-
-        Args:
-            archetype: Archetype name.
-            current_prompt: Current archetype section text from engineer.txt.
-            scores: Scoring results dict (from ScoringResult.to_dict()).
-            screenshot_path: Path to the screenshot that was scored.
-            good_references: List of (label, path) for good example images.
-
-        Returns:
-            Rewritten archetype section text.
-        """
-        content = []
+        """Rewrite an archetype prompt section to fix identified issues."""
+        contents = []
 
         # Show the current prompt
-        content.append({
-            "type": "text",
-            "text": (
-                f"CURRENT ARCHETYPE PROMPT SECTION (for '{archetype}'):\n"
-                f"```\n{current_prompt}\n```"
-            ),
-        })
+        contents.append(
+            f"CURRENT ARCHETYPE PROMPT SECTION (for '{archetype}'):\n"
+            f"```\n{current_prompt}\n```"
+        )
 
         # Show scoring results
         scores_text = json.dumps(scores, indent=2)
-        content.append({
-            "type": "text",
-            "text": f"\nSCORING RESULTS FROM LATEST BUILD:\n{scores_text}",
-        })
+        contents.append(f"\nSCORING RESULTS FROM LATEST BUILD:\n{scores_text}")
 
         # Show the screenshot that was scored
         if screenshot_path and Path(screenshot_path).exists():
-            content.append({
-                "type": "text",
-                "text": "\nSCREENSHOT OF CURRENT OUTPUT (this is what the current prompt produces):",
-            })
-            content.append(self._encode_image(screenshot_path))
+            contents.append("\nSCREENSHOT OF CURRENT OUTPUT (this is what the current prompt produces):")
+            contents.append(self._prepare_image(screenshot_path))
 
         # Show good reference images
         if good_references:
-            content.append({
-                "type": "text",
-                "text": f"\nTARGET QUALITY — these are what GOOD {archetype} apps look like:",
-            })
+            contents.append(f"\nTARGET QUALITY — these are what GOOD {archetype} apps look like:")
             for label, path in good_references[:3]:
-                content.append({"type": "text", "text": f"Reference: {label}"})
-                content.append(self._encode_image(path))
+                contents.append(f"Reference: {label}")
+                contents.append(self._prepare_image(path))
 
-        # Instructions
         # Identify weak and strong dimensions
         dim_scores = scores.get("scores", {})
         weak_dims = [d for d, s in dim_scores.items() if s <= 6]
         strong_dims = [d for d, s in dim_scores.items() if s >= 8]
 
-        content.append({
-            "type": "text",
-            "text": (
-                f"\nREWRITE the archetype prompt section above to fix the identified issues "
-                f"and improve scores toward 90+. Focus especially on dimensions scoring below 7.\n\n"
-                f"WEAK dimensions (score <= 6, MUST improve): {', '.join(weak_dims) if weak_dims else 'none'}\n"
-                f"STRONG dimensions (score >= 8, PRESERVE these): {', '.join(strong_dims) if strong_dims else 'none'}\n\n"
-                f"CRITICAL RULES:\n"
-                f"- PRESERVE instructions that produce high-scoring dimensions (8+) — do NOT remove or weaken them\n"
-                f"- Make SURGICAL additions for weak dimensions — add 2-3 specific new instructions per weak dimension\n"
-                f"- Do NOT rewrite instructions that are already producing good results\n"
-                f"- Keep the EXACT same header format (# ═══... / # ARCHETYPE N: NAME / # ═══...)\n"
-                f"- Keep PATH designation (A or B) the same\n"
-                f"- Be MORE specific with CSS values, data requirements, and layout geometry\n"
-                f"- Add explicit anti-patterns to avoid\n"
-                f"- Add explicit data seeding instructions (chart data points, table rows, KPI values)\n"
-                f"- Reference the good examples when adding visual requirements\n"
-                f"- Output ONLY the rewritten section text, nothing else"
-            ),
-        })
+        contents.append(
+            f"\nREWRITE the archetype prompt section above to fix the identified issues "
+            f"and improve scores toward 90+. Focus especially on dimensions scoring below 7.\n\n"
+            f"WEAK dimensions (score <= 6, MUST improve): {', '.join(weak_dims) if weak_dims else 'none'}\n"
+            f"STRONG dimensions (score >= 8, PRESERVE these): {', '.join(strong_dims) if strong_dims else 'none'}\n\n"
+            f"CRITICAL RULES:\n"
+            f"- PRESERVE instructions that produce high-scoring dimensions (8+) — do NOT remove or weaken them\n"
+            f"- Make SURGICAL additions for weak dimensions — add 2-3 specific new instructions per weak dimension\n"
+            f"- Do NOT rewrite instructions that are already producing good results\n"
+            f"- Keep the EXACT same header format (# ═══... / # ARCHETYPE N: NAME / # ═══...)\n"
+            f"- Keep PATH designation (A or B) the same\n"
+            f"- Be MORE specific with CSS values, data requirements, and layout geometry\n"
+            f"- Add explicit anti-patterns to avoid\n"
+            f"- Add explicit data seeding instructions (chart data points, table rows, KPI values)\n"
+            f"- Reference the good examples when adding visual requirements\n"
+            f"- Output ONLY the rewritten section text, nothing else"
+        )
 
         logger.info(f"Improving prompt for '{archetype}' (current weighted score: {scores.get('weighted_total', '?')})")
 
-        response = self.client.messages.create(
+        response = self.client.models.generate_content(
             model=self.model,
-            max_tokens=3000,
-            system=IMPROVER_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": content}],
+            contents=contents,
+            config={
+                "system_instruction": IMPROVER_SYSTEM_PROMPT,
+                "temperature": 0.7,
+                "max_output_tokens": 3000,
+            },
         )
 
-        new_prompt = response.content[0].text.strip()
+        new_prompt = (response.text or "").strip()
 
         # Strip markdown fences if the model wrapped them
         if new_prompt.startswith("```"):
@@ -223,7 +167,6 @@ class PromptImprover:
         # Validate that it still has the header
         if "═══" not in new_prompt:
             logger.warning("Improved prompt missing header delimiters — prepending original header")
-            # Extract header from current prompt
             lines = current_prompt.split("\n")
             header_lines = []
             for line in lines:

@@ -349,13 +349,13 @@ class EngineerAgent:
             f"--- TASK END ---"
         )
 
-        # Primary: Claude Opus 4.6
+        # Primary: Gemini 2.5 Flash (cost-efficient for eval loops)
+        if self.client is not None:
+            return _run_gemini(self.client, contents)
+
+        # Fallback: Claude Opus 4.6
         if os.environ.get("ANTHROPIC_API_KEY"):
             return _run_claude(contents)
 
-        # Fallback: Gemini 2.5 Flash (if no Anthropic key)
-        if self.client is None:
-            raise RuntimeError("EngineerAgent: no API client available")
-
-        return _run_gemini(self.client, contents)
+        raise RuntimeError("EngineerAgent: no API client available")
 
