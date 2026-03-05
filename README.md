@@ -50,21 +50,17 @@ Every app is generated from a single prompt — no templates, no manual coding. 
 ### Final Fantasy VIII Fan Page
 > Prompt: *"Build a Final Fantasy VIII fan page with character profiles, weapons gallery, and world map"*
 
-![FF8 Full Page](docs/screenshots/game-ff8-full.jpg)
+[![FF8 Fan Page](docs/screenshots/game-ff8-thumb.jpg)](docs/screenshots/game-ff8-full.jpg)
 
-*AI-generated character art:*
+### SaaS Landing Page
+> Prompt: *"Build a landing page for an AI-powered writing assistant with features, pricing, and testimonials"*
 
-![FF8 Characters](docs/screenshots/game-ff8-characters.jpg)
-
-### Streetwear E-Commerce Store
-> Prompt: *"Build a premium streetwear store with product grid, cart drawer, and featured collection"*
-
-![Streetwear Store](docs/screenshots/ecommerce-streetwear.jpg)
+[![WriteFlow Landing](docs/screenshots/saas-writeflow-thumb.jpg)](docs/screenshots/saas-writeflow-full.jpg)
 
 ### Developer Portfolio
 > Prompt: *"Build a creative developer portfolio with project showcase, skills section, and contact form"*
 
-![Developer Portfolio](docs/screenshots/portfolio-developer.jpg)
+[![Developer Portfolio](docs/screenshots/portfolio-developer-thumb.jpg)](docs/screenshots/portfolio-developer-full.jpg)
 
 ---
 
