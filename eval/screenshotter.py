@@ -102,8 +102,21 @@ class Screenshotter:
             await page.screenshot(path=str(viewport_path), full_page=False, type="png")
             logger.info(f"Viewport screenshot saved: {viewport_path}")
 
-            # Full page screenshot
-            await page.screenshot(path=str(full_path), full_page=True, type="png")
+            # Full page screenshot — clip height to avoid decompression bomb issues
+            # At 2x device scale, max 7900px on API side means ~3950 CSS px max useful height
+            # Cap at 15000 CSS px to cover most pages while avoiding 100k+ pixel screenshots
+            page_height = await page.evaluate("document.documentElement.scrollHeight")
+            max_css_height = 15000
+            if page_height > max_css_height:
+                logger.info(f"Page height {page_height}px exceeds {max_css_height}px — clipping full-page screenshot")
+                await page.screenshot(
+                    path=str(full_path),
+                    full_page=False,
+                    type="png",
+                    clip={"x": 0, "y": 0, "width": self.viewport_width, "height": max_css_height},
+                )
+            else:
+                await page.screenshot(path=str(full_path), full_page=True, type="png")
             logger.info(f"Full-page screenshot saved: {full_path}")
 
             await browser.close()

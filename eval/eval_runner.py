@@ -216,6 +216,7 @@ async def run_eval_loop(config: dict = None):
 
             # 5. Rollback check — if score dropped, revert to best prompt
             prev_best = best_scores.get(archetype)
+            rolled_back = False
             if prev_best is not None and scores.weighted_total < prev_best - 2:
                 logger.warning(
                     f"{archetype}: Score DROPPED {prev_best} -> {scores.weighted_total}. "
@@ -225,8 +226,10 @@ async def run_eval_loop(config: dict = None):
                     parser.replace_section(archetype, best_prompts[archetype])
                     save_text(best_prompts[archetype], output_dir / "prompt_rollback.txt")
                     logger.info(f"Rolled back {archetype} prompt to best version (score {prev_best})")
-                # Still attempt improvement from the rolled-back prompt
-                # Fall through to improvement step below
+                    rolled_back = True
+                # Skip improvement after rollback — re-improving the same prompt
+                # tends to produce the same destabilizing changes that caused
+                # the regression in the first place.
 
             # Track best score and prompt
             if prev_best is None or scores.weighted_total > prev_best:
@@ -239,6 +242,14 @@ async def run_eval_loop(config: dict = None):
                 logger.info(
                     f"{archetype}: Score {scores.weighted_total} >= target {target_score}, "
                     f"skipping improvement"
+                )
+                continue
+
+            # 6b. Skip improvement if we just rolled back
+            if rolled_back:
+                logger.info(
+                    f"{archetype}: Skipping improvement after rollback — "
+                    f"will retry with best prompt next iteration"
                 )
                 continue
 

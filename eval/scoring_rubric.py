@@ -160,6 +160,33 @@ ARCHETYPE_CRITERIA = {
         "- Portfolio value prominent with delta\n"
         "- Professional, terminal-like aesthetic"
     ),
+    "ecommerce": (
+        "E-COMMERCE-SPECIFIC:\n"
+        "- Product grid with high-quality images, consistent card sizing\n"
+        "- Each product card: image, name, price, quick-add or wishlist action\n"
+        "- Navigation: search icon, cart count badge, category links\n"
+        "- Hero banner with featured collection or campaign imagery\n"
+        "- Category pills or filter bar for browsing\n"
+        "- Cart drawer or cart page with item list and totals\n"
+        "- Luxury feel: generous whitespace, serif or elegant sans-serif headings\n"
+        "- Product images should look premium (not placeholder boxes)\n"
+        "- Footer with multiple columns (shop, about, support, social)\n"
+        "- Price formatting consistent (currency symbol, decimals)\n"
+        "- Hover effects on product cards (zoom, overlay, quick-view)"
+    ),
+    "portfolio": (
+        "PORTFOLIO-SPECIFIC:\n"
+        "- Dark theme with bold, distinctive typography (display font for headings)\n"
+        "- Asymmetric or editorial layout — NOT a generic centered template\n"
+        "- Hero section: large name/title, dramatic sizing (text-6xl to text-8xl)\n"
+        "- Project gallery with large thumbnails and hover overlays\n"
+        "- At least 3-6 portfolio projects visible with titles/descriptions\n"
+        "- Skills or tech stack section with visual treatment\n"
+        "- Contact section or CTA\n"
+        "- Minimal, intentional color palette (max 2-3 colors)\n"
+        "- Feels like a designer's personal site, NOT a resume template\n"
+        "- Smooth transitions and micro-interactions on project cards"
+    ),
 }
 
 

@@ -65,3 +65,10 @@ frontend-studio/next-env.d.ts
 eval/results/
 eval/backups/
 eval/FAILURES_LOG.md
+
+# Runtime logs
+flask_server.log
+*.log
+
+# Archetype examples (reference images, not source code)
+archetypes/

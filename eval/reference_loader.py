@@ -33,6 +33,10 @@ REFERENCE_MAP = {
         "good": ["website.png", "website2.png"],
         "bad": [],
     },
+    "portfolio": {
+        "good": ["website.png", "website2.png"],  # Closest available references
+        "bad": [],
+    },
 }
 
 

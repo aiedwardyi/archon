@@ -70,16 +70,26 @@ class DesignScorer:
         self.client = anthropic_client
         self.model = model
 
-    def _encode_image(self, image_path: Path, max_bytes: int = 3_500_000) -> dict:
+    def _encode_image(self, image_path: Path, max_bytes: int = 3_500_000, max_dimension: int = 7900) -> dict:
         """Encode an image file as an Anthropic API image content block.
 
-        If the image exceeds max_bytes, it's resized/compressed to fit under the
-        5MB API limit. Note: base64 adds ~33% overhead, so 3.5MB raw ≈ 4.7MB base64.
+        If the image exceeds max_bytes or max_dimension, it's resized/compressed.
+        Claude API limit: 8000px max on any dimension, 5MB base64 payload.
         """
+        from PIL import Image
+        import io
+
+        # Disable decompression bomb protection — we resize before sending anyway
+        Image.MAX_IMAGE_PIXELS = None
+
         data = Path(image_path).read_bytes()
 
-        # If under limit, use as-is
-        if len(data) <= max_bytes:
+        # Check pixel dimensions even if file size is OK
+        img = Image.open(io.BytesIO(data))
+        needs_resize = img.width > max_dimension or img.height > max_dimension
+
+        # If under both limits, use as-is
+        if len(data) <= max_bytes and not needs_resize:
             b64 = base64.standard_b64encode(data).decode("utf-8")
             suffix = Path(image_path).suffix.lower()
             media_type = {
@@ -94,19 +104,18 @@ class DesignScorer:
                 "source": {"type": "base64", "media_type": media_type, "data": b64},
             }
 
-        # Image too large — resize and compress as JPEG
-        from PIL import Image
-        import io
+        # Image too large (bytes or dimensions) — resize and compress as JPEG
+        logger.info(f"Image {image_path.name}: {len(data)} bytes, {img.width}x{img.height}px — resizing...")
 
-        logger.info(f"Image {image_path.name} is {len(data)} bytes, compressing...")
-        img = Image.open(io.BytesIO(data))
-
-        # Resize to max 1920px wide, maintaining aspect ratio
-        max_width = 1920
-        if img.width > max_width:
-            ratio = max_width / img.width
-            new_size = (max_width, int(img.height * ratio))
+        # Scale down to fit within max_dimension on both axes
+        scale = min(max_dimension / max(img.width, 1), max_dimension / max(img.height, 1), 1.0)
+        # Also cap width at 1920 for reasonable size
+        width_scale = min(1920 / max(img.width, 1), 1.0)
+        scale = min(scale, width_scale)
+        if scale < 1.0:
+            new_size = (int(img.width * scale), int(img.height * scale))
             img = img.resize(new_size, Image.LANCZOS)
+            logger.info(f"Resized to {new_size[0]}x{new_size[1]}px")
 
         # Convert to RGB (JPEG doesn't support alpha)
         if img.mode in ("RGBA", "P"):

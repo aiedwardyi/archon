@@ -1,5 +1,5 @@
 {
-  "archetypes": ["dashboard", "game", "saas_landing"],
+  "archetypes": ["dashboard", "game", "saas_landing", "ecommerce", "portfolio"],
   "test_prompts": {
     "dashboard": "Build a crypto portfolio tracker with real-time prices, holdings table, and activity feed",
     "game": "Build a Final Fantasy VIII fan page with character profiles for Squall, Rinoa, and Zell, weapons gallery, and world map",
@@ -8,9 +8,9 @@
     "fintech": "Build a stock trading dashboard with candlestick chart, watchlist, and portfolio breakdown",
     "portfolio": "Build a creative developer portfolio with project showcase, skills section, and contact form"
   },
-  "max_iterations": 20,
+  "max_iterations": 3,
   "target_score": 90,
-  "convergence_threshold": 5,
+  "convergence_threshold": 10,
   "backend_url": "http://localhost:5000",
   "preview_base": "http://localhost:5000",
   "screenshot_viewport": [1440, 900],
