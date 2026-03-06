@@ -1,0 +1,110 @@
+ARCHETYPE: SAAS DASHBOARD
+PATH: B (Raw CSS — base.css provides the design system)
+
+═══════════════════════════════════════
+DESIGN KIT: base.css IS ALREADY PROVIDED
+═══════════════════════════════════════
+
+A base.css file is injected automatically. It provides:
+- CSS variables: --bg (#0d1117), --sidebar-bg, --card-bg, --card-elevated, --accent (#10b981 emerald), --danger, --warning, --text, --text-secondary, --text-muted, --border
+- Font: Inter (400, 500, 600, 700) — font-variant-numeric: tabular-nums on body
+- Layout: .dashboard-layout (flex), .sidebar (220px fixed), .main-content (margin-left:220px), .content-area, .header-bar
+- Sidebar: .sidebar-logo, .sidebar-nav, .sidebar-group, .sidebar-group-label, .sidebar-item, .sidebar-item.active, .sidebar-user
+- Header: .header-bar, .page-title, .header-actions, .header-search, .header-icon-btn, .header-avatar
+- KPI cards: .kpi-grid (4-col), .kpi-card (top border accent), .kpi-label, .kpi-value, .kpi-delta, .kpi-delta--up, .kpi-delta--down
+- Chart: .chart-card, .chart-header, .chart-title, .chart-period
+- Table: .data-table-wrapper, .data-table, th, td, .cell-primary, .cell-positive, .cell-negative
+- Activity: .activity-feed, .feed-header, .activity-item, .activity-icon (--buy, --sell, --info), .activity-text, .activity-time
+- Badges: .badge (--success, --danger, --warning, --info)
+- Layout: .grid-2col (2fr 1fr)
+- Responsive breakpoints, focus states, hover transitions
+
+DO NOT duplicate any of these in style.css. Your style.css should contain ONLY page-specific overrides (target ≤80 lines).
+
+═══════════════════════════════════════
+YOUR index.html MUST LINK base.css FIRST
+═══════════════════════════════════════
+
+In <head>:
+  <link rel="stylesheet" href="./base.css">
+  <link rel="stylesheet" href="./style.css">
+
+DO NOT add Google Fonts @import — base.css already imports Inter.
+
+═══════════════════════════════════════
+STRUCTURAL REQUIREMENTS (NON-NEGOTIABLE)
+═══════════════════════════════════════
+
+1. DARK THEME — NON-NEGOTIABLE. Background #0d1117, sidebar #161b22, cards #1c2128.
+
+2. SIDEBAR — 220px fixed left. NEVER collapsible. Contains:
+   - .sidebar-logo (icon + app name, 60px height)
+   - .sidebar-nav with 2 .sidebar-group sections (e.g. "PLATFORM" and "SYSTEM")
+   - 6-8 .sidebar-item entries with SVG icons (18x18px). One has .active class.
+   - .sidebar-user at bottom (avatar + name + email)
+
+3. HEADER BAR — .header-bar (60px, sticky top). Contains:
+   - .page-title (e.g. "Portfolio Overview")
+   - .header-actions: .header-search (search icon + placeholder text), .header-icon-btn (bell icon for notifications), .header-avatar
+
+4. MAIN CONTENT — .main-content > .content-area
+
+═══════════════════════════════════════
+REQUIRED SECTIONS (inside .content-area)
+═══════════════════════════════════════
+
+1. KPI CARDS — .kpi-grid with exactly 4 .kpi-card:
+   - Each: .kpi-label, .kpi-value (large number), .kpi-delta (up/down with arrow + percentage)
+   - Values MUST be realistic positive numbers (e.g. "$47,832.50", "12.4%", "847", "3.2s")
+   - ZERO-VALUE BAN: never "0", "$0", "0%"
+   - Use .kpi-delta--up for positive, .kpi-delta--down for negative
+
+2. CHART — .chart-card with .chart-header (.chart-title + .chart-period selector):
+   - SVG line chart with 12+ data points (monthly data)
+   - Chart must have visible SVG path with stroke color var(--accent)
+   - Include axis labels and grid lines
+   - NEVER leave chart empty — must have real SVG path data
+
+3. HOLDINGS TABLE — .data-table-wrapper > .data-table:
+   - thead: 5-6 columns (Name, Price, 24h Change, Holdings, Value, Action)
+   - tbody: 8+ rows with realistic data
+   - .cell-primary for asset names
+   - .cell-positive / .cell-negative for price changes
+   - font-variant-numeric: tabular-nums on all numbers
+   - NEVER use double currency symbols ($$)
+
+4. ACTIVITY FEED — .activity-feed with .feed-header + 5-6 .activity-item entries:
+   - Each: .activity-icon (colored circle with icon), .activity-text (with <strong> for emphasis), .activity-time
+   - Timestamps: "2 min ago", "15 min ago", "1 hour ago" etc.
+   - Mix of .activity-icon--buy, --sell, --info
+
+Use .grid-2col to arrange chart + activity feed side by side, or table + activity feed.
+
+═══════════════════════════════════════
+DATA & CONTENT RULES
+═══════════════════════════════════════
+
+- ALL numbers use tabular-nums (set on body in base.css)
+- Currency formatting: $XX,XXX.XX — never $$, never missing decimals for prices
+- Percentages: include + or - prefix for changes
+- Table rows: minimum 8 rows with varied data
+- Activity timestamps: realistic, varied ("just now", "5 min ago", "2 hours ago")
+- Domain context: adapt accent color in style.css if needed (green for crypto/finance, blue for SaaS analytics)
+- NO TICKER BAR — absolutely prohibited
+
+═══════════════════════════════════════
+SELF-CHECK BEFORE OUTPUT
+═══════════════════════════════════════
+
+□ index.html links base.css BEFORE style.css
+□ .dashboard-layout wraps sidebar + main-content
+□ Sidebar is 220px fixed, NOT collapsible
+□ Sidebar has logo (60px), nav groups with SVG icons, user profile at bottom
+□ Header has page title, search, bell icon, avatar
+□ 4 KPI cards with realistic values and delta badges
+□ SVG chart with 12+ data points (NOT empty)
+□ Data table with 8+ rows, sticky header
+□ Activity feed with 5+ timestamped entries
+□ No "0" values, no "$$", no empty sections
+□ Font is Inter throughout, numbers use tabular-nums
+□ style.css is ONLY overrides (≤80 lines)

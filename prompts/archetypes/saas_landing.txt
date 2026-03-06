@@ -1,0 +1,122 @@
+ARCHETYPE: SAAS LANDING PAGE
+PATH: B (Raw CSS — base.css provides the design system)
+
+═══════════════════════════════════════
+DESIGN KIT: base.css IS ALREADY PROVIDED
+═══════════════════════════════════════
+
+A base.css file is injected automatically. It provides:
+- CSS variables: --bg, --surface, --surface-elevated, --accent, --accent-light, --accent-secondary, --text, --text-body, --text-muted, --border, --border-accent, --shadow-card, --shadow-hover
+- Fonts: Space Grotesk (700, 800) + Inter (400, 500, 600)
+- Glass nav: .glass-nav, .nav-logo, .nav-links, .nav-link, .nav-cta
+- Hero: .hero-section (gradient mesh + orbs built in), .hero-orb-1, .hero-orb-2, .hero-content, .hero-subtitle, .hero-ctas
+- Announcement pill: .announcement-pill, .pill-dot, .pill-text, .pill-highlight
+- Section utilities: .section-badge, .section-wrapper, .section-header, .section-description, .section-divider
+- Buttons: .btn-primary, .btn-secondary
+- Logo cloud: .logo-cloud, .marquee-label, .marquee-track, .logo-item (with marquee animation)
+- Bento features: .bento-grid, .bento-card, .bento-card--span2, .card-badge, .card-desc
+- Product mockup: .mockup-wrapper
+- Comparison table: .comparison-table, .featured-col, .check-featured, .check-competitor
+- Pricing: .pricing-grid, .pricing-card, .pricing-card--featured, .plan-name, .plan-price, .per-month, .plan-desc, .plan-features, .plan-btn, .plan-btn--primary, .plan-btn--secondary
+- Pricing toggle: .pricing-toggle, .toggle-option, .toggle-option.active, .save-badge
+- Testimonials: .testimonials-grid, .testimonial-card, .quote, .author, .author-avatar, .author-name, .author-role
+- FAQ: .faq-list, .faq-item, .faq-question, .chevron, .faq-answer
+- CTA banner: .cta-banner
+- Footer: .site-footer, .footer-grid, .footer-brand, .footer-logo, .footer-tagline, .footer-col, .footer-bottom
+- Noise overlay: .noise-overlay
+- Animations: pulse, marquee, fadeUp
+- Responsive breakpoints, focus states, hover transitions with box-shadows
+
+DO NOT duplicate any of these in style.css. Your style.css should contain ONLY page-specific overrides (target ≤80 lines).
+
+═══════════════════════════════════════
+YOUR index.html MUST LINK base.css FIRST
+═══════════════════════════════════════
+
+In <head>:
+  <link rel="stylesheet" href="./base.css">
+  <link rel="stylesheet" href="./style.css">
+
+DO NOT add Google Fonts @import — base.css already imports Space Grotesk + Inter.
+
+═══════════════════════════════════════
+REQUIRED 11 SECTIONS (all visible on first paint)
+═══════════════════════════════════════
+
+1. NAVBAR — .glass-nav with logo, 5+ nav links, .nav-cta button
+
+2. HERO — .hero-section (gradient mesh is built into CSS). Include:
+   - .hero-orb-1 and .hero-orb-2 divs (decorative blurred orbs)
+   - .announcement-pill with .pill-dot + .pill-text
+   - h1 heading (96px+ desktop, Space Grotesk 800, letter-spacing -0.03em)
+   - .hero-subtitle (2 sentences about the product)
+   - .hero-ctas with .btn-primary + .btn-secondary
+   - NEVER use background images — the gradient mesh IS the background
+
+3. LOGO CLOUD — .logo-cloud with .marquee-label ("TRUSTED BY TEAMS AT 50,000+ COMPANIES") and .marquee-track containing 10 logo items (Notion, Figma, Linear, Stripe, Vercel, Loom, Intercom, Airtable, Webflow, Framer). Duplicate for seamless loop (20 items total). Each .logo-item has a small SVG icon + text.
+
+4. FEATURES BENTO — .bento-grid with 4 cards:
+   - Card 1: .bento-card.bento-card--span2 (hero feature with coded UI mockup inside)
+   - Card 2: .bento-card (single column)
+   - Card 3: .bento-card (single column)
+   - Card 4: .bento-card.bento-card--span2 (wider card)
+   - Each card: .card-badge + h3 + .card-desc + visual element (mini UI mockup, icon grid, or metric bars)
+   - NEVER leave feature cards as text-only. NEVER write "Illustration" placeholder text.
+
+5. PRODUCT MOCKUP — .mockup-wrapper containing a fully coded mini dashboard/editor UI (dark card with fake chart bars, metric numbers, status badges — all real HTML, NOT description text)
+
+6. COMPARISON TABLE — .comparison-table with 8 feature rows. 3 columns: Feature | Your Product (featured) | Competitors. Featured column uses .featured-col class. Checkmarks: .check-featured (violet) vs .check-competitor (grey). Real feature names: "AI Suggestions", "Grammar Depth", "Tone Detection", "Plagiarism Check", "Export Formats", "API Access", "Team Seats", "Support SLA"
+
+7. PRICING — .pricing-toggle (Monthly/Annual with Alpine.js x-data) + .pricing-grid with 3 .pricing-card tiers. Middle card: .pricing-card--featured. Monthly: $0/$29/$79. Annual: $0/$23/$63 + .save-badge "Save 20%". Each card: .plan-name, .plan-price, .plan-desc, .plan-features (5-6 items with green check SVGs), .plan-btn
+
+8. TESTIMONIALS — .testimonials-grid with 3 .testimonial-card. Each: .quote (real testimonial text), .author with .author-avatar (SVG silhouette inside) + .author-name + .author-role. Use realistic names, companies, and roles.
+
+9. FAQ — .faq-list with 6+ .faq-item. Each: .faq-question with text + .chevron SVG, .faq-answer. Use Alpine.js x-data for open/close. Real questions relevant to the product.
+
+10. CTA BANNER — .cta-banner with h2, p, .btn-primary. Gradient radial background already in CSS.
+
+11. FOOTER — .site-footer with .footer-grid (5 columns: brand + 4 link columns). .footer-brand with .footer-logo + .footer-tagline. Each .footer-col with h4 + links. .footer-bottom with copyright.
+
+═══════════════════════════════════════
+CONTENT & DATA RULES
+═══════════════════════════════════════
+
+- ZERO-VALUE BAN: NEVER render "0", "0%", "$0 Active Users". All metrics must be realistic: "50,000+ Active Users", "99.2% Accuracy", "4.9/5 Stars"
+- Product name: use whatever the user specified
+- Testimonials: realistic names, companies, roles (NOT "User 1")
+- Feature descriptions: specific to the product type, not generic
+- All 11 sections MUST be visible on first paint (no display:none, no lazy loading)
+- NEVER use <img> tags anywhere — no stock photos, no AI images
+- Accent restraint: violet on max 4 element types (CTA buttons, featured pricing border, hero highlight, section badge borders)
+
+═══════════════════════════════════════
+JAVASCRIPT (Alpine.js + interactions)
+═══════════════════════════════════════
+
+Include Alpine.js via CDN in <head>:
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+Use x-data for:
+- Pricing toggle (monthly/annual switch with sliding pill)
+- FAQ accordion (open/close with chevron rotation)
+
+═══════════════════════════════════════
+SELF-CHECK BEFORE OUTPUT
+═══════════════════════════════════════
+
+□ index.html links base.css BEFORE style.css
+□ All 11 sections present and visible (no display:none)
+□ Hero heading is 96px+ on desktop, NO background images
+□ Announcement pill is visible (42px+ tall)
+□ Logo cloud has 10 companies duplicated (20 DOM items) with marquee
+□ Bento grid uses span2 on cards 1 and 4 (NOT uniform grid)
+□ Product mockup is a coded UI, NOT placeholder text
+□ Comparison table has 8 feature rows with real metrics
+□ Pricing toggle animates between monthly/annual
+□ No "0" values anywhere
+□ No <img> tags anywhere
+□ Testimonials have real names/companies
+□ FAQ has 6+ items with Alpine accordion
+□ Footer has 4+ link columns
+□ style.css contains ONLY overrides (≤80 lines)
+□ All heading text uses font-family: 'Space Grotesk', explicit on each element
