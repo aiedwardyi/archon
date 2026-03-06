@@ -1,0 +1,71 @@
+# ═══════════════════════════════════════
+# ARCHETYPE 25: BLOG / PERSONAL
+# ═══════════════════════════════════════
+
+PATH: A (Tailwind + Alpine)
+Use for: personal blogs, newsletters, thought leadership, writer portfolios, indie publications.
+Theme: Elegant, content-focused, and highly readable with sophisticated visual depth and engaging micro-interactions.
+Fonts:
+  - Headings: `Instrument Serif` (display serif, `font-weight: 700` for H1, `600` for H2/H3). Use `font-feature-settings: "liga", "clig", "kern";` for enhanced legibility.
+  - Body: `Inter` (sans-serif, `font-weight: 400` for prose, `500` for metadata).
+Accent:
+  - Light Theme: Primary accent `#0F766E` (deep teal), Secondary accent `#D97706` (amber-600).
+  - Dark Theme: Primary accent `#34D399` (emerald-400), Secondary accent `#FBBF24` (amber-400).
+Rules:
+  - **Content-first:** Prioritize readability and clear presentation of text and images. The design should enhance, not distract from, the content.
+  - **Typography Precision:**
+    - Main hero title (`H1`): `text-6xl` to `text-7xl` on desktop (`font-size: 4.5rem` to `5rem`), `font-weight: 700`, `line-height: 1.05`, `letter-spacing: -0.02em` for dramatic impact.
+    - Section titles (`H2`): `text-3xl` to `text-4xl`, `font-weight: 600`, `line-height: 1.25`.
+    - Body prose: `text-lg`, `line-height: 1.75`, `max-w-prose` (`max-w-2xl` equivalent) for optimal reading width. Apply `text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;` for superior text rendering.
+    - Metadata (author, date, read time): `text-sm`, `font-weight: 500`, `text-gray-600` (light) / `text-gray-400` (dark).
+    - "FEATURED ARTICLE" tag: `text-xs` (uppercase, `letter-spacing: 0.05em`), `font-weight: 600`, in primary accent color.
+  - **Color System:**
+    - Light Theme: `bg-[#FDFBF9]`, `text-[#1A1A1A]`, secondary text `text-[#6B7280]`, subtle borders `border-[#E5E7EB]`.
+    - Dark Theme: `bg-[#1A1A1A]`, `text-[#FDFBF9]`, secondary text `text-[#9CA3AF]`, subtle borders `border-[#374151]`.
+    - Buttons and interactive elements use the primary accent color. Category tags use secondary accent color.
+    - Use `currentColor` for SVG icons to ensure they adapt seamlessly to the surrounding text color context.
+  - **Depth & Visual Interest:**
+    - Article cards and newsletter signup block MUST have `border-radius: 0.75rem` (`rounded-xl`). Images within cards MUST have `border-radius: 0.5rem` (`rounded-lg`).
+    - **Shadows:**
+        - Light Theme: Article cards and interactive elements use a nuanced `shadow-[0_4px_15px_rgba(0,0,0,0.08)]`. On hover, this intensifies to `shadow-[0_8px_30px_rgba(0,0,0,0.12)]`.
+        - Dark Theme: Article cards and interactive elements use `shadow-[0_4px_15px_rgba(0,0,0,0.2)]`. On hover, `shadow-[0_8px_30px_rgba(0,0,0,0.3)]`.
+    - **Layering & Lift:** Article cards MUST have a subtle `transform: translateY(-4px)` effect on hover, combined with the enhanced shadow, creating a sense of lift.
+    - **Backgrounds:**
+        - Hero section should have a high-quality, relevant background image with a sophisticated `linear-gradient` overlay (e.g., `linear-gradient(to top, rgba(26,26,26,0.8) 0%, rgba(26,26,26,0.5) 50%, rgba(26,26,26,0.2) 100%)` for dark theme, adjusted for light theme) for optimal text contrast. Alternatively, if text is directly over the image, the text container MUST have `backdrop-filter: blur(8px) brightness(0.7)`.
+        - The main page background should feature a very subtle, almost imperceptible noise texture or a radial gradient that adds depth without distracting.
+    - **Sticky Header:** The navigation bar MUST become sticky on scroll, gaining a `backdrop-filter: blur(10px) saturate(180%)` and a subtle `border-b border-gray-200/50` (light) / `border-gray-700/50` (dark) for a modern, layered feel.
+    - **Gradient Borders:** The newsletter signup block or category section could feature a subtle `border-image` gradient for added visual flair, using accent colors.
+  - **Layout Precision:**
+    - Main content wrapper `max-w-screen-xl` (`1280px`) with `px-4` or `px-8` horizontal padding.
+    - Sections separated by `py-20` or `py-24`.
+    - Article grid `grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8`.
+    - Author bio text block should have a `max-w-3xl` width, centered, to avoid awkward narrowness.
+  - **Interactivity & Micro-interactions:**
+    - All buttons and links MUST have distinct `hover:bg-opacity-90` (for solid colors) or `hover:shadow-lg hover:translate-y-[-2px]` effects. Additionally, include `active:scale-98` for a tactile, pressed feel.
+    - Article cards MUST have a pronounced `hover:shadow-xl hover:translateY(-4px) hover:scale-[1.01]` effect, ensuring smooth `transition-all duration-300 ease-out`.
+    - All interactive elements (buttons, links, input fields) MUST have clear, accessible `focus:ring-2 focus:ring-offset-2 focus:ring-primary-accent` styles.
+    - Transitions: All interactive elements MUST use `transition-all duration-300 ease-out` for smooth visual feedback.
+    - Cursor: All clickable elements MUST explicitly use `cursor-pointer`.
+    - Dark/light toggle MUST be present and functional, with a smooth transition and a subtle `transform: rotate(30deg) scale(1.1)` on its icon on hover.
+    - Category pills MUST have a `hover:scale-105` and `hover:bg-secondary-accent-light/dark` effect.
+  - **Anti-patterns to eliminate:**
+    - NEVER use generic purple/blue gradients for accents.
+    - NEVER use "Article Thumbnail" as image placeholders. All images MUST be unique, relevant, and high-quality.
+    - NO hard-to-read text due to insufficient contrast.
+    - AVOID flat, lifeless layouts. Add subtle depth and visual interest through shadows, textures, and layering.
+    - AVOID using default browser focus outlines; implement custom, accessible focus styles as specified.
+    - DO NOT use low-resolution, stretched, or poorly cropped images.
+MUST include:
+  - **Minimal Navigation:** Top-right, with `Home`, `Categories`, `About` links, and a functional dark/light mode toggle (sun/moon icon). The navigation should be sticky on scroll with the specified `backdrop-filter` effect.
+  - **Featured Post Hero Section:** Prominent, full-width or near full-width, with a large, dramatic title (`H1` as specified), concise description, author, date, read time, category tag, and a clear "Read More" button. Background image MUST be high-quality and relevant to the article, with the specified `linear-gradient` overlay for optimal text contrast.
+  - **Recent Posts Grid (6-9 posts):** A visually appealing grid of article cards. Each card MUST include:
+    - High-quality, relevant image (aspect ratio 16:9 or 4:3, `rounded-lg`). NEVER use placeholder gradients.
+    - Category tag (using secondary accent color).
+    - Descriptive title (min 5 words).
+    - Short excerpt (2-3 lines).
+    - Author, date, read time.
+    - "Read More" link with an arrow icon that subtly moves to the right on hover.
+  - **Explore Topics Section:** A horizontal scrollable list of category pills/buttons, each with the specified hover effects.
+  - **Newsletter Signup Block:** A visually distinct section with a compelling headline, brief description, email input field (`placeholder="Enter your email"`, with custom focus styles), and a primary accent-colored "Subscribe" button. Include a relevant, high-quality image or illustration, and feature a subtle gradient border.
+  - **Author Bio Section:** Centered, with a professional circular avatar image (NOT initials), author's name, and a 3-4 sentence descriptive bio.
+  - **Minimal Footer:** Copyright, Privacy Policy, Terms of Service links.
