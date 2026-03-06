@@ -549,6 +549,21 @@ h3 {
   line-height: 1.6;
 }
 
+.project-card .project-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin-top: 12px;
+  transition: gap 0.2s;
+}
+
+.project-card:hover .project-link {
+  gap: 10px;
+}
+
 /* ── Contact Section ──────────────────────────────────────────── */
 .contact-grid {
   display: grid;

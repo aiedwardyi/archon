@@ -12,7 +12,7 @@ A base.css file is injected automatically. It provides:
 - Hero: .hero-banner, .hero-bg, .hero-overlay, .hero-content, .hero-eyebrow, .hero-subtitle, .btn-shop
 - Sections: .section-wrapper, .section-header, .section-eyebrow
 - Filters: .filter-bar, .filter-pill, .filter-pill.active
-- Products: .product-grid (3-col), .product-card, .product-image-wrapper (4:5 ratio), .product-image, .product-badge, .product-wishlist, .product-info, .product-name, .product-category, .product-price, .original-price
+- Products: .product-grid (3-col), .product-card, .product-image-wrapper (4:5 ratio), .product-image, .product-badge, .product-wishlist, .quick-add (slides up on hover), .quick-add-btn, .product-info, .product-name, .product-category, .product-price, .original-price
 - Stars: .star-rating, .star-filled, .star-empty, .rating-count
 - Sizes: .size-selector, .size-btn, .size-btn.selected
 - Collections: .collection-grid, .collection-card, .collection-image, .collection-overlay, .collection-title, .collection-count
@@ -51,7 +51,7 @@ REQUIRED SECTIONS
 
 4. PRODUCT GRID — .section-header + .filter-bar (5 .filter-pill: All, Jackets, Sneakers, Accessories, Sale — "All" has .active) + .product-grid:
    - EXACTLY 6 .product-card in 3-column grid (2 complete rows)
-   - Each card: .product-image-wrapper > .product-image (Unsplash fashion product image) + optional .product-badge ("NEW" or "SALE")
+   - Each card: .product-image-wrapper > .product-image (Unsplash fashion product image) + optional .product-badge ("NEW" or "SALE") + .quick-add > .quick-add-btn "QUICK ADD" (slides up on hover, built into base.css)
    - .product-info: .product-name (Cormorant Garamond), .product-category, .star-rating (5 SVG stars), .product-price
    - Star SVGs: use path "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" in 16x16 viewBox
    - .star-filled (fill: var(--accent)) vs .star-empty (fill: var(--border))

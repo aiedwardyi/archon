@@ -56,13 +56,12 @@ REQUIRED 11 SECTIONS (all visible on first paint)
 3. LOGO CLOUD — .logo-cloud with .marquee-label ("TRUSTED BY TEAMS AT 50,000+ COMPANIES") and .marquee-track containing 10 logo items (Notion, Figma, Linear, Stripe, Vercel, Loom, Intercom, Airtable, Webflow, Framer). Duplicate for seamless loop (20 items total). Each .logo-item has a small SVG icon + text.
 
 4. FEATURES BENTO — .bento-grid with 4 cards:
-   - Card 1: .bento-card.bento-card--span2 (hero feature with coded UI mockup inside — e.g. a mini text editor with syntax highlighting, toolbar buttons, and sample text)
-   - Card 2: .bento-card (single column — e.g. metric display with big number + sparkline SVG)
-   - Card 3: .bento-card (single column — e.g. 3 mini stat bars with labels and percentages)
-   - Card 4: .bento-card.bento-card--span2 (wider card — e.g. integration logos grid or workflow diagram)
-   - Each card MUST have a .card-badge + h3 + .card-desc + REAL coded visual (mini UI, SVG chart, metric bars, icon grid)
-   - NEVER leave feature cards as text-only. NEVER write "Illustration" or placeholder text.
-   - Cards have gradient borders on hover (built into base.css) — ensure each card has distinct visual content to differentiate them.
+   - Card 1: .bento-card.bento-card--span2 (hero feature, spans 2 columns — include a coded mini UI mockup inside)
+   - Card 2: .bento-card (single column — metric display with big number + sparkline SVG)
+   - Card 3: .bento-card (single column — stat bars or mini chart)
+   - Card 4: .bento-card.bento-card--span2 (spans 2 columns — integration logos or workflow)
+   - Each card MUST have a .card-badge + h3 + .card-desc + a coded visual element (mini UI, SVG, metric bars)
+   - NEVER leave feature cards as text-only
 
 5. PRODUCT MOCKUP — .mockup-wrapper containing a fully coded mini dashboard/editor UI (dark card with fake chart bars, metric numbers, status badges — all real HTML, NOT description text)
 
@@ -111,6 +110,7 @@ SELF-CHECK BEFORE OUTPUT
 □ Announcement pill is visible (42px+ tall)
 □ Logo cloud has 10 companies duplicated (20 DOM items) with marquee
 □ Bento grid uses span2 on cards 1 and 4 (NOT uniform grid)
+□ Feature cards contain coded visuals, NOT text-only
 □ Product mockup is a coded UI, NOT placeholder text
 □ Comparison table has 8 feature rows with real metrics
 □ Pricing toggle animates between monthly/annual

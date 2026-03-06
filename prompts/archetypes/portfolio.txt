@@ -16,7 +16,7 @@ A base.css file is injected automatically. It provides:
 - Sections: .section-wrapper, .section-header, .section-eyebrow, .section-desc
 - About: .about-grid (2-col), .about-image, .about-text
 - Skills: .skills-grid (4-col), .skill-card (.skill-icon + .skill-name + .skill-level)
-- Projects: .projects-bento (3-col), .project-card, .project-card--span2, .project-image, .project-overlay, .project-info, .project-tag, .project-title, .project-desc
+- Projects: .projects-bento (3-col), .project-card, .project-card--span2, .project-image, .project-overlay, .project-info, .project-tag, .project-title, .project-desc, .project-link
 - Contact: .contact-grid (2-col), .contact-form, .form-group, .form-label, .form-input, .form-textarea, .contact-details, .contact-item, .contact-icon, .contact-label, .contact-value
 - Footer: .site-footer
 - Responsive breakpoints, animations (pulse, fadeUp), focus states, hover transitions
@@ -65,7 +65,9 @@ REQUIRED SECTIONS
    - ZERO-VALUE BAN: never "0"
 
 4. ABOUT — .section-wrapper with .about-grid:
-   - Left: .about-image (Unsplash portrait or pollinations.ai professional photo)
+   - Left: .about-image — use a professional portrait from Unsplash:
+     https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80
+     (or another professional headshot — NEVER use landscapes, castles, or unrelated images)
    - Right: h2, .about-text paragraphs (2-3 paragraphs about background, passion, approach)
    - Image onerror fallback
 
@@ -77,7 +79,8 @@ REQUIRED SECTIONS
 6. PROJECTS — .section-wrapper with .projects-bento:
    - 4-6 .project-card entries
    - First card: .project-card--span2 (larger, spans 2 columns)
-   - Each: .project-image (use pollinations.ai URLs with descriptive prompts like "modern web app dashboard design screenshot dark theme" or "mobile app interface design mockup dark"), .project-info > .project-tag + .project-title + .project-desc
+   - Each: .project-image (use pollinations.ai URLs with descriptive prompts like "modern web app dashboard design screenshot dark theme" or "mobile app interface design mockup dark"), .project-info > .project-tag + .project-title + .project-desc + .project-link ("View Project →")
+   - EVERY project card MUST have a .project-link with text "View Project →" — this shows interactivity
    - .project-overlay appears on hover with extra info (visible at 70% by default in base.css, full on hover)
    - Real project names: "Nebula Dashboard", "Pulse Analytics", "Artisan CMS", "Zenith Mobile", "Quantum Payments", etc.
    - Each project: specific description of what was built, tech stack tags
@@ -114,7 +117,7 @@ SELF-CHECK BEFORE OUTPUT
 □ About section has image + text side-by-side
 □ 8+ skill cards with SVG icons
 □ Projects bento: first card spans 2 columns
-□ 4-6 projects with real names and descriptions
+□ 4-6 projects with real names, descriptions, and .project-link "View Project →"
 □ Contact form + contact details side-by-side
 □ All headings use Syne font-family
 □ Accent is amber #F59E0B, used sparingly

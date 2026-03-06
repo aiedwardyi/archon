@@ -12,8 +12,8 @@ A base.css file is injected automatically. It provides:
 - Sidebar: .sidebar-logo, .sidebar-nav, .sidebar-group, .sidebar-group-label, .sidebar-item, .sidebar-item.active, .sidebar-user
 - Header: .header-bar, .page-title, .header-actions, .header-search, .header-icon-btn, .header-avatar
 - KPI cards: .kpi-grid (4-col), .kpi-card (top border accent), .kpi-label, .kpi-value, .kpi-delta, .kpi-delta--up, .kpi-delta--down
-- Chart: .chart-card, .chart-header, .chart-title, .chart-period
-- Table: .data-table-wrapper, .data-table, th, td, .cell-primary, .cell-positive, .cell-negative
+- Chart: .chart-card (accent top border), .chart-header, .chart-title, .chart-period-btn, .chart-period-btn.active
+- Table: .data-table-wrapper, .data-table, th, td, .cell-primary, .cell-positive, .cell-negative, .cell-action
 - Activity: .activity-feed, .feed-header, .activity-item, .activity-icon (--buy, --sell, --info), .activity-text, .activity-time
 - Badges: .badge (--success, --danger, --warning, --info)
 - Layout: .grid-2col (2fr 1fr)
@@ -59,20 +59,23 @@ REQUIRED SECTIONS (inside .content-area)
    - ZERO-VALUE BAN: never "0", "$0", "0%"
    - Use .kpi-delta--up for positive, .kpi-delta--down for negative
 
-2. CHART — .chart-card with .chart-header (.chart-title + .chart-period selector buttons):
+2. CHART — .chart-card (has accent top border) with .chart-header (.chart-title + period buttons):
+   - .chart-header: display:flex between .chart-title and a div of .chart-period-btn buttons
+   - Period buttons: 4x .chart-period-btn (1D, 1W, 1M, 1Y). "1M" gets .active class (green bg)
    - SVG line chart with 12+ data points (monthly data, Jan-Dec)
-   - Chart must have visible SVG path with stroke color var(--accent), stroke-width 2, fill below with 10% opacity gradient
+   - Chart SVG: visible path with stroke var(--accent), stroke-width 2, fill below with linearGradient (accent 10% opacity to transparent)
    - Y-axis labels: 5 labels at left edge, font-size 12px, color var(--text-secondary) — MUST be readable
    - X-axis labels: month abbreviations, font-size 11px, color var(--text-muted)
    - Horizontal grid lines: stroke rgba(255,255,255,0.04), 5 lines
-   - Chart period selector: 3-4 buttons (1D, 1W, 1M, 1Y) with active state
+   - Add small circle dots (r=3, fill accent) on 3-4 data points for emphasis
    - NEVER leave chart empty — must have real SVG path data
 
 3. HOLDINGS TABLE — .data-table-wrapper > .data-table:
-   - thead: 5-6 columns (Name, Price, 24h Change, Holdings, Value, Action)
+   - thead: 6 columns (Name, Price, 24h Change, Holdings, Value, Action)
    - tbody: 8+ rows with realistic data
    - .cell-primary for asset names
-   - .cell-positive / .cell-negative for price changes
+   - .cell-positive / .cell-negative for price changes (include + or - prefix)
+   - Action column: use .cell-action with text "Trade" — this shows clickable interaction
    - font-variant-numeric: tabular-nums on all numbers
    - NEVER use double currency symbols ($$)
 
