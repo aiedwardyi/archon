@@ -53,13 +53,34 @@ FILE 1: src/index.html
   - Must work by opening directly in a browser (style.css is in the same directory)
 
 FILE 2: src/style.css
-  - Contains: ALL CSS - :root variables, reset, layout, components, animations, media queries
-  - This is where all the visual quality lives - do NOT hold back here
+  IF a base.css design kit is provided:
+    - Contains ONLY page-specific overrides, custom animations, and layout tweaks
+    - Target: under 80 lines / ~3 KB — lean and surgical
+    - Do NOT redefine anything already in base.css (variables, resets, typography, component classes)
+    - Reference base.css class names directly in your HTML
+  IF no base.css is provided:
+    - Contains: ALL CSS - :root variables, reset, layout, components, animations, media queries
+    - This is where all the visual quality lives - do NOT hold back here
   - NO inline styles in HTML - everything goes in this file
 
 WHY TWO FILES: index.html handles structure and logic (800 lines max). style.css handles ALL visual design (800 lines max). This split gives you room to produce genuinely premium CSS without line pressure.
 
-THREE-FILE MODE: If a base.css design kit is provided alongside this prompt, the model still outputs TWO files (index.html + style.css). base.css is injected separately and inlined before style.css in the preview. style.css = page-specific overrides only. Do NOT duplicate any styles, variables, resets, animations, or component rules from base.css. Reference the class names defined in base.css directly in your HTML. NEVER put CSS in a <style> tag inside index.html — this violates the two-file rule. index.html must link to style.css and contain zero inline CSS.
+THREE-FILE MODE: If a base.css design kit is provided alongside this prompt, the model still outputs TWO files (index.html + style.css). base.css is injected separately and inlined before style.css in the preview.
+
+  style.css = page-specific overrides only (target ≤ 80 lines).
+
+  BANNED from style.css when base.css is present:
+    - :root blocks (variables are already in base.css)
+    - *, *::before, *::after resets
+    - Bare html / body / a / img resets
+    - @import for fonts already loaded in base.css
+    - Any selector or property block that duplicates base.css
+
+  If style.css exceeds 80 lines, you are almost certainly duplicating base.css. Stop and trim.
+
+  Reference the class names defined in base.css directly in your HTML.
+  NEVER put CSS in a <style> tag inside index.html — this violates the two-file rule.
+  index.html must link to style.css and contain zero inline CSS.
 
 CRITICAL: Build the ACTUAL app the task describes.
   Real, working functionality

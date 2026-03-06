@@ -271,6 +271,111 @@ def _run_gemini(client: genai.Client, contents: str) -> EngineeringResult:
     ) from last_err
 
 
+def _dedup_style_css(base_css: str, style_css: str) -> str:
+    """Remove top-level CSS blocks from style_css that duplicate base.css."""
+    try:
+        # Extract top-level selectors from base.css
+        base_selectors: set[str] = set()
+        for m in re.finditer(r'^([^{@/\n][^{]*?)\s*\{', base_css, re.MULTILINE):
+            sel = m.group(1).strip()
+            if sel:
+                base_selectors.add(sel)
+
+        # Always-remove patterns (resets / variables that belong in base.css)
+        always_remove = re.compile(
+            r'^(?:'
+            r':root'
+            r'|\*\s*,\s*\*::before'
+            r'|\*::before'
+            r'|\*\s*\{'          # bare * reset
+            r'|html\s*[,{]'
+            r'|body\s*[,{]'
+            r'|a\s*[,{]'
+            r'|img\s*[,{]'
+            r')',
+            re.MULTILINE,
+        )
+
+        # Detect fonts already imported in base.css
+        base_fonts: set[str] = set()
+        for m in re.finditer(r'@import\s+url\(["\']?([^"\')\s]+)', base_css):
+            base_fonts.add(m.group(1))
+
+        # Split style_css into top-level blocks (selector { ... })
+        # We walk character by character to handle nested braces
+        blocks: list[tuple[str, str]] = []  # (raw_block_text, selector)
+        i = 0
+        length = len(style_css)
+        while i < length:
+            # Skip whitespace / comments between blocks
+            start = i
+            while i < length and style_css[i] in ' \t\n\r':
+                i += 1
+            if i >= length:
+                break
+
+            # Check for @import line
+            if style_css[i:i+7] == '@import':
+                end = style_css.find(';', i)
+                if end == -1:
+                    end = length
+                raw = style_css[start:end+1]
+                blocks.append((raw, style_css[i:end+1].strip()))
+                i = end + 1
+                continue
+
+            # Find opening brace
+            brace = style_css.find('{', i)
+            if brace == -1:
+                # Remaining text (no more blocks)
+                blocks.append((style_css[start:], ''))
+                break
+
+            selector = style_css[i:brace].strip()
+            # Walk to matching closing brace
+            depth = 1
+            j = brace + 1
+            while j < length and depth > 0:
+                if style_css[j] == '{':
+                    depth += 1
+                elif style_css[j] == '}':
+                    depth -= 1
+                j += 1
+            raw = style_css[start:j]
+            blocks.append((raw, selector))
+            i = j
+
+        # Filter blocks
+        kept: list[str] = []
+        for raw, selector in blocks:
+            if not selector and not raw.strip():
+                continue
+
+            # Remove @import for fonts already in base.css
+            if selector.startswith('@import'):
+                is_dup_font = False
+                for font_url in base_fonts:
+                    if font_url in selector:
+                        is_dup_font = True
+                        break
+                if is_dup_font:
+                    continue
+
+            # Remove always-remove patterns
+            if always_remove.match(selector):
+                continue
+
+            # Remove blocks whose selector exactly matches a base.css selector
+            if selector in base_selectors:
+                continue
+
+            kept.append(raw)
+
+        return '\n'.join(kept).strip() + '\n' if kept else style_css
+    except Exception:
+        return style_css
+
+
 class EngineerAgent:
     def __init__(self, client: genai.Client | None):
         self.client = client
@@ -383,6 +488,16 @@ class EngineerAgent:
                 path="src/base.css",
                 content=css_kit_content,
             ))
+
+            # Deduplicate style.css against base.css
+            for f in result.files:
+                if f.path == "src/style.css":
+                    original_len = len(f.content)
+                    f.content = _dedup_style_css(css_kit_content, f.content)
+                    new_len = len(f.content)
+                    if new_len < original_len:
+                        print(f"EngineerAgent: dedup style.css {original_len} -> {new_len} chars (-{original_len - new_len})")
+                    break
 
         return result
 
