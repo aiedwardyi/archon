@@ -21,8 +21,8 @@
   --font-body: 'Inter', sans-serif;
   --radius: 16px;
   --radius-sm: 12px;
-  --shadow-card: 0 2px 8px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.15);
-  --shadow-hover: 0 16px 48px rgba(0,0,0,0.4);
+  --shadow-card: 0 2px 8px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.03);
+  --shadow-hover: 0 16px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(245,158,11,0.12);
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -396,13 +396,33 @@ h3 {
 }
 
 .skill-card {
-  background: var(--surface);
+  background: linear-gradient(135deg, var(--surface) 0%, rgba(22,22,24,0.8) 100%);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 28px;
   text-align: center;
   transition: var(--transition);
   box-shadow: var(--shadow-card);
+  position: relative;
+}
+
+.skill-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(245,158,11,0.2), transparent 50%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.skill-card:hover::before {
+  opacity: 1;
 }
 
 .skill-card:hover {
@@ -494,7 +514,7 @@ h3 {
   display: flex;
   align-items: flex-end;
   padding: 28px;
-  opacity: 0;
+  opacity: 0.7;
   transition: opacity 0.3s;
 }
 

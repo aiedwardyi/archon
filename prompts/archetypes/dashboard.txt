@@ -59,10 +59,13 @@ REQUIRED SECTIONS (inside .content-area)
    - ZERO-VALUE BAN: never "0", "$0", "0%"
    - Use .kpi-delta--up for positive, .kpi-delta--down for negative
 
-2. CHART — .chart-card with .chart-header (.chart-title + .chart-period selector):
-   - SVG line chart with 12+ data points (monthly data)
-   - Chart must have visible SVG path with stroke color var(--accent)
-   - Include axis labels and grid lines
+2. CHART — .chart-card with .chart-header (.chart-title + .chart-period selector buttons):
+   - SVG line chart with 12+ data points (monthly data, Jan-Dec)
+   - Chart must have visible SVG path with stroke color var(--accent), stroke-width 2, fill below with 10% opacity gradient
+   - Y-axis labels: 5 labels at left edge, font-size 12px, color var(--text-secondary) — MUST be readable
+   - X-axis labels: month abbreviations, font-size 11px, color var(--text-muted)
+   - Horizontal grid lines: stroke rgba(255,255,255,0.04), 5 lines
+   - Chart period selector: 3-4 buttons (1D, 1W, 1M, 1Y) with active state
    - NEVER leave chart empty — must have real SVG path data
 
 3. HOLDINGS TABLE — .data-table-wrapper > .data-table:
@@ -90,7 +93,10 @@ DATA & CONTENT RULES
 - Table rows: minimum 8 rows with varied data
 - Activity timestamps: realistic, varied ("just now", "5 min ago", "2 hours ago")
 - Domain context: adapt accent color in style.css if needed (green for crypto/finance, blue for SaaS analytics)
-- NO TICKER BAR — absolutely prohibited
+- Optional: a compact ticker/price bar at the top of main content is OK if it fits the domain (crypto, stocks)
+- Table rows MUST have hover state (background lighten on hover — already in base.css)
+- KPI cards hover state: subtle lift + accent border glow (already in base.css)
+- Chart period buttons: one must have active/selected state
 
 ═══════════════════════════════════════
 SELF-CHECK BEFORE OUTPUT

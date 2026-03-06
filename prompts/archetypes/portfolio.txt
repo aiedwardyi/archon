@@ -77,10 +77,11 @@ REQUIRED SECTIONS
 6. PROJECTS — .section-wrapper with .projects-bento:
    - 4-6 .project-card entries
    - First card: .project-card--span2 (larger, spans 2 columns)
-   - Each: .project-image (Unsplash or gradient placeholder), .project-info > .project-tag + .project-title + .project-desc
-   - .project-overlay appears on hover with extra info
-   - Real project names and descriptions (not "Project 1")
-   - Image onerror fallback on every img
+   - Each: .project-image (use pollinations.ai URLs with descriptive prompts like "modern web app dashboard design screenshot dark theme" or "mobile app interface design mockup dark"), .project-info > .project-tag + .project-title + .project-desc
+   - .project-overlay appears on hover with extra info (visible at 70% by default in base.css, full on hover)
+   - Real project names: "Nebula Dashboard", "Pulse Analytics", "Artisan CMS", "Zenith Mobile", "Quantum Payments", etc.
+   - Each project: specific description of what was built, tech stack tags
+   - Image onerror fallback on every img: onerror="this.style.background='linear-gradient(135deg,var(--surface),var(--surface-elevated))';this.style.minHeight='240px'"
 
 7. CONTACT — .section-wrapper with .contact-grid:
    - Left: .contact-form with .form-group entries (Name, Email, Subject, Message) + .btn-primary "Send Message"

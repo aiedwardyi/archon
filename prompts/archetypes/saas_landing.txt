@@ -56,16 +56,17 @@ REQUIRED 11 SECTIONS (all visible on first paint)
 3. LOGO CLOUD — .logo-cloud with .marquee-label ("TRUSTED BY TEAMS AT 50,000+ COMPANIES") and .marquee-track containing 10 logo items (Notion, Figma, Linear, Stripe, Vercel, Loom, Intercom, Airtable, Webflow, Framer). Duplicate for seamless loop (20 items total). Each .logo-item has a small SVG icon + text.
 
 4. FEATURES BENTO — .bento-grid with 4 cards:
-   - Card 1: .bento-card.bento-card--span2 (hero feature with coded UI mockup inside)
-   - Card 2: .bento-card (single column)
-   - Card 3: .bento-card (single column)
-   - Card 4: .bento-card.bento-card--span2 (wider card)
-   - Each card: .card-badge + h3 + .card-desc + visual element (mini UI mockup, icon grid, or metric bars)
-   - NEVER leave feature cards as text-only. NEVER write "Illustration" placeholder text.
+   - Card 1: .bento-card.bento-card--span2 (hero feature with coded UI mockup inside — e.g. a mini text editor with syntax highlighting, toolbar buttons, and sample text)
+   - Card 2: .bento-card (single column — e.g. metric display with big number + sparkline SVG)
+   - Card 3: .bento-card (single column — e.g. 3 mini stat bars with labels and percentages)
+   - Card 4: .bento-card.bento-card--span2 (wider card — e.g. integration logos grid or workflow diagram)
+   - Each card MUST have a .card-badge + h3 + .card-desc + REAL coded visual (mini UI, SVG chart, metric bars, icon grid)
+   - NEVER leave feature cards as text-only. NEVER write "Illustration" or placeholder text.
+   - Cards have gradient borders on hover (built into base.css) — ensure each card has distinct visual content to differentiate them.
 
 5. PRODUCT MOCKUP — .mockup-wrapper containing a fully coded mini dashboard/editor UI (dark card with fake chart bars, metric numbers, status badges — all real HTML, NOT description text)
 
-6. COMPARISON TABLE — .comparison-table with 8 feature rows. 3 columns: Feature | Your Product (featured) | Competitors. Featured column uses .featured-col class. Checkmarks: .check-featured (violet) vs .check-competitor (grey). Real feature names: "AI Suggestions", "Grammar Depth", "Tone Detection", "Plagiarism Check", "Export Formats", "API Access", "Team Seats", "Support SLA"
+6. COMPARISON TABLE — .comparison-table with 8 feature rows comparing your product vs 2 competitors. 4 columns: Feature | Your Product (featured) | Competitor A | Competitor B. Featured column uses .featured-col class. Use a mix of checkmarks (.check-featured violet SVG, .check-competitor grey SVG) AND specific values (e.g. "Unlimited" vs "10/mo", "99.5%" vs "94%", "Real-time" vs "Batch only"). This makes the table feel data-rich, not just a wall of checkmarks. Feature rows: "AI Suggestions", "Grammar Depth", "Tone Detection", "Plagiarism Check", "Export Formats", "API Access", "Team Seats", "Support SLA"
 
 7. PRICING — .pricing-toggle (Monthly/Annual with Alpine.js x-data) + .pricing-grid with 3 .pricing-card tiers. Middle card: .pricing-card--featured. Monthly: $0/$29/$79. Annual: $0/$23/$63 + .save-badge "Save 20%". Each card: .plan-name, .plan-price, .plan-desc, .plan-features (5-6 items with green check SVGs), .plan-btn
 
