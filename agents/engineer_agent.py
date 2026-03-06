@@ -21,6 +21,13 @@ from utils.offline_engineer_scaffold import build_vite_react_ts_scaffold
 
 PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
 
+# Map similar archetypes to a shared design kit
+DESIGN_KIT_ALIASES = {
+    "ai_product": "saas_landing",
+    "dev_tool": "saas_landing",
+    "productivity_app": "saas_landing",
+}
+
 
 def _is_offline_mode() -> bool:
     return os.getenv("OFFLINE_MODE", "").strip().lower() in {"1", "true", "yes", "y", "on"}
@@ -278,7 +285,21 @@ class EngineerAgent:
         if _is_offline_mode() or str(task.id).startswith("OFFLINE-"):
             return _build_offline_engineering_result(task_id=str(task.id))
 
-        prompt = (PROMPTS_DIR / "engineer.txt").read_text(encoding="utf-8")
+        archetype = task.ui_archetype
+        kit_archetype = DESIGN_KIT_ALIASES.get(archetype, archetype)
+        archetypes_dir = PROMPTS_DIR / "archetypes"
+        archetype_txt = archetypes_dir / f"{kit_archetype}.txt" if kit_archetype else None
+        archetype_css = archetypes_dir / f"{kit_archetype}.css" if kit_archetype else None
+
+        if archetype_txt and archetype_txt.exists():
+            prompt = (PROMPTS_DIR / "engineer_core.txt").read_text(encoding="utf-8")
+            prompt += "\n\n" + archetype_txt.read_text(encoding="utf-8")
+        else:
+            prompt = (PROMPTS_DIR / "engineer.txt").read_text(encoding="utf-8")
+
+        css_kit_content = None
+        if archetype_css and archetype_css.exists():
+            css_kit_content = archetype_css.read_text(encoding="utf-8")
 
         user_context = ""
         if user_prompt:
@@ -354,5 +375,14 @@ class EngineerAgent:
             from utils.genai_client import get_genai_client
             self.client = get_genai_client()
 
-        return _run_gemini(self.client, contents)
+        result = _run_gemini(self.client, contents)
+
+        # Inject design kit CSS as a file artifact (initial build only)
+        if css_kit_content and not existing_code:
+            result.files.insert(0, FileArtifact(
+                path="src/base.css",
+                content=css_kit_content,
+            ))
+
+        return result
 
