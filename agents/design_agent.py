@@ -84,7 +84,7 @@ class DesignAgent:
 
         def _call():
             return self.client.models.generate_content(
-                model="gemini-3.1-pro-preview",
+                model="gemini-2.5-flash",
                 contents=contents,
                 config={
                     "response_mime_type": "application/json",
