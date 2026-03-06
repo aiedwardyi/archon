@@ -26,7 +26,7 @@ def _repair_json_array(raw: str) -> list:
 def _generate_one(req, client, save_dir):
     def _call_imagen(prompt):
         result = client.models.generate_images(
-            model="imagen-3.0-generate-002",
+            model="imagen-4.0-ultra-generate-001",
             prompt=prompt,
             config=types.GenerateImagesConfig(
                 numberOfImages=1,
@@ -84,7 +84,7 @@ class DesignAgent:
 
         def _call():
             return self.client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-3.1-pro-preview",
                 contents=contents,
                 config={
                     "response_mime_type": "application/json",
