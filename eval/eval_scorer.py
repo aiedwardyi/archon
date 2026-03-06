@@ -1,11 +1,12 @@
 """
-Vision-based design scoring using Claude API.
+Vision-based design scoring using Gemini API.
 """
 
 import json
-import base64
 import logging
 from pathlib import Path
+
+from google.genai import types as genai_types
 
 from scoring_rubric import (
     DIMENSIONS,
@@ -34,26 +35,24 @@ You will be given:
 
 Your job: score each dimension 1-10, identify issues, and suggest specific improvements.
 
-OUTPUT FORMAT (strict JSON):
+OUTPUT FORMAT (strict JSON — scores MUST be integers, no decimals):
 {
   "scores": {
-    "visual_hierarchy": <1-10>,
-    "typography": <1-10>,
-    "color_system": <1-10>,
-    "layout_precision": <1-10>,
-    "depth_polish": <1-10>,
-    "data_completeness": <1-10>,
-    "interactivity_cues": <1-10>,
-    "overall_impression": <1-10>
+    "visual_hierarchy": <integer 1-10>,
+    "typography": <integer 1-10>,
+    "color_system": <integer 1-10>,
+    "layout_precision": <integer 1-10>,
+    "depth_polish": <integer 1-10>,
+    "data_completeness": <integer 1-10>,
+    "interactivity_cues": <integer 1-10>,
+    "overall_impression": <integer 1-10>
   },
-  "issues": ["issue 1", "issue 2", ...],
-  "strengths": ["strength 1", "strength 2", ...],
-  "specific_improvements": [
-    "Change X to Y because Z",
-    "Add A to section B for reason C",
-    ...
-  ]
+  "issues": ["issue 1", "issue 2"],
+  "strengths": ["strength 1", "strength 2"],
+  "specific_improvements": ["improvement 1", "improvement 2"]
 }
+
+IMPORTANT: Keep lists SHORT (max 3 items each). Use INTEGER scores only (no 7.5, just 7 or 8).
 
 SCORING CALIBRATION:
 - 1-2: Broken, missing content, unusable
@@ -66,50 +65,37 @@ Output ONLY the JSON object. No markdown fences. No explanation outside the JSON
 
 
 class DesignScorer:
-    def __init__(self, anthropic_client, model: str = "claude-sonnet-4-6"):
-        self.client = anthropic_client
+    def __init__(self, genai_client, model: str = "gemini-2.5-flash"):
+        self.client = genai_client
         self.model = model
 
-    def _encode_image(self, image_path: Path, max_bytes: int = 3_500_000, max_dimension: int = 7900) -> dict:
-        """Encode an image file as an Anthropic API image content block.
-
-        If the image exceeds max_bytes or max_dimension, it's resized/compressed.
-        Claude API limit: 8000px max on any dimension, 5MB base64 payload.
-        """
+    def _prepare_image(self, image_path: Path, max_bytes: int = 3_500_000, max_dimension: int = 7900) -> genai_types.Part:
+        """Prepare an image as a Gemini API Part, resizing if needed."""
         from PIL import Image
         import io
 
-        # Disable decompression bomb protection — we resize before sending anyway
         Image.MAX_IMAGE_PIXELS = None
 
         data = Path(image_path).read_bytes()
-
-        # Check pixel dimensions even if file size is OK
         img = Image.open(io.BytesIO(data))
         needs_resize = img.width > max_dimension or img.height > max_dimension
 
-        # If under both limits, use as-is
-        if len(data) <= max_bytes and not needs_resize:
-            b64 = base64.standard_b64encode(data).decode("utf-8")
-            suffix = Path(image_path).suffix.lower()
-            media_type = {
-                ".png": "image/png",
-                ".jpg": "image/jpeg",
-                ".jpeg": "image/jpeg",
-                ".gif": "image/gif",
-                ".webp": "image/webp",
-            }.get(suffix, "image/png")
-            return {
-                "type": "image",
-                "source": {"type": "base64", "media_type": media_type, "data": b64},
-            }
+        suffix = Path(image_path).suffix.lower()
+        mime_map = {
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".gif": "image/gif",
+            ".webp": "image/webp",
+        }
 
-        # Image too large (bytes or dimensions) — resize and compress as JPEG
+        if len(data) <= max_bytes and not needs_resize:
+            mime_type = mime_map.get(suffix, "image/png")
+            return genai_types.Part.from_bytes(data=data, mime_type=mime_type)
+
         logger.info(f"Image {image_path.name}: {len(data)} bytes, {img.width}x{img.height}px — resizing...")
 
-        # Scale down to fit within max_dimension on both axes
         scale = min(max_dimension / max(img.width, 1), max_dimension / max(img.height, 1), 1.0)
-        # Also cap width at 1920 for reasonable size
         width_scale = min(1920 / max(img.width, 1), 1.0)
         scale = min(scale, width_scale)
         if scale < 1.0:
@@ -117,34 +103,23 @@ class DesignScorer:
             img = img.resize(new_size, Image.LANCZOS)
             logger.info(f"Resized to {new_size[0]}x{new_size[1]}px")
 
-        # Convert to RGB (JPEG doesn't support alpha)
         if img.mode in ("RGBA", "P"):
             img = img.convert("RGB")
 
-        # Compress as JPEG with decreasing quality until under limit
         for quality in [85, 70, 55, 40]:
             buf = io.BytesIO()
             img.save(buf, format="JPEG", quality=quality)
             compressed = buf.getvalue()
             if len(compressed) <= max_bytes:
                 logger.info(f"Compressed to {len(compressed)} bytes (quality={quality})")
-                b64 = base64.standard_b64encode(compressed).decode("utf-8")
-                return {
-                    "type": "image",
-                    "source": {"type": "base64", "media_type": "image/jpeg", "data": b64},
-                }
+                return genai_types.Part.from_bytes(data=compressed, mime_type="image/jpeg")
 
-        # Last resort: resize more aggressively
         img = img.resize((img.width // 2, img.height // 2), Image.LANCZOS)
         buf = io.BytesIO()
         img.save(buf, format="JPEG", quality=60)
         compressed = buf.getvalue()
         logger.info(f"Aggressively compressed to {len(compressed)} bytes")
-        b64 = base64.standard_b64encode(compressed).decode("utf-8")
-        return {
-            "type": "image",
-            "source": {"type": "base64", "media_type": "image/jpeg", "data": b64},
-        }
+        return genai_types.Part.from_bytes(data=compressed, mime_type="image/jpeg")
 
     def score(
         self,
@@ -153,7 +128,7 @@ class DesignScorer:
         good_references: list[tuple[str, Path]] = None,
         bad_references: list[tuple[str, Path]] = None,
     ) -> ScoringResult:
-        """Score a screenshot using Claude vision.
+        """Score a screenshot using Gemini vision.
 
         Args:
             screenshot_path: Path to the generated app screenshot.
@@ -164,55 +139,48 @@ class DesignScorer:
         Returns:
             ScoringResult with per-dimension scores and feedback.
         """
-        content = []
+        contents = []
 
-        # Add the screenshot being evaluated
-        content.append({"type": "text", "text": "SCREENSHOT TO EVALUATE:"})
-        content.append(self._encode_image(screenshot_path))
+        contents.append(genai_types.Part.from_text(text="SCREENSHOT TO EVALUATE:"))
+        contents.append(self._prepare_image(screenshot_path))
 
-        # Add good reference images
         if good_references:
-            content.append({
-                "type": "text",
-                "text": f"\nGOOD REFERENCE EXAMPLES (this is what {archetype} apps SHOULD look like):",
-            })
-            for label, path in good_references[:4]:  # Max 4
-                content.append({"type": "text", "text": f"Good example: {label}"})
-                content.append(self._encode_image(path))
+            contents.append(genai_types.Part.from_text(text=
+                f"\nGOOD REFERENCE EXAMPLES (this is what {archetype} apps SHOULD look like):"
+            ))
+            for label, path in good_references[:4]:
+                contents.append(genai_types.Part.from_text(text=f"Good example: {label}"))
+                contents.append(self._prepare_image(path))
 
-        # Add bad reference images
         if bad_references:
-            content.append({
-                "type": "text",
-                "text": f"\nBAD EXAMPLES (AVOID these patterns — these are what we're trying to fix):",
-            })
-            for label, path in bad_references[:2]:  # Max 2
-                content.append({"type": "text", "text": f"Bad example: {label}"})
-                content.append(self._encode_image(path))
+            contents.append(genai_types.Part.from_text(text=
+                "\nBAD EXAMPLES (AVOID these patterns — these are what we're trying to fix):"
+            ))
+            for label, path in bad_references[:2]:
+                contents.append(genai_types.Part.from_text(text=f"Bad example: {label}"))
+                contents.append(self._prepare_image(path))
 
-        # Add rubric
         rubric = build_rubric_text(archetype)
-        content.append({"type": "text", "text": f"\n{rubric}"})
-        content.append({
-            "type": "text",
-            "text": (
-                f"\nScore the FIRST screenshot (the one being evaluated) for the "
-                f"'{archetype}' archetype. Compare it against the reference images. "
-                f"Output ONLY a JSON object with scores, issues, strengths, and specific_improvements."
-            ),
-        })
+        contents.append(genai_types.Part.from_text(text=f"\n{rubric}"))
+        contents.append(genai_types.Part.from_text(text=
+            f"\nScore the FIRST screenshot (the one being evaluated) for the "
+            f"'{archetype}' archetype. Compare it against the reference images. "
+            f"Output ONLY a JSON object with scores, issues, strengths, and specific_improvements."
+        ))
 
         logger.info(f"Scoring {screenshot_path} as '{archetype}' with {len(good_references or [])} good refs, {len(bad_references or [])} bad refs")
 
-        response = self.client.messages.create(
+        response = self.client.models.generate_content(
             model=self.model,
-            max_tokens=2000,
-            system=SCORER_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": content}],
+            contents=contents,
+            config={
+                "system_instruction": SCORER_SYSTEM_PROMPT,
+                "temperature": 0.2,
+                "max_output_tokens": 4000,
+            },
         )
 
-        # Parse the response
-        raw_text = response.content[0].text.strip()
+        raw_text = (getattr(response, "text", "") or "").strip()
         # Strip markdown fences if present
         if raw_text.startswith("```"):
             raw_text = raw_text.split("\n", 1)[1]
@@ -224,7 +192,6 @@ class DesignScorer:
             data = json.loads(raw_text)
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse scorer response: {e}\nRaw: {raw_text[:500]}")
-            # Return a zero-score result
             return ScoringResult(
                 scores={d.name: 0 for d in DIMENSIONS},
                 weighted_total=0.0,

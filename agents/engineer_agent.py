@@ -349,13 +349,10 @@ class EngineerAgent:
             f"--- TASK END ---"
         )
 
-        # Primary: Claude Opus 4.6
-        if os.environ.get("ANTHROPIC_API_KEY"):
-            return _run_claude(contents)
-
-        # Fallback: Gemini 2.5 Flash (if no Anthropic key)
+        # Primary: Gemini 2.5 Flash (Vertex AI)
         if self.client is None:
-            raise RuntimeError("EngineerAgent: no API client available")
+            from utils.genai_client import get_genai_client
+            self.client = get_genai_client()
 
         return _run_gemini(self.client, contents)
 

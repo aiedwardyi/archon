@@ -6,7 +6,11 @@
     "saas_landing": "Build a landing page for an AI-powered writing assistant called WriteFlow",
     "ecommerce": "Build a premium streetwear store with product grid, cart drawer, and featured collection",
     "fintech": "Build a stock trading dashboard with candlestick chart, watchlist, and portfolio breakdown",
-    "portfolio": "Build a creative developer portfolio with project showcase, skills section, and contact form"
+    "portfolio": "Build a creative developer portfolio with project showcase, skills section, and contact form",
+    "blog": "Build a modern tech blog with featured article hero, article grid, categories sidebar, and newsletter signup",
+    "startup": "Build a startup landing page for a DevOps automation platform called ShipFast with pricing tiers, feature grid, and testimonials",
+    "restaurant": "Build a fine dining restaurant website with menu showcase, reservation form, chef profiles, and photo gallery",
+    "education": "Build an online learning platform dashboard with course cards, progress tracking, upcoming lessons, and achievement badges"
   },
   "max_iterations": 3,
   "target_score": 90,
@@ -15,8 +19,8 @@
   "preview_base": "http://localhost:5000",
   "screenshot_viewport": [1440, 900],
   "screenshot_wait_seconds": 3.0,
-  "scorer_model": "claude-sonnet-4-6",
-  "improver_model": "claude-sonnet-4-6",
+  "scorer_model": "gemini-2.5-flash",
+  "improver_model": "gemini-2.5-flash",
   "max_reference_images": 4,
   "build_timeout_seconds": 600,
   "poll_interval_seconds": 3.0
