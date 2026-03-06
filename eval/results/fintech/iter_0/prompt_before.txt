@@ -1,0 +1,26 @@
+# ═══════════════════════════════════════
+# ARCHETYPE 5: FINTECH / TRADING
+# ═══════════════════════════════════════
+
+PATH: B (Raw CSS + animations)
+Use for: stock trading platforms, banking apps, payment dashboards, investment portals.
+Theme: Deep navy dark — NOT the same dark as dashboard. Base bg: #0a0e1a. Card bg: #111827. Surface: #1e2536. Border: #2a3348. This is a NAVY-tinted dark theme, NOT neutral gray like dashboard (#0d1117). Primary accent: #10b981 (emerald-500). Danger: #ef4444. Warning: #f59e0b. Text primary: #f1f5f9. Text muted: #94a3b8.
+Fonts: Space Grotesk (headings 600/700) + JetBrains Mono (ALL numbers, prices, percentages) from Google Fonts. Apply `font-variant-numeric: tabular-nums` and `font-family: 'JetBrains Mono', monospace` to EVERY numeric value.
+
+CRITICAL DIFFERENTIATION FROM DASHBOARD:
+- Fintech uses a TOP NAVIGATION BAR (no sidebar) — horizontal nav with logo left, nav links center, user/notifications right. This is the #1 structural difference from dashboard which uses a left sidebar.
+- Layout is FULL-WIDTH with a 3-column grid below the nav: left panel (watchlist), center (main chart + order panel), right panel (order book / trade history).
+- The primary chart MUST be a candlestick chart (not a line chart). Show OHLC candles with green/red fills, volume bars below.
+- Include an ORDER PANEL below or beside the chart with Buy/Sell toggle tabs, limit/market order type selector, amount input, and a large colored action button.
+- Watchlist is a VERTICAL list in the left panel with sparkline SVGs (tiny inline line charts, 60px wide) next to each ticker symbol.
+- Include a LIVE ORDER BOOK visualization: two-column bid/ask with depth bars (green bids left-aligned, red asks right-aligned, with semi-transparent background bars showing depth).
+
+Rules:
+- ALL numbers MUST use JetBrains Mono with tabular-nums. No exceptions.
+- Green (#10b981) for positive values/gains, Red (#ef4444) for losses/negative. NEVER swap these.
+- Sparkline SVGs (tiny inline charts, ~60x20px) MUST appear next to every ticker in the watchlist — use `<svg>` with a `<polyline>` of 15+ realistic data points.
+- Cards use `background: #111827; border: 1px solid #2a3348; border-radius: 8px;`
+- Add subtle glow effects on the primary chart: `box-shadow: 0 0 30px rgba(16, 185, 129, 0.08);`
+- Header ticker strip at top showing 5-6 major symbols (AAPL, NVDA, TSLA, etc.) with live price and % change, scrolling or static.
+
+MUST include: top nav bar → ticker strip → 3-column layout (watchlist | main chart + order panel | order book/history) → portfolio summary row → recent trades table → market news feed.

@@ -6,8 +6,7 @@ import json
 import logging
 from pathlib import Path
 
-from google import genai
-from google.genai import types
+from google.genai import types as genai_types
 
 from scoring_rubric import (
     DIMENSIONS,
@@ -36,26 +35,24 @@ You will be given:
 
 Your job: score each dimension 1-10, identify issues, and suggest specific improvements.
 
-OUTPUT FORMAT (strict JSON):
+OUTPUT FORMAT (strict JSON — scores MUST be integers, no decimals):
 {
   "scores": {
-    "visual_hierarchy": <1-10>,
-    "typography": <1-10>,
-    "color_system": <1-10>,
-    "layout_precision": <1-10>,
-    "depth_polish": <1-10>,
-    "data_completeness": <1-10>,
-    "interactivity_cues": <1-10>,
-    "overall_impression": <1-10>
+    "visual_hierarchy": <integer 1-10>,
+    "typography": <integer 1-10>,
+    "color_system": <integer 1-10>,
+    "layout_precision": <integer 1-10>,
+    "depth_polish": <integer 1-10>,
+    "data_completeness": <integer 1-10>,
+    "interactivity_cues": <integer 1-10>,
+    "overall_impression": <integer 1-10>
   },
-  "issues": ["issue 1", "issue 2", ...],
-  "strengths": ["strength 1", "strength 2", ...],
-  "specific_improvements": [
-    "Change X to Y because Z",
-    "Add A to section B for reason C",
-    ...
-  ]
+  "issues": ["issue 1", "issue 2"],
+  "strengths": ["strength 1", "strength 2"],
+  "specific_improvements": ["improvement 1", "improvement 2"]
 }
+
+IMPORTANT: Keep lists SHORT (max 3 items each). Use INTEGER scores only (no 7.5, just 7 or 8).
 
 SCORING CALIBRATION:
 - 1-2: Broken, missing content, unusable
@@ -72,30 +69,57 @@ class DesignScorer:
         self.client = genai_client
         self.model = model
 
-    def _prepare_image(self, image_path: Path, max_dimension: int = 3072) -> types.Part:
-        """Prepare an image as a Gemini inline_data Part, resizing if needed."""
+    def _prepare_image(self, image_path: Path, max_bytes: int = 3_500_000, max_dimension: int = 7900) -> genai_types.Part:
+        """Prepare an image as a Gemini API Part, resizing if needed."""
         from PIL import Image
         import io
 
         Image.MAX_IMAGE_PIXELS = None
 
-        img = Image.open(image_path)
+        data = Path(image_path).read_bytes()
+        img = Image.open(io.BytesIO(data))
+        needs_resize = img.width > max_dimension or img.height > max_dimension
 
-        # Resize if too large
-        if img.width > max_dimension or img.height > max_dimension:
-            scale = min(max_dimension / max(img.width, 1), max_dimension / max(img.height, 1))
-            img = img.resize((int(img.width * scale), int(img.height * scale)), Image.LANCZOS)
-            logger.info(f"Resized {image_path.name} to {img.width}x{img.height}")
+        suffix = Path(image_path).suffix.lower()
+        mime_map = {
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".gif": "image/gif",
+            ".webp": "image/webp",
+        }
+
+        if len(data) <= max_bytes and not needs_resize:
+            mime_type = mime_map.get(suffix, "image/png")
+            return genai_types.Part.from_bytes(data=data, mime_type=mime_type)
+
+        logger.info(f"Image {image_path.name}: {len(data)} bytes, {img.width}x{img.height}px — resizing...")
+
+        scale = min(max_dimension / max(img.width, 1), max_dimension / max(img.height, 1), 1.0)
+        width_scale = min(1920 / max(img.width, 1), 1.0)
+        scale = min(scale, width_scale)
+        if scale < 1.0:
+            new_size = (int(img.width * scale), int(img.height * scale))
+            img = img.resize(new_size, Image.LANCZOS)
+            logger.info(f"Resized to {new_size[0]}x{new_size[1]}px")
 
         if img.mode in ("RGBA", "P"):
             img = img.convert("RGB")
 
-        buf = io.BytesIO()
-        img.save(buf, format="JPEG", quality=80)
-        image_bytes = buf.getvalue()
-        logger.info(f"Image {image_path.name}: {len(image_bytes)} bytes, {img.width}x{img.height}px")
+        for quality in [85, 70, 55, 40]:
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG", quality=quality)
+            compressed = buf.getvalue()
+            if len(compressed) <= max_bytes:
+                logger.info(f"Compressed to {len(compressed)} bytes (quality={quality})")
+                return genai_types.Part.from_bytes(data=compressed, mime_type="image/jpeg")
 
-        return types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")
+        img = img.resize((img.width // 2, img.height // 2), Image.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=60)
+        compressed = buf.getvalue()
+        logger.info(f"Aggressively compressed to {len(compressed)} bytes")
+        return genai_types.Part.from_bytes(data=compressed, mime_type="image/jpeg")
 
     def score(
         self,
@@ -104,35 +128,45 @@ class DesignScorer:
         good_references: list[tuple[str, Path]] = None,
         bad_references: list[tuple[str, Path]] = None,
     ) -> ScoringResult:
-        """Score a screenshot using Gemini vision."""
+        """Score a screenshot using Gemini vision.
+
+        Args:
+            screenshot_path: Path to the generated app screenshot.
+            archetype: Archetype name (e.g., "dashboard", "game").
+            good_references: List of (label, path) tuples for good example images.
+            bad_references: List of (label, path) tuples for bad example images.
+
+        Returns:
+            ScoringResult with per-dimension scores and feedback.
+        """
         contents = []
 
-        # Add the screenshot being evaluated
-        contents.append("SCREENSHOT TO EVALUATE:")
+        contents.append(genai_types.Part.from_text(text="SCREENSHOT TO EVALUATE:"))
         contents.append(self._prepare_image(screenshot_path))
 
-        # Add good reference images
         if good_references:
-            contents.append(f"\nGOOD REFERENCE EXAMPLES (this is what {archetype} apps SHOULD look like):")
+            contents.append(genai_types.Part.from_text(text=
+                f"\nGOOD REFERENCE EXAMPLES (this is what {archetype} apps SHOULD look like):"
+            ))
             for label, path in good_references[:4]:
-                contents.append(f"Good example: {label}")
+                contents.append(genai_types.Part.from_text(text=f"Good example: {label}"))
                 contents.append(self._prepare_image(path))
 
-        # Add bad reference images
         if bad_references:
-            contents.append("\nBAD EXAMPLES (AVOID these patterns — these are what we're trying to fix):")
+            contents.append(genai_types.Part.from_text(text=
+                "\nBAD EXAMPLES (AVOID these patterns — these are what we're trying to fix):"
+            ))
             for label, path in bad_references[:2]:
-                contents.append(f"Bad example: {label}")
+                contents.append(genai_types.Part.from_text(text=f"Bad example: {label}"))
                 contents.append(self._prepare_image(path))
 
-        # Add rubric
         rubric = build_rubric_text(archetype)
-        contents.append(f"\n{rubric}")
-        contents.append(
+        contents.append(genai_types.Part.from_text(text=f"\n{rubric}"))
+        contents.append(genai_types.Part.from_text(text=
             f"\nScore the FIRST screenshot (the one being evaluated) for the "
             f"'{archetype}' archetype. Compare it against the reference images. "
             f"Output ONLY a JSON object with scores, issues, strengths, and specific_improvements."
-        )
+        ))
 
         logger.info(f"Scoring {screenshot_path} as '{archetype}' with {len(good_references or [])} good refs, {len(bad_references or [])} bad refs")
 
@@ -147,8 +181,7 @@ class DesignScorer:
             },
         )
 
-        raw_text = (response.text or "").strip()
-
+        raw_text = (getattr(response, "text", "") or "").strip()
         # Strip markdown fences if present
         if raw_text.startswith("```"):
             raw_text = raw_text.split("\n", 1)[1]

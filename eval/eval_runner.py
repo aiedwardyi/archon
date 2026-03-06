@@ -57,30 +57,26 @@ def save_text(text: str, path: Path) -> None:
     path.write_text(text, encoding="utf-8")
 
 
-def _load_backend_env():
-    """Load env vars from backend/.env if not already set."""
+def get_genai_client():
+    """Create a Gemini client — prefers Vertex AI, falls back to AI Studio API key."""
     import os
+
+    # Load env vars from backend/.env if not already set
     env_path = Path(__file__).resolve().parent.parent / "backend" / ".env"
     if env_path.exists():
         for line in env_path.read_text(encoding="utf-8").splitlines():
             line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            if "=" in line:
+            if line and not line.startswith("#") and "=" in line:
                 key, val = line.split("=", 1)
                 key = key.strip()
                 val = val.strip().strip('"').strip("'")
                 if key not in os.environ:
                     os.environ[key] = val
 
-
-def get_genai_client():
-    """Create a Gemini client using the centralized genai_client utility."""
-    _load_backend_env()
-    import sys
+    # Use the shared client factory (supports Vertex AI + AI Studio)
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-    from utils.genai_client import get_genai_client as _get_client
-    return _get_client()
+    from utils.genai_client import get_genai_client as _factory
+    return _factory()
 
 
 async def run_eval_loop(config: dict = None):
@@ -157,7 +153,9 @@ async def run_eval_loop(config: dict = None):
                 project_name = f"eval_{archetype}_iter{iteration}_{run_timestamp}"
                 if attempt > 0:
                     project_name += f"_retry{attempt}"
-                    logger.info(f"Retrying build for {archetype} (attempt {attempt + 1})")
+                    wait_time = 60 * attempt  # 60s, 120s, 180s — respect Gemini rate limits
+                    logger.info(f"Retrying build for {archetype} (attempt {attempt + 1}) after {wait_time}s cooldown")
+                    time.sleep(wait_time)
                 try:
                     logger.info(f"Creating project and building: {project_name}")
                     build_result = api.create_and_build(

@@ -1,0 +1,9 @@
+# ═══════════════════════════════════════
+# ARCHETYPE 5: FINTECH / TRADING
+# ═══════════════════════════════════════
+
+PATH: B (Raw CSS + animations)
+Use for: banking, trading, crypto, payments, financial dashboards.
+Theme: bg-zinc-950. Fonts: Space Grotesk + JetBrains Mono. Green/red for gains/losses.
+Rules: font-mono tabular-nums on ALL numbers. JetBrains Mono from Google Fonts. Emerald gains, rose losses. Sparkline SVGs everywhere. bg-zinc-900 cards only.
+MUST include: ticker rows → portfolio KPI cards → candlestick-style chart → asset table → watchlist → news feed.

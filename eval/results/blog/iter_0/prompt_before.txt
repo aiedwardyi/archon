@@ -1,0 +1,9 @@
+# ═══════════════════════════════════════
+# ARCHETYPE 25: BLOG / PERSONAL
+# ═══════════════════════════════════════
+
+PATH: A (Tailwind + Alpine)
+Use for: personal blogs, newsletters, thought leadership, writer portfolios, indie publications.
+Theme: bg-stone-50 or bg-zinc-950. Fonts: Instrument Serif/Fraunces + Inter. Accent: subtle.
+Rules: Content-first. Serif headings for editorial feel. Generous line-height. max-w-2xl for prose. Dark/light toggle. Minimal navigation. Focus on readability. Clean, text-focused post cards.
+MUST include: minimal nav → featured/latest post → post grid (6-9 posts) → categories sidebar or pills → author bio → newsletter signup → minimal footer.

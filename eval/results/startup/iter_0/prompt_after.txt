@@ -1,0 +1,34 @@
+# ═══════════════════════════════════════
+# ARCHETYPE 24: STARTUP / LAUNCH PAGE
+# ═══════════════════════════════════════
+
+PATH: A (Tailwind + Alpine)
+Use for: pre-launch startups, product waitlists, coming soon pages, crowdfunding campaigns.
+Theme: Dark, sophisticated, and vibrant. Primary background: `bg-gradient-to-br from-zinc-950 to-gray-900`. Accent color: `hsl(200, 90%, 55%)` (vibrant electric blue/cyan), used for CTAs, highlights, and subtle gradients. Secondary accent: `hsl(280, 70%, 60%)` (soft violet) for subtle glows or secondary elements. Text colors: `text-zinc-50` for primary, `text-zinc-400` for secondary, `text-zinc-600` for subtle details.
+Fonts: Primary display font: `Space Grotesk` (for H1, H2, H3, bold statements). Body font: `Inter` (for paragraphs, smaller text, UI elements). Hero headline MUST use `Space Grotesk` with `text-7xl lg:text-8xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-zinc-50 to-cyan-300`.
+Rules: Conversion-focused. Email capture CTA above fold with clear focus states. Strong social proof (waitlist count, company logos). Compelling product screenshot/mockup. Simple, fast loading. Countdown timer if launching soon with animated digits. Layout MUST use `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8` for content containment and `py-24 lg:py-32` for section spacing. Elements should have subtle depth and polish, utilizing `backdrop-filter blur-md`, soft shadows, and gradient borders.
+MUST include:
+1.  **Nav:** `backdrop-filter blur-md bg-zinc-900/50 border-b border-zinc-800` with subtle gradient border on hover for links.
+2.  **Hero Section:** Prominent headline (as specified in Fonts), compelling sub-headline, and an email capture form (`input` with `focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500`) with a primary CTA button (`bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-3 px-8 rounded-lg shadow-lg hover:shadow-cyan-500/30 transition-all duration-200 ease-out`).
+3.  **Countdown Timer:** Visually distinct, large, animated digits (e.g., `data-alpine-transition` for subtle `pulse` or `ease-in-out` on digit change) for days, hours, minutes, seconds.
+4.  **Feature Teaser Grid:** A `bento grid` layout of 4-6 feature cards. Each card (`bg-zinc-900/70 border border-zinc-800 rounded-xl p-6 relative overflow-hidden`) MUST have an icon, title, and short description. Cards should have `hover:border-cyan-500 hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300` for interactivity.
+5.  **Social Proof:**
+    *   **Waitlist Counter:** A large, animated number (e.g., `Alpine.js` counter animation) showing "X,XXX+ people already signed up".
+    *   **Company Logos:** A carousel or grid of 6-8 prominent company logos. Logos should be grayscale by default and transition to full color on hover.
+6.  **Product Screenshot/Mockup:** A realistic, detailed dashboard mock-up (e.g., a desktop browser window frame).
+    *   It MUST contain a sidebar (e.g., 220px width) and a main content area.
+    *   The main content area MUST display at least 3-4 distinct, populated data cards:
+        *   **Card 1 (KPI):** A clear, non-zero KPI (e.g., "Active Users: 12,345" with a small `+1.2%` trend indicator).
+        *   **Card 2 (Chart):** A small line or bar chart (e.g., "Daily Signups") with at least 12 distinct, varied data points.
+        *   **Card 3 (Activity Feed):** A list of 5-7 recent user or system activities with timestamps.
+        *   **Card 4 (Resource Usage):** A small pie or donut chart showing 3-5 categories of resource distribution with percentages.
+    *   All data MUST be realistic and varied, NOT empty or placeholder text.
+7.  **Early Access Perks:** A section detailing benefits for early sign-ups, presented in 3-4 visually distinct cards with clear icons and descriptions.
+8.  **FAQ Section:** An accordion component with at least 5 questions. Each question MUST have a smooth `max-height` transition for expanding/collapsing its answer. Hover states for question headers.
+9.  **Footer:** Standard footer with copyright, privacy policy, terms of service links.
+
+Anti-patterns to eliminate:
+*   NEVER use empty charts or 0-value KPIs in the product mock-up.
+*   NO generic purple/blue gradients as the primary accent color.
+*   NO flat, lifeless layouts without depth or subtle visual interest.
+*   AVOID cookie-cutter card grids; use varied sizes or a bento-style approach for features.
