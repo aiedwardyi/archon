@@ -109,6 +109,7 @@ async def run_eval_loop(config: dict = None):
     test_prompts = config.get("test_prompts", {})
     max_iterations = config.get("max_iterations", 5)
     target_score = config.get("target_score", 80)
+    score_only = config.get("score_only", False)
     convergence_threshold = config.get("convergence_threshold", 2)
     build_timeout = config.get("build_timeout_seconds", 300)
     wait_seconds = config.get("screenshot_wait_seconds", 3.0)
@@ -239,6 +240,10 @@ async def run_eval_loop(config: dict = None):
                 logger.info(f"New best score for {archetype}: {scores.weighted_total}")
 
             # 6. Check if improvement is needed
+            if score_only:
+                logger.info(f"{archetype}: Score-only mode, skipping improvement")
+                continue
+
             if scores.weighted_total >= target_score:
                 logger.info(
                     f"{archetype}: Score {scores.weighted_total} >= target {target_score}, "
@@ -338,6 +343,7 @@ def main():
     parser.add_argument("--max-iterations", type=int, help="Override max iterations")
     parser.add_argument("--target-score", type=float, help="Override target score")
     parser.add_argument("--dry-run", action="store_true", help="Print config and exit")
+    parser.add_argument("--score-only", action="store_true", help="Score only, skip prompt improvement")
     args = parser.parse_args()
 
     config = load_config(args.config)
@@ -349,6 +355,8 @@ def main():
         config["max_iterations"] = args.max_iterations
     if args.target_score:
         config["target_score"] = args.target_score
+    if args.score_only:
+        config["score_only"] = True
 
     if args.dry_run:
         print(json.dumps(config, indent=2))

@@ -143,7 +143,7 @@ class DesignScorer:
                 "system_instruction": SCORER_SYSTEM_PROMPT,
                 "response_mime_type": "application/json",
                 "temperature": 0.3,
-                "max_output_tokens": 2000,
+                "max_output_tokens": 8000,
             },
         )
 
@@ -159,14 +159,25 @@ class DesignScorer:
         try:
             data = json.loads(raw_text)
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse scorer response: {e}\nRaw: {raw_text[:500]}")
-            return ScoringResult(
-                scores={d.name: 0 for d in DIMENSIONS},
-                weighted_total=0.0,
-                issues=[f"Scorer parse error: {e}"],
-                strengths=[],
-                specific_improvements=[],
-            )
+            # Try to recover truncated JSON by extracting scores with regex
+            logger.warning(f"JSON parse failed, attempting recovery: {e}")
+            import re
+            score_pattern = re.compile(r'"(\w+)":\s*([\d.]+)')
+            matches = score_pattern.findall(raw_text)
+            score_keys = {d.name for d in DIMENSIONS}
+            extracted = {k: round(float(v)) for k, v in matches if k in score_keys}
+            if len(extracted) >= 4:
+                logger.info(f"Recovered {len(extracted)} scores from truncated JSON: {extracted}")
+                data = {"scores": extracted, "issues": [], "strengths": [], "specific_improvements": []}
+            else:
+                logger.error(f"Failed to parse scorer response: {e}\nRaw: {raw_text[:500]}")
+                return ScoringResult(
+                    scores={d.name: 0 for d in DIMENSIONS},
+                    weighted_total=0.0,
+                    issues=[f"Scorer parse error: {e}"],
+                    strengths=[],
+                    specific_improvements=[],
+                )
 
         scores = data.get("scores", {})
         weighted = compute_weighted_total(scores)
