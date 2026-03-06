@@ -26,6 +26,18 @@ DESIGN_KIT_ALIASES = {
     "ai_product": "saas_landing",
     "dev_tool": "saas_landing",
     "productivity_app": "saas_landing",
+    "game_companion": "game",
+    "fan_page": "game",
+    "interactive_experience": "game",
+    "admin_panel": "dashboard",
+    "analytics": "dashboard",
+    "crm": "dashboard",
+    "online_store": "ecommerce",
+    "marketplace": "ecommerce",
+    "shop": "ecommerce",
+    "agency": "portfolio",
+    "personal_site": "portfolio",
+    "freelancer": "portfolio",
 }
 
 
