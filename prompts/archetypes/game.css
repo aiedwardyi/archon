@@ -244,6 +244,49 @@ h1, h2, h3, h4,
   line-height: 1.7;
 }
 
+/* ── Hero CTA Buttons ────────────────────────────────────────── */
+.hero-ctas {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 36px;
+}
+
+.btn-hero {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 16px 36px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--bg);
+  cursor: pointer;
+  transition: all var(--transition);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-hero:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(var(--accent-rgb), 0.4);
+}
+
+.btn-hero--outline {
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-hero--outline:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: none;
+}
+
 /* ── Scroll Indicator ─────────────────────────────────────────── */
 .scroll-indicator {
   position: absolute;
@@ -368,6 +411,16 @@ h1, h2, h3, h4,
   margin-bottom: 16px;
 }
 
+.character-card .char-weapon {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+}
+
 .character-card .char-desc {
   font-family: var(--font-body);
   font-size: 0.9rem;
@@ -424,6 +477,27 @@ h1, h2, h3, h4,
   text-align: right;
 }
 
+/* ── Weapons Showcase ─────────────────────────────────────────── */
+.weapons-showcase {
+  margin-bottom: 48px;
+}
+
+.weapons-banner {
+  width: 100%;
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 48px;
+  border: 1px solid var(--border);
+}
+
+.weapons-banner img {
+  width: 100%;
+  height: auto;
+  min-height: 280px;
+  object-fit: cover;
+  display: block;
+}
+
 /* ── Weapon Cards ─────────────────────────────────────────────── */
 .grid-weapons {
   display: grid;
@@ -471,7 +545,8 @@ h1, h2, h3, h4,
   line-height: 1.6;
 }
 
-.weapon-tag {
+.weapon-tag,
+.weapon-type {
   font-family: var(--font-display);
   font-size: 0.7rem;
   font-weight: 500;
@@ -508,6 +583,27 @@ h1, h2, h3, h4,
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--text-muted);
+}
+
+/* ── World Map Showcase ──────────────────────────────────────── */
+.world-map-showcase {
+  margin-bottom: 48px;
+}
+
+.world-map-image {
+  width: 100%;
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 48px;
+  border: 1px solid var(--border);
+}
+
+.world-map-image img {
+  width: 100%;
+  height: auto;
+  min-height: 350px;
+  object-fit: cover;
+  display: block;
 }
 
 /* ── Location Cards (World Map) ───────────────────────────────── */

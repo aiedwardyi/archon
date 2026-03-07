@@ -441,7 +441,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None, 
                 prd_data = read_json_file(version_dir / "last_prd.json") or {}
                 design_agent = DesignAgent()
                 assets_dir = version_dir / "assets"
-                design_assets = design_agent.run(prd_data, max_images=6, save_dir=assets_dir)
+                design_assets = design_agent.run(prd_data, max_images=10, save_dir=assets_dir)
                 if design_assets:
                     write_json_file(version_dir / "last_design_assets.json", {"assets": design_assets})
                     add_log(f"Design Agent: {len(design_assets)} images ready.", project_id=project_id)

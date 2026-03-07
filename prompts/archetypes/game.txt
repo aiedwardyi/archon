@@ -9,15 +9,14 @@ A base.css file is injected automatically. It provides:
 - CSS variables: --bg, --surface-1, --surface-2, --accent, --accent-rgb, --text, --text-muted, --border, --font-display, --font-body
 - Google Fonts: Rajdhani (500, 700) and Inter (400, 500)
 - Glass navigation: .glass-nav, .nav-logo, .nav-links, .nav-link, .nav-link.active
-- Hero: .hero-cinematic, .hero-bg-image, .hero-bg-overlay, .hero-content, .hero-eyebrow, .hero-title-name, .hero-title-numeral, .hero-subtitle
+- Hero: .hero-cinematic, .hero-bg-image, .hero-bg-overlay, .hero-content, .hero-eyebrow, .hero-title-name, .hero-title-numeral, .hero-subtitle, .hero-ctas, .btn-hero, .btn-hero--outline
 - Scroll indicator: .scroll-indicator, .mouse-icon, .mouse-dot, .scroll-indicator-text
-- Character cards: .character-card, .card-image-wrapper, .card-image, .card-body, .char-name, .char-role, .char-desc, .grid-characters (3-col)
+- Character cards: .character-card, .card-image-wrapper, .card-image, .card-body, .char-name, .char-role, .char-weapon, .char-desc, .grid-characters (3-col)
 - Stat bars: .stat-group, .stat-row, .stat-label, .stat-bar, .stat-bar-fill, .stat-value
-- Weapon cards: .weapon-card, .weapon-name, .weapon-desc, .weapon-tag, .weapon-stats, .weapon-stat-value, .weapon-stat-label, .grid-weapons
-- Location cards: .location-card, .location-image-wrapper, .location-image, .location-body, .location-name, .location-region, .location-desc, .grid-locations
-- Lore block: .lore-block, .lore-title, .lore-text, .lore-divider
+- Weapons section: .weapons-showcase, .weapons-banner, .weapons-banner img, .grid-weapons, .weapon-card, .weapon-name, .weapon-type, .weapon-desc, .weapon-stats, .weapon-stat-value, .weapon-stat-label
+- World map section: .world-map-showcase, .world-map-image, .grid-locations, .location-card, .location-name, .location-region, .location-desc
 - Noise overlay: .noise-overlay (position:fixed, pointer-events:none)
-- Layout: .section-wrapper, .section-header, .section-divider, .eyebrow, .section-title, .section-subtitle
+- Layout: .section-wrapper, .section-header, .eyebrow, .section-title, .section-subtitle, .section-divider
 - Animations: fadeUp, scrollDot, pulse, glowPulse + .fade-up utility classes
 - Responsive breakpoints, focus states, hover transitions
 
@@ -38,46 +37,112 @@ ACCENT COLOR — DERIVE FROM THE GAME
 ═══════════════════════════════════════
 
 Override --accent and --accent-rgb in style.css :root {} based on the game's identity:
-- FFVIII: --accent:#00B4C8; --accent-rgb:0,180,200 (teal-cyan military)
 - FFVII: --accent:#39FF14; --accent-rgb:57,255,20 (mako neon-green)
+- FFVIII: --accent:#E8A317; --accent-rgb:232,163,23 (amber-gold SeeD)
+- FFIX: --accent:#5B8DEF; --accent-rgb:91,141,239 (crystal blue)
 - Dark fantasy: --accent:#C0392B; --accent-rgb:192,57,43 (crimson)
 - Epic fantasy: --accent:#D4A017; --accent-rgb:212,160,23 (amber-gold)
 
 NEVER use generic purple or SaaS blue. Derive from the game's world.
 
 ═══════════════════════════════════════
-REQUIRED SECTIONS (6 sections, in this order)
+REFERENCE LAYOUT (study this carefully)
 ═══════════════════════════════════════
 
-1. NAVBAR — Use .glass-nav with logo (game abbreviation, e.g. "FF8") and exactly 4 nav links: CHARACTERS · WEAPONS · WORLD MAP · LORE. One link must have .active class. Each link needs data-section="<id>" attribute for smooth scroll JS.
+The BEST game fan pages follow this exact 4-section layout:
 
-2. HERO — Full-viewport cinematic using .hero-cinematic. Must include:
-   - Background image: use a pollinations.ai landscape URL (e.g. https://pollinations.ai/p/cinematic-landscape-[game-world]-dark-atmospheric-wide-shot) with .hero-bg-image class
+SECTION 1 — HERO (full viewport)
+  - Full-bleed AI background art of the game world (NOT a character, a LANDSCAPE/CITY)
+  - Dark gradient overlay so text is readable
+  - Small eyebrow text (e.g. "A NEW LEGEND BEGINS" or "BALAMB GARDEN PRESENTS")
+  - MASSIVE game title (e.g. "FINAL FANTASY" in white, "VII" in accent color, 2x larger)
+  - 2-sentence tagline beneath
+  - TWO CTA buttons side-by-side: filled "MEET THE HEROES" + outlined "EXPLORE THE WORLD"
+  - Scroll indicator at bottom
+
+SECTION 2 — CHARACTERS ("Choose Your Party" / "The Heroes")
+  - Eyebrow text + section title (e.g. "THE HEROES" / "CHOOSE YOUR PARTY")
+  - 3 character cards in a row, each containing:
+    * AI-generated character portrait (tall, ~320px, cinematic style)
+    * Role badge above name (e.g. "EX-SOLDIER", "MARTIAL ARTIST", "SEED COMMANDER")
+    * Character name in large uppercase
+    * Weapon name in accent color (e.g. "Weapon: Buster Sword")
+    * 2-3 sentence character description
+    * 4 stat bars: STR, DEF, MAG, SPD — with VARIED widths (60%-95%) and numeric values
+
+SECTION 3 — WEAPONS ("Legendary Weapons" / "Arsenal")
+  - Eyebrow text + section title
+  - LARGE full-width banner image showing ALL weapons together (AI-generated, one panoramic image)
+  - Below the banner: 3 weapon cards, each containing:
+    * Weapon type badge (e.g. "GREATSWORD", "GUNBLADE", "COMBAT GLOVES")
+    * Weapon name in large text
+    * Owner name in accent color
+    * 1-2 sentence description
+    * ATK and MAG stat numbers (large, bold, accent-colored)
+
+SECTION 4 — WORLD MAP ("Explore the Planet" / "World Map")
+  - Eyebrow text + section title
+  - LARGE full-width world map image (AI-generated isometric/aerial view of the game world)
+  - Below the map: 3-4 location cards, each containing:
+    * Location type badge (e.g. "CAPITAL", "ACADEMY", "RUINS")
+    * Location name in large text
+    * 1-2 sentence description
+
+═══════════════════════════════════════
+REQUIRED 4 SECTIONS (in this order)
+═══════════════════════════════════════
+
+1. NAVBAR — Use .glass-nav with logo (game abbreviation, e.g. "FF VII") and exactly 3 nav links: CHARACTERS · WEAPONS · WORLD MAP. One link must have .active class. Each link needs data-section="<id>" attribute for smooth scroll JS.
+
+2. HERO — Full-viewport using .hero-cinematic. Must include:
+   - Background: use design agent image OR fallback gradient. Apply .hero-bg-image class.
    - Gradient overlay: .hero-bg-overlay
-   - Content: .hero-eyebrow (tagline), .hero-title-name (game name), .hero-title-numeral (numeral — must be 1.8x larger), .hero-subtitle (2-sentence lore blurb)
+   - Content: .hero-eyebrow (short tagline), .hero-title-name (game name), .hero-title-numeral (numeral — MUST be visually 2x larger), .hero-subtitle (2-sentence lore hook)
+   - CTA buttons: .hero-ctas div containing .btn-hero "MEET THE HEROES" + .btn-hero.btn-hero--outline "EXPLORE THE WORLD"
    - Scroll indicator: .scroll-indicator with mouse icon SVG and animated dot
-   - NEVER split hero into two columns. Image MUST be full-bleed background.
+   - NEVER split hero into two columns. Background MUST be full-bleed.
 
-3. CHARACTERS — 3 character cards in .grid-characters using .character-card:
-   - Each card: .card-image-wrapper > .card-image (pollinations.ai character portrait URL), .card-body > .char-name, .char-role, .char-desc, .stat-group with 3-4 .stat-row entries
-   - Stat bar widths MUST vary: use 60%, 75%, 85%, 90% etc. NEVER all the same width.
-   - Use REAL character names and descriptions from the game the user specified.
-   - Image URLs: https://pollinations.ai/p/[character-name]-[game-name]-cinematic-portrait-detailed-face-8k
+3. CHARACTERS — eyebrow "THE HEROES" or similar + section title. 3 cards in .grid-characters:
+   - Each .character-card: .card-image-wrapper > .card-image (use design agent portrait), .card-body > .char-role, .char-name, .char-weapon ("Weapon: [name]"), .char-desc, .stat-group with 4 .stat-row (STR/DEF/MAG/SPD)
+   - Stat bar widths MUST vary: use 60%, 75%, 85%, 95% etc. NEVER all same width
+   - Stat values: show numeric value (e.g. "85", "70", "92") — never "0"
+   - Use REAL character names and descriptions from the game
 
-4. WEAPONS — 3-4 weapon cards using .grid-weapons and .weapon-card:
-   - Each: .weapon-name, .weapon-desc, .weapon-tag (weapon type), .weapon-stats with 2-3 stat values
-   - Use REAL weapon names from the game.
+4. WEAPONS — eyebrow "ARSENAL" or similar + section title. Must include:
+   - .weapons-showcase container
+   - .weapons-banner containing ONE large <img> (design agent weapons panorama) showing all weapons together
+   - Below: .grid-weapons with 3 .weapon-card, each with .weapon-type (badge), .weapon-name, owner in accent, .weapon-desc, .weapon-stats with ATK + MAG .weapon-stat-value numbers
+   - Use REAL weapon names from the game
+   - ATK/MAG values: realistic numbers (e.g. ATK: 96, MAG: 24) — never "0"
 
-5. WORLD MAP — 3-4 location cards using .grid-locations and .location-card:
-   - Each: .location-image-wrapper > .location-image (pollinations.ai landscape URL), .location-body > .location-name, .location-region, .location-desc
-   - Use REAL location names from the game.
-
-6. LORE — A .lore-block with .lore-title, .lore-text paragraphs (2-3 paragraphs of actual game lore), optional blockquote with iconic game quote.
+5. WORLD MAP — eyebrow "EXPLORATION" or similar + section title. Must include:
+   - .world-map-showcase container
+   - .world-map-image containing ONE large <img> (design agent world map illustration)
+   - Below: .grid-locations with 3-4 .location-card, each with .location-region (badge), .location-name, .location-desc
+   - Use REAL location names from the game
 
 ALSO INCLUDE:
-- Noise overlay: <div class="noise-overlay"></div> immediately after <body> — MANDATORY, NON-NEGOTIABLE.
+- Noise overlay: <div class="noise-overlay"></div> immediately after <body> — MANDATORY
 - Footer: .site-footer with copyright text
 - .section-divider between major sections
+
+═══════════════════════════════════════
+USING DESIGN AGENT IMAGES
+═══════════════════════════════════════
+
+The design agent generates images saved as local files. They are available as:
+  ./assets/[key].png
+
+Use these for:
+- Hero background: the landscape/cityscape image
+- Character portraits: individual character images
+- Weapons banner: the combined weapons panorama
+- World map: the aerial/isometric map illustration
+
+For EVERY <img> tag, add an onerror fallback:
+  onerror="this.style.background='linear-gradient(135deg,var(--surface-1),var(--surface-2))';this.style.minHeight='200px'"
+
+If no design agent images are available, use solid gradient backgrounds as fallback — NEVER leave broken image icons visible.
 
 ═══════════════════════════════════════
 MANDATORY JAVASCRIPT (bottom of <body>)
@@ -96,23 +161,12 @@ CONTENT RULES
 ═══════════════════════════════════════
 
 - Use REAL game character names, weapon names, location names from the user's prompt
-- All stat bar widths must be varied (never all 75%)
+- All stat bar widths must be varied (never all same %)
 - Character descriptions: 2-3 sentences of actual character lore
-- Weapon descriptions: 1-2 sentences about the weapon
-- Location descriptions: 2-3 sentences about the place
-- Lore section: actual game story/world lore (not placeholder text)
+- Weapon descriptions: 1-2 sentences about the weapon's lore and capabilities
+- Location descriptions: 1-2 sentences about the place
 - ZERO-VALUE BAN: never render "0", "0%", "$0" anywhere
-
-═══════════════════════════════════════
-IMAGE URLS
-═══════════════════════════════════════
-
-Use pollinations.ai for ALL images:
-- Hero background: https://pollinations.ai/p/cinematic-[game-world]-landscape-dark-atmospheric-wide-angle-8k
-- Character portraits: https://pollinations.ai/p/[character-name]-[game]-cinematic-portrait-detailed-face-8k-professional
-- Location images: https://pollinations.ai/p/[location-name]-[game]-landscape-atmospheric-cinematic-8k
-
-Add onerror fallback on every <img>: onerror="this.style.background='linear-gradient(135deg,#0f0f16,#161620)';this.style.minHeight='200px'"
+- All ATK/MAG/STR/DEF values must be realistic game stats (50-99 range)
 
 ═══════════════════════════════════════
 SELF-CHECK BEFORE OUTPUT
@@ -121,12 +175,14 @@ SELF-CHECK BEFORE OUTPUT
 □ index.html links base.css BEFORE style.css
 □ Noise overlay div is first child of <body>
 □ Hero is full-viewport, single background image, NOT two-column
+□ Hero has TWO CTA buttons (filled + outlined)
 □ Hero numeral is visually ~2x larger than game name
-□ All 4 nav links have data-section attributes
+□ All 3 nav links have data-section attributes
 □ Smooth scroll JS is at bottom of <body>
-□ 3 character cards with varied stat bar widths
+□ 3 character cards with ROLE badge, weapon name, and varied stat bars (4 stats each)
+□ Weapons section has LARGE banner image + 3 weapon cards with ATK/MAG numbers
+□ World map section has LARGE map image + 3-4 location cards
 □ All content uses REAL game names (not "Character 1")
 □ Every <img> has onerror fallback
-□ style.css contains ONLY overrides (no font imports, no resets, no component redefinitions)
+□ style.css contains ONLY overrides (no font imports, no resets)
 □ Accent color matches the game's identity
-□ Font enforcement: every heading uses font-family:'Rajdhani',sans-serif
