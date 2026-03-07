@@ -35,7 +35,7 @@ Upload UI exists (Phase 7F.1) but pipeline currently ignores attachments.
 - 🔴 Orchestrator: Pass reference_images list through pipeline context to all agents
 - 🔴 Planner Agent: Use Gemini vision to describe reference images, include in plan context
 - 🔴 Engineer Agent: Pass reference images as Gemini vision input, match style/layout/palette
-- 🔴 Design Agent: Analyze reference images via GPT-4o vision to influence DALL-E prompts
+- 🔴 Design Agent: Analyze reference images via Gemini vision to influence Imagen prompts
 - 🔴 Frontend (all 3): Wire existing drag-and-drop to send files as multipart/form-data with build request
 - 🔴 Chat UI: Show image thumbnails inline in conversation thread
 
