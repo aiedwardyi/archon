@@ -1,5 +1,6 @@
 ﻿from __future__ import annotations
 
+import base64
 import json
 import os
 import re
@@ -167,10 +168,45 @@ def _repair_json(raw: str) -> dict:
 
 _ENGINEER_MAX_RETRIES = 5
 
+_IMG_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
-def _run_claude(contents: str) -> EngineeringResult:
+
+def _load_reference_images(kit_archetype: str) -> list[tuple[str, bytes, str]]:
+    """Load reference images for an archetype.
+    Returns list of (filename, raw_bytes, mime_type)."""
+    refs_dir = PROMPTS_DIR / "archetypes" / "references" / kit_archetype
+    if not refs_dir.exists():
+        return []
+    images = []
+    for img_path in sorted(refs_dir.iterdir()):
+        if img_path.suffix.lower() in _IMG_EXTENSIONS:
+            mime = {
+                ".png": "image/png", ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg", ".webp": "image/webp",
+                ".gif": "image/gif",
+            }[img_path.suffix.lower()]
+            images.append((img_path.name, img_path.read_bytes(), mime))
+    return images
+
+
+def _run_claude(contents: str, ref_images: list[tuple[str, bytes, str]] | None = None) -> EngineeringResult:
     import anthropic
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+
+    # Build multimodal content if reference images provided
+    message_content: list | str = contents
+    if ref_images:
+        message_content = []
+        message_content.append({"type": "text", "text": contents})
+        message_content.append({"type": "text", "text": "\n\n--- REFERENCE SCREENSHOTS (match this quality and layout) ---"})
+        for filename, img_bytes, mime in ref_images:
+            message_content.append({
+                "type": "image",
+                "source": {"type": "base64", "media_type": mime, "data": base64.b64encode(img_bytes).decode()},
+            })
+            message_content.append({"type": "text", "text": f"[Reference: {filename}]"})
+        message_content.append({"type": "text", "text": "--- END REFERENCE SCREENSHOTS ---\nStudy these references carefully. Match the layout structure, visual density, and polish level shown above."})
+
     last_err = None
     for attempt in range(_ENGINEER_MAX_RETRIES):
         if attempt > 0:
@@ -183,7 +219,7 @@ def _run_claude(contents: str) -> EngineeringResult:
             with client.messages.stream(
                 model="claude-opus-4-6",
                 max_tokens=64000,
-                messages=[{"role": "user", "content": contents}],
+                messages=[{"role": "user", "content": message_content}],
             ) as stream:
                 for text in stream.text_stream:
                     raw += text
@@ -226,7 +262,7 @@ def _validate_parsed_result(parsed: object) -> EngineeringResult:
     return parsed
 
 
-def _run_gemini(client: genai.Client, contents: str) -> EngineeringResult:
+def _run_gemini(client: genai.Client, contents: str, ref_images: list[tuple[str, bytes, str]] | None = None) -> EngineeringResult:
     last_err = None
     for attempt in range(_ENGINEER_MAX_RETRIES):
         if attempt > 0:
@@ -236,9 +272,21 @@ def _run_gemini(client: genai.Client, contents: str) -> EngineeringResult:
             print(f"EngineerAgent: retry {attempt}/{_ENGINEER_MAX_RETRIES}")
 
         try:
+            # Build multimodal content if reference images provided
+            gemini_contents = contents
+            if ref_images:
+                from google.genai import types
+                parts = [types.Part.from_text(text=contents)]
+                parts.append(types.Part.from_text(text="\n\n--- REFERENCE SCREENSHOTS (match this quality and layout) ---"))
+                for filename, img_bytes, mime in ref_images:
+                    parts.append(types.Part.from_bytes(data=img_bytes, mime_type=mime))
+                    parts.append(types.Part.from_text(text=f"[Reference: {filename}]"))
+                parts.append(types.Part.from_text(text="--- END REFERENCE SCREENSHOTS ---\nStudy these references carefully. Match the layout structure, visual density, and polish level shown above."))
+                gemini_contents = parts
+
             response = client.models.generate_content(
                 model="gemini-2.5-flash",
-                contents=contents,
+                contents=gemini_contents,
                 config={
                     "response_mime_type": "application/json",
                     "response_schema": EngineeringResult,
@@ -490,12 +538,25 @@ class EngineerAgent:
             f"--- TASK END ---"
         )
 
-        # Primary: Gemini 2.5 Flash (Vertex AI)
-        if self.client is None:
-            from utils.genai_client import get_genai_client
-            self.client = get_genai_client()
+        # Load reference images for this archetype (if available, initial build only)
+        ref_images = []
+        if kit_archetype and not existing_code:
+            ref_images = _load_reference_images(kit_archetype)
+            if ref_images:
+                print(f"EngineerAgent: loaded {len(ref_images)} reference images for '{kit_archetype}'")
 
-        result = _run_gemini(self.client, contents)
+        # Model selection via ENGINEER_MODEL env var
+        # Options: "gemini" (default), "claude", "openai"
+        model_choice = os.getenv("ENGINEER_MODEL", "gemini").lower().strip()
+
+        if model_choice == "claude":
+            result = _run_claude(contents, ref_images=ref_images or None)
+        else:
+            # Default: Gemini 2.5 Flash (Vertex AI)
+            if self.client is None:
+                from utils.genai_client import get_genai_client
+                self.client = get_genai_client()
+            result = _run_gemini(self.client, contents, ref_images=ref_images or None)
 
         # Inject design kit CSS as a file artifact (initial build only)
         if css_kit_content and not existing_code:
