@@ -149,7 +149,7 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 | Client PDF export | ❌ | 🚧 8 |
 | Non-technical agency UI | ❌ | ✅ |
 | Korean/English i18n | ❌ | ✅ |
-| Visual reference input (image attachments guide AI) | ✅ | 🚧 20.1 |
+| Visual reference input (image attachments guide AI) | ✅ | ✅ |
 
 ---
 
@@ -575,13 +575,13 @@ guessing. Tour design will be driven by real friction points, not assumptions.
 
 ---
 
-## Phase 20.1 — Visual Reference Input (🔴 Planned)
+## ✅ Phase 20.1 — Visual Reference Input (Mar 7, 2026)
 - User attaches reference images (screenshots, mockups, inspiration) to prompt
 - Images forwarded to Planner + Engineer + Design agents as vision context
 - Gemini 2.5 Flash (Planner/Engineer/Design) supports vision input natively
-- Upload UI already exists from Phase 7F.1 — needs wiring to pipeline via multipart/form-data
-- Stored per-project per-version in assets/references/ folder
+- /iterate endpoint accepts multipart/form-data, saves to output/<pid>/v<ver>/references/
 - Planner describes reference in plan context so Engineer knows target style
 - Engineer receives images as inline Gemini vision parts to match layout/palette
 - Design Agent uses Gemini vision to analyze reference before generating Imagen prompts
+- Enterprise + Studio: Paperclip button, thumbnail strip, base64 image rendering in chat
 - Backward compatible — builds without attachments work exactly as before

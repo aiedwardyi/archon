@@ -18,6 +18,7 @@
 | 17.3 | Dashboard Governance — Avg Prompt Score + Avg Build Score in header | Done |
 | 17.4 | Dual PDF Export — Client PDF + Internal PDF from Governance tab | Done |
 | 17.5 | Delivery Readiness Gate — Quality Tier badges (High/Good/Low) on Versions timeline | Done |
+| 20.1 | Visual Reference Input — attach images to guide AI builds | Done |
 
 ## Eval Loop System (eval/)
 
@@ -26,18 +27,19 @@ Automated design quality optimization pipeline:
 - Rollback logic prevents score regression
 - Current best scores: Dashboard 82/100, Game 75/100, SaaS Landing 72/100
 
-## Phase 20.1 — Visual Reference Input (🔧 Planned)
+## Phase 20.1 — Visual Reference Input (✅ Complete Mar 7, 2026)
 
 Attach images (screenshots, mockups, inspiration) to prompts so AI agents can reference them during builds.
-Upload UI exists (Phase 7F.1) but pipeline currently ignores attachments.
 
-- 🔴 Backend: Accept uploaded images via /iterate endpoint, store in project assets folder
-- 🔴 Orchestrator: Pass reference_images list through pipeline context to all agents
-- 🔴 Planner Agent: Use Gemini vision to describe reference images, include in plan context
-- 🔴 Engineer Agent: Pass reference images as Gemini vision input, match style/layout/palette
-- 🔴 Design Agent: Analyze reference images via Gemini vision to influence Imagen prompts
-- 🔴 Frontend (all 3): Wire existing drag-and-drop to send files as multipart/form-data with build request
-- 🔴 Chat UI: Show image thumbnails inline in conversation thread
+- ✅ Backend: /iterate accepts multipart/form-data, saves images to output/<pid>/v<ver>/references/
+- ✅ Orchestrator: Passes reference_images list through pipeline context to all agents
+- ✅ Planner Agent: Uses Gemini vision to describe reference images, includes in plan context
+- ✅ Engineer Agent: Passes reference images as Gemini inline_data parts, matches style/layout/palette
+- ✅ Design Agent: Analyzes reference images via Gemini vision before generating Imagen prompts
+- ✅ Enterprise + Studio: Paperclip button, file input, thumbnail strip, FormData on send
+- ✅ Chat UI: Image thumbnails rendered inline in sent messages (base64 data URLs)
+- ✅ Fix: Replaced blob URLs with base64 data URLs so images survive sessionStorage round-trip
+- Consumer frontend skipped (read-only, doesn't call /iterate)
 
 ## Up Next
 
@@ -45,4 +47,4 @@ Upload UI exists (Phase 7F.1) but pipeline currently ignores attachments.
 |-------|-------------|
 | 18 | Unified Auth + Plan-Based UI Routing |
 | 19 | Product Tour + Onboarding Walkthrough |
-| 20.1 | Visual Reference Input — image attachments forwarded to pipeline agents |
+

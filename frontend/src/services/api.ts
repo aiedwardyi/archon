@@ -364,6 +364,7 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   timestamp?: number;
+  imageUrls?: string[];
 }
 
 /** POST /api/projects/:id/chat — classify intent, returns {response_type, message?} */
@@ -382,12 +383,27 @@ export async function iterateProject(
   projectId: number,
   prompt: string,
   promptHistory: ChatMessage[],
+  referenceImages?: File[],
 ): Promise<{ status: string; project_id: number; execution_id: number; version: number }> {
-  const res = await fetch(`${API_BASE}/projects/${projectId}/iterate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, prompt_history: promptHistory }),
-  });
+  let res: Response;
+  if (referenceImages && referenceImages.length > 0) {
+    const formData = new FormData();
+    formData.append("prompt", prompt);
+    formData.append("prompt_history", JSON.stringify(promptHistory));
+    for (const file of referenceImages) {
+      formData.append("reference_images", file);
+    }
+    res = await fetch(`${API_BASE}/projects/${projectId}/iterate`, {
+      method: "POST",
+      body: formData,
+    });
+  } else {
+    res = await fetch(`${API_BASE}/projects/${projectId}/iterate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt, prompt_history: promptHistory }),
+    });
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
     throw new Error(err.error || `HTTP ${res.status}`);
