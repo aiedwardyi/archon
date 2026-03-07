@@ -102,18 +102,26 @@ def screenshot_one(preview_url: str, output_dir: Path) -> Path | None:
     return None
 
 
+SCORER_ARCHETYPE_MAP = {
+    "game_ff7": "game",
+    "game_ff8": "game",
+    "game_ff9": "game",
+}
+
+
 def score_one(client, screenshot_path: Path, archetype: str, num_runs: int = 3) -> dict | None:
     """Score a screenshot N times, return averaged result dict."""
     from eval_scorer import DesignScorer
     from scoring_rubric import compute_weighted_total, DIMENSIONS
 
+    score_archetype = SCORER_ARCHETYPE_MAP.get(archetype, archetype)
     scorer = DesignScorer(genai_client=client, model="gemini-2.5-flash")
     results = []
 
     for i in range(num_runs):
         for attempt in range(3):
             try:
-                result = scorer.score(screenshot_path, archetype)
+                result = scorer.score(screenshot_path, score_archetype)
                 results.append(result)
                 break
             except Exception as e:

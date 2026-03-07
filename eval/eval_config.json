@@ -3,6 +3,9 @@
   "test_prompts": {
     "dashboard": "Build a crypto portfolio tracker with real-time prices, holdings table, and activity feed",
     "game": "Build a Final Fantasy VIII fan page with character profiles for Squall, Rinoa, and Zell, weapons gallery, and world map",
+    "game_ff7": "Build a Final Fantasy VII fan page with character profiles for Cloud, Tifa, and Aerith, materia system guide, and world map of Gaia",
+    "game_ff8": "Build a Final Fantasy VIII fan page with character profiles for Squall, Rinoa, and Zell, weapons gallery, and world map",
+    "game_ff9": "Build a Final Fantasy IX fan page with character profiles for Zidane, Garnet, and Vivi, ability learning system, and world map of Gaia",
     "saas_landing": "Build a landing page for an AI-powered writing assistant called WriteFlow",
     "ecommerce": "Build a premium streetwear store with product grid, cart drawer, and featured collection",
     "fintech": "Build a stock trading dashboard with candlestick chart, watchlist, and portfolio breakdown",
