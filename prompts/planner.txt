@@ -163,24 +163,35 @@ Quality target rules (CRITICAL — this is the single biggest quality lever):
 - visual_style: Be specific to the domain. “warm reds and oranges, food photography hero, Korean typography” NOT “modern and clean”
 - key_sections: List the sections a real version of this app would have, in scroll order
 - must_have_content: List CONCRETE content. Real dish names, real feature names, real data labels — NOT generic placeholders
-- avoid: List the specific failure modes for this type of app. What would make it look generic or wrong?
+- avoid: List DOMAIN-SPECIFIC failure modes — what makes THIS type of app look cheap or wrong. NEVER use generic web advice like "cluttered layout", "slow loading", "non-responsive", "complex animations" — those apply to everything and tell the engineer nothing useful.
 - Set quality_target: null on all non-scaffold tasks
 
-Examples:
-  Korean BBQ restaurant -> visual_style: “warm reds/oranges/charcoal, food photography hero with grilled meat, Korean + English text, wooden textures”
-                           key_sections: [“hero with reservation CTA”, “menu with Korean dish names and prices”, “photo gallery of dishes”, “reservation form”, “location map”]
-                           must_have_content: [“restaurant name in Korean and English”, “bulgogi”, “galbi”, “bibimbap”, “kimchi jjigae”, “phone number”, “address”]
-                           avoid: [“generic stock photos”, “lorem ipsum”, “blue corporate palette”, “Western food imagery”]
+Examples (study these carefully — notice how specific the avoid lists are to each domain):
 
-  crypto portfolio tracker -> visual_style: “dark theme #0d1117, green/red for gains/losses, tabular monospace numbers, real-time feel”
-                              key_sections: [“KPI cards with portfolio value”, “price chart with area fill”, “holdings table with live prices”, “activity feed”]
-                              must_have_content: [“BTC”, “ETH”, “SOL”, “real prices”, “24h change percentages”, “portfolio total value”]
-                              avoid: [“light backgrounds”, “marketing copy”, “testimonials”, “hero banner”]
+  crypto portfolio dashboard -> visual_style: "dark #0d1117 background, green/red for gains/losses, JetBrains Mono for numbers, compact data density, Binance/Coinbase aesthetic"
+                                key_sections: ["KPI row (portfolio value, 24h change, best performer, total return)", "area chart with time period toggles (1D/1W/1M/1Y)", "holdings table with sparklines", "watchlist sidebar", "news feed"]
+                                must_have_content: ["BTC $67,432", "ETH $3,891", "SOL $142", "+5.2% 24h change", "Portfolio: $124,832", "real percentage changes with green/red coloring"]
+                                avoid: ["marketing hero banner (this is a tool, not a landing page)", "testimonials section", "light/white backgrounds", "rounded friendly fonts", "empty chart placeholders", "lorem ipsum in table cells"]
 
-  AI writing assistant landing -> visual_style: “dark zinc-950, violet accent, Space Grotesk headings, glassmorphism nav, browser mockup”
-                                  key_sections: [“hero with email capture”, “logo cloud”, “bento feature grid”, “testimonials”, “pricing toggle”, “FAQ accordion”]
-                                  must_have_content: [“product name”, “AI model names”, “pricing tiers with real prices”, “feature descriptions”, “social proof numbers”]
-                                  avoid: [“generic purple gradients”, “flat navbar”, “empty skeleton sections”, “stock photos”]
+  SaaS landing page (AI writing tool) -> visual_style: "dark zinc-950, violet-500 accent, Space Grotesk headings, Inter body, glassmorphism nav with backdrop-blur, browser mockup in hero, gradient mesh background"
+                                         key_sections: ["hero with email capture + browser mockup", "logo cloud (5+ logos)", "bento feature grid (6 cards with icons)", "testimonials with real photos", "pricing toggle monthly/annual (3 tiers)", "FAQ accordion", "CTA band", "footer with links"]
+                                         must_have_content: ["product name WriteFlow", "GPT-4 and Claude model names", "Basic $19/mo, Pro $49/mo, Team $99/mo", "annual discount badge", "3 testimonials with names and roles", "social proof: 10,000+ users"]
+                                         avoid: ["flat unstyled navbar (must have glassmorphism)", "single-color hero with no depth", "pricing cards without actual dollar amounts", "features described as 'Feature 1, Feature 2'", "gray placeholder boxes instead of content", "generic 'Sign Up' without email input"]
+
+  Final Fantasy VII fan page -> visual_style: "dark cinematic #0a0a0f, neon green #00ff88 accent with glow, Rajdhani headings, full-bleed hero with parallax feel, character card grid with stat bars"
+                                key_sections: ["cinematic hero (game title + tagline + scroll indicator)", "character profiles (3 cards with stats)", "weapons gallery (3-4 cards with descriptions)", "world map locations (3-4 cards)", "lore section"]
+                                must_have_content: ["Cloud Strife - Ex-SOLDIER", "Tifa Lockhart - Martial Artist", "Barret Wallace - AVALANCHE Leader", "Buster Sword", "Midgar", "Shinra Corporation", "stat bars with varied widths (HP, ATK, MAG, SPD)"]
+                                avoid: ["bright/colorful palette (kills dark cinematic mood)", "generic card layout without stat bars", "placeholder character names like 'Character 1'", "game canvas or playable elements (this is a fan page, not a game)", "marketing pricing section"]
+
+  streetwear ecommerce store -> visual_style: "monochrome + single accent, high-contrast Oswald headings, product photography with dark backgrounds, Supreme/Off-White/Kith minimal aesthetic, hover-reveal quick-add overlay"
+                                key_sections: ["sticky header with logo + search + cart count", "hero banner with featured drop", "product grid (6 items) with hover quick-add", "filter bar (category, size, price)", "brand story section", "footer with links"]
+                                must_have_content: ["store name 'Apex Threads'", "products: 'Apex Hoodie $89', 'Street Joggers $65', 'Urban Tee $45', 'Limited Sneakers $220'", "sizes S/M/L/XL", "'Add to Cart' buttons", "Unsplash product images with specific URLs"]
+                                avoid: ["colorful/playful palette (wrong for streetwear)", "rounded bubbly buttons", "generic 'Product 1' placeholders", "category sidebar (use top filter bar)", "testimonials section (not an ecommerce pattern)"]
+
+  developer portfolio -> visual_style: "dark zinc-900, emerald-400 accent, monospace code-like headings, terminal/IDE aesthetic, subtle grid background pattern, project cards with tech stack badges"
+                         key_sections: ["hero band with name + role + CTA", "about section with photo", "skills grid with proficiency indicators", "projects grid (4 cards with screenshots + tech badges + 'View Project' links)", "experience timeline", "contact form"]
+                         must_have_content: ["developer name", "role: 'Full-Stack Developer'", "tech: React, TypeScript, Node.js, Python", "4 real project names with descriptions", "GitHub + LinkedIn links", "Unsplash headshot URL"]
+                         avoid: ["corporate blue palette (wrong for dev portfolio)", "empty project cards with no screenshots", "skills listed as plain text without visual indicators", "'View Project' buttons that look like marketing CTAs", "hero banner with stock office photo"]
 
 - ui_archetype and archetype_rules are REQUIRED on the scaffold task â€” never null for scaffold tasks
 - render_path is REQUIRED on the scaffold task: set “A” for all Tailwind archetypes (saas_landing, restaurant, medical, wedding, news, real_estate, education, photography, travel, legal, nonprofit, crypto, ai_product, agency, job_board, food_delivery, dev_docs, startup, blog, landing, ecommerce, portfolio, feed, form, kanban, chat, editor), set “B” for Raw CSS archetypes (fintech, music, fitness, game, dashboard), set null on all non-scaffold tasks
