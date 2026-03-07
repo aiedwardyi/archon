@@ -22,7 +22,7 @@ import {
   fetchLogs,
   type ChatMessage,
 } from "@/services/api";
-import { Search, Plus, Trash2, Mic, MicOff, Send, Volume2, VolumeX, Filter, Loader2, AlertCircle, X } from "lucide-react";
+import { Search, Plus, Trash2, Mic, MicOff, Send, Volume2, VolumeX, Filter, Loader2, AlertCircle, X, Paperclip, ImageIcon } from "lucide-react";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState(() => {
@@ -62,6 +62,8 @@ const Index = () => {
   // Pipeline state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [sending, setSending] = useState(false);
   const [pipelineError, setPipelineError] = useState<string | null>(null);
   const [globalBuildBlocked, setGlobalBuildBlocked] = useState(false);
@@ -276,11 +278,21 @@ const Index = () => {
   const handleSend = useCallback(async () => {
     if (!chatInput.trim() || !selectedProjectId) return;
     const prompt = chatInput.trim();
+    const filesToSend = [...attachedFiles];
     setChatInput("");
+    setAttachedFiles([]);
     setPipelineError(null);
 
-    // Add user message immediately
-    const userMsg: ChatMessage = { role: "user", content: prompt, timestamp: Date.now() };
+    // Add user message immediately (with image thumbnails if files attached)
+    // Convert to base64 data URLs so they survive serialization (blob URLs break after send)
+    const imageUrls = filesToSend.length > 0
+      ? await Promise.all(filesToSend.map(f => new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(f);
+        })))
+      : undefined;
+    const userMsg: ChatMessage = { role: "user", content: prompt, timestamp: Date.now(), imageUrls };
     setChatMessages((prev) => [...prev, userMsg]);
 
     // Clear stale pipeline/historical status immediately so "Failed" doesn't linger
@@ -344,7 +356,7 @@ const Index = () => {
 
       setSending(true);
       sendingRef.current = true;
-      await iterateProject(selectedProjectId, prompt, promptHistory as ChatMessage[]);
+      await iterateProject(selectedProjectId, prompt, promptHistory as ChatMessage[], filesToSend.length > 0 ? filesToSend : undefined);
       // Force-start polling immediately — don't wait for next render cycle
       pipeline.startPolling();
       // New execution is now active head — safe to save
@@ -616,6 +628,13 @@ const Index = () => {
                                 </div>
                                 <div className="bg-primary text-primary-foreground text-sm px-3 py-2 rounded-lg rounded-tr-sm">
                                   {msg.content}
+                                  {msg.imageUrls && msg.imageUrls.length > 0 && (
+                                    <div className="flex gap-1.5 mt-2 flex-wrap">
+                                      {msg.imageUrls.map((url, j) => (
+                                        <img key={j} src={url} alt="Reference" className="h-16 w-16 object-cover rounded border border-primary-foreground/20" />
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -674,8 +693,49 @@ const Index = () => {
                       </div>
                     )}
 
+                    {/* Attached Image Thumbnails */}
+                    {attachedFiles.length > 0 && (
+                      <div className="flex gap-2 flex-wrap">
+                        {attachedFiles.map((file, i) => (
+                          <div key={i} className="relative group">
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={file.name}
+                              className="h-16 w-16 object-cover rounded-md border border-border"
+                            />
+                            <button
+                              onClick={() => setAttachedFiles(prev => prev.filter((_, j) => j !== i))}
+                              className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                            <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] px-1 truncate rounded-b-md">{file.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     {/* Chat Input */}
                     <div className="border border-border rounded-md bg-card p-3 flex items-center gap-2">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          setAttachedFiles(prev => [...prev, ...files]);
+                          e.target.value = "";
+                        }}
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                      />
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="h-9 w-9 flex items-center justify-center border border-border rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                        title="Attach reference images"
+                      >
+                        <Paperclip className="h-4 w-4" />
+                      </button>
                       <input
                         type="text"
                         value={chatInput}

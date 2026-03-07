@@ -443,7 +443,7 @@ class EngineerAgent:
     def __init__(self, client: genai.Client | None):
         self.client = client
 
-    def run(self, task: Task, user_prompt: str = None, existing_code: str = None) -> EngineeringResult:
+    def run(self, task: Task, user_prompt: str = None, existing_code: str = None, reference_images: list[str] | None = None) -> EngineeringResult:
         if task.execution_hint != "engineer":
             raise ValueError("EngineerAgent called with non-executable task")
 
@@ -543,7 +543,20 @@ class EngineerAgent:
         if kit_archetype and not existing_code:
             ref_images = _load_reference_images(kit_archetype)
             if ref_images:
-                print(f"EngineerAgent: loaded {len(ref_images)} reference images for '{kit_archetype}'")
+                print(f"EngineerAgent: loaded {len(ref_images)} archetype reference images for '{kit_archetype}'")
+
+        # Add user-uploaded reference images
+        if reference_images:
+            _MIME_MAP = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".gif": "image/gif"}
+            for img_path in reference_images:
+                p = Path(img_path)
+                if p.exists() and p.suffix.lower() in _MIME_MAP:
+                    mime = _MIME_MAP[p.suffix.lower()]
+                    ref_images.append((p.name, p.read_bytes(), mime))
+            if reference_images:
+                print(f"EngineerAgent: added {len(reference_images)} user reference image(s)")
+                # Append instruction to prompt
+                contents += "\n\nIMPORTANT: The user has provided visual reference images. Match the visual style, layout structure, and color palette shown in these references as closely as possible."
 
         # Model selection via ENGINEER_MODEL env var
         # Options: "gemini" (default), "claude", "openai"

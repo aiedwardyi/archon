@@ -22,6 +22,7 @@ import {
   Hash,
   Clock,
   X,
+  Paperclip,
 } from "lucide-react"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { useNotificationSound } from "@/hooks/useNotificationSound"
@@ -42,6 +43,7 @@ type ChatMessage = {
   role: "user" | "archon"
   content: string
   timestamp: number
+  imageUrls?: string[]
 }
 
 function AgentStatusIcon({ status }: { status: AgentStatus }) {
@@ -63,6 +65,8 @@ export function PipelineRun() {
   const { t } = useLanguage()
   const { playSuccess, playFailure } = useNotificationSound()
   const [inputValue, setInputValue] = useState("")
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [projectId, setProjectId] = useState<number | null>(null)
   const [projectName, setProjectName] = useState("my-project")
   const [version, setVersion] = useState<number | null>(null)
@@ -481,13 +485,25 @@ export function PipelineRun() {
     if (isRunning) return
 
     const prompt = inputValue.trim()
+    const filesToSend = [...attachedFiles]
     setInputValue("")
+    setAttachedFiles([])
+
+    // Convert to base64 data URLs so they survive serialization (blob URLs break after send)
+    const imageUrls = filesToSend.length > 0
+      ? await Promise.all(filesToSend.map(f => new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.readAsDataURL(f)
+        })))
+      : undefined
 
     const userMsg: ChatMessage = {
       id: `msg-${Date.now()}-user`,
       role: "user",
       content: prompt,
       timestamp: Date.now(),
+      imageUrls,
     }
     setMessages(prev => [...prev, userMsg])
 
@@ -548,11 +564,25 @@ export function PipelineRun() {
       setShowAllLogs(false)
       newRunRef.current = true
 
-      const res = await fetch(`${API_BASE}/api/projects/${projectId}/iterate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, prompt_history: newHistory }),
-      })
+      let res: Response
+      if (filesToSend.length > 0) {
+        const formData = new FormData()
+        formData.append("prompt", prompt)
+        formData.append("prompt_history", JSON.stringify(newHistory))
+        for (const file of filesToSend) {
+          formData.append("reference_images", file)
+        }
+        res = await fetch(`${API_BASE}/api/projects/${projectId}/iterate`, {
+          method: "POST",
+          body: formData,
+        })
+      } else {
+        res = await fetch(`${API_BASE}/api/projects/${projectId}/iterate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt, prompt_history: newHistory }),
+        })
+      }
       const data = await res.json()
 
       if (data.version) {
@@ -860,6 +890,13 @@ export function PipelineRun() {
                     ? "bg-primary text-primary-foreground rounded-tr-sm"
                     : "bg-muted text-foreground rounded-tl-sm"
                 }`}>
+                  {msg.imageUrls && msg.imageUrls.length > 0 && (
+                    <div className="flex gap-1.5 flex-wrap mb-1.5">
+                      {msg.imageUrls.map((url, j) => (
+                        <img key={j} src={url} alt="Reference" className="h-16 w-16 object-cover rounded border border-white/20" />
+                      ))}
+                    </div>
+                  )}
                   {msg.content}
                   <div className="text-xs mt-1 opacity-60">
                     {formatTime(msg.timestamp)}
@@ -927,9 +964,49 @@ export function PipelineRun() {
           </span>
         </div>
       )}
+      {/* Attached Image Thumbnails */}
+      {attachedFiles.length > 0 && (
+        <div className="border-t border-border bg-card/50 px-6 py-2 flex gap-2 flex-wrap">
+          {attachedFiles.map((file, i) => (
+            <div key={i} className="relative group">
+              <img
+                src={URL.createObjectURL(file)}
+                alt={file.name}
+                className="h-14 w-14 object-cover rounded border border-border"
+              />
+              <button
+                onClick={() => setAttachedFiles(prev => prev.filter((_, j) => j !== i))}
+                className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X className="h-2.5 w-2.5" />
+              </button>
+              <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[7px] px-0.5 truncate rounded-b">{file.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="border-t border-border bg-card px-6 py-3">
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground font-mono shrink-0">{projectName} {">"}</span>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={(e) => {
+              const files = Array.from(e.target.files || [])
+              setAttachedFiles(prev => [...prev, ...files])
+              e.target.value = ""
+            }}
+            accept="image/*"
+            multiple
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="p-1.5 rounded bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+            aria-label="Attach reference images"
+          >
+            <Paperclip className="h-3.5 w-3.5" />
+          </button>
           <div className="flex-1 relative">
             <input
               type="text"

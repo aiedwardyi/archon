@@ -402,7 +402,7 @@ A prominent banner also appears at the top of the Governance tab with plain-Engl
 | 16.5 | ✅ | Authentication — JWT, Google OAuth, blacklist logout, concurrent pipeline |
 | 18 | 🔴 | Unified auth + plan-based UI routing |
 | 8.3 | 🔴 | Client shareable read-only link |
-| 20.1 | 🔴 | Visual reference input — attach images to guide AI builds |
+| 20.1 | ✅ | Visual reference input — attach images to guide AI builds |
 
 ---
 

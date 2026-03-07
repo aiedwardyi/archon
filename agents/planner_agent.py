@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 from google import genai
+from google.genai import types
 from schemas.plan_schema import Plan
 from schemas.prd_schema import PRDArtifact
 from utils.genai_retry import call_with_retry
@@ -18,6 +19,7 @@ class PlannerAgent:
         prd_text: str,
         locked_ui_archetype: str | None = None,
         is_iteration: bool = False,
+        reference_images: list[str] | None = None,
     ) -> Plan:
         """
         Legacy method: Generate plan from PRD text.
@@ -44,8 +46,24 @@ class PlannerAgent:
                 "New functionality (scripts, extra styles) must be added inline in index.html using <script> and <style> tags\n"
                 '- output_files: ["src/index.html", "src/style.css"]\n'
             )
-        contents = f"{prompt}{lock_note}{iteration_note}\n\n--- PRD START ---\n{prd_text}\n--- PRD END ---"
-        
+        text_content = f"{prompt}{lock_note}{iteration_note}\n\n--- PRD START ---\n{prd_text}\n--- PRD END ---"
+
+        # Build multimodal content if reference images provided
+        if reference_images:
+            parts = [types.Part.from_text(text=text_content)]
+            parts.append(types.Part.from_text(text="\n\n--- USER REFERENCE IMAGES (describe what you see to guide architecture) ---"))
+            _MIME_MAP = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".gif": "image/gif"}
+            for img_path in reference_images:
+                p = Path(img_path)
+                mime = _MIME_MAP.get(p.suffix.lower(), "image/png")
+                parts.append(types.Part.from_bytes(data=p.read_bytes(), mime_type=mime))
+                parts.append(types.Part.from_text(text=f"[Reference: {p.name}]"))
+            parts.append(types.Part.from_text(text="--- END REFERENCE IMAGES ---\nAnalyze these references. Include a description of the target visual style, layout, and color palette in the plan so the engineer can match it."))
+            contents = parts
+            print(f"PlannerAgent: included {len(reference_images)} reference image(s) in planning call")
+        else:
+            contents = text_content
+
         def _call():
             return self.client.models.generate_content(
                 model="gemini-2.5-flash",
@@ -71,6 +89,7 @@ class PlannerAgent:
         prd_artifact_path: Path,
         locked_ui_archetype: str | None = None,
         is_iteration: bool = False,
+        reference_images: list[str] | None = None,
     ) -> Plan:
         """
         Phase 5: Generate plan from PRD artifact.
@@ -95,8 +114,9 @@ class PlannerAgent:
             prd_text,
             locked_ui_archetype=locked_ui_archetype,
             is_iteration=is_iteration,
+            reference_images=reference_images,
         )
-    
+
     def _format_prd_as_text(self, prd) -> str:
         return f"""# {prd.document_title}
 
@@ -146,12 +166,14 @@ class PlannerAgent:
         prd_text: str,
         locked_ui_archetype: str | None = None,
         is_iteration: bool = False,
+        reference_images: list[str] | None = None,
     ) -> Plan:
         """Backward compatible method."""
         return self.run_from_prd_text(
             prd_text,
             locked_ui_archetype=locked_ui_archetype,
             is_iteration=is_iteration,
+            reference_images=reference_images,
         )
 
 

@@ -76,11 +76,28 @@ class DesignAgent:
             from utils.genai_client import get_genai_client
             self.client = get_genai_client()
 
-    def run(self, prd_dict: dict, max_images: int = 4, save_dir: Path | None = None) -> list[dict[str, Any]]:
+    def run(self, prd_dict: dict, max_images: int = 4, save_dir: Path | None = None, reference_images: list[str] | None = None) -> list[dict[str, Any]]:
         prompt_template = (PROMPTS_DIR / "design_agent.txt").read_text(encoding="utf-8")
         prd_summary = json.dumps(prd_dict, indent=2)[:3000]
 
-        contents = f"{prompt_template}\n\nPRD:\n{prd_summary}"
+        text_content = f"{prompt_template}\n\nPRD:\n{prd_summary}"
+
+        # Build multimodal content if reference images provided
+        if reference_images:
+            parts = [types.Part.from_text(text=text_content)]
+            parts.append(types.Part.from_text(text="\n\n--- USER REFERENCE IMAGES (analyze style and palette for Imagen prompts) ---"))
+            _MIME_MAP = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".gif": "image/gif"}
+            for img_path in reference_images:
+                p = Path(img_path)
+                if p.exists():
+                    mime = _MIME_MAP.get(p.suffix.lower(), "image/png")
+                    parts.append(types.Part.from_bytes(data=p.read_bytes(), mime_type=mime))
+                    parts.append(types.Part.from_text(text=f"[Reference: {p.name}]"))
+            parts.append(types.Part.from_text(text="--- END REFERENCE IMAGES ---\nAnalyze the visual style, color palette, and mood of these references. Generate Imagen prompts that produce images consistent with this style."))
+            contents = parts
+            print(f"DesignAgent: included {len(reference_images)} reference image(s) in planning call")
+        else:
+            contents = text_content
 
         def _call():
             return self.client.models.generate_content(

@@ -294,7 +294,7 @@ def resolve_project_version(q_project_id=None, q_version=None):
     return project_id, version
 
 
-def run_full_pipeline_async(task_description: str, prompt_history: list = None, project_id: int = None):
+def run_full_pipeline_async(task_description: str, prompt_history: list = None, project_id: int = None, reference_images: list = None):
     state = get_project_state(project_id)
 
     sys.path.insert(0, str(REPO_ROOT))
@@ -402,6 +402,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None, 
             version_dir / "last_prd.json",
             locked_ui_archetype=locked_ui_archetype,
             is_iteration=is_iteration,
+            reference_images=reference_images or [],
         )
 
         plan_dict = {
@@ -441,7 +442,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None, 
                 prd_data = read_json_file(version_dir / "last_prd.json") or {}
                 design_agent = DesignAgent()
                 assets_dir = version_dir / "assets"
-                design_assets = design_agent.run(prd_data, max_images=10, save_dir=assets_dir)
+                design_assets = design_agent.run(prd_data, max_images=10, save_dir=assets_dir, reference_images=reference_images or None)
                 if design_assets:
                     write_json_file(version_dir / "last_design_assets.json", {"assets": design_assets})
                     add_log(f"Design Agent: {len(design_assets)} images ready.", project_id=project_id)
@@ -497,7 +498,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None, 
         else:
             task_description_with_assets = task_description
 
-        result = engineer.run(engineer_task, user_prompt=task_description_with_assets, existing_code=existing_code)
+        result = engineer.run(engineer_task, user_prompt=task_description_with_assets, existing_code=existing_code, reference_images=reference_images or None)
 
         from scripts.safe_write import safe_write_text, enforce_iteration_scope
         allow_dir = version_dir / "code"
@@ -942,7 +943,18 @@ def iterate_project(project_id: int):
 
     session = get_session()
     try:
-        data = request.get_json()
+        # Accept either JSON or multipart/form-data (for file uploads)
+        if request.content_type and "multipart/form-data" in request.content_type:
+            data = {"prompt": request.form.get("prompt", "").strip()}
+            ph = request.form.get("prompt_history")
+            if ph:
+                try:
+                    data["prompt_history"] = json.loads(ph)
+                except Exception:
+                    data["prompt_history"] = []
+        else:
+            data = request.get_json()
+
         if not data or not data.get("prompt"):
             return jsonify({"error": "prompt is required"}), 400
 
@@ -1019,10 +1031,25 @@ def iterate_project(project_id: int):
         state["logs"] = []
         state["result_ready"] = False
 
+        # Save uploaded reference images (if any)
+        reference_images = []
+        uploaded_files = request.files.getlist("reference_images") if request.content_type and "multipart/form-data" in request.content_type else []
+        if uploaded_files:
+            refs_dir = get_version_dir(project_id, next_version) / "references"
+            refs_dir.mkdir(parents=True, exist_ok=True)
+            for f in uploaded_files:
+                if f.filename:
+                    safe_name = Path(f.filename).name
+                    dest = refs_dir / safe_name
+                    f.save(str(dest))
+                    reference_images.append(str(dest.resolve()))
+            if reference_images:
+                print(f"Saved {len(reference_images)} reference image(s) for project {project_id} v{next_version}")
+
         print(f"Starting iteration v{next_version} for project {project_id}: {prompt}")
         thread = threading.Thread(
             target=run_full_pipeline_async,
-            args=(prompt, prompt_history, project_id),
+            args=(prompt, prompt_history, project_id, reference_images),
             daemon=True,
         )
         thread.start()
