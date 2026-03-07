@@ -57,29 +57,26 @@ def save_text(text: str, path: Path) -> None:
     path.write_text(text, encoding="utf-8")
 
 
-def get_anthropic_client():
-    """Create an Anthropic client using the API key from backend/.env or environment."""
+def get_genai_client():
+    """Create a Gemini client — prefers Vertex AI, falls back to AI Studio API key."""
     import os
 
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    # Load env vars from backend/.env if not already set
+    env_path = Path(__file__).resolve().parent.parent / "backend" / ".env"
+    if env_path.exists():
+        for line in env_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, val = line.split("=", 1)
+                key = key.strip()
+                val = val.strip().strip('"').strip("'")
+                if key not in os.environ:
+                    os.environ[key] = val
 
-    if not api_key:
-        # Try loading from backend/.env
-        env_path = Path(__file__).resolve().parent.parent / "backend" / ".env"
-        if env_path.exists():
-            for line in env_path.read_text(encoding="utf-8").splitlines():
-                line = line.strip()
-                if line.startswith("ANTHROPIC_API_KEY="):
-                    api_key = line.split("=", 1)[1].strip().strip('"').strip("'")
-                    break
-
-    if not api_key:
-        raise RuntimeError(
-            "ANTHROPIC_API_KEY not found. Set it in environment or in backend/.env"
-        )
-
-    import anthropic
-    return anthropic.Anthropic(api_key=api_key)
+    # Use the shared client factory (supports Vertex AI + AI Studio)
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from utils.genai_client import get_genai_client as _factory
+    return _factory()
 
 
 async def run_eval_loop(config: dict = None):
@@ -99,15 +96,16 @@ async def run_eval_loop(config: dict = None):
         logger.error("Backend not reachable at %s. Is the Flask server running?", config["backend_url"])
         sys.exit(1)
 
-    # Initialize Claude client + scorers
-    client = get_anthropic_client()
-    scorer = DesignScorer(client, model=config.get("scorer_model", "claude-sonnet-4-6"))
-    improver = PromptImprover(client, model=config.get("improver_model", "claude-sonnet-4-6"))
+    # Initialize Gemini client + scorers
+    client = get_genai_client()
+    scorer = DesignScorer(client, model=config.get("scorer_model", "gemini-2.5-flash"))
+    improver = PromptImprover(client, model=config.get("improver_model", "gemini-2.5-flash"))
 
     archetypes = config.get("archetypes", ["dashboard"])
     test_prompts = config.get("test_prompts", {})
     max_iterations = config.get("max_iterations", 5)
     target_score = config.get("target_score", 80)
+    score_only = config.get("score_only", False)
     convergence_threshold = config.get("convergence_threshold", 2)
     build_timeout = config.get("build_timeout_seconds", 300)
     wait_seconds = config.get("screenshot_wait_seconds", 3.0)
@@ -155,7 +153,9 @@ async def run_eval_loop(config: dict = None):
                 project_name = f"eval_{archetype}_iter{iteration}_{run_timestamp}"
                 if attempt > 0:
                     project_name += f"_retry{attempt}"
-                    logger.info(f"Retrying build for {archetype} (attempt {attempt + 1})")
+                    wait_time = 60 * attempt  # 60s, 120s, 180s — respect Gemini rate limits
+                    logger.info(f"Retrying build for {archetype} (attempt {attempt + 1}) after {wait_time}s cooldown")
+                    time.sleep(wait_time)
                 try:
                     logger.info(f"Creating project and building: {project_name}")
                     build_result = api.create_and_build(
@@ -238,6 +238,10 @@ async def run_eval_loop(config: dict = None):
                 logger.info(f"New best score for {archetype}: {scores.weighted_total}")
 
             # 6. Check if improvement is needed
+            if score_only:
+                logger.info(f"{archetype}: Score-only mode, skipping improvement")
+                continue
+
             if scores.weighted_total >= target_score:
                 logger.info(
                     f"{archetype}: Score {scores.weighted_total} >= target {target_score}, "
@@ -337,6 +341,7 @@ def main():
     parser.add_argument("--max-iterations", type=int, help="Override max iterations")
     parser.add_argument("--target-score", type=float, help="Override target score")
     parser.add_argument("--dry-run", action="store_true", help="Print config and exit")
+    parser.add_argument("--score-only", action="store_true", help="Score only, skip prompt improvement")
     args = parser.parse_args()
 
     config = load_config(args.config)
@@ -348,6 +353,8 @@ def main():
         config["max_iterations"] = args.max_iterations
     if args.target_score:
         config["target_score"] = args.target_score
+    if args.score_only:
+        config["score_only"] = True
 
     if args.dry_run:
         print(json.dumps(config, indent=2))

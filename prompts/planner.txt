@@ -99,7 +99,7 @@ UI archetype rules (CRITICAL):
     editor       -> document editors, note apps, CMS builders
     feed         -> news feeds, article lists, video discovery
     form         -> surveys, wizards, onboarding, booking flows
-    game         -> games, interactive experiences, quizzes
+    game         -> game fan pages, JRPG wikis, game tributes, character showcases, game companion sites, interactive game experiences
     portfolio    -> personal portfolios, CVs, showcase sites
     saas_landing -> SaaS/tech product marketing, AI tools, dev tools (Tailwind + Alpine)
     restaurant   -> restaurants, cafes, bakeries, food brands (Tailwind + Alpine)
@@ -132,7 +132,7 @@ UI archetype rules (CRITICAL):
     editor    -> required_blocks: ["toolbar", "edit_area", "status_bar"], required_interactions: ["save", "export"], avoid: ["hero_marketing"]
     feed      -> required_blocks: ["featured_card", "card_grid", "filter_tabs"], required_interactions: ["search", "filter"], avoid: ["sidebar_nav", "kpis"]
     form      -> required_blocks: ["step_indicator", "inputs", "submit_button"], required_interactions: ["validate", "submit"], avoid: ["hero_marketing", "sidebar"]
-    game      -> required_blocks: ["game_canvas", "hud", "start_screen"], required_interactions: ["play", "restart"], avoid: ["hero_marketing", "data_table"]
+    game      -> required_blocks: ["hero_cinematic", "character_cards", "weapons_showcase", "world_map"], required_interactions: ["smooth_scroll", "hover_cards"], avoid: ["game_canvas", "hud", "start_screen", "pricing_section"]
     portfolio -> required_blocks: [“hero_band”, “projects_grid”, “skills”], required_interactions: [“view_project”], avoid: [“sidebar_nav”, “kpis”]
     saas_landing -> required_blocks: [“hero”,”feature_grid”,”social_proof”,”pricing”,”cta_band”,”footer”], required_interactions: [“cta_click”,”pricing_toggle”,”faq_accordion”], avoid: [“sidebar”,”data_table”,”kanban_columns”]
     restaurant   -> required_blocks: [“hero”,”menu”,”reservation_form”,”gallery”,”location”], required_interactions: [“menu_tab”,”reservation_submit”], avoid: [“sidebar”,”data_table”,”kanban_columns”]
@@ -221,8 +221,8 @@ Examples:
     content_contract: kpi_labels=[], table_columns=[], seed_rows=0, required_states=[idle,validating,error,success]
 
   game:
-    layout_contract: regions=[start_screen,game_canvas,hud,game_over], sidebar=null, topbar=[], main_grid=[{row:1,component:game_canvas,aspect_ratio:"16:9"},{row:2,component:hud}], density=compact
-    content_contract: kpi_labels=[score,lives,level,timer], table_columns=[], seed_rows=0, required_states=[start,playing,paused,game_over]
+    layout_contract: regions=[hero_cinematic,characters,weapons,world_map,footer], sidebar=null, topbar=[logo,nav_links], main_grid=[{row:1,component:hero_cinematic,aspect_ratio:"16:9"},{row:2,component:character_cards,count:3},{row:3,component:weapons_showcase},{row:4,component:world_map}], density=comfortable
+    content_contract: kpi_labels=[], table_columns=[character_name,role,weapon,stats], seed_rows=3, required_states=[hover_card,smooth_scroll]
 
   portfolio:
     layout_contract: regions=[hero_band,about,skills,projects,experience], sidebar=null, topbar=[name,nav,contact_cta], main_grid=[{row:1,component:hero_band,aspect_ratio:"16:5"},{row:2,component:skills_grid},{row:3,component:projects_grid,count:4}], density=comfortable

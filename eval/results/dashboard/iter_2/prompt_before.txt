@@ -1,0 +1,8 @@
+# ═══════════════════════════════════════
+# ARCHETYPE 3: SAAS DASHBOARD
+# ═══════════════════════════════════════
+
+PATH: B (Raw CSS + animations)
+Use for: dashboards, admin panels, CRMs, analytics, project management, crypto/finance tools.
+Theme: Modern, professional dark theme inspired by Vercel/Linear. Emphasize clarity, subtle depth, and data readability.
+Fonts: Primary: 'Inter', sans-serif (or similar modern geometric sans-serif like

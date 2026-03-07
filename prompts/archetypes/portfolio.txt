@@ -1,0 +1,126 @@
+ARCHETYPE: PORTFOLIO / AGENCY
+PATH: B (Raw CSS — base.css provides the design system)
+
+═══════════════════════════════════════
+DESIGN KIT: base.css IS ALREADY PROVIDED
+═══════════════════════════════════════
+
+A base.css file is injected automatically. It provides:
+- CSS variables: --bg (#0d0d0e), --surface, --surface-elevated, --accent (#F59E0B amber), --text, --text-secondary, --text-muted, --border
+- Fonts: Syne (700, 800 — display headings), Inter (400, 500, 600 — body)
+- Nav: .portfolio-nav, .nav-name, .nav-links, .nav-link, .nav-cta
+- Hero: .hero-portfolio (grid: 1fr 260px), .hero-left, .hero-eyebrow, .hero-title, .hero-subtitle, .hero-ctas
+- Hero right strip: .hero-right, .hero-status (vertical text), .hero-micro-stat (.stat-number + .stat-label), .availability-card (.avail-dot + .avail-text)
+- Buttons: .btn-primary, .btn-ghost
+- Stats band: .stats-band, .stats-grid (4-col), .stat-block (.stat-value + .stat-desc)
+- Sections: .section-wrapper, .section-header, .section-eyebrow, .section-desc
+- About: .about-grid (2-col), .about-image, .about-text
+- Skills: .skills-grid (4-col), .skill-card (.skill-icon + .skill-name + .skill-level)
+- Projects: .projects-bento (3-col), .project-card, .project-card--span2, .project-image, .project-overlay, .project-info, .project-tag, .project-title, .project-desc, .project-link
+- Contact: .contact-grid (2-col), .contact-form, .form-group, .form-label, .form-input, .form-textarea, .contact-details, .contact-item, .contact-icon, .contact-label, .contact-value
+- Footer: .site-footer
+- Responsive breakpoints, animations (pulse, fadeUp), focus states, hover transitions
+
+DO NOT duplicate any of these in style.css. style.css = ONLY page-specific overrides (target ≤80 lines).
+
+═══════════════════════════════════════
+YOUR index.html MUST LINK base.css FIRST
+═══════════════════════════════════════
+
+In <head>:
+  <link rel="stylesheet" href="./base.css">
+  <link rel="stylesheet" href="./style.css">
+
+DO NOT add Google Fonts @import — base.css already imports Syne + Inter.
+
+═══════════════════════════════════════
+REQUIRED SECTIONS
+═══════════════════════════════════════
+
+1. NAVBAR — .portfolio-nav with .nav-name (person's name), .nav-links (Work, About, Skills, Contact), .nav-cta ("Hire Me" or "Get in Touch")
+
+2. HERO — TWO-COLUMN layout using .hero-portfolio:
+   LEFT (.hero-left):
+   - .hero-eyebrow ("CREATIVE DEVELOPER" or role)
+   - .hero-title (person's name in Syne 800, massive text-7xl+)
+   - .hero-subtitle (2 sentences about what they do)
+   - .hero-ctas (.btn-primary "View Projects" + .btn-ghost "Download CV")
+
+   RIGHT (.hero-right — 260px strip):
+   - .hero-status (vertical text, e.g. "PORTFOLIO 2025")
+   - 3 .hero-micro-stat blocks with DIFFERENT stats from the stats band:
+     * "12" / "Design Awards"
+     * "40K" / "GitHub Stars"
+     * "5★" / "Average Rating"
+   - .availability-card with green dot + "AVAILABLE FOR WORK"
+
+   CRITICAL: Hero right stats MUST be DIFFERENT from stats band stats below.
+
+3. STATS BAND — .stats-band with .stats-grid (4 .stat-block):
+   - Different values from hero right strip, e.g.:
+     * "8+" / "Years Experience"
+     * "120+" / "Projects Delivered"
+     * "50+" / "Happy Clients"
+     * "15" / "Countries Served"
+   - ZERO-VALUE BAN: never "0"
+
+4. ABOUT — .section-wrapper with .about-grid:
+   - Left: .about-image — use a professional portrait from Unsplash:
+     https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80
+     (or another professional headshot — NEVER use landscapes, castles, or unrelated images)
+   - Right: h2, .about-text paragraphs (2-3 paragraphs about background, passion, approach)
+   - Image onerror fallback
+
+5. SKILLS — .section-wrapper with .skills-grid (8+ .skill-card):
+   - Each: .skill-icon (SVG icon in amber-tinted background), .skill-name, .skill-level (e.g. "Expert", "Advanced")
+   - Skills: React, TypeScript, Node.js, Python, Figma, AWS, Docker, PostgreSQL (or similar relevant stack)
+   - Each icon must be a recognizable SVG (not empty divs)
+
+6. PROJECTS — .section-wrapper with .projects-bento:
+   - 4-6 .project-card entries
+   - First card: .project-card--span2 (larger, spans 2 columns)
+   - Each: .project-image (use pollinations.ai URLs with descriptive prompts like "modern web app dashboard design screenshot dark theme" or "mobile app interface design mockup dark"), .project-info > .project-tag + .project-title + .project-desc + .project-link ("View Project →")
+   - EVERY project card MUST have a .project-link with text "View Project →" — this shows interactivity
+   - .project-overlay appears on hover with extra info (visible at 70% by default in base.css, full on hover)
+   - Real project names: "Nebula Dashboard", "Pulse Analytics", "Artisan CMS", "Zenith Mobile", "Quantum Payments", etc.
+   - Each project: specific description of what was built, tech stack tags
+   - Image onerror fallback on every img: onerror="this.style.background='linear-gradient(135deg,var(--surface),var(--surface-elevated))';this.style.minHeight='240px'"
+
+7. CONTACT — .section-wrapper with .contact-grid:
+   - Left: .contact-form with .form-group entries (Name, Email, Subject, Message) + .btn-primary "Send Message"
+   - Right: .contact-details with 3-4 .contact-item (Email, Location, Phone/LinkedIn)
+   - Each contact item: .contact-icon (SVG), .contact-label, .contact-value
+
+8. FOOTER — .site-footer with copyright + social links
+
+═══════════════════════════════════════
+CONTENT RULES
+═══════════════════════════════════════
+
+- Use the person/role from the user's prompt for the hero name and title
+- All stats must be realistic positive numbers (never "0")
+- Hero right strip stats MUST differ from stats band stats (CRITICAL)
+- Project descriptions: specific and varied (not generic)
+- Skills: relevant tech stack with variety
+- Accent amber used sparingly (max 10% of surface): CTAs, eyebrows, skill icons, project tags
+- Headings: Syne 800 with letter-spacing: -0.03em
+
+═══════════════════════════════════════
+SELF-CHECK BEFORE OUTPUT
+═══════════════════════════════════════
+
+□ index.html links base.css BEFORE style.css
+□ Hero is two-column (text left, 260px strip right)
+□ Hero right has 3 micro-stats + availability card
+□ Hero stats ≠ stats band stats (different values!)
+□ Stats band has 4 blocks with positive numbers
+□ About section has image + text side-by-side
+□ 8+ skill cards with SVG icons
+□ Projects bento: first card spans 2 columns
+□ 4-6 projects with real names, descriptions, and .project-link "View Project →"
+□ Contact form + contact details side-by-side
+□ All headings use Syne font-family
+□ Accent is amber #F59E0B, used sparingly
+□ style.css is ONLY overrides (≤80 lines)
+□ No "0" values anywhere
+□ Every <img> has onerror fallback

@@ -441,7 +441,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None, 
                 prd_data = read_json_file(version_dir / "last_prd.json") or {}
                 design_agent = DesignAgent()
                 assets_dir = version_dir / "assets"
-                design_assets = design_agent.run(prd_data, max_images=6, save_dir=assets_dir)
+                design_assets = design_agent.run(prd_data, max_images=10, save_dir=assets_dir)
                 if design_assets:
                     write_json_file(version_dir / "last_design_assets.json", {"assets": design_assets})
                     add_log(f"Design Agent: {len(design_assets)} images ready.", project_id=project_id)
@@ -611,9 +611,9 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None, 
                 prompt=prompt_text,
                 ui_archetype=project.locked_ui_archetype if project else None,
                 models_used={
-                    "Requirements Agent": "GPT-4o-mini",
+                    "Requirements Agent": "Gemini 2.5 Flash",
                     "Architecture Agent": "Gemini 2.5 Flash",
-                    "Design Agent": "DALL-E 3",
+                    "Design Agent": "Imagen 3.0 + Gemini 2.5 Flash",
                     "Build Agent": "Gemini 2.5 Flash",
                 },
                 tokens_used=exec_for_gov.tokens_used if exec_for_gov else None,

@@ -1,0 +1,114 @@
+ARCHETYPE: E-COMMERCE / ONLINE STORE
+PATH: B (Raw CSS — base.css provides the design system)
+
+═══════════════════════════════════════
+DESIGN KIT: base.css IS ALREADY PROVIDED
+═══════════════════════════════════════
+
+A base.css file is injected automatically. It provides:
+- CSS variables: --bg (#0f0f12), --surface, --surface-elevated, --accent (#C9A84C gold), --accent-light (#F5F0E8), --text, --text-secondary, --text-muted, --border
+- Fonts: Cormorant Garamond (500, 600, 700 — display serif), DM Sans (400, 500, 700 — body), JetBrains Mono (mono)
+- Nav: .store-nav, .nav-brand, .nav-links, .nav-link, .nav-actions, .nav-icon, .cart-badge
+- Hero: .hero-banner, .hero-bg, .hero-overlay, .hero-content, .hero-eyebrow, .hero-subtitle, .btn-shop
+- Sections: .section-wrapper, .section-header, .section-eyebrow
+- Filters: .filter-bar, .filter-pill, .filter-pill.active
+- Products: .product-grid (3-col), .product-card, .product-image-wrapper (4:5 ratio), .product-image, .product-badge, .product-wishlist, .quick-add (slides up on hover), .quick-add-btn, .product-info, .product-name, .product-category, .product-price, .original-price
+- Stars: .star-rating, .star-filled, .star-empty, .rating-count
+- Sizes: .size-selector, .size-btn, .size-btn.selected
+- Collections: .collection-grid, .collection-card, .collection-image, .collection-overlay, .collection-title, .collection-count
+- Cart: .cart-drawer, .cart-header, .cart-title, .cart-close, .cart-item, .item-image, .item-name, .item-size, .item-price, .cart-footer, .cart-total, .btn-checkout
+- Footer: .store-footer, .footer-grid, .footer-brand, .footer-logo, .footer-tagline, .footer-col, .footer-bottom
+- Hover effects, transitions, responsive breakpoints
+
+DO NOT duplicate any of these in style.css. style.css = ONLY page-specific overrides (target ≤80 lines).
+
+═══════════════════════════════════════
+YOUR index.html MUST LINK base.css FIRST
+═══════════════════════════════════════
+
+In <head>:
+  <link rel="stylesheet" href="./base.css">
+  <link rel="stylesheet" href="./style.css">
+
+DO NOT add Google Fonts @import — base.css already imports Cormorant Garamond + DM Sans.
+
+═══════════════════════════════════════
+REQUIRED SECTIONS
+═══════════════════════════════════════
+
+1. NAVBAR — .store-nav with .nav-brand (store name in Cormorant Garamond uppercase), .nav-links (4-5 links: New Arrivals, Collections, Men, Women, Sale), .nav-actions (search icon, heart/wishlist icon, cart icon with .cart-badge showing count like "3")
+
+2. HERO BANNER — .hero-banner with full-bleed background image:
+   - Use Unsplash image: https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1920&q=80
+   - .hero-overlay for gradient darkening
+   - .hero-content: .hero-eyebrow ("NEW COLLECTION"), h1 (collection name in Cormorant Garamond), .hero-subtitle, .btn-shop
+   - Add onerror on img: onerror="this.style.background='linear-gradient(135deg,#1a1a1f,#222228)'"
+
+3. FEATURED COLLECTIONS — .collection-grid with 3 .collection-card:
+   - Each: .collection-image (Unsplash URL), .collection-overlay > .collection-title + .collection-count
+   - Collection images from Unsplash (fashion/lifestyle shots)
+   - Add onerror on every img
+
+4. PRODUCT GRID — .section-header + .filter-bar (5 .filter-pill: All, Jackets, Sneakers, Accessories, Sale — "All" has .active) + .product-grid:
+   - EXACTLY 6 .product-card in 3-column grid (2 complete rows)
+   - Each card: .product-image-wrapper > .product-image (Unsplash fashion product image) + optional .product-badge ("NEW" or "SALE") + .quick-add > .quick-add-btn "QUICK ADD" (slides up on hover, built into base.css)
+   - .product-info: .product-name (Cormorant Garamond), .product-category, .star-rating (5 SVG stars), .product-price
+   - Star SVGs: use path "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" in 16x16 viewBox
+   - .star-filled (fill: var(--accent)) vs .star-empty (fill: var(--border))
+   - NEVER use star emoji ★
+   - Prices: realistic ($149, $245, $89, etc.) — NEVER $0
+
+5. CART DRAWER — .cart-drawer with Alpine.js x-data for open/close:
+   - .cart-header (.cart-title + .cart-close button)
+   - 2-3 .cart-item entries (image, name, size, price)
+   - .cart-footer with .cart-total and .btn-checkout
+
+6. FOOTER — .store-footer with .footer-grid (4 columns: brand + Shop, Company, Support):
+   - .footer-brand: .footer-logo (store name), .footer-tagline
+   - .footer-col entries with links
+   - .footer-bottom with copyright
+
+═══════════════════════════════════════
+IMAGE RULES
+═══════════════════════════════════════
+
+Use Unsplash URLs for ALL product images:
+- Product 1: https://images.unsplash.com/photo-1556906781-9a412961c28c?w=600&q=80
+- Product 2: https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600&q=80
+- Product 3: https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80
+- Product 4: https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&q=80
+- Product 5: https://images.unsplash.com/photo-1600185365926-3a2ce3cdb9eb?w=600&q=80
+- Product 6: https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=600&q=80
+
+All images MUST have: loading="eager" and onerror fallback.
+NEVER use grayscale filters. NEVER use empty src="".
+
+═══════════════════════════════════════
+JAVASCRIPT (Alpine.js)
+═══════════════════════════════════════
+
+Include Alpine.js via CDN in <head>:
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+Use x-data for:
+- Cart drawer open/close toggle
+- Filter pill active state switching
+
+═══════════════════════════════════════
+SELF-CHECK BEFORE OUTPUT
+═══════════════════════════════════════
+
+□ index.html links base.css BEFORE style.css
+□ Navbar has store name, nav links, cart badge with count
+□ Hero has full-bleed image with gradient overlay
+□ 3 collection cards with images
+□ EXACTLY 6 products in 3-column grid (2 complete rows)
+□ Star ratings use SVG paths, NOT emoji
+□ All prices are realistic (never $0)
+□ Filter pills present with "All" active
+□ Cart drawer with Alpine.js toggle
+□ Every <img> has onerror fallback
+□ Footer with 3+ link columns
+□ Accent is gold #C9A84C, NEVER cyan/teal/purple
+□ Headings use Cormorant Garamond serif
+□ style.css is ONLY overrides (≤80 lines)

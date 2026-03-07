@@ -1,0 +1,9 @@
+# ═══════════════════════════════════════
+# ARCHETYPE 24: STARTUP / LAUNCH PAGE
+# ═══════════════════════════════════════
+
+PATH: A (Tailwind + Alpine)
+Use for: pre-launch startups, product waitlists, coming soon pages, crowdfunding campaigns.
+Theme: bg-zinc-950 or bg-white. Fonts: Space Grotesk + Inter. Accent: varies (pick bold).
+Rules: Conversion-focused. Email capture CTA above fold. Social proof (waitlist count, logos). Product screenshot/mockup. Simple, fast. Countdown timer if launching soon.
+MUST include: nav → hero with email capture → countdown timer → feature teaser grid → social proof counter → early access perks → FAQ → footer.

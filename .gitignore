@@ -70,5 +70,5 @@ eval/FAILURES_LOG.md
 flask_server.log
 *.log
 
-# Archetype examples (reference images, not source code)
-archetypes/
+# Archetype examples (reference images at root, not prompt archetypes)
+/archetypes/

@@ -571,3 +571,16 @@ guessing. Tour design will be driven by real friction points, not assumptions.
 - iteration_context now only injected into EngineerAgent, not DesignAgent
 - DALL-E prompt format restored to pre-Phase 14 quality
 - Character likenesses accurate again (FF7 Cloud/Barrett confirmed)
+
+---
+
+## Phase 20.1 — Visual Reference Input (🔴 Planned)
+- User attaches reference images (screenshots, mockups, inspiration) to prompt
+- Images forwarded to Planner + Engineer + Design agents as vision context
+- Gemini 2.5 Flash (Planner/Engineer) and GPT-4o (Design) both support vision input natively
+- Upload UI already exists from Phase 7F.1 — needs wiring to pipeline via multipart/form-data
+- Stored per-project per-version in assets/references/ folder
+- Planner describes reference in plan context so Engineer knows target style
+- Engineer receives images as inline Gemini vision parts to match layout/palette
+- Design Agent uses GPT-4o vision to analyze reference before generating DALL-E prompts
+- Backward compatible — builds without attachments work exactly as before

@@ -1,0 +1,904 @@
+/* ═══════════════════════════════════════════════════════════════
+   GAME / FAN PAGE — Design Kit (base.css)
+   FF8 cinematic aesthetic — dark, immersive, accent-driven
+   ═══════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Inter:wght@400;500&display=swap');
+
+/* ── Design Tokens ────────────────────────────────────────────── */
+:root {
+  --bg: #0a0a0f;
+  --surface-1: #0f0f16;
+  --surface-2: #161620;
+  --accent: #00B4C8;
+  --accent-rgb: 0, 180, 200;
+  --text: #e8e8e8;
+  --text-muted: #888;
+  --border: rgba(255, 255, 255, 0.07);
+  --font-display: 'Rajdhani', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Reset & Base ─────────────────────────────────────────────── */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ── Typography ───────────────────────────────────────────────── */
+h1, h2, h3, h4,
+.eyebrow, .section-title, .nav-link, .btn,
+.stat-label, .weapon-tag, .char-name, .card-title {
+  font-family: var(--font-display) !important;
+}
+
+.section-title {
+  font-size: clamp(3.5rem, 8vw, 6rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #ffffff;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.section-subtitle {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--text-muted);
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto 60px;
+  line-height: 1.7;
+}
+
+.eyebrow {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+/* ── Glass Navigation ─────────────────────────────────────────── */
+.glass-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  padding: 0 48px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(10, 10, 15, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+.glass-nav .nav-logo {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 20px rgba(var(--accent-rgb), 0.4);
+}
+
+.glass-nav .nav-links {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  list-style: none;
+}
+
+.glass-nav .nav-link {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+  transition: color var(--transition);
+  cursor: pointer;
+}
+
+.glass-nav .nav-link:hover,
+.glass-nav .nav-link.active {
+  color: #ffffff;
+}
+
+.glass-nav .nav-link.active {
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 2px;
+}
+
+/* ── Hero — Full-Bleed Cinematic ──────────────────────────────── */
+.hero-cinematic {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  min-height: 700px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.hero-bg-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  z-index: 0;
+}
+
+.hero-bg-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    rgba(10, 10, 15, 0.4) 0%,
+    rgba(10, 10, 15, 0.2) 30%,
+    rgba(10, 10, 15, 0.65) 70%,
+    rgba(10, 10, 15, 1) 100%
+  );
+  z-index: 1;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  max-width: 1100px;
+  padding: 0 48px;
+  margin: 0 auto;
+}
+
+.hero-eyebrow {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 20px;
+}
+
+.hero-title-name {
+  font-family: var(--font-display);
+  font-size: clamp(5rem, 12vw, 10rem);
+  font-weight: 700;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: #ffffff;
+  display: block;
+}
+
+.hero-title-numeral {
+  font-family: var(--font-display);
+  font-size: clamp(8rem, 22vw, 18rem);
+  font-weight: 700;
+  line-height: 0.8;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: block;
+  text-shadow:
+    0 0 60px rgba(var(--accent-rgb), 1),
+    0 0 120px rgba(var(--accent-rgb), 0.7),
+    0 0 200px rgba(var(--accent-rgb), 0.4);
+}
+
+.hero-subtitle {
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.6);
+  max-width: 560px;
+  margin: 24px auto 0;
+  line-height: 1.7;
+}
+
+/* ── Hero CTA Buttons ────────────────────────────────────────── */
+.hero-ctas {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 36px;
+}
+
+.btn-hero {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 16px 36px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--bg);
+  cursor: pointer;
+  transition: all var(--transition);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-hero:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(var(--accent-rgb), 0.4);
+}
+
+.btn-hero--outline {
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-hero--outline:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: none;
+}
+
+/* ── Scroll Indicator ─────────────────────────────────────────── */
+.scroll-indicator {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.scroll-indicator .mouse-icon {
+  width: 24px;
+  height: 36px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  position: relative;
+}
+
+.scroll-indicator .mouse-dot {
+  width: 4px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: scrollDot 1.8s ease infinite;
+}
+
+.scroll-indicator-text {
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* ── Section Wrapper ──────────────────────────────────────────── */
+.section-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 100px 48px;
+}
+
+.section-wrapper--wide {
+  max-width: 1400px;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+/* ── Character Cards ──────────────────────────────────────────── */
+.grid-characters {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+.character-card {
+  background: var(--surface-1);
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+}
+
+.character-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 60px rgba(var(--accent-rgb), 0.15);
+  border-color: rgba(var(--accent-rgb), 0.3);
+}
+
+.character-card .card-image {
+  width: 100%;
+  height: 320px;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.character-card .card-image-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
+.character-card .card-image-wrapper::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  background: linear-gradient(to top, var(--surface-1) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.character-card .card-body {
+  padding: 24px;
+}
+
+.character-card .char-name {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.character-card .char-role {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 16px;
+}
+
+.character-card .char-weapon {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+}
+
+.character-card .char-desc {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+/* ── Stat Bars ────────────────────────────────────────────────── */
+.stat-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stat-label {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  min-width: 60px;
+}
+
+.stat-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.stat-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 1s ease-out;
+  box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.4);
+}
+
+.stat-value {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--accent);
+  min-width: 30px;
+  text-align: right;
+}
+
+/* ── Weapons Showcase ─────────────────────────────────────────── */
+.weapons-showcase {
+  margin-bottom: 48px;
+}
+
+.weapons-banner {
+  width: 100%;
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 48px;
+  border: 1px solid var(--border);
+}
+
+.weapons-banner img {
+  width: 100%;
+  height: auto;
+  min-height: 280px;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── Weapon Cards ─────────────────────────────────────────────── */
+.grid-weapons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.weapon-card {
+  background: var(--surface-1);
+  border-radius: var(--radius);
+  padding: 28px;
+  border: 1px solid var(--border);
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.weapon-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(var(--accent-rgb), 0.1);
+  border-color: rgba(var(--accent-rgb), 0.25);
+}
+
+.weapon-card .weapon-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+
+.weapon-card .weapon-name {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.weapon-card .weapon-desc {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.weapon-tag,
+.weapon-type {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.1);
+  padding: 4px 12px;
+  border-radius: 4px;
+  display: inline-block;
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
+}
+
+.weapon-card .weapon-stats {
+  display: flex;
+  gap: 16px;
+  margin-top: auto;
+}
+
+.weapon-card .weapon-stat {
+  text-align: center;
+}
+
+.weapon-card .weapon-stat-value {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.weapon-card .weapon-stat-label {
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+/* ── World Map Showcase ──────────────────────────────────────── */
+.world-map-showcase {
+  margin-bottom: 48px;
+}
+
+.world-map-image {
+  width: 100%;
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 48px;
+  border: 1px solid var(--border);
+}
+
+.world-map-image img {
+  width: 100%;
+  height: auto;
+  min-height: 350px;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── Location Cards (World Map) ───────────────────────────────── */
+.grid-locations {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.location-card {
+  background: var(--surface-1);
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+}
+
+.location-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(var(--accent-rgb), 0.1);
+  border-color: rgba(var(--accent-rgb), 0.25);
+}
+
+.location-card .location-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.location-card .location-image-wrapper {
+  position: relative;
+}
+
+.location-card .location-image-wrapper::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 40%;
+  background: linear-gradient(to top, var(--surface-1), transparent);
+}
+
+.location-card .location-body {
+  padding: 24px;
+}
+
+.location-card .location-name {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.location-card .location-region {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  margin-bottom: 12px;
+}
+
+.location-card .location-desc {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* ── Lore Block ───────────────────────────────────────────────── */
+.lore-block {
+  background: var(--surface-1);
+  border-radius: var(--radius);
+  padding: 48px;
+  border: 1px solid var(--border);
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.lore-block .lore-title {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 20px;
+}
+
+.lore-block .lore-text {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--text-muted);
+  line-height: 1.8;
+}
+
+.lore-block .lore-text + .lore-text {
+  margin-top: 16px;
+}
+
+.lore-block .lore-divider {
+  width: 60px;
+  height: 2px;
+  background: var(--accent);
+  margin: 24px 0;
+  opacity: 0.6;
+}
+
+.lore-block blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 20px;
+  margin: 24px 0;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ── Noise Overlay ────────────────────────────────────────────── */
+.noise-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  mix-blend-mode: overlay;
+}
+
+/* ── Section Dividers ─────────────────────────────────────────── */
+.section-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(var(--accent-rgb), 0.3) 50%,
+    transparent 100%
+  );
+  margin: 0 auto;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────── */
+.btn-primary {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 14px 32px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: #ffffff;
+  cursor: pointer;
+  transition: all var(--transition);
+  border: 1px solid var(--border);
+}
+
+.btn-primary:hover {
+  background: var(--surface-1);
+  border-color: rgba(var(--accent-rgb), 0.3);
+  box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.15);
+  transform: translateY(-2px);
+}
+
+/* ── Footer ───────────────────────────────────────────────────── */
+.site-footer {
+  text-align: center;
+  padding: 48px;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+/* ── Animations ───────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scrollDot {
+  0% {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-50%) translateY(10px);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.1);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(var(--accent-rgb), 0.25);
+  }
+}
+
+/* ── Utility Classes ──────────────────────────────────────────── */
+.fade-up {
+  animation: fadeUp 0.6s ease-out both;
+}
+
+.fade-up-delay-1 { animation-delay: 0.1s; }
+.fade-up-delay-2 { animation-delay: 0.2s; }
+.fade-up-delay-3 { animation-delay: 0.3s; }
+
+/* ── Focus States (accessibility) ─────────────────────────────── */
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .grid-characters {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .section-wrapper {
+    padding: 80px 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  .grid-characters {
+    grid-template-columns: 1fr;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+  .grid-weapons {
+    grid-template-columns: 1fr;
+  }
+  .grid-locations {
+    grid-template-columns: 1fr;
+  }
+  .glass-nav {
+    padding: 0 24px;
+  }
+  .glass-nav .nav-links {
+    gap: 20px;
+  }
+  .glass-nav .nav-link {
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+  }
+  .section-wrapper {
+    padding: 60px 20px;
+  }
+  .hero-content {
+    padding: 0 24px;
+  }
+  .hero-title-name {
+    font-size: clamp(3rem, 10vw, 5rem);
+  }
+  .hero-title-numeral {
+    font-size: clamp(5rem, 18vw, 10rem);
+  }
+  .lore-block {
+    padding: 32px 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .glass-nav .nav-links {
+    gap: 12px;
+  }
+  .glass-nav .nav-link {
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+  }
+  .character-card .card-image {
+    height: 240px;
+  }
+  .section-title {
+    font-size: clamp(2.5rem, 10vw, 4rem);
+  }
+}

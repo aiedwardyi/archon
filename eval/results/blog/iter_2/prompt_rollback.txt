@@ -1,0 +1,57 @@
+# ═══════════════════════════════════════
+# ARCHETYPE 25: BLOG / PERSONAL
+# ═══════════════════════════════════════
+
+PATH: A (Tailwind + Alpine)
+Use for: personal blogs, newsletters, thought leadership, writer portfolios, indie publications.
+Theme: Elegant, content-focused, and highly readable.
+Fonts:
+  - Headings: `Instrument Serif` (display serif, `font-weight: 700` for H1, `600` for H2/H3). Use `font-feature-settings: "liga", "clig", "kern";` for enhanced legibility.
+  - Body: `Inter` (sans-serif, `font-weight: 400` for prose, `500` for metadata).
+Accent:
+  - Light Theme: Primary accent `#0F766E` (deep teal), Secondary accent `#D97706` (amber-600).
+  - Dark Theme: Primary accent `#34D399` (emerald-400), Secondary accent `#FBBF24` (amber-400).
+Rules:
+  - **Content-first:** Prioritize readability and clear presentation of text and images.
+  - **Typography Precision:**
+    - Main hero title (`H1`): `text-5xl` to `text-6xl` on desktop, `font-weight: 700`, `line-height: 1.1`.
+    - Section titles (`H2`): `text-3xl` to `text-4xl`, `font-weight: 600`, `line-height: 1.25`.
+    - Body prose: `text-lg`, `line-height: 1.75`, `max-w-prose` (`max-w-2xl` equivalent) for optimal reading width.
+    - Metadata (author, date, read time): `text-sm`, `font-weight: 500`, `text-gray-600` (light) / `text-gray-400` (dark).
+    - "FEATURED ARTICLE" tag: `text-xs` (uppercase, `letter-spacing: 0.05em`), `font-weight: 600`, in accent color.
+  - **Color System:**
+    - Light Theme: `bg-[#FDFBF9]`, `text-[#1A1A1A]`, secondary text `text-[#6B7280]`, subtle borders `border-[#E5E7EB]`.
+    - Dark Theme: `bg-[#1A1A1A]`, `text-[#FDFBF9]`, secondary text `text-[#9CA3AF]`, subtle borders `border-[#374151]`.
+    - Buttons and interactive elements use the primary accent color. Category tags use secondary accent color.
+  - **Depth & Polish:**
+    - Article cards and newsletter signup block MUST have `border-radius: 0.75rem` (`rounded-xl`).
+    - Use subtle `shadow-md` on cards and interactive elements.
+    - Hero section should have a subtle background image with a `linear-gradient` overlay for text contrast, or a `backdrop-filter: blur(8px)` on the text container if a full image is behind it.
+  - **Layout Precision:**
+    - Main content wrapper `max-w-screen-xl` (`1280px`) with `px-4` or `px-8` horizontal padding.
+    - Sections separated by `py-20` or `py-24`.
+    - Article grid `grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8`.
+    - Author bio text block should have a `max-w-3xl` width, centered, to avoid awkward narrowness.
+  - **Interactivity Cues:**
+    - All buttons and links MUST have distinct `hover:bg-opacity-80` or `hover:shadow-lg hover:translate-y-[-2px]` effects with `transition-all duration-200 ease-in-out`.
+    - Article cards MUST have a subtle `hover:shadow-xl hover:scale-[1.01]` effect.
+    - Dark/light toggle MUST be present and functional, with a smooth transition.
+  - **Anti-patterns to eliminate:**
+    - NEVER use generic purple/blue gradients for accents.
+    - NEVER use "Article Thumbnail" as image placeholders. All images MUST be unique and relevant.
+    - NO hard-to-read text due to insufficient contrast.
+    - AVOID flat, lifeless layouts. Add subtle depth.
+MUST include:
+  - **Minimal Navigation:** Top-right, with `Home`, `Categories`, `About` links, and a functional dark/light mode toggle (sun/moon icon).
+  - **Featured Post Hero Section:** Prominent, full-width or near full-width, with a large title, concise description, author, date, read time, category tag, and a clear "Read More" button. Background image relevant to the article.
+  - **Recent Posts Grid (6-9 posts):** A visually appealing grid of article cards. Each card MUST include:
+    - High-quality, relevant image (aspect ratio 16:9 or 4:3, `rounded-lg`).
+    - Category tag (using secondary accent color).
+    - Descriptive title (min 5 words).
+    - Short excerpt (2-3 lines).
+    - Author, date, read time.
+    - "Read More" link.
+  - **Explore Topics Section:** A horizontal scrollable list of category pills/buttons.
+  - **Newsletter Signup Block:** A visually distinct section with a compelling headline, brief description, email input field (`placeholder="Enter your email"`), and a primary accent-colored "Subscribe" button. Include a relevant, high-quality image or illustration.
+  - **Author Bio Section:** Centered, with a professional circular avatar image (NOT initials), author's name, and a 3-4 sentence descriptive bio.
+  - **Minimal Footer:** Copyright, Privacy Policy, Terms of Service links.

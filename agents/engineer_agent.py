@@ -1,5 +1,6 @@
 ﻿from __future__ import annotations
 
+import base64
 import json
 import os
 import re
@@ -20,6 +21,28 @@ from schemas.engineering_schema import EngineeringResult, FileArtifact
 from utils.offline_engineer_scaffold import build_vite_react_ts_scaffold
 
 PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
+
+# Map similar archetypes to a shared design kit
+DESIGN_KIT_ALIASES = {
+    "ai_product": "saas_landing",
+    "dev_tool": "saas_landing",
+    "productivity_app": "saas_landing",
+    "game_companion": "game",
+    "fan_page": "game",
+    "game_ff7": "game",
+    "game_ff8": "game",
+    "game_ff9": "game",
+    "interactive_experience": "game",
+    "admin_panel": "dashboard",
+    "analytics": "dashboard",
+    "crm": "dashboard",
+    "online_store": "ecommerce",
+    "marketplace": "ecommerce",
+    "shop": "ecommerce",
+    "agency": "portfolio",
+    "personal_site": "portfolio",
+    "freelancer": "portfolio",
+}
 
 
 def _is_offline_mode() -> bool:
@@ -145,10 +168,45 @@ def _repair_json(raw: str) -> dict:
 
 _ENGINEER_MAX_RETRIES = 5
 
+_IMG_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
-def _run_claude(contents: str) -> EngineeringResult:
+
+def _load_reference_images(kit_archetype: str) -> list[tuple[str, bytes, str]]:
+    """Load reference images for an archetype.
+    Returns list of (filename, raw_bytes, mime_type)."""
+    refs_dir = PROMPTS_DIR / "archetypes" / "references" / kit_archetype
+    if not refs_dir.exists():
+        return []
+    images = []
+    for img_path in sorted(refs_dir.iterdir()):
+        if img_path.suffix.lower() in _IMG_EXTENSIONS:
+            mime = {
+                ".png": "image/png", ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg", ".webp": "image/webp",
+                ".gif": "image/gif",
+            }[img_path.suffix.lower()]
+            images.append((img_path.name, img_path.read_bytes(), mime))
+    return images
+
+
+def _run_claude(contents: str, ref_images: list[tuple[str, bytes, str]] | None = None) -> EngineeringResult:
     import anthropic
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+
+    # Build multimodal content if reference images provided
+    message_content: list | str = contents
+    if ref_images:
+        message_content = []
+        message_content.append({"type": "text", "text": contents})
+        message_content.append({"type": "text", "text": "\n\n--- REFERENCE SCREENSHOTS (match this quality and layout) ---"})
+        for filename, img_bytes, mime in ref_images:
+            message_content.append({
+                "type": "image",
+                "source": {"type": "base64", "media_type": mime, "data": base64.b64encode(img_bytes).decode()},
+            })
+            message_content.append({"type": "text", "text": f"[Reference: {filename}]"})
+        message_content.append({"type": "text", "text": "--- END REFERENCE SCREENSHOTS ---\nStudy these references carefully. Match the layout structure, visual density, and polish level shown above."})
+
     last_err = None
     for attempt in range(_ENGINEER_MAX_RETRIES):
         if attempt > 0:
@@ -161,7 +219,7 @@ def _run_claude(contents: str) -> EngineeringResult:
             with client.messages.stream(
                 model="claude-opus-4-6",
                 max_tokens=64000,
-                messages=[{"role": "user", "content": contents}],
+                messages=[{"role": "user", "content": message_content}],
             ) as stream:
                 for text in stream.text_stream:
                     raw += text
@@ -204,7 +262,7 @@ def _validate_parsed_result(parsed: object) -> EngineeringResult:
     return parsed
 
 
-def _run_gemini(client: genai.Client, contents: str) -> EngineeringResult:
+def _run_gemini(client: genai.Client, contents: str, ref_images: list[tuple[str, bytes, str]] | None = None) -> EngineeringResult:
     last_err = None
     for attempt in range(_ENGINEER_MAX_RETRIES):
         if attempt > 0:
@@ -214,9 +272,21 @@ def _run_gemini(client: genai.Client, contents: str) -> EngineeringResult:
             print(f"EngineerAgent: retry {attempt}/{_ENGINEER_MAX_RETRIES}")
 
         try:
+            # Build multimodal content if reference images provided
+            gemini_contents = contents
+            if ref_images:
+                from google.genai import types
+                parts = [types.Part.from_text(text=contents)]
+                parts.append(types.Part.from_text(text="\n\n--- REFERENCE SCREENSHOTS (match this quality and layout) ---"))
+                for filename, img_bytes, mime in ref_images:
+                    parts.append(types.Part.from_bytes(data=img_bytes, mime_type=mime))
+                    parts.append(types.Part.from_text(text=f"[Reference: {filename}]"))
+                parts.append(types.Part.from_text(text="--- END REFERENCE SCREENSHOTS ---\nStudy these references carefully. Match the layout structure, visual density, and polish level shown above."))
+                gemini_contents = parts
+
             response = client.models.generate_content(
                 model="gemini-2.5-flash",
-                contents=contents,
+                contents=gemini_contents,
                 config={
                     "response_mime_type": "application/json",
                     "response_schema": EngineeringResult,
@@ -264,6 +334,111 @@ def _run_gemini(client: genai.Client, contents: str) -> EngineeringResult:
     ) from last_err
 
 
+def _dedup_style_css(base_css: str, style_css: str) -> str:
+    """Remove top-level CSS blocks from style_css that duplicate base.css."""
+    try:
+        # Extract top-level selectors from base.css
+        base_selectors: set[str] = set()
+        for m in re.finditer(r'^([^{@/\n][^{]*?)\s*\{', base_css, re.MULTILINE):
+            sel = m.group(1).strip()
+            if sel:
+                base_selectors.add(sel)
+
+        # Always-remove patterns (resets / variables that belong in base.css)
+        always_remove = re.compile(
+            r'^(?:'
+            r':root'
+            r'|\*\s*,\s*\*::before'
+            r'|\*::before'
+            r'|\*\s*\{'          # bare * reset
+            r'|html\s*[,{]'
+            r'|body\s*[,{]'
+            r'|a\s*[,{]'
+            r'|img\s*[,{]'
+            r')',
+            re.MULTILINE,
+        )
+
+        # Detect fonts already imported in base.css
+        base_fonts: set[str] = set()
+        for m in re.finditer(r'@import\s+url\(["\']?([^"\')\s]+)', base_css):
+            base_fonts.add(m.group(1))
+
+        # Split style_css into top-level blocks (selector { ... })
+        # We walk character by character to handle nested braces
+        blocks: list[tuple[str, str]] = []  # (raw_block_text, selector)
+        i = 0
+        length = len(style_css)
+        while i < length:
+            # Skip whitespace / comments between blocks
+            start = i
+            while i < length and style_css[i] in ' \t\n\r':
+                i += 1
+            if i >= length:
+                break
+
+            # Check for @import line
+            if style_css[i:i+7] == '@import':
+                end = style_css.find(';', i)
+                if end == -1:
+                    end = length
+                raw = style_css[start:end+1]
+                blocks.append((raw, style_css[i:end+1].strip()))
+                i = end + 1
+                continue
+
+            # Find opening brace
+            brace = style_css.find('{', i)
+            if brace == -1:
+                # Remaining text (no more blocks)
+                blocks.append((style_css[start:], ''))
+                break
+
+            selector = style_css[i:brace].strip()
+            # Walk to matching closing brace
+            depth = 1
+            j = brace + 1
+            while j < length and depth > 0:
+                if style_css[j] == '{':
+                    depth += 1
+                elif style_css[j] == '}':
+                    depth -= 1
+                j += 1
+            raw = style_css[start:j]
+            blocks.append((raw, selector))
+            i = j
+
+        # Filter blocks
+        kept: list[str] = []
+        for raw, selector in blocks:
+            if not selector and not raw.strip():
+                continue
+
+            # Remove @import for fonts already in base.css
+            if selector.startswith('@import'):
+                is_dup_font = False
+                for font_url in base_fonts:
+                    if font_url in selector:
+                        is_dup_font = True
+                        break
+                if is_dup_font:
+                    continue
+
+            # Remove always-remove patterns
+            if always_remove.match(selector):
+                continue
+
+            # Remove blocks whose selector exactly matches a base.css selector
+            if selector in base_selectors:
+                continue
+
+            kept.append(raw)
+
+        return '\n'.join(kept).strip() + '\n' if kept else style_css
+    except Exception:
+        return style_css
+
+
 class EngineerAgent:
     def __init__(self, client: genai.Client | None):
         self.client = client
@@ -278,7 +453,21 @@ class EngineerAgent:
         if _is_offline_mode() or str(task.id).startswith("OFFLINE-"):
             return _build_offline_engineering_result(task_id=str(task.id))
 
-        prompt = (PROMPTS_DIR / "engineer.txt").read_text(encoding="utf-8")
+        archetype = task.ui_archetype
+        kit_archetype = DESIGN_KIT_ALIASES.get(archetype, archetype)
+        archetypes_dir = PROMPTS_DIR / "archetypes"
+        archetype_txt = archetypes_dir / f"{kit_archetype}.txt" if kit_archetype else None
+        archetype_css = archetypes_dir / f"{kit_archetype}.css" if kit_archetype else None
+
+        if archetype_txt and archetype_txt.exists():
+            prompt = (PROMPTS_DIR / "engineer_core.txt").read_text(encoding="utf-8")
+            prompt += "\n\n" + archetype_txt.read_text(encoding="utf-8")
+        else:
+            prompt = (PROMPTS_DIR / "engineer.txt").read_text(encoding="utf-8")
+
+        css_kit_content = None
+        if archetype_css and archetype_css.exists():
+            css_kit_content = archetype_css.read_text(encoding="utf-8")
 
         user_context = ""
         if user_prompt:
@@ -349,13 +538,42 @@ class EngineerAgent:
             f"--- TASK END ---"
         )
 
-        # Primary: Claude Opus 4.6
-        if os.environ.get("ANTHROPIC_API_KEY"):
-            return _run_claude(contents)
+        # Load reference images for this archetype (if available, initial build only)
+        ref_images = []
+        if kit_archetype and not existing_code:
+            ref_images = _load_reference_images(kit_archetype)
+            if ref_images:
+                print(f"EngineerAgent: loaded {len(ref_images)} reference images for '{kit_archetype}'")
 
-        # Fallback: Gemini 2.5 Flash (if no Anthropic key)
-        if self.client is None:
-            raise RuntimeError("EngineerAgent: no API client available")
+        # Model selection via ENGINEER_MODEL env var
+        # Options: "gemini" (default), "claude", "openai"
+        model_choice = os.getenv("ENGINEER_MODEL", "gemini").lower().strip()
 
-        return _run_gemini(self.client, contents)
+        if model_choice == "claude":
+            result = _run_claude(contents, ref_images=ref_images or None)
+        else:
+            # Default: Gemini 2.5 Flash (Vertex AI)
+            if self.client is None:
+                from utils.genai_client import get_genai_client
+                self.client = get_genai_client()
+            result = _run_gemini(self.client, contents, ref_images=ref_images or None)
+
+        # Inject design kit CSS as a file artifact (initial build only)
+        if css_kit_content and not existing_code:
+            result.files.insert(0, FileArtifact(
+                path="src/base.css",
+                content=css_kit_content,
+            ))
+
+            # Deduplicate style.css against base.css
+            for f in result.files:
+                if f.path == "src/style.css":
+                    original_len = len(f.content)
+                    f.content = _dedup_style_css(css_kit_content, f.content)
+                    new_len = len(f.content)
+                    if new_len < original_len:
+                        print(f"EngineerAgent: dedup style.css {original_len} -> {new_len} chars (-{original_len - new_len})")
+                    break
+
+        return result
 

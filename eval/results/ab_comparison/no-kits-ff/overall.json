@@ -1,0 +1,106 @@
+{
+  "label": "no-kits-ff",
+  "timestamp": "2026-03-07T16:09:34.939258",
+  "elapsed_seconds": 736,
+  "archetypes": {
+    "game_ff7": {
+      "archetype": "game_ff7",
+      "builds_attempted": 1,
+      "builds_succeeded": 1,
+      "scores": [
+        88.5
+      ],
+      "average": 88.5,
+      "best": 88.5,
+      "worst": 88.5,
+      "all_builds": [
+        {
+          "archetype": "game_ff7",
+          "num_runs": 1,
+          "individual_totals": [
+            88.5
+          ],
+          "averaged_scores": {
+            "visual_hierarchy": 9.0,
+            "typography": 9.0,
+            "color_system": 9.0,
+            "layout_precision": 9.0,
+            "depth_polish": 8.0,
+            "data_completeness": 9.0,
+            "interactivity_cues": 8.0,
+            "overall_impression": 9.0
+          },
+          "averaged_total": 88.5,
+          "build": 1,
+          "project_id": 115
+        }
+      ]
+    },
+    "game_ff8": {
+      "archetype": "game_ff8",
+      "builds_attempted": 1,
+      "builds_succeeded": 1,
+      "scores": [
+        78.5
+      ],
+      "average": 78.5,
+      "best": 78.5,
+      "worst": 78.5,
+      "all_builds": [
+        {
+          "archetype": "game_ff8",
+          "num_runs": 1,
+          "individual_totals": [
+            78.5
+          ],
+          "averaged_scores": {
+            "visual_hierarchy": 8.0,
+            "typography": 9.0,
+            "color_system": 8.0,
+            "layout_precision": 8.0,
+            "depth_polish": 7.0,
+            "data_completeness": 8.0,
+            "interactivity_cues": 7.0,
+            "overall_impression": 7.0
+          },
+          "averaged_total": 78.5,
+          "build": 1,
+          "project_id": 116
+        }
+      ]
+    },
+    "game_ff9": {
+      "archetype": "game_ff9",
+      "builds_attempted": 1,
+      "builds_succeeded": 1,
+      "scores": [
+        79.0
+      ],
+      "average": 79.0,
+      "best": 79.0,
+      "worst": 79.0,
+      "all_builds": [
+        {
+          "archetype": "game_ff9",
+          "num_runs": 1,
+          "individual_totals": [
+            79.0
+          ],
+          "averaged_scores": {
+            "visual_hierarchy": 8.0,
+            "typography": 8.0,
+            "color_system": 8.0,
+            "layout_precision": 8.0,
+            "depth_polish": 7.0,
+            "data_completeness": 9.0,
+            "interactivity_cues": 6.0,
+            "overall_impression": 8.0
+          },
+          "averaged_total": 79.0,
+          "build": 1,
+          "project_id": 117
+        }
+      ]
+    }
+  }
+}

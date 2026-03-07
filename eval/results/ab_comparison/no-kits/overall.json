@@ -1,0 +1,331 @@
+{
+  "label": "no-kits",
+  "timestamp": "2026-03-07T14:15:16.084934",
+  "elapsed_seconds": 3177,
+  "archetypes": {
+    "dashboard": {
+      "archetype": "dashboard",
+      "builds_attempted": 3,
+      "builds_succeeded": 3,
+      "scores": [
+        77.5,
+        73.4,
+        65.9
+      ],
+      "average": 72.3,
+      "best": 77.5,
+      "worst": 65.9,
+      "all_builds": [
+        {
+          "archetype": "dashboard",
+          "num_runs": 3,
+          "individual_totals": [
+            79.0,
+            79.0,
+            74.0
+          ],
+          "averaged_scores": {
+            "visual_hierarchy": 8.0,
+            "typography": 7.7,
+            "color_system": 7.7,
+            "layout_precision": 7.7,
+            "depth_polish": 6.7,
+            "data_completeness": 9.7,
+            "interactivity_cues": 7.0,
+            "overall_impression": 7.3
+          },
+          "averaged_total": 77.5,
+          "build": 1,
+          "project_id": 100
+        },
+        {
+          "archetype": "dashboard",
+          "num_runs": 3,
+          "individual_totals": [
+            75.5,
+            75.5,
+            69.0
+          ],
+          "averaged_scores": {
+            "visual_hierarchy": 8.0,
+            "typography": 7.7,
+            "color_system": 8.3,
+            "layout_precision": 8.3,
+            "depth_polish": 7.7,
+            "data_completeness": 3.7,
+            "interactivity_cues": 7.0,
+            "overall_impression": 6.7
+          },
+          "averaged_total": 73.4,
+          "build": 2,
+          "project_id": 101
+        },
+        {
+          "archetype": "dashboard",
+          "num_runs": 3,
+          "individual_totals": [
+            57.5,
+            75.0,
+            65.0
+          ],
+          "averaged_scores": {
+            "visual_hierarchy": 7.0,
+            "typography": 6.3,
+            "color_system": 6.7,
+            "layout_precision": 6.7,
+            "depth_polish": 5.0,
+            "data_completeness": 9.0,
+            "interactivity_cues": 5.7,
+            "overall_impression": 6.0
+          },
+          "averaged_total": 65.9,
+          "build": 3,
+          "project_id": 102
+        }
+      ]
+    },
+    "saas_landing": {
+      "archetype": "saas_landing",
+      "builds_attempted": 3,
+      "builds_succeeded": 3,
+      "scores": [
+        73.8,
+        72.5,
+        11.8
+      ],
+      "average": 52.7,
+      "best": 73.8,
+      "worst": 11.8,
+      "all_builds": [
+        {
+          "archetype": "saas_landing",
+          "num_runs": 3,
+          "individual_totals": [
+            74.5,
+            69.5,
+            76.5
+          ],
+          "averaged_scores": {
+            "visual_hierarchy": 7.7,
+            "typography": 6.7,
+            "color_system": 7.7,
+            "layout_precision": 7.7,
+            "depth_polish": 6.7,
+            "data_completeness": 9.0,
+            "interactivity_cues": 6.7,
+            "overall_impression": 6.7
+          },
+          "averaged_total": 73.8,
+          "build": 1,
+          "project_id": 103
+        },
+        {
+          "archetype": "saas_landing",
+          "num_runs": 3,
+          "individual_totals": [
+            72.0,
+            71.5,
+            73.5
+          ],
+          "averaged_scores": {
+            "visual_hierarchy": 7.7,
+            "typography": 7.0,
+            "color_system": 7.0,
+            "layout_precision": 8.0,
+            "depth_polish": 6.0,
+            "data_completeness": 8.7,
+            "interactivity_cues": 6.3,
+            "overall_impression": 6.7
+          },
+          "averaged_total": 72.5,
+          "build": 2,
+          "project_id": 104
+        },
+        {
+          "archetype": "saas_landing",
+          "num_runs": 3,
+          "individual_totals": [
+            12.5,
+            12.5,
+            10.0
+          ],
+          "averaged_scores": {
+            "visual_hierarchy": 1.0,
+            "typography": 1.0,
+            "color_system": 1.7,
+            "layout_precision": 1.0,
+            "depth_polish": 1.7,
+            "data_completeness": 1.0,
+            "interactivity_cues": 1.0,
+            "overall_impression": 1.0
+          },
+          "averaged_total": 11.8,
+          "build": 3,
+          "project_id": 105
+        }
+      ]
+    },
+    "ecommerce": {
+      "archetype": "ecommerce",
+      "builds_attempted": 3,
+      "builds_succeeded": 3,
+      "scores": [
+        52.7,
+        86.2,
+        83.7
+      ],
+      "average": 74.2,
+      "best": 86.2,
+      "worst": 52.7,
+      "all_builds": [
+        {
+          "archetype": "ecommerce",
+          "num_runs": 3,
+          "individual_totals": [
+            61.0,
+            46.5,
+            50.5
+          ],
+          "averaged_scores": {
+            "visual_hierarchy": 5.7,
+            "typography": 7.0,
+            "color_system": 6.3,
+            "layout_precision": 4.3,
+            "depth_polish": 5.7,
+            "data_completeness": 2.7,
+            "interactivity_cues": 5.7,
+            "overall_impression": 4.3
+          },
+          "averaged_total": 52.7,
+          "build": 1,
+          "project_id": 106
+        },
+        {
+          "archetype": "ecommerce",
+          "num_runs": 3,
+          "individual_totals": [
+            85.0,
+            88.5,
+            85.0
+          ],
+          "averaged_scores": {
+            "visual_hierarchy": 8.3,
+            "typography": 8.3,
+            "color_system": 9.0,
+            "layout_precision": 8.7,
+            "depth_polish": 8.0,
+            "data_completeness": 9.7,
+            "interactivity_cues": 8.0,
+            "overall_impression": 8.7
+          },
+          "averaged_total": 86.2,
+          "build": 2,
+          "project_id": 107
+        },
+        {
+          "archetype": "ecommerce",
+          "num_runs": 3,
+          "individual_totals": [
+            83.5,
+            84.5,
+            83.5
+          ],
+          "averaged_scores": {
+            "visual_hierarchy": 8.3,
+            "typography": 8.7,
+            "color_system": 9.0,
+            "layout_precision": 8.3,
+            "depth_polish": 7.3,
+            "data_completeness": 9.3,
+            "interactivity_cues": 7.3,
+            "overall_impression": 8.0
+          },
+          "averaged_total": 83.7,
+          "build": 3,
+          "project_id": 108
+        }
+      ]
+    },
+    "portfolio": {
+      "archetype": "portfolio",
+      "builds_attempted": 3,
+      "builds_succeeded": 3,
+      "scores": [
+        85.2,
+        71.4,
+        82.6
+      ],
+      "average": 79.7,
+      "best": 85.2,
+      "worst": 71.4,
+      "all_builds": [
+        {
+          "archetype": "portfolio",
+          "num_runs": 3,
+          "individual_totals": [
+            85.0,
+            85.0,
+            85.5
+          ],
+          "averaged_scores": {
+            "visual_hierarchy": 8.3,
+            "typography": 9.0,
+            "color_system": 9.0,
+            "layout_precision": 8.0,
+            "depth_polish": 8.0,
+            "data_completeness": 8.7,
+            "interactivity_cues": 7.0,
+            "overall_impression": 9.0
+          },
+          "averaged_total": 85.2,
+          "build": 1,
+          "project_id": 109
+        },
+        {
+          "archetype": "portfolio",
+          "num_runs": 3,
+          "individual_totals": [
+            81.0,
+            73.0,
+            60.0
+          ],
+          "averaged_scores": {
+            "visual_hierarchy": 7.0,
+            "typography": 7.7,
+            "color_system": 7.3,
+            "layout_precision": 6.7,
+            "depth_polish": 6.3,
+            "data_completeness": 9.0,
+            "interactivity_cues": 6.0,
+            "overall_impression": 6.7
+          },
+          "averaged_total": 71.4,
+          "build": 2,
+          "project_id": 110
+        },
+        {
+          "archetype": "portfolio",
+          "num_runs": 3,
+          "individual_totals": [
+            83.5,
+            82.5,
+            81.5
+          ],
+          "averaged_scores": {
+            "visual_hierarchy": 8.0,
+            "typography": 9.0,
+            "color_system": 8.0,
+            "layout_precision": 8.0,
+            "depth_polish": 7.7,
+            "data_completeness": 9.0,
+            "interactivity_cues": 6.7,
+            "overall_impression": 8.7
+          },
+          "averaged_total": 82.6,
+          "build": 3,
+          "project_id": 111
+        }
+      ]
+    }
+  }
+}

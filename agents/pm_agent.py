@@ -1,9 +1,9 @@
-﻿from __future__ import annotations
-import os
+from __future__ import annotations
 import json as _json
 from datetime import datetime, timezone
-from openai import OpenAI
+from google import genai
 from schemas.prd_schema import PRD, PRDArtifact
+from utils.genai_retry import call_with_retry
 
 
 def _utc_now_iso() -> str:
@@ -36,12 +36,12 @@ For regenerate_images: set False when the request is about layout, text, spacing
 
 CLASSIFY_SYSTEM = (
     "You are Archon, an AI app-building assistant. Classify the user message as BUILD or CHAT.\n\n"
-    "CHAT â€” reply with advice for ANY of these:\n"
+    "CHAT \u2014 reply with advice for ANY of these:\n"
     "- Any question (what, how, which, should, can, is, why, where, do you think, would you, could you help)\n"
     "- Asks for opinion, recommendation, or feedback\n"
     "- Greetings or general conversation\n"
     "- Hypothetical or exploratory (what if, would it be better, do you think X would...)\n\n"
-    "BUILD â€” ONLY if the message is a direct imperative instruction with no question mark:\n"
+    "BUILD \u2014 ONLY if the message is a direct imperative instruction with no question mark:\n"
     "- Starts with or is clearly a command: build, create, make, add, fix, update, redesign\n"
     "- Example BUILD: 'add a login page', 'build me a dashboard', 'fix the navbar'\n"
     "- Example CHAT: 'do you think adding a chatbox would help?', 'should I add dark mode?', 'would a sidebar be better?'\n\n"
@@ -53,16 +53,26 @@ CLASSIFY_SYSTEM = (
     "IMPORTANT: When in doubt, default to CHAT. Only BUILD when you are 100% certain it is a direct imperative command."
 )
 
+# Pydantic model for classify_intent structured output
+from pydantic import BaseModel, Field
+from typing import Optional
+
+class ClassifyResult(BaseModel):
+    type: str = Field(..., description="Either 'build' or 'chat'")
+    message: Optional[str] = Field(None, description="Chat response message (only for chat type)")
+
 
 class PMAgent:
-    def __init__(self, api_key: str | None = None):
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        if not self.api_key:
-            raise ValueError(
-                "OpenAI API key required. Set OPENAI_API_KEY environment variable "
-                "or pass api_key parameter."
-            )
-        self.client = OpenAI(api_key=self.api_key)
+    def __init__(self, client: genai.Client | None = None, api_key: str | None = None):
+        if client is not None:
+            self.client = client
+        else:
+            # Auto-create client from env vars
+            import sys
+            from pathlib import Path
+            sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+            from utils.genai_client import get_genai_client
+            self.client = get_genai_client()
 
     def classify_intent(self, user_message: str, project_context: str = None) -> dict:
         """
@@ -72,46 +82,69 @@ class PMAgent:
         system = CLASSIFY_SYSTEM
         if project_context:
             system += f"\n\nCURRENT PROJECT CONTEXT (use this to give specific advice):\n{project_context}"
-        response = self.client.chat.completions.create(
-            model="gpt-4o-mini",
-            response_format={"type": "json_object"},
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": user_message},
-            ],
-            temperature=0.1,
-            max_tokens=300,
-        )
-        raw = response.choices[0].message.content.strip()
+
+        contents = f"{system}\n\nUser message: {user_message}"
+
+        def _call():
+            return self.client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=contents,
+                config={
+                    "response_mime_type": "application/json",
+                    "response_schema": ClassifyResult,
+                    "temperature": 0.1,
+                    "max_output_tokens": 300,
+                },
+            )
+
+        response = call_with_retry(_call, max_retries=2)
 
         print(f"[CLASSIFY] Input: {user_message[:80]!r}", flush=True)
-        print(f"[CLASSIFY] Raw response: {raw}", flush=True)
 
+        if response.parsed is not None:
+            result = response.parsed.model_dump()
+            # Remove None message for build type
+            if result.get("message") is None:
+                result.pop("message", None)
+            print(f"[CLASSIFY] Result: {result}", flush=True)
+            return result
+
+        # Fallback: try parsing raw text
+        raw = response.text.strip() if response.text else ""
+        print(f"[CLASSIFY] Raw response: {raw}", flush=True)
         try:
             return _json.loads(raw)
         except Exception:
             print("[CLASSIFY] JSON parse failed, defaulting to chat", flush=True)
             return {
                 "type": "chat",
-                "message": "I'm not sure I understood that â€” could you rephrase?"
+                "message": "I'm not sure I understood that \u2014 could you rephrase?"
             }
 
     def generate_prd(self, user_requirements: str) -> PRDArtifact:
-        response = self.client.beta.chat.completions.parse(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": f"Client requirements:\n\n{user_requirements}"}
-            ],
-            response_format=PRD,
-            temperature=0.2,
-        )
-        prd = response.choices[0].message.parsed
-        return PRDArtifact(
-            prd=prd,
-            created_at=_utc_now_iso(),
-        )
+        contents = f"{SYSTEM_PROMPT}\n\nClient requirements:\n\n{user_requirements}"
 
+        def _call():
+            return self.client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=contents,
+                config={
+                    "response_mime_type": "application/json",
+                    "response_schema": PRD,
+                    "temperature": 0.2,
+                },
+            )
 
+        for parse_attempt in range(3):
+            response = call_with_retry(_call, max_retries=2)
+            if response.parsed is not None:
+                prd = response.parsed
+                return PRDArtifact(
+                    prd=prd,
+                    created_at=_utc_now_iso(),
+                )
+            if parse_attempt < 2:
+                print(f"PMAgent: schema parse failed, retrying (attempt {parse_attempt + 1}/3)...")
+                import time; time.sleep(1)
 
-
+        raise RuntimeError("PM Agent could not produce a valid PRD after 3 attempts. Please try rephrasing your request.")
