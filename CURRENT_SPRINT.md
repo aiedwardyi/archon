@@ -26,9 +26,23 @@ Automated design quality optimization pipeline:
 - Rollback logic prevents score regression
 - Current best scores: Dashboard 82/100, Game 75/100, SaaS Landing 72/100
 
+## Phase 20.1 — Visual Reference Input (🔧 Planned)
+
+Attach images (screenshots, mockups, inspiration) to prompts so AI agents can reference them during builds.
+Upload UI exists (Phase 7F.1) but pipeline currently ignores attachments.
+
+- 🔴 Backend: Accept uploaded images via /iterate endpoint, store in project assets folder
+- 🔴 Orchestrator: Pass reference_images list through pipeline context to all agents
+- 🔴 Planner Agent: Use Gemini vision to describe reference images, include in plan context
+- 🔴 Engineer Agent: Pass reference images as Gemini vision input, match style/layout/palette
+- 🔴 Design Agent: Analyze reference images via GPT-4o vision to influence DALL-E prompts
+- 🔴 Frontend (all 3): Wire existing drag-and-drop to send files as multipart/form-data with build request
+- 🔴 Chat UI: Show image thumbnails inline in conversation thread
+
 ## Up Next
 
 | Phase | Description |
 |-------|-------------|
 | 18 | Unified Auth + Plan-Based UI Routing |
 | 19 | Product Tour + Onboarding Walkthrough |
+| 20.1 | Visual Reference Input — image attachments forwarded to pipeline agents |
