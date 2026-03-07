@@ -255,3 +255,30 @@ PRIMARY ACTION: "fill out / submit information"
   -> KEYWORDS: form, survey, quiz, wizard, onboarding, checkout, registration, apply, booking, reservation
 
 GLOBAL ZERO-VALUE BAN (applies to ALL archetypes): NEVER render "0", "0%", "0 users", "$0" (except intentionally free tiers), or any zero-value placeholder as a metric, stat, counter, or data point anywhere on the page. ALL numbers displayed to users MUST be realistic, non-zero, positive values. Hardcode realistic sample data: user counts in thousands, percentages above 80%, revenue in realistic ranges, ratings 4.5+. If any visible metric shows a bare "0" value, the entire page scores 0/10 on data_completeness. This is the single most common scoring failure — treat it as a critical defect.
+
+COMMON SCORE-KILLERS (real failures from production evals — avoid ALL of these):
+  1. System fonts (Arial, Times, sans-serif) instead of loaded Google Fonts — kills typography score
+  2. Random purple/blue gradient — the default AI color palette. Use domain-appropriate colors from quality_target
+  3. Empty placeholder sections (gray boxes, "coming soon", skeleton outlines) — kills data completeness
+  4. Cards with no hover states — kills interactivity and polish scores
+  5. Flat navbar with no glassmorphism/backdrop-blur on dark themes — kills polish score
+  6. Only 1-2 sections visible above the fold — kills layout precision (need 2-3 dense sections visible)
+  7. All stat bars same width (e.g. all 80%) — kills data completeness for game/dashboard archetypes
+  8. Generic "Feature 1", "Product 1", "User" placeholders instead of real domain names — kills content score
+  9. Pure white or pure black backgrounds — use off-black (#0a0a0f, #0d1117) or off-white (#fafafa, #f8fafc)
+  10. Missing scroll sections — the page must have 5+ distinct sections that scroll. Short pages score poorly
+  11. Pricing cards without dollar amounts — NEVER show "/month" or "/year" without an actual price number. Every pricing tier MUST have a real dollar amount ($19, $49, $99, etc.)
+  12. Buttons left-aligned inside cards — card CTAs should be centered or full-width, never left-hanging
+  13. Hover states defined in CSS but no JS wired — if an element looks clickable, it MUST have both :hover CSS AND a cursor:pointer. Accordion items, tabs, and toggles MUST have working JS click handlers
+
+QUALITY SELF-CHECK (run this mental checklist before outputting):
+  ☐ Typography: Did I load 2 Google Fonts (display + body)? Are headings dramatically larger than body text?
+  ☐ Color: Is my palette domain-specific (not generic purple)? Max 5 colors? Accent used sparingly?
+  ☐ Layout: Are sections aligned to a consistent grid? Spacing follows a scale (8/16/24/32/48px)?
+  ☐ Content: Every card/row has real data? No zeros, no lorem ipsum, no "Feature 1" placeholders?
+  ☐ Interactivity: Do cards have :hover transforms? Do buttons have :hover/:active states? Any JS interactions?
+  ☐ Polish: Smooth transitions (0.2-0.3s)? Subtle shadows? Border-radius consistent? No harsh borders?
+  ☐ Sections: At least 5 scrollable sections? Each section has a clear purpose?
+  ☐ Pricing: If pricing section exists, does EVERY tier show a real dollar amount? No bare "/month" without a price?
+  ☐ Interactivity: Do accordions open/close on click? Do tabs switch? Do toggles toggle? JS must be wired, not just CSS
+  ☐ Quality Target: Every key_section present? Every must_have_content item visible? No avoid items present?
