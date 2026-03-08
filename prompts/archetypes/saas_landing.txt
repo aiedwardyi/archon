@@ -52,6 +52,7 @@ REQUIRED 11 SECTIONS (all visible on first paint)
    - .hero-subtitle (2 sentences about the product)
    - .hero-ctas with .btn-primary + .btn-secondary
    - NEVER use background images — the gradient mesh IS the background
+   - NEVER use <img> tags in the hero — no mockup images, no screenshots. The hero is TEXT + GRADIENT ONLY
 
 3. LOGO CLOUD — .logo-cloud with .marquee-label ("TRUSTED BY TEAMS AT 50,000+ COMPANIES") and .marquee-track containing 10 logo items (Notion, Figma, Linear, Stripe, Vercel, Loom, Intercom, Airtable, Webflow, Framer). Duplicate for seamless loop (20 items total). Each .logo-item has a small SVG icon + text.
 
@@ -62,12 +63,13 @@ REQUIRED 11 SECTIONS (all visible on first paint)
    - Card 4: .bento-card.bento-card--span2 (spans 2 columns — integration logos or workflow)
    - Each card MUST have a .card-badge + h3 + .card-desc + a coded visual element (mini UI, SVG, metric bars)
    - NEVER leave feature cards as text-only
+   - NEVER use <img> tags in feature cards — build coded visuals: CSS bar charts, SVG sparklines, metric numbers, mini UI mockups in HTML. Broken image placeholders are a critical failure
 
 5. PRODUCT MOCKUP — .mockup-wrapper containing a fully coded mini dashboard/editor UI (dark card with fake chart bars, metric numbers, status badges — all real HTML, NOT description text)
 
 6. COMPARISON TABLE — .comparison-table with 8 feature rows comparing your product vs 2 competitors. 4 columns: Feature | Your Product (featured) | Competitor A | Competitor B. Featured column uses .featured-col class. Use a mix of checkmarks (.check-featured violet SVG, .check-competitor grey SVG) AND specific values (e.g. "Unlimited" vs "10/mo", "99.5%" vs "94%", "Real-time" vs "Batch only"). This makes the table feel data-rich, not just a wall of checkmarks. Feature rows: "AI Suggestions", "Grammar Depth", "Tone Detection", "Plagiarism Check", "Export Formats", "API Access", "Team Seats", "Support SLA"
 
-7. PRICING — .pricing-toggle (Monthly/Annual with Alpine.js x-data) + .pricing-grid with 3 .pricing-card tiers. Middle card: .pricing-card--featured. Monthly: $0/$29/$79. Annual: $0/$23/$63 + .save-badge "Save 20%". Each card: .plan-name, .plan-price, .plan-desc, .plan-features (5-6 items with green check SVGs), .plan-btn
+7. PRICING — .pricing-toggle (Monthly/Annual with Alpine.js x-data) + .pricing-grid with 3 .pricing-card tiers. Middle card: .pricing-card--featured. Monthly: $9/$29/$79. Annual: $7/$23/$63 + .save-badge "Save 20%". Each card: .plan-name, .plan-price, .plan-desc, .plan-features (5-6 items with green check SVGs), .plan-btn
 
 8. TESTIMONIALS — .testimonials-grid with 3 .testimonial-card. Each: .quote (real testimonial text), .author with .author-avatar (SVG silhouette inside) + .author-name + .author-role. Use realistic names, companies, and roles.
 
@@ -86,7 +88,7 @@ CONTENT & DATA RULES
 - Testimonials: realistic names, companies, roles (NOT "User 1")
 - Feature descriptions: specific to the product type, not generic
 - All 11 sections MUST be visible on first paint (no display:none, no lazy loading)
-- NEVER use <img> tags anywhere — no stock photos, no AI images
+- NEVER use <img> tags anywhere — no stock photos, no AI images, no mockup images, no illustration images. Every visual must be CODED in HTML/CSS (mini UIs, SVG shapes, CSS gradients). If you output a single <img> tag, the entire page fails
 - Accent restraint: violet on max 4 element types (CTA buttons, featured pricing border, hero highlight, section badge borders)
 
 ═══════════════════════════════════════
@@ -116,6 +118,7 @@ SELF-CHECK BEFORE OUTPUT
 □ Pricing toggle animates between monthly/annual
 □ No "0" values anywhere
 □ No <img> tags anywhere
+□ No excessive vertical gaps — max 80px padding between adjacent sections (check section-wrapper padding)
 □ Testimonials have real names/companies
 □ FAQ has 6+ items with Alpine accordion
 □ Footer has 4+ link columns
