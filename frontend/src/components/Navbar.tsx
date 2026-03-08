@@ -8,7 +8,7 @@ import { PricingModal } from "./PricingModal";
 import {
   Settings, LayoutGrid, Play, Clock, FileDown, Coins,
   User, Sun, Moon, Building2, Pencil, DollarSign, BookOpen, ExternalLink,
-  LogOut, Zap, Hexagon, ChevronDown, Globe,
+  LogOut, Hexagon, ChevronDown, Globe,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -224,7 +224,7 @@ export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectNam
               {/* Upgrade */}
               <div className="border-t border-border px-4 py-3">
                 <button className="w-full h-8 bg-primary text-primary-foreground text-xs font-semibold rounded-md flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity">
-                  <Zap className="h-3.5 w-3.5" /> {t("upgradeToPro")}
+                  <Hexagon className="h-3.5 w-3.5" /> {t("upgradeToPro")}
                 </button>
               </div>
 

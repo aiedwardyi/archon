@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import {
   Sun, Moon, LogOut, Settings, BookOpen,
-  User, DollarSign, Coins, Zap, ExternalLink,
+  User, DollarSign, Coins, Hexagon, ExternalLink,
   Building2, Paintbrush,
 } from "lucide-react"
 import { ProfileModal, SettingsModal, PricingModal } from "@/components/account-modals"
@@ -222,7 +222,7 @@ export function AvatarDropdown() {
                 onClick={() => openModal("pricing")}
                 className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors cursor-pointer"
               >
-                <Zap className="h-3.5 w-3.5" />
+                <Hexagon className="h-3.5 w-3.5" />
                 {t("upgradeToPro")}
               </button>
             </div>

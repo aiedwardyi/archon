@@ -19,6 +19,7 @@ export const WelcomeBanner = ({ stats }: WelcomeBannerProps) => {
   const platform = usePlatformStats();
   const dashboard = useDashboardStats();
   const [backendUp, setBackendUp] = useState(true);
+  const [userName, setUserName] = useState("there");
 
   useEffect(() => {
     const checkHealth = async () => {
@@ -39,6 +40,41 @@ export const WelcomeBanner = ({ stats }: WelcomeBannerProps) => {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const loadUser = async () => {
+      const getName = (name?: string, email?: string) => {
+        const trimmedName = (name || "").trim();
+        if (trimmedName) return trimmedName;
+        const emailPrefix = (email || "").split("@")[0]?.trim();
+        return emailPrefix || "there";
+      };
+
+      const cached = localStorage.getItem("archon_user");
+      if (cached) {
+        try {
+          const user = JSON.parse(cached);
+          setUserName(getName(user?.name, user?.email));
+          return;
+        } catch {}
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const urlToken = params.get("token");
+      const token = localStorage.getItem("archon_token") || urlToken;
+      if (!token) return;
+
+      try {
+        const res = await fetch("http://localhost:5000/api/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        setUserName(getName(data?.name, data?.email));
+      } catch {}
+    };
+
+    loadUser();
+  }, []);
+
   const hour = new Date().getHours();
   const greeting = hour < 12 ? t("goodMorning") : hour < 18 ? t("goodAfternoon") : t("goodEvening");
 
@@ -54,7 +90,7 @@ export const WelcomeBanner = ({ stats }: WelcomeBannerProps) => {
       <div className="px-5 py-4 flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold text-foreground tracking-tight">
-            {greeting}, Jane
+            {greeting}, {userName}
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             {t("platformOverview")} · <span className="font-medium text-foreground">{t("enterpriseWorkspace")}</span>
