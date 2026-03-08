@@ -287,3 +287,4 @@ QUALITY SELF-CHECK (run this mental checklist before outputting):
   ☐ Rendering: Does text overlap any images without a contrast overlay? Are all headings fully visible (no clipping)?
   ☐ Variety: Are icons/logos in grids visually distinct? No repeated identical SVGs in logo clouds or feature grids?
   ☐ Quality Target: Every key_section present? Every must_have_content item visible? No avoid items present?
+  ☐ Output size: No inline SVG icons — use Unicode symbols (★, ◆, ⚡, ✉, ) in styled <span> elements instead. SVGs cause token overflow

@@ -303,18 +303,23 @@ def _run_gemini(client: genai.Client, contents: str, ref_images: list[tuple[str,
             raw_check = re.sub(r"\s*```$", "", raw_check).strip()
             if raw_check and not raw_check.endswith("}"):
                 if attempt < _ENGINEER_MAX_RETRIES - 1:
-                    print("EngineerAgent: output appears truncated (doesn't end with '}'), retrying with higher token limit...")
-                    # Retry with higher max_output_tokens
-                    response = client.models.generate_content(
-                        model="gemini-2.5-flash",
-                        contents=gemini_contents,
-                        config={
-                            "response_mime_type": "application/json",
-                            "response_schema": EngineeringResult,
-                            "temperature": 0.7,
-                            "max_output_tokens": 100000,
-                        },
+                    print("EngineerAgent: output truncated (hit 65k token limit), retrying with compression instruction...")
+                    # Add compression instruction and retry with same token limit
+                    compress_note = (
+                        "\n\nCRITICAL OUTPUT SIZE CONSTRAINT: Your previous attempt was truncated because "
+                        "the output exceeded the token limit. You MUST reduce output size:\n"
+                        "- Replace ALL inline SVGs with single-character Unicode symbols or HTML entities "
+                        "(e.g. ★, →, ●, ✦, ▸, &hearts;, &#9733;)\n"
+                        "- Use CSS pseudo-elements (::before) with content: 'symbol' instead of SVG markup\n"
+                        "- Keep style.css under 60 lines\n"
+                        "- No SVG markup anywhere in index.html\n"
                     )
+                    if isinstance(gemini_contents, list):
+                        from google.genai import types
+                        gemini_contents.append(types.Part.from_text(text=compress_note))
+                    else:
+                        gemini_contents = gemini_contents + compress_note
+                    continue  # Go to next retry attempt with modified prompt
 
             # Try structured output first, but validate it
             if response.parsed is not None:
