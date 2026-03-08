@@ -588,7 +588,7 @@ guessing. Tour design will be driven by real friction points, not assumptions.
 
 ---
 
-## Phase 21 — Build Insights (Prompt Coaching) (🔧 In Progress)
+## Phase 21 — Build Insights (Prompt Coaching) (✅ Complete Mar 8, 2026)
 
 Post-build suggestions that help users write better prompts. Positioned as intelligent platform feedback, not a tutorial.
 
@@ -614,3 +614,11 @@ Post-build suggestions that help users write better prompts. Positioned as intel
 - Specific and actionable ("Add a color palette" not "Be more descriptive")
 - Tied to real scoring data, not generic tips
 - Never blocking — informational only, user can ignore
+
+**Implementation (Mar 8, 2026):**
+- ✅ 21.1 InsightsAgent (agents/insights_agent.py) — rule-based analysis of prompt length, color/font keywords, quality_target gaps, prompt score, domain hints
+- ✅ 21.2 GET /api/projects/<id>/versions/<ver>/insights — returns { insights: [{ category, suggestion, priority }] }, reads from last_insights.json
+- ✅ 21.3 Enterprise UI — "Quality Recommendations" section at bottom of Governance tab with category icons (AlignLeft/Palette/FileText/MessageSquare/Globe), priority badges (red/amber/gray), empty state with checkmark
+- ✅ 21.4 Studio UI — matching section in Studio Governance tab, hardcoded English
+- ✅ 21.5 i18n — 12 Korean translation keys for categories, priorities, section title/description/empty state
+- Consumer UI deferred to full UX audit
