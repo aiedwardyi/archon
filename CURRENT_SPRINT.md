@@ -41,10 +41,37 @@ Attach images (screenshots, mockups, inspiration) to prompts so AI agents can re
 - ✅ Fix: Replaced blob URLs with base64 data URLs so images survive sessionStorage round-trip
 - Consumer frontend skipped (read-only, doesn't call /iterate)
 
+## QA Visual Pass (✅ Complete Mar 8, 2026)
+
+Full visual QA of Enterprise + Studio frontends. Two fix branches merged into feat/quality-target-tuning.
+
+| # | Issue | Severity | Status |
+|---|-------|----------|--------|
+| 1 | Version mismatch v0 (Enterprise) vs v1 (Studio) | 🔴 Critical | ✅ Fixed |
+| 2 | Versions vs Artifacts state contradiction | 🔴 Critical | ✅ Fixed |
+| 3 | "Good afternoon, Jane" hardcoded greeting | 🟡 Medium | ✅ Fixed |
+| 4 | Enterprise Profile modal: Jane Doe hardcoded | 🟡 Medium | ✅ Fixed |
+| 5 | Studio Profile modal: Jane Doe hardcoded | 🟡 Medium | ✅ Fixed |
+| 6 | Deep link /versions returns 404 | 🟡 Medium | ✅ Fixed |
+| 7 | Studio Artifacts blank (no empty state) | 🟡 Medium | ✅ Fixed |
+| 8 | Enterprise Zap icon on Upgrade to Pro | 🟢 Low | ✅ Fixed |
+| 9 | Studio Zap icon on Upgrade to Pro | 🟢 Low | ✅ Fixed |
+
+Files changed: WelcomeBanner.tsx, ProfileModal.tsx, Navbar.tsx, account-modals.tsx, avatar-dropdown.tsx, project-dashboard.tsx, App.tsx, Index.tsx, ArtifactsView.tsx, artifacts/page.tsx
+
+### Backend API QA (Codex, Mar 8, 2026)
+- 14/17 tests passed
+- 🔴 GET /api/projects accessible without auth (returns 200 instead of 401) — not yet fixed
+- Register 409 and credits/balance object format were false positives
+
 ## Up Next
 
 | Phase | Description |
 |-------|-------------|
+| — | Fix /api/projects auth guard (backend security) |
+| — | Planner archetype misclassification fix (Portfolio → dashboard) |
+| — | Re-run eval after planner fix, decide merge of feat/quality-target-tuning |
+| 8.3 | Client shareable read-only links (primary moat feature) |
 | 18 | Unified Auth + Plan-Based UI Routing |
 | 19 | Product Tour + Onboarding Walkthrough |
 
