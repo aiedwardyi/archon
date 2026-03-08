@@ -614,5 +614,16 @@ class EngineerAgent:
                         print(f"EngineerAgent: dedup style.css {original_len} -> {new_len} chars (-{original_len - new_len})")
                     break
 
+        if kit_archetype == "saas_landing":
+            count = 0
+            for f in result.files:
+                if f.path.endswith(".html"):
+                    stripped_count = len(re.findall(r'<img[^>]*/?>', f.content))
+                    if stripped_count > 0:
+                        f.content = re.sub(r'<img[^>]*/?>', '', f.content)
+                        count += stripped_count
+            if count > 0:
+                print(f"EngineerAgent: stripped {count} <img> tags from saas_landing HTML")
+
         return result
 
