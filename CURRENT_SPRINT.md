@@ -69,11 +69,20 @@ Files changed: WelcomeBanner.tsx, ProfileModal.tsx, Navbar.tsx, account-modals.t
 - ✅ Removed 💬 emoji from Enterprise Pipeline "Conversation" heading (Index.tsx)
 - ✅ Removed emoji from ForgotPassword.tsx (found by Codex repo-wide scan)
 
+## Phase 21 — Build Insights (🔧 In Progress Mar 8, 2026)
+
+- ✅ 21.1 Backend: InsightsAgent generates 2-4 actionable prompt suggestions (agents/insights_agent.py)
+- ✅ 21.2 Backend: /api/projects/<id>/versions/<ver>/insights endpoint (app.py)
+- ✅ 21.3 Enterprise UI: "Quality Recommendations" section in Governance tab (ArtifactsView.tsx)
+- ✅ 21.4 Studio UI: Matching insights section in Governance tab (artifact-viewer.tsx)
+- ✅ 21.5 i18n: 12 Korean translation keys added (i18n.ts)
+- 🔴 Studio font regression: Geist Sans replaced by IBM Plex Sans during Phase 16.5 auth work — Codex fixing (globals.css, layout.tsx, project-dashboard.tsx)
+
 ## Up Next
 
 | Phase | Description |
 |-------|-------------|
-| 21 | Build Insights — post-build prompt coaching (Consumer + Enterprise) |
+| — | Studio font fix (Codex in progress) |
 | — | Frontend-consumer full UX/UI audit + bug fixes |
 | — | Re-run eval after planner fix, decide merge of feat/quality-target-tuning |
 | 8.3 | Client shareable read-only links (primary moat feature) |
