@@ -44,7 +44,7 @@ export default function ForgotPasswordPage() {
           <div className="bg-[#111111] border border-[#1F1F1F] rounded-xl py-10 px-8">
             {sent ? (
               <div className="text-center">
-                <div className="text-4xl mb-4">📧</div>
+                <div className="text-4xl mb-4">@</div>
                 <h1 className="text-2xl font-semibold text-white mb-2">
                   Check your email
                 </h1>

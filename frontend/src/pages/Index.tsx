@@ -650,7 +650,7 @@ const Index = () => {
                     <div className="border border-border rounded-md bg-card flex flex-col">
                       <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
                         <h3 className="text-xs font-semibold text-foreground tracking-wide uppercase flex items-center gap-1.5">
-                          💬 {t("conversation")}
+                          {t("conversation")}
                         </h3>
                         <span className="text-[10px] text-muted-foreground">{chatMessages.length} {t("messages")}</span>
                       </div>
