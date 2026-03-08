@@ -638,6 +638,41 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None, 
                 session.commit()
 
             add_log("Governance Agent: Factsheet recorded.", project_id=project_id)
+
+            # Build Insights - prompt coaching suggestions
+            try:
+                from agents.insights_agent import InsightsAgent
+                insights_agent = InsightsAgent()
+
+                # Load quality_target from plan
+                plan_data = read_json_file(version_dir / "last_plan.json") or {}
+                quality_target = None
+                for ms in plan_data.get("milestones", []):
+                    for task in ms.get("tasks", []):
+                        if task.get("execution_hint") == "engineer":
+                            quality_target = task.get("quality_target")
+                            break
+                    if quality_target:
+                        break
+
+                scoring = factsheet.get("scoring", {})
+                prompt_quality = scoring.get("prompt_quality", {})
+                build_conf = scoring.get("build_confidence", {})
+
+                insights = insights_agent.generate_insights(
+                    prompt=prompt_text,
+                    ui_archetype=project.locked_ui_archetype if project else None,
+                    quality_target=quality_target,
+                    prompt_score=prompt_quality.get("score"),
+                    build_confidence=build_conf.get("score"),
+                    files_generated=files_count,
+                    images_generated=images_count,
+                )
+
+                write_json_file(version_dir / "last_insights.json", {"insights": insights})
+                add_log("Build Insights: Generated prompt suggestions.", project_id=project_id)
+            except Exception as e:
+                print(f"[Insights] Non-fatal error: {e}")
         except Exception as gov_err:
             print(f"GovernanceAgent failed (non-fatal): {gov_err}")
 
@@ -1540,6 +1575,17 @@ def get_factsheet(project_id: int, version: int):
         return jsonify({"error": "Factsheet not available for this version"}), 404
     finally:
         session.close()
+
+
+@app.route("/api/projects/<int:project_id>/versions/<int:version>/insights", methods=["GET"])
+@jwt_required()
+def get_insights(project_id: int, version: int):
+    """Return Build Insights (prompt coaching suggestions) for a specific version."""
+    insights_path = get_version_dir(project_id, version) / "last_insights.json"
+    data = read_json_file(insights_path)
+    if data:
+        return jsonify(data), 200
+    return jsonify({"insights": []}), 200
 
 
 @app.route("/api/health", methods=["GET"])
