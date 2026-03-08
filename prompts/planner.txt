@@ -123,6 +123,16 @@ UI archetype rules (CRITICAL):
     fintech      -> trading, banking, crypto dashboards, payments (Raw CSS)
     music        -> musician sites, event pages, concert venues (Raw CSS)
     fitness      -> gyms, personal trainers, workout programs (Raw CSS)
+  ARCHETYPE DISAMBIGUATION (apply these rules when multiple archetypes seem to fit):
+    If the PRD mentions a PERSON (name, career, skills, experience, CV, resume, personal brand, "my work", "about me") -> portfolio, NOT dashboard
+    If the PRD is about SHOWING someone's work/projects/achievements to visitors -> portfolio
+    If the PRD is about MANAGING/MONITORING data with filters, tables, and admin controls -> dashboard
+    If the PRD mentions "landing page" or "marketing" with a specific domain (restaurant, law firm, gym) -> use the domain-specific archetype, NOT generic landing
+    If the PRD mentions a SaaS/tech product with pricing -> saas_landing, NOT landing
+    If the PRD mentions food ordering/delivery -> food_delivery, NOT restaurant (restaurant is for the restaurant's own site)
+    If the PRD says "blog" or "newsletter" or "articles I write" -> blog, NOT feed (feed is for aggregated content from multiple sources)
+    If the PRD mentions "game" but is about a fan page/tribute/wiki -> game (NOT dashboard, NOT landing)
+    When in doubt between two archetypes, pick the MORE SPECIFIC one (e.g. fintech over dashboard, agency over landing)
 - Set archetype_rules to match the archetype:
     dashboard -> required_blocks: ["kpis", "chart", "data_table", "activity_feed"], required_interactions: ["filter", "sort", "row_details"], avoid: ["hero_marketing", "testimonials", "pricing_section"]
     landing   -> required_blocks: ["hero", "features", "social_proof", "cta"], required_interactions: ["cta_click"], avoid: ["sidebar", "data_table", "kanban_columns"]
