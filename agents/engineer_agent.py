@@ -117,9 +117,12 @@ def _repair_json(raw: str) -> dict:
     start = text.find("{")
     end = text.rfind("}")
     if start == -1 or end == -1 or end <= start:
+        truncation_hint = ""
+        if start != -1 and (end == -1 or end <= start):
+            truncation_hint = " (output appears truncated — JSON started but never closed)"
         raise RuntimeError(
-            "EngineerAgent: no JSON object found in model output.\n\n"
-            f"Raw output:\n{raw}"
+            f"EngineerAgent: no JSON object found in model output{truncation_hint}.\n\n"
+            f"Raw output (first 2000 chars):\n{raw[:2000]}"
         )
     candidate = text[start : end + 1]
     candidate = re.sub(r"}\s*\n\s*{", "},\n{", candidate)
@@ -294,6 +297,24 @@ def _run_gemini(client: genai.Client, contents: str, ref_images: list[tuple[str,
                     "max_output_tokens": 65536,
                 },
             )
+
+            # Detect truncation: if raw text doesn't end with }, output was cut off
+            raw_check = (getattr(response, "text", "") or "").strip()
+            raw_check = re.sub(r"\s*```$", "", raw_check).strip()
+            if raw_check and not raw_check.endswith("}"):
+                if attempt < _ENGINEER_MAX_RETRIES - 1:
+                    print("EngineerAgent: output appears truncated (doesn't end with '}'), retrying with higher token limit...")
+                    # Retry with higher max_output_tokens
+                    response = client.models.generate_content(
+                        model="gemini-2.5-flash",
+                        contents=gemini_contents,
+                        config={
+                            "response_mime_type": "application/json",
+                            "response_schema": EngineeringResult,
+                            "temperature": 0.7,
+                            "max_output_tokens": 100000,
+                        },
+                    )
 
             # Try structured output first, but validate it
             if response.parsed is not None:
