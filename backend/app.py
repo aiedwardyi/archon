@@ -684,14 +684,12 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None, 
 # ============================================================================
 
 @app.route("/api/projects", methods=["GET"])
-@jwt_required(optional=True)
+@jwt_required()
 def list_projects():
     session = get_session()
     try:
         uid = get_jwt_identity()
-        query = session.query(Project).order_by(Project.updated_at.desc())
-        if uid:
-            query = query.filter(Project.owner_id == int(uid))
+        query = session.query(Project).filter(Project.owner_id == int(uid)).order_by(Project.updated_at.desc())
         projects = query.all()
         return jsonify([p.to_dict() for p in projects]), 200
     finally:
@@ -699,15 +697,14 @@ def list_projects():
 
 
 @app.route("/api/stats", methods=["GET"])
-@jwt_required(optional=True)
+@jwt_required()
 def get_stats():
     from sqlalchemy import func
     uid = get_jwt_identity()
     session = get_session()
     try:
         base_q = session.query(Execution.project_id, func.max(Execution.version))
-        if uid:
-            base_q = base_q.join(Project).filter(Project.owner_id == int(uid))
+        base_q = base_q.join(Project).filter(Project.owner_id == int(uid))
         version_counts = base_q.group_by(Execution.project_id).all()
         versions_shipped = sum(v for _, v in version_counts)
 
@@ -715,16 +712,14 @@ def get_stats():
         avg_q = session.query(func.avg(Execution.duration_seconds)).filter(
             Execution.status == "success", Execution.duration_seconds.isnot(None)
         )
-        if uid:
-            avg_q = avg_q.join(Project).filter(Project.owner_id == int(uid))
+        avg_q = avg_q.join(Project).filter(Project.owner_id == int(uid))
         avg_row = avg_q.scalar()
         avg_build_time_seconds = round(avg_row, 1) if avg_row else None
 
         # lines_generated: walk all version code dirs and count lines
         total_lines = 0
         lines_q = session.query(Execution.project_id, Execution.version).filter(Execution.status == "success")
-        if uid:
-            lines_q = lines_q.join(Project).filter(Project.owner_id == int(uid))
+        lines_q = lines_q.join(Project).filter(Project.owner_id == int(uid))
         all_execs = lines_q.all()
         for pid, ver in all_execs:
             code_dir = get_version_dir(pid, ver) / "code"
@@ -739,8 +734,7 @@ def get_stats():
         # pipelines_today: executions created today
         today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         today_q = session.query(func.count(Execution.id)).filter(Execution.created_at >= today_start)
-        if uid:
-            today_q = today_q.join(Project).filter(Project.owner_id == int(uid))
+        today_q = today_q.join(Project).filter(Project.owner_id == int(uid))
         pipelines_today = today_q.scalar() or 0
 
         return jsonify({
@@ -754,14 +748,12 @@ def get_stats():
 
 
 @app.route("/api/activity", methods=["GET"])
-@jwt_required(optional=True)
+@jwt_required()
 def get_activity():
     session = get_session()
     try:
         uid = get_jwt_identity()
-        query = session.query(Execution).order_by(Execution.created_at.desc())
-        if uid:
-            query = query.join(Project).filter(Project.owner_id == int(uid))
+        query = session.query(Execution).join(Project).filter(Project.owner_id == int(uid)).order_by(Execution.created_at.desc())
         recent = query.limit(6).all()
         items = []
         for e in recent:
@@ -779,7 +771,7 @@ def get_activity():
 
 
 @app.route("/api/projects", methods=["POST"])
-@jwt_required(optional=True)
+@jwt_required()
 def create_project():
     session = get_session()
     try:
@@ -791,7 +783,7 @@ def create_project():
             name=data["name"],
             description=data.get("description", ""),
             status="pending",
-            owner_id=int(uid) if uid else None,
+            owner_id=int(uid),
         )
         session.add(project)
         session.commit()
@@ -1916,15 +1908,14 @@ def watson_tts():
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/dashboard/stats", methods=["GET"])
-@jwt_required(optional=True)
+@jwt_required()
 def dashboard_stats():
     """Return average governance scores for the logged-in user's builds."""
     uid = get_jwt_identity()
     session = get_session()
     try:
         q = session.query(Execution)
-        if uid:
-            q = q.join(Project).filter(Project.owner_id == int(uid))
+        q = q.join(Project).filter(Project.owner_id == int(uid))
         executions = q.all()
         prompt_scores = []
         build_scores = []
