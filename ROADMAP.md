@@ -585,3 +585,32 @@ guessing. Tour design will be driven by real friction points, not assumptions.
 - Design Agent uses Gemini vision to analyze reference before generating Imagen prompts
 - Enterprise + Studio: Paperclip button, thumbnail strip, base64 image rendering in chat
 - Backward compatible — builds without attachments work exactly as before
+
+---
+
+## Phase 21 — Build Insights (Prompt Coaching) (🔧 In Progress)
+
+Post-build suggestions that help users write better prompts. Positioned as intelligent platform feedback, not a tutorial.
+
+**Consumer frontend** (primary target): "Build Insights" card — friendly, educational tone. Non-technical users benefit most from guidance on how to describe what they want.
+
+**Enterprise frontend**: "Quality Recommendations" section inside Governance tab — professional framing. Agencies can show clients how to improve next iteration.
+
+**Data sources (already available):**
+- Governance Agent: prompt_quality_score (Watson NLU, 0-100)
+- Governance Agent: build_confidence_score (0-100)
+- Planner: ui_archetype, quality_target (key_sections, must_have_content, avoid)
+- PRD: what user asked for vs. what was built
+
+**Implementation plan:**
+- 21.1 Backend: POST-pipeline analysis — compare PRD against quality_target to identify gaps
+- 21.2 Backend: /api/projects/<id>/versions/<ver>/insights endpoint returning structured suggestions
+- 21.3 Enterprise: "Quality Recommendations" section in Governance tab (GovernanceView)
+- 21.4 Consumer: "Build Insights" card in Artifacts or chat panel
+- 21.5 i18n: Korean translations for all insight strings
+
+**Design principles:**
+- Max 3-4 suggestions per build (not overwhelming)
+- Specific and actionable ("Add a color palette" not "Be more descriptive")
+- Tied to real scoring data, not generic tips
+- Never blocking — informational only, user can ignore

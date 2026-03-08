@@ -61,15 +61,20 @@ Files changed: WelcomeBanner.tsx, ProfileModal.tsx, Navbar.tsx, account-modals.t
 
 ### Backend API QA (Codex, Mar 8, 2026)
 - 14/17 tests passed
-- 🔴 GET /api/projects accessible without auth (returns 200 instead of 401) — not yet fixed
+- ✅ GET /api/projects auth guard fixed (Mar 8, 2026) — all 5 optional-auth endpoints now require JWT
+- 10/10 regression tests passing (backend/tests/test_auth_guard.py)
 - Register 409 and credits/balance object format were false positives
+
+### Additional QA Fixes (Mar 8, 2026)
+- ✅ Removed 💬 emoji from Enterprise Pipeline "Conversation" heading (Index.tsx)
+- ✅ Removed emoji from ForgotPassword.tsx (found by Codex repo-wide scan)
 
 ## Up Next
 
 | Phase | Description |
 |-------|-------------|
-| — | Fix /api/projects auth guard (backend security) |
-| — | Planner archetype misclassification fix (Portfolio → dashboard) |
+| 21 | Build Insights — post-build prompt coaching (Consumer + Enterprise) |
+| — | Frontend-consumer full UX/UI audit + bug fixes |
 | — | Re-run eval after planner fix, decide merge of feat/quality-target-tuning |
 | 8.3 | Client shareable read-only links (primary moat feature) |
 | 18 | Unified Auth + Plan-Based UI Routing |

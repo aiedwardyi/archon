@@ -403,6 +403,26 @@ A prominent banner also appears at the top of the Governance tab with plain-Engl
 | 18 | 🔴 | Unified auth + plan-based UI routing |
 | 8.3 | 🔴 | Client shareable read-only link |
 | 20.1 | ✅ | Visual reference input — attach images to guide AI builds |
+| 21 | 🔧 | Build Insights — post-build prompt coaching to help users write better prompts |
+
+---
+
+### Phase 21 — Build Insights (Prompt Coaching)
+
+After every build, Archon analyzes the gap between what the user asked and what the platform expected, then surfaces 2–4 specific, actionable suggestions to improve the next prompt.
+
+**How it works:** The Governance Agent already scores prompt quality (Watson NLU) and build confidence. The new Insights Agent compares the user’s prompt against the planner’s quality targets — missing color schemes, unspecified sections, vague content — and generates targeted coaching.
+
+**Where it appears:**
+- **Consumer UI:** “Build Insights” card — friendly, educational tone for non-technical users
+- **Enterprise UI:** “Quality Recommendations” section in the Governance tab — professional framing for agencies
+- **PDF exports:** Intentionally excluded — insights are for the builder, not the client
+
+**Design principles:**
+- Max 3–4 suggestions per build (not overwhelming)
+- Specific and actionable (“Add a color palette like ‘dark theme with emerald accents’” not “Be more descriptive”)
+- Tied to real scoring data, not generic tips
+- Never blocking — informational only
 
 ---
 
