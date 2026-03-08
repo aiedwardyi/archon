@@ -41,6 +41,10 @@ const App = () => (
               <AuthGuard>
                 <Routes>
                   <Route path="/" element={<Index />} />
+                  <Route path="/projects" element={<Index />} />
+                  <Route path="/pipeline" element={<Index />} />
+                  <Route path="/versions" element={<Index />} />
+                  <Route path="/artifacts" element={<Index />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />

@@ -5,7 +5,7 @@ import {
   Braces, FolderOpen, FileCode, CheckCircle2, Circle, Clock,
   AlertCircle, Loader2, Copy, Check, ExternalLink, Shield,
 } from "lucide-react";
-import { fetchProjectHead, fetchPrd, fetchPlan, fetchCodeFiles, fetchLogs } from "@/services/api";
+import { fetchVersions, fetchPrd, fetchPlan, fetchCodeFiles, fetchLogs } from "@/services/api";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 type ArtifactTab = "brief" | "plan" | "code" | "tasks" | "logs" | "preview" | "governance";
@@ -52,7 +52,7 @@ interface LogEntry {
 interface ArtifactsViewProps {
   projectId: number | null;
   selectedVersion: number | null;
-  onVersionSelect: (v: number) => void;
+  onVersionSelect: (v: number | null) => void;
   initialTab?: "brief" | "plan" | "code";
 }
 
@@ -68,7 +68,7 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, ini
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "mobile">("desktop");
   const [selectedFile, setSelectedFile] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [headVersion, setHeadVersion] = useState<number | null>(null);
+  const [resolvedVersion, setResolvedVersion] = useState<number | null>(null);
   const [briefData, setBriefData] = useState<BriefData>({ title: "Brief", version: "", generatedBy: "Archon", sections: [] });
   const [planData, setPlanData] = useState<PlanData>({ title: "Build Plan", milestoneCount: 0, generatedBy: "Archon", milestones: [] });
   const [codeFiles, setCodeFiles] = useState<CodeFile[]>([]);
@@ -79,23 +79,45 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, ini
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (!projectId) return;
+    setResolvedVersion(null);
+    setBriefData({ title: "Brief", version: "", generatedBy: "Archon", sections: [] });
+    setPlanData({ title: "Build Plan", milestoneCount: 0, generatedBy: "Archon", milestones: [] });
+    setCodeFiles([]);
+    setLogsData([]);
+    setTasksData([]);
+    setSelectedFile(0);
+    setPublishState("idle");
+    setPublishedUrl("");
+    setCopied(false);
+
+    if (!projectId) {
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
     setLoading(true);
 
     (async () => {
-      let ver: number | null;
-      if (selectedVersion != null) {
-        ver = selectedVersion;
-      } else {
-        ver = await fetchProjectHead(projectId);
-        if (!cancelled && ver != null) {
-          onVersionSelect(ver);
-        }
+      const versions = await fetchVersions(projectId);
+      if (cancelled) return;
+
+      const availableVersions = versions.map((version) => version.version).sort((a, b) => b - a);
+      const ver = selectedVersion != null && availableVersions.includes(selectedVersion)
+        ? selectedVersion
+        : availableVersions[0] ?? null;
+
+      setResolvedVersion(ver);
+      if (selectedVersion !== ver) {
+        onVersionSelect(ver);
       }
       if (cancelled) return;
-      setHeadVersion(ver);
-      if (!ver) { setLoading(false); return; }
+      if (ver == null) {
+        setLoading(false);
+        return;
+      }
+
+      setBriefData({ title: "Brief", version: `v${ver}`, generatedBy: "Archon", sections: [] });
 
       const [prdRaw, planRaw, filesRaw, logsRaw] = await Promise.all([
         fetchPrd(projectId, ver),
@@ -157,7 +179,7 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, ini
     })();
 
     return () => { cancelled = true; };
-  }, [projectId, selectedVersion]);
+  }, [onVersionSelect, projectId, selectedVersion, t]);
 
   const rawDataAvailable = ["brief", "plan", "tasks"].includes(activeTab);
 
@@ -174,6 +196,14 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, ini
       <div className="border border-border rounded-md bg-card flex items-center justify-center py-20">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         <span className="ml-2 text-sm text-muted-foreground">Loading artifacts...</span>
+      </div>
+    );
+  }
+
+  if (!resolvedVersion) {
+    return (
+      <div className="border border-border rounded-md bg-card flex items-center justify-center py-20">
+        <span className="text-sm text-muted-foreground">No artifacts available yet. Run a build to generate artifacts.</span>
       </div>
     );
   }
@@ -197,7 +227,7 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, ini
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-emerald-300 text-emerald-600 dark:text-emerald-400 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10">
             ○ {t("verified")}
           </span>
-          <span className="text-[10px] font-bold bg-secondary text-muted-foreground px-1.5 py-0.5 rounded">{headVersion ? `V${headVersion}` : "V?"}</span>
+          <span className="text-[10px] font-bold bg-secondary text-muted-foreground px-1.5 py-0.5 rounded">{`V${resolvedVersion}`}</span>
         </div>
         <div className="flex items-center gap-2">
           {publishState === "done" ? (
@@ -225,10 +255,10 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, ini
           ) : (
             <button
               onClick={async () => {
-                if (!projectId || !headVersion) return;
+                if (!projectId || !resolvedVersion) return;
                 setPublishState("loading");
                 try {
-                  const res = await fetch(`http://localhost:5000/api/projects/${projectId}/versions/${headVersion}/publish`, { method: "POST" });
+                  const res = await fetch(`http://localhost:5000/api/projects/${projectId}/versions/${resolvedVersion}/publish`, { method: "POST" });
                   const data = await res.json();
                   if (data.url) {
                     setPublishedUrl(`http://localhost:5000${data.url}`);
@@ -248,7 +278,7 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, ini
             </button>
           )}
           <a
-            href={projectId && headVersion ? `http://localhost:5000/api/projects/${projectId}/versions/${headVersion}/download` : "#"}
+            href={projectId ? `http://localhost:5000/api/projects/${projectId}/versions/${resolvedVersion}/download` : "#"}
             download
             className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5 no-underline"
           >
@@ -298,9 +328,9 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, ini
         {activeTab === "code" && <CodeTab files={codeFiles} selectedFile={selectedFile} onSelectFile={setSelectedFile} />}
         {activeTab === "tasks" && !showRawData && <TasksTab tasks={tasksData} />}
         {activeTab === "tasks" && showRawData && <RawJsonView data={tasksData} />}
-        {activeTab === "logs" && <LogsTab logs={logsData} version={headVersion} />}
-        {activeTab === "preview" && <PreviewTab device={previewDevice} onDeviceChange={setPreviewDevice} projectId={projectId} version={headVersion} />}
-        {activeTab === "governance" && <GovernanceTab projectId={projectId} version={headVersion} />}
+        {activeTab === "logs" && <LogsTab logs={logsData} version={resolvedVersion} />}
+        {activeTab === "preview" && <PreviewTab device={previewDevice} onDeviceChange={setPreviewDevice} projectId={projectId} version={resolvedVersion} />}
+        {activeTab === "governance" && <GovernanceTab projectId={projectId} version={resolvedVersion} />}
       </div>
     </div>
   );
@@ -315,7 +345,7 @@ const BriefTab = ({ data }: { data: BriefData }) => {
     <h1 className="text-lg font-bold text-foreground">
       {data.title}
       <span className="ml-2 text-[10px] font-bold bg-primary text-primary-foreground px-1.5 py-0.5 rounded align-middle">
-        {data.version || "v1"}
+        {data.version || "—"}
       </span>
     </h1>
     <p className="text-xs text-muted-foreground mt-1">v1.0 · {t("generatedBy")} {data.generatedBy}</p>
@@ -958,5 +988,3 @@ const RawJsonView = ({ data }: { data: unknown }) => (
     </pre>
   </div>
 );
-
-

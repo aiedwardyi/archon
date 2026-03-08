@@ -11,6 +11,7 @@ import { VersionsView } from "@/components/VersionsView";
 import { ArtifactsView } from "@/components/ArtifactsView";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   useProjects,
   usePipelineStatus,
@@ -24,10 +25,32 @@ import {
 } from "@/services/api";
 import { Search, Plus, Trash2, Mic, MicOff, Send, Volume2, VolumeX, Filter, Loader2, AlertCircle, X, Paperclip, ImageIcon } from "lucide-react";
 
+type AppTab = "projects" | "pipeline" | "versions" | "artifacts";
+
+const getTabFromPath = (pathname: string): AppTab | null => {
+  if (pathname === "/" || pathname === "/projects") return "projects";
+  if (pathname === "/pipeline") return "pipeline";
+  if (pathname === "/versions") return "versions";
+  if (pathname === "/artifacts") return "artifacts";
+  return null;
+};
+
+const normalizeTab = (value: string | null): AppTab => {
+  if (value === "pipeline" || value === "versions" || value === "artifacts") return value;
+  return "projects";
+};
+
+const getTabPath = (tab: AppTab) => `/${tab}`;
+
 const Index = () => {
-  const [activeTab, setActiveTab] = useState(() => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<AppTab>(() => {
+    const pathTab = getTabFromPath(window.location.pathname);
+    if (pathTab) return pathTab;
     const params = new URLSearchParams(window.location.search);
-    return params.get("tab") || localStorage.getItem("archon_active_tab") || "projects";
+    if (params.has("tab")) return normalizeTab(params.get("tab"));
+    return normalizeTab(localStorage.getItem("archon_active_tab"));
   });
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
@@ -38,21 +61,37 @@ const Index = () => {
   const { t } = useLanguage();
   const { projects, loading, error, stats: projectStats } = useProjects();
 
-  // Restore active tab from URL query param (set by Studio when switching)
+  const changeTab = useCallback((tab: AppTab, options?: { replace?: boolean }) => {
+    setActiveTab(tab);
+    const nextPath = getTabPath(tab);
+    if (location.pathname !== nextPath) {
+      navigate(nextPath, { replace: options?.replace ?? false });
+    }
+  }, [location.pathname, navigate]);
+
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tabFromUrl = params.get('tab');
-    if (tabFromUrl) {
-      setActiveTab(tabFromUrl);
+    const params = new URLSearchParams(location.search);
+    const pathTab = getTabFromPath(location.pathname);
+    const nextTab = pathTab ?? (params.has("tab") ? normalizeTab(params.get("tab")) : normalizeTab(localStorage.getItem("archon_active_tab")));
+    if (nextTab !== activeTab) {
+      setActiveTab(nextTab);
     }
-    const projectIdFromUrl = params.get('projectId');
+
+    const projectIdFromUrl = params.get("projectId");
     if (projectIdFromUrl) {
-      setSelectedProjectId(parseInt(projectIdFromUrl));
+      const parsedProjectId = parseInt(projectIdFromUrl, 10);
+      if (!Number.isNaN(parsedProjectId)) {
+        setSelectedProjectId(parsedProjectId);
+      }
     }
-    if (tabFromUrl || projectIdFromUrl) {
-      window.history.replaceState({}, '', '/');
+
+    if (params.has("tab") || params.has("projectId")) {
+      const canonicalPath = getTabPath(nextTab);
+      if (location.pathname !== canonicalPath || location.search) {
+        navigate(canonicalPath, { replace: true });
+      }
     }
-  }, []);
+  }, [activeTab, location.pathname, location.search, navigate]);
 
   // Persist active tab to localStorage
   useEffect(() => {
@@ -526,7 +565,7 @@ const Index = () => {
     <div ref={mainContainerRef} className="min-h-screen bg-background">
       <Navbar
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={(tab) => changeTab(normalizeTab(tab))}
         selectedProjectName={projects.find(p => p.id === selectedProjectId)?.name}
         selectedProjectVersion={selectedVersion != null ? `v${selectedVersion}` : projects.find(p => p.id === selectedProjectId)?.versions}
         selectedProjectId={selectedProjectId}
@@ -871,7 +910,7 @@ const Index = () => {
                   <span className="ml-2 text-sm text-muted-foreground">Loading projects...</span>
                 </div>
               ) : (
-                <ProjectTable projects={searchQuery.trim() ? projects.filter(p => p.name.toLowerCase().includes(searchQuery.trim().toLowerCase())) : projects} onProjectSelect={(id) => { setSelectedProjectId(id); setActiveTab("pipeline"); }} />
+                <ProjectTable projects={searchQuery.trim() ? projects.filter(p => p.name.toLowerCase().includes(searchQuery.trim().toLowerCase())) : projects} onProjectSelect={(id) => { setSelectedProjectId(id); changeTab("pipeline"); }} />
               )}
               <ActivityFeed />
             </div>
@@ -882,7 +921,7 @@ const Index = () => {
               onCreated={(id) => {
                 setShowNewProject(false);
                 setSelectedProjectId(id);
-                setActiveTab("pipeline");
+                changeTab("pipeline");
               }}
             />
           </>
@@ -893,7 +932,7 @@ const Index = () => {
             projectId={selectedProjectId}
             selectedVersion={selectedVersion}
             onVersionSelect={setSelectedVersion}
-            onArtifactNavigate={(tab) => { setArtifactTab(tab); setActiveTab("artifacts"); }}
+            onArtifactNavigate={(tab) => { setArtifactTab(tab); changeTab("artifacts"); }}
           />
         )}
 

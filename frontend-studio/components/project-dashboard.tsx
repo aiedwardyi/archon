@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
@@ -377,7 +377,7 @@ export function ProjectDashboard() {
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <span className="text-sm text-foreground font-mono">v{project.execution_count || 1}</span>
+                  <span className="text-sm text-foreground font-mono">v{project.execution_count ?? 0}</span>
                 </td>
                 <td className="px-4 py-3">
                   <span className="text-sm text-muted-foreground">{formatDate(project.created_at)}</span>
