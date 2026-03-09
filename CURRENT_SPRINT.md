@@ -163,11 +163,65 @@ Codex rewrote consumer as indie-maker AI app builder (Lovable/v0 positioning):
 
 ### Remaining phases:
 - ✅ Phase B bug fixes (Complete Mar 9, 2026)
-- 🔴 Phase C: Add auth pages (login/register matching existing backend)
+- 🔧 Phase C: "Try Before Register" auth flow + seed projects (In Progress)
 - 🔴 Phase D: Add Versions page (moat feature)
-- 🔴 Phase E: Add Build Insights card
+- 🔧 Phase E: Build Insights slide-up card (In Progress)
 - 🔴 Phase F: Mobile polish pass
 - ✅ Wire Restore Version in Enterprise + Studio (Complete Mar 9, 2026)
+
+### Phase C: "Try Before Register" + Seed Projects (🔧 In Progress Mar 9, 2026)
+
+**Concept:** Let users experience a full build BEFORE being asked to register. Conversion funnel play — show value first, capture after.
+
+**Consumer (frontend-consumer):**
+- Guest build: user types prompt → app builds → preview shown → THEN modal: "Create a free account to save & iterate"
+- Backend guest mode: unauthenticated project creation, linked to account on register
+- Login + Register pages (light mode, minimal, indie-maker aesthetic)
+- Google OAuth button
+- After auth → stay on consumer (no redirect to Enterprise)
+
+**Enterprise + Studio (frontend + frontend-studio):**
+- Same try-before-register flow
+- Seed projects: pre-built demo projects so new users see populated Projects page, can explore Versions/Artifacts/Preview
+- Seed data created at register time (or on first login if empty)
+- Seeds: 1-2 projects with 2-3 versions each, real brief/plan/code/preview artifacts
+
+**Implementation order:**
+1. Consumer auth pages + guest build flow (first)
+2. Backend: guest project creation + account linking
+3. Enterprise + Studio: seed project system
+4. Enterprise + Studio: try-before-register flow
+
+## Quality Regression Investigation (Queued)
+
+**Goal:** Find the commit that produced peak design quality and identify what changed.
+
+**Reference projects (peak output):**
+| Project | ID | Created | Versions | Notes |
+|---|---|---|---|---|
+| Pokemon Site | 3 | Feb 19 | 2 | |
+| Pokemon 2 | 9 | Feb 20 | 1 | |
+| v2-pokemon | 20 | Feb 22 | 4 | |
+| ff7-fanpage-v3 | 38 | Feb 23 | 3 | Character animations — best example |
+| ff7 | 68 | Feb 27 | 2 | |
+| ff7-v2 | 71 | Feb 27 | 2 | |
+| build-details-test | TBD | ~Feb 27 | — | |
+
+**What made them great:** Character art, Apple-like bubbly cards, animations, nice fonts.
+
+**Peak quality window:** Feb 19–27, 2026.
+
+**Investigation steps:**
+1. `git log --oneline --after="2026-02-18" --before="2026-02-28"` — list all commits in peak window
+2. Read `output/38/v1/code/src/index.html` (ff7-fanpage-v3 v1) — inspect the actual generated HTML/CSS
+3. Read `output/71/v1/code/src/index.html` (ff7-v2 v1) — compare
+4. Diff `prompts/engineer.txt` at peak commit vs current HEAD — find what changed
+5. Diff `prompts/planner.txt` at peak commit vs current HEAD
+6. Diff `agents/engineer_agent.py` at peak commit vs current HEAD
+7. Check if design kit system (base.css) replaced the raw CSS generation that produced peak quality
+8. Identify specific regressions and create a fix plan
+
+**Key question:** Did the design kit CSS class assembly system lose the raw creative CSS generation that produced the Apple-like aesthetic?
 
 ## Up Next
 

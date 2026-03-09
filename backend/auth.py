@@ -13,12 +13,25 @@ from datetime import datetime, timedelta, timezone
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 
-from models import User, Project, TokenBlocklist, get_session
+from models import Execution, Project, TokenBlocklist, User, get_session
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+
+
+def claim_guest_project_for_user(db, project_id: int, user_id: int):
+    project = db.get(Project, project_id)
+    if not project:
+        raise LookupError("Guest project not found")
+    if project.owner_id is not None:
+        raise ValueError("Guest project has already been claimed")
+
+    project.owner_id = user_id
+    project.updated_at = datetime.now(timezone.utc)
+    db.query(Execution).filter(Execution.project_id == project_id).update({"owner_id": user_id})
+    return project
 
 
 def init_jwt(app):
@@ -66,6 +79,11 @@ def register():
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
     name = (data.get("name") or "").strip()
+    guest_project_id = data.get("guest_project_id")
+    if guest_project_id in ("", None):
+        guest_project_id = None
+    elif not str(guest_project_id).isdigit():
+        return jsonify({"error": "guest_project_id must be an integer"}), 400
 
     if not email or not password:
         return jsonify({"error": "Email and password are required"}), 400
@@ -81,6 +99,18 @@ def register():
         pw_hash = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
         user = User(email=email, name=name or email.split("@")[0], password_hash=pw_hash)
         db.add(user)
+        db.flush()
+
+        if guest_project_id is not None:
+            try:
+                claim_guest_project_for_user(db, int(guest_project_id), user.id)
+            except ValueError:
+                db.rollback()
+                return jsonify({"error": "Guest project has already been claimed"}), 409
+            except LookupError:
+                db.rollback()
+                return jsonify({"error": "Guest project not found"}), 404
+
         db.commit()
         db.refresh(user)
 
@@ -131,6 +161,11 @@ def login():
 def google_login():
     data = request.get_json()
     credential = (data or {}).get("token") or ""
+    guest_project_id = (data or {}).get("guest_project_id")
+    if guest_project_id in ("", None):
+        guest_project_id = None
+    elif not str(guest_project_id).isdigit():
+        return jsonify({"error": "guest_project_id must be an integer"}), 400
     if not credential:
         return jsonify({"error": "No Google token provided"}), 400
 
@@ -153,8 +188,20 @@ def google_login():
         if not user:
             user = User(email=email, name=name, password_hash=None)
             db.add(user)
-            db.commit()
-            db.refresh(user)
+            db.flush()
+
+        if guest_project_id is not None:
+            try:
+                claim_guest_project_for_user(db, int(guest_project_id), user.id)
+            except ValueError:
+                db.rollback()
+                return jsonify({"error": "Guest project has already been claimed"}), 409
+            except LookupError:
+                db.rollback()
+                return jsonify({"error": "Guest project not found"}), 404
+
+        db.commit()
+        db.refresh(user)
 
         token = create_access_token(identity=str(user.id))
         return jsonify({

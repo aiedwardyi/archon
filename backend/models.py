@@ -65,6 +65,7 @@ class Project(Base):
             "name": self.name,
             "description": self.description,
             "status": self.status,
+            "owner_id": self.owner_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "execution_count": len(self.executions) if self.executions else 0,
@@ -82,6 +83,7 @@ class Execution(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     status = Column(String(50), nullable=False, default="pending")
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
@@ -138,6 +140,7 @@ class Execution(Base):
         return {
             "id": self.id,
             "project_id": self.project_id,
+            "owner_id": self.owner_id,
             "status": self.status,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "version": self.version,
@@ -194,6 +197,7 @@ def init_db():
         with engine.connect() as conn:
             cols = [row[1] for row in conn.execute(text("PRAGMA table_info(executions)")).fetchall()]
             for col_name, col_type in [
+                ("owner_id", "INTEGER"),
                 ("tokens_used", "INTEGER"),
                 ("estimated_cost", "REAL"),
                 ("credits_used", "INTEGER"),
@@ -205,6 +209,11 @@ def init_db():
             ]:
                 if col_name not in cols:
                     conn.execute(text(f"ALTER TABLE executions ADD COLUMN {col_name} {col_type}"))
+            conn.execute(text(
+                "UPDATE executions "
+                "SET owner_id = (SELECT owner_id FROM projects WHERE projects.id = executions.project_id) "
+                "WHERE owner_id IS NULL"
+            ))
             conn.commit()
     except Exception as e:
         print(f"Warning: could not ensure build metrics columns: {e}")
