@@ -403,7 +403,9 @@ A prominent banner also appears at the top of the Governance tab with plain-Engl
 | 18 | 🔴 | Unified auth + plan-based UI routing |
 | 8.3 | 🔴 | Client shareable read-only link |
 | 20.1 | ✅ | Visual reference input — attach images to guide AI builds |
-| 21 | 🔧 | Build Insights — post-build prompt coaching to help users write better prompts |
+| 21 | ✅ | Build Insights — post-build prompt coaching to help users write better prompts |
+| — | ✅ | Light mode contrast fixes — Enterprise + Studio icon/text contrast in light mode |
+| 22 | 🔧 | Consumer frontend overhaul — audit complete, auth + versions + mobile rebuild in progress |
 
 ---
 

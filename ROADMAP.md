@@ -594,6 +594,30 @@ guessing. Tour design will be driven by real friction points, not assumptions.
 - Google OAuth: Added localhost:8080 to authorized origins (console config, not code)
 - Visually verified both frontends in light + dark mode
 
+## Phase 22 — Consumer Frontend Overhaul (🔧 In Progress Mar 9, 2026)
+
+Full rebuild of `frontend-consumer/` (port 3002) for non-technical agency clients.
+
+**Phase A: Audit (✅ Complete Mar 9, 2026)**
+Codex audited all consumer frontend files + ran build + tsc + live browser test.
+Found 2 critical, 5 high, 5 medium issues + 7 feature gaps vs Enterprise/Studio.
+Top blockers: no auth (JWT never sent), fake chat composer (never calls /iterate), developer-oriented UX.
+
+**Phase B: Implementation (🔧 In Progress Mar 9, 2026)**
+Codex rewrote consumer as indie-maker AI app builder (Lovable/v0 competitor positioning).
+Prompt-first hero, founder-friendly copy, real chat/iterate API calls, auth headers, simplified settings.
+7 bugs found during live testing — Codex fixing: preview auto-refresh, tab data loading, light mode default, iteration quality.
+Consumer Restore Version works — Enterprise + Studio buttons need wiring (follow-up).
+
+**Remaining phases:**
+- B bug fixes (in progress)
+- C: Add auth pages (login/register/Google OAuth matching existing backend)
+- D: Add Versions page (THE MOAT — timeline + preview + "what changed" narrative)
+- E: Add Build Insights card (friendly prompt coaching from Phase 21 backend)
+- F: Mobile polish pass (responsive sidebar, project detail, preview iframe)
+
+**Design principles:** Simple > powerful, business language, mobile-first, light mode default, no developer jargon. Core flow: Describe → Build → Review → Revise.
+
 ## Phase 21 — Build Insights (Prompt Coaching) (✅ Complete Mar 8, 2026)
 
 Post-build suggestions that help users write better prompts. Positioned as intelligent platform feedback, not a tutorial.

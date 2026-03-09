@@ -97,11 +97,83 @@ Files changed: WelcomeBanner.tsx, ProfileModal.tsx, Navbar.tsx, account-modals.t
 - ✅ Added `http://localhost:8080` to Google Cloud Console authorized origins + redirect URIs
 - Enterprise Google Sign-In now works on port 8080
 
+## Phase 22 — Consumer Frontend Overhaul (🔧 In Progress Mar 9, 2026)
+
+### Phase A: Audit (✅ Complete Mar 9, 2026)
+Full audit of `frontend-consumer/` by Codex. Key findings:
+
+**Critical:**
+- No authentication — never reads/writes `archon_token`, never sends Authorization headers. All project flows dead against JWT-protected backend
+- "Ask for changes" composer is fake — submits only append local log, never calls `/iterate` or `/chat` backend APIs
+
+**High:**
+- Connection state mis-modeled — any non-OK fetch = "backend offline" overlay, even for auth errors
+- API base hardcoded to `http://localhost:5000` with no env abstraction
+- TypeScript health broken — `tsc --noEmit` fails extensively despite strict config
+- Multiple no-op controls: Publish, Browse, Source, Pro Features, most Settings fields
+- Developer-oriented IA/copy: dark mode default, "Next-Gen Multi-Agent Swarm", PRDs, Runtime Logs, Simulate Fault, Reasoning Engine, Vibe coding level
+
+**Medium:**
+- i18n partial — large sections hardcoded English despite KO/EN toggle
+- Settings modal mostly fake (profile, password, model selection don't hit backend)
+- Error/empty states misleading — failures collapse to "build in progress"
+- Dead/duplicated code: LivePreview, ProjectCard, StageStepper, mock gemini.ts unused
+- index.html drifted: Tailwind CDN, Google font CDN, importmap remnants, missing /index.css
+
+**Feature gaps vs Enterprise/Studio:**
+- Auth (blocks everything else)
+- Versions page (THE MOAT — no dedicated route, no comparison narrative)
+- Build Insights / Prompt Coach (backend exists, consumer missing)
+- Credit balance display
+- Voice input (Watson STT/TTS)
+- Visual reference image attachments
+- Governance / quality summaries
+
+**Recommended approach:**
+- Add: auth → versions page → build insights → credits chip
+- Simplify: remove dev chrome (logs, fault injection, reasoning engine, vibe coding, fake settings)
+- Simplify copy: rename to client language, default light mode, core flow = Describe → Build → Review → Revise
+- Mobile-first: reduce sidebar weight, responsive project detail, collapsible tabs
+
+### Phase B: Implementation (🔧 In Progress Mar 9, 2026)
+Codex rewrote consumer as indie-maker AI app builder (Lovable/v0 positioning):
+- ✅ Landing page: prompt-first hero, "What can I build for you?", founder-friendly suggestions (Landing Page, Portfolio Site, Dashboard, Online Store)
+- ✅ Copy rewrite: removed all developer jargon (Multi-Agent Swarm, PRD, Architecture, Pipeline, Vibe coding, Reasoning Engine)
+- ✅ API layer: auth headers via `archon_token`, configurable API base, real `/chat` + `/iterate` calls
+- ✅ Fake composer fixed: now calls real backend chat/iterate APIs
+- ✅ Connection state: only shows "Backend Offline" for network errors, not 401/403
+- ✅ Settings modal: simplified to theme + language only
+- ✅ Dead code removed: LivePreview, ProjectCard, StageStepper, gemini.ts
+- ✅ index.html cleaned: removed CDN scripts, importmap, duplicate tags
+- ✅ Recent projects grid below hero on landing page
+- ✅ "Every version saved. Undo anything." differentiator copy
+- ✅ Tabs renamed: Preview, Brief, Build Plan, Code, What changed, Versions
+
+**Bugs found during live testing (Codex fixing):**
+- 🔴 Preview iframe doesn't auto-refresh after build completes
+- 🔴 Brief tab shows "Could not load" (auth/version mismatch on fetch)
+- 🔴 Build Plan tab shows "Could not load"
+- 🔴 "What changed" tab shows "Could not load"
+- 🔴 Brief tab content shows Build Plan data instead of Brief on second build
+- 🔴 Light mode not defaulting (old localStorage overrides new default)
+- 🔴 Second prompt iteration produces broken/unstyled preview
+
+**Discovered during testing:**
+- ✅ Consumer has working Restore Version button — Enterprise + Studio restore buttons are static/unwired. Wire them up as a follow-up task.
+
+### Remaining phases:
+- 🔴 Phase B bug fixes (Codex in progress)
+- 🔴 Phase C: Add auth pages (login/register matching existing backend)
+- 🔴 Phase D: Add Versions page (moat feature)
+- 🔴 Phase E: Add Build Insights card
+- 🔴 Phase F: Mobile polish pass
+- 🔴 Wire Restore Version in Enterprise + Studio (parity with Consumer)
+
 ## Up Next
 
 | Phase | Description |
 |-------|-------------|
-| — | Frontend-consumer full UX/UI audit + bug fixes |
+| 22.B-F | Consumer frontend bug fixes, auth, versions, insights, mobile |
 | — | Re-run eval after planner fix, decide merge of feat/quality-target-tuning |
 | 8.3 | Client shareable read-only links (primary moat feature) |
 | 18 | Unified Auth + Plan-Based UI Routing |

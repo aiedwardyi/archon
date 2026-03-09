@@ -11,6 +11,8 @@ export interface Project {
 
 export type AgentStage = 'idle' | 'pm' | 'planner' | 'engineer' | 'complete';
 
+export type Language = 'en' | 'ko';
+
 export interface EngineerTask {
   id: string;
   filename: string;
@@ -66,11 +68,6 @@ export interface CodeResponse {
 }
 
 export interface SystemSettings {
-  model: 'Gemini 3 Pro' | 'Claude Opus 4.6' | 'Chatgpt-5.2';
   theme: 'dark' | 'light';
-  username: string;
-  email: string;
-  vibeLevel: number;
-  chatSuggestions: boolean;
-  completionSound: 'first' | 'always' | 'never';
+  language: Language;
 }

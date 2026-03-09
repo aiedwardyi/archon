@@ -72,3 +72,8 @@ flask_server.log
 
 # Archetype examples (reference images at root, not prompt archetypes)
 /archetypes/
+
+
+
+# temp files tmp_*.log tmp-*.log flask_server.log consumer-*.png 
+
