@@ -69,6 +69,7 @@ REQUIRED SECTIONS (inside .content-area)
    - Horizontal grid lines: stroke rgba(255,255,255,0.04), 5 lines
    - Add small circle dots (r=3, fill accent) on 3-4 data points for emphasis
    - NEVER leave chart empty — must have real SVG path data
+   - Add at least 2 contextual action chips (e.g. "Rebalance", "Export CSV") using `.interactive-chip` with visible hover states
 
 3. HOLDINGS TABLE — .data-table-wrapper > .data-table:
    - thead: 6 columns (Name, Price, 24h Change, Holdings, Value, Action)
@@ -76,6 +77,7 @@ REQUIRED SECTIONS (inside .content-area)
    - .cell-primary for asset names
    - .cell-positive / .cell-negative for price changes (include + or - prefix)
    - Action column: use .cell-action with text "Trade" — this shows clickable interaction
+   - Include keyboard-focusable interactive elements in Action cells (`<button>` or `<a tabindex=\"0\">`)
    - font-variant-numeric: tabular-nums on all numbers
    - NEVER use double currency symbols ($$)
 
@@ -100,6 +102,7 @@ DATA & CONTENT RULES
 - Table rows MUST have hover state (background lighten on hover — already in base.css)
 - KPI cards hover state: subtle lift + accent border glow (already in base.css)
 - Chart period buttons: one must have active/selected state
+- Depth polish target: include 1 elevated card treatment using layered shadows (shadow + subtle inner highlight), not flat surfaces only
 
 ═══════════════════════════════════════
 SELF-CHECK BEFORE OUTPUT

@@ -1,72 +1,54 @@
 # Overnight Eval Optimization Summary
 
-## Date: 2026-03-06
+## Date: 2026-03-10
 
 ## Final Scorecard (Best per archetype)
 
-| Archetype | Baseline | Best Score | Delta | Best Build |
-|-----------|----------|------------|-------|------------|
-| Game FF8 v2 | 64.0 | **83.2** | +19.2 | project 71 |
-| Game FF7 v2 | - | **83.0** | new | project 73 |
-| Ecommerce | 76.1 | **87.0** | +10.9 | project 78 (iter1) |
-| Portfolio | 74.1 | **81.8** | +7.7 | project 82 (iter2) |
-| Dashboard | 73.0 | **79.0** | +6.0 | project 83 (iter3a) |
-| SaaS Landing | 70.3 | **78.2** | +7.9 | project 85 (iter3a) |
+| Archetype | Baseline (Mar 6) | Best Score (Mar 10 run) | Delta | Best Build |
+|-----------|-------------------|--------------------------|-------|------------|
+| Ecommerce | 87.0 | **88.5** | +1.5 | project 163 (iter3) |
+| Game (FF8) | 83.2 | **84.5** | +1.3 | project 161 (iter3) |
+| Portfolio | 81.8 | **83.5** | +1.7 | project 169 (iter4) |
+| Dashboard | 79.0 | **81.0** | +2.0 | project 155 (iter2) |
+| SaaS Landing | 78.2 | **76.0** | -2.2 | project 162 (iter3) |
 
-**Average: 82.0/100** (up from ~69.6 baseline average)
+**Average best score this run: 82.7/100**
 
 ## Key Findings
 
 ### What Worked
-1. **Design kits (base.css + prompt)** dramatically improve quality by constraining the design system
-2. **Imagen 4 Ultra** via Vertex AI produces high-quality game art that significantly boosts game archetype scores
-3. **Specific CSS components** (chart-period-btn, cell-action, project-link, quick-add) add visible interactivity cues
-4. **Unsplash URLs with specific product images** in ecommerce kit produced the highest non-game score (87.0)
-5. **Portfolio project-link "View Project"** buttons improved interactivity score from 6.7 to 7.0
+1. JWT auth support in `eval/api_client.py` unblocked all protected backend endpoints.
+2. Running eval loop with elevated permissions resolved Playwright `WinError 5` screenshot failures.
+3. Rollback guard prevented major regressions from becoming persistent prompt state.
+4. Ecommerce and portfolio improved meaningfully within run progression, peaking at 88.5 and 83.5.
 
 ### What Didn't Work
-1. **Over-prescriptive prompts** (detailed bento card content specs) confused the engineer, causing catastrophic failures (SaaS iter2: 33.2)
-2. **"NO TICKER BAR" instructions** in dashboard caused regression (76.6 -> 73.0) — removed
-3. **Build variance is high** (5-10 point spread across identical prompts), requiring multiple builds to find good ones
+1. Game and SaaS had high variance and occasional collapse in content quality despite prompt improvements.
+2. Late-iteration regressions required rollback in multiple archetypes.
+3. 90+ target was not achieved for any archetype in this run.
 
-### Scoring Variance
-- Individual run variance: +/- 5-8 points (e.g., SaaS iter3b: 72.5, 78.0, 81.0)
-- Build-to-build variance: +/- 5-15 points (dashboard iter3a: 79.0 vs iter3b: 74.1)
-- 3-run averaging stabilizes scores but build quality variance remains
+## Regressions Rolled Back
+- Dashboard: 81.0 -> 71.0 (iter2 -> iter3), rollback applied
+- Game: 84.5 -> 65.5 (iter3 -> iter4), rollback applied
+- SaaS Landing: 76.0 -> 69.0 (iter3 -> iter4), rollback applied
+- Ecommerce: 88.5 -> 84.5 (iter3 -> iter4), rollback applied
 
-### Architecture Insights
-- gemini-2.5-flash as design agent planner works well
-- Imagen 4 Ultra for game assets is the biggest single quality boost
-- Design agent images are non-critical for non-game archetypes (ecommerce scored 87 with Unsplash URLs)
-- Full-page screenshots score significantly higher than viewport-only (shows all content sections)
+## Manual Design Kit Updates After Run
+- `prompts/archetypes/dashboard.css`, `dashboard.txt`
+  - Added stronger interaction chips, hover/focus cues, and explicit depth-polish requirements.
+- `prompts/archetypes/game.css`, `game.txt`
+  - Added focused interaction classes and stronger anti-placeholder/data-fallback requirements.
+- `prompts/archetypes/saas_landing.css`, `saas_landing.txt`
+  - Added contrast-safe text token usage, card-level interaction requirements, and tighter color-system guidance.
 
-## Design Kit Changes (iter1-iter3)
+## Auth Blocker Resolution
+- `eval/api_client.py` now:
+  - Registers eval user (`eval@archon.dev`) and logs in on 409.
+  - Handles both legacy and current auth routes (`/api/register` + `/api/auth/register`, `/api/login` + `/api/auth/login`).
+  - Sets `Authorization: Bearer <token>` on the shared session for all requests.
+  - Uses `/api/health` for backend reachability checks.
 
-### Dashboard (dashboard.css/txt)
-- Added .chart-period-btn / .chart-period-btn.active for visible period selector
-- Added .cell-action for "Trade" links in table
-- Chart card gets accent top border
-- Reverted "NO TICKER BAR" instruction
-
-### Ecommerce (ecommerce.css/txt)
-- Added .quick-add overlay that slides up on product card hover
-- Added .quick-add-btn styling
-- Enhanced shadow-card with inset highlight
-
-### Portfolio (portfolio.css/txt)
-- Added .project-link for "View Project" buttons on cards
-- Better about-image guidance (specific Unsplash portrait URL)
-- Project overlay default opacity 0.7 (always slightly visible)
-- Enhanced shadow-card with inset highlights and accent rings
-
-### SaaS Landing (saas_landing.css/txt)
-- Enhanced shadow-card with inset highlight
-- Enhanced shadow-hover with accent ring
-- Bento cards get gradient border on hover (::before pseudo-element)
-- Testimonial cards get gradient background and backdrop-filter
-- Comparison table container with surface background
-
-## Builds Summary
-- Total builds: ~20 (projects 71-87)
-- Total scoring runs: ~45 (3 runs per score x 15 scoring sessions)
-- Model: gemini-2.5-flash (Vertex AI) for all scoring
+## Artifacts
+- Iteration reports: `eval/results/report_iter_0.md` … `eval/results/report_iter_4.md`
+- Final report: `eval/results/report_final.md`
+- Checkpoint: `eval/results/checkpoint.md`

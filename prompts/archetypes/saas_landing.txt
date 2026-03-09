@@ -53,6 +53,7 @@ REQUIRED 11 SECTIONS (all visible on first paint)
    - .hero-ctas with .btn-primary + .btn-secondary
    - NEVER use background images — the gradient mesh IS the background
    - NEVER use <img> tags in the hero — no mockup images, no screenshots. The hero is TEXT + GRADIENT ONLY
+   - Maintain contrast: hero subtitle/body text must be at least `var(--text-high-contrast)` (no low-contrast gray-on-dark combinations)
 
 3. LOGO CLOUD — .logo-cloud with .marquee-label ("TRUSTED BY TEAMS AT 50,000+ COMPANIES") and .marquee-track containing 10 logo items (Notion, Figma, Linear, Stripe, Vercel, Loom, Intercom, Airtable, Webflow, Framer). Duplicate for seamless loop (20 items total). Each .logo-item has the company name as TEXT ONLY (no SVG icons). Use font-weight: 600 and letter-spacing for a clean logo-text look. NEVER use SVG icons in the logo cloud — they always end up identical, which triggers score-killer #16. The company NAME is the logo.
 
@@ -62,6 +63,7 @@ REQUIRED 11 SECTIONS (all visible on first paint)
    - Card 3: .bento-card (single column — stat bars or mini chart)
    - Card 4: .bento-card.bento-card--span2 (spans 2 columns — integration logos or workflow)
    - Each card MUST have a .card-badge + h3 + .card-desc + a coded visual element (mini UI, SVG, metric bars)
+   - Each card must include one interactive cue (`.card-link`, button, or tab trigger) with hover and focus styles
    - NEVER leave feature cards as text-only
    - NEVER use <img> tags in feature cards — build coded visuals: CSS bar charts, SVG sparklines, metric numbers, mini UI mockups in HTML. Broken image placeholders are a critical failure
 
@@ -72,6 +74,7 @@ REQUIRED 11 SECTIONS (all visible on first paint)
 7. PRICING — .pricing-toggle (Monthly/Annual with Alpine.js x-data) + .pricing-grid with 3 .pricing-card tiers. Middle card: .pricing-card--featured. Monthly: $9/$29/$79. Annual: $7/$23/$63 + .save-badge "Save 20%". Each card: .plan-name, .plan-price, .plan-desc, .plan-features (5-6 items with green check SVGs), .plan-btn
 
 8. TESTIMONIALS — .testimonials-grid with 3 .testimonial-card. Each: .quote (real testimonial text), .author with .author-avatar (SVG silhouette inside) + .author-name + .author-role. Use realistic names, companies, and roles.
+   - Quotes must use high-contrast body color (not muted text) to avoid readability failures
 
 9. FAQ — .faq-list with 6+ .faq-item. Each: .faq-question with text + .chevron SVG, .faq-answer. Use Alpine.js x-data for open/close. Real questions relevant to the product.
 
@@ -91,6 +94,7 @@ CONTENT & DATA RULES
 - NEVER use <img> tags anywhere — no stock photos, no AI images, no mockup images, no illustration images. Every visual must be CODED in HTML/CSS (mini UIs, SVG shapes, CSS gradients). If you output a single <img> tag, the entire page fails
 - ONLY include the 11 sections listed above — do NOT invent extra sections like "How It Works", "Workflow", or "Process". Every section on the page must be one of the 11 required sections
 - Accent restraint: violet on max 4 element types (CTA buttons, featured pricing border, hero highlight, section badge borders)
+- Color system rule: keep one dominant accent + one secondary accent only; avoid adding low-contrast tertiary grays for primary copy
 
 ═══════════════════════════════════════
 JAVASCRIPT (Alpine.js + interactions)

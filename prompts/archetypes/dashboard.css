@@ -25,6 +25,7 @@
   --radius: 12px;
   --radius-sm: 8px;
   --shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.03);
+  --shadow-glow: 0 12px 36px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(16, 185, 129, 0.12);
   --transition: all 0.2s ease;
 }
 
@@ -336,6 +337,27 @@ a { color: inherit; text-decoration: none; }
   border-top: 3px solid var(--accent);
 }
 
+.interactive-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.02);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.interactive-chip:hover {
+  border-color: rgba(16, 185, 129, 0.4);
+  color: var(--text);
+  box-shadow: var(--shadow-glow);
+}
+
 .chart-period-btn {
   font-size: 0.75rem;
   font-weight: 600;
@@ -476,6 +498,7 @@ a { color: inherit; text-decoration: none; }
 
 .activity-item:hover {
   background: rgba(255, 255, 255, 0.02);
+  box-shadow: inset 2px 0 0 rgba(16, 185, 129, 0.45);
 }
 
 .activity-item:last-child {

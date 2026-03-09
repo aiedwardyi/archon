@@ -18,6 +18,52 @@ class BuilderAPI:
     def __init__(self, base_url: str = "http://localhost:5000"):
         self.base_url = base_url.rstrip("/")
         self.session = requests.Session()
+        self._authenticate()
+
+    def _extract_token(self, data: dict) -> str | None:
+        return data.get("token") or data.get("access_token")
+
+    def _post_auth(self, paths: list[str], payload: dict, timeout: int = 10) -> requests.Response | None:
+        """Try auth endpoints in order and return the first non-404 response."""
+        for path in paths:
+            resp = self.session.post(self._url(path), json=payload, timeout=timeout)
+            if resp.status_code != 404:
+                return resp
+        return None
+
+    def _authenticate(self) -> None:
+        """Register/login eval user and attach bearer token to this session."""
+        email = "eval@archon.dev"
+        password = "evalpass123"
+        name = "Eval Runner"
+
+        register_paths = ["/api/register", "/api/auth/register"]
+        login_paths = ["/api/login", "/api/auth/login"]
+
+        register_resp = self._post_auth(
+            register_paths,
+            {"email": email, "password": password, "name": name},
+        )
+        if register_resp is None:
+            raise BuildError("No register endpoint found (tried /api/register and /api/auth/register)")
+
+        token = None
+        if register_resp.status_code in (200, 201):
+            token = self._extract_token(register_resp.json())
+        elif register_resp.status_code == 409:
+            login_resp = self._post_auth(login_paths, {"email": email, "password": password})
+            if login_resp is None:
+                raise BuildError("No login endpoint found (tried /api/login and /api/auth/login)")
+            login_resp.raise_for_status()
+            token = self._extract_token(login_resp.json())
+        else:
+            register_resp.raise_for_status()
+
+        if not token:
+            raise BuildError("Auth succeeded but no JWT token returned")
+
+        self.session.headers.update({"Authorization": f"Bearer {token}"})
+        logger.info("Authenticated eval API client")
 
     def _url(self, path: str) -> str:
         return f"{self.base_url}{path}"
@@ -25,8 +71,13 @@ class BuilderAPI:
     def health_check(self) -> bool:
         """Check if the backend is running."""
         try:
-            resp = self.session.get(self._url("/api/projects"), timeout=5)
-            return resp.status_code == 200
+            resp = self.session.get(self._url("/api/health"), timeout=5)
+            if resp.status_code == 200:
+                return True
+            if resp.status_code == 401:
+                logger.warning("Health endpoint returned 401; backend reachable but auth may be required")
+                return True
+            return False
         except requests.ConnectionError:
             return False
 
