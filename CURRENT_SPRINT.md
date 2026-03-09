@@ -163,11 +163,34 @@ Codex rewrote consumer as indie-maker AI app builder (Lovable/v0 positioning):
 
 ### Remaining phases:
 - ✅ Phase B bug fixes (Complete Mar 9, 2026)
-- 🔴 Phase C: Add auth pages (login/register matching existing backend)
+- 🔧 Phase C: "Try Before Register" auth flow + seed projects (In Progress)
 - 🔴 Phase D: Add Versions page (moat feature)
 - 🔴 Phase E: Add Build Insights card
 - 🔴 Phase F: Mobile polish pass
 - ✅ Wire Restore Version in Enterprise + Studio (Complete Mar 9, 2026)
+
+### Phase C: "Try Before Register" + Seed Projects (🔧 In Progress Mar 9, 2026)
+
+**Concept:** Let users experience a full build BEFORE being asked to register. Conversion funnel play — show value first, capture after.
+
+**Consumer (frontend-consumer):**
+- Guest build: user types prompt → app builds → preview shown → THEN modal: "Create a free account to save & iterate"
+- Backend guest mode: unauthenticated project creation, linked to account on register
+- Login + Register pages (light mode, minimal, indie-maker aesthetic)
+- Google OAuth button
+- After auth → stay on consumer (no redirect to Enterprise)
+
+**Enterprise + Studio (frontend + frontend-studio):**
+- Same try-before-register flow
+- Seed projects: pre-built demo projects so new users see populated Projects page, can explore Versions/Artifacts/Preview
+- Seed data created at register time (or on first login if empty)
+- Seeds: 1-2 projects with 2-3 versions each, real brief/plan/code/preview artifacts
+
+**Implementation order:**
+1. Consumer auth pages + guest build flow (first)
+2. Backend: guest project creation + account linking
+3. Enterprise + Studio: seed project system
+4. Enterprise + Studio: try-before-register flow
 
 ## Up Next
 

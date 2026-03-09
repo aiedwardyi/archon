@@ -610,11 +610,18 @@ Prompt-first hero, founder-friendly copy, real chat/iterate API calls, auth head
 Consumer Restore Version works — Enterprise + Studio buttons need wiring (follow-up).
 
 **Remaining phases:**
-- B bug fixes (in progress)
-- C: Add auth pages (login/register/Google OAuth matching existing backend)
+- B bug fixes (✅ Complete Mar 9, 2026)
+- C: "Try Before Register" auth + seed projects (🔧 In Progress)
 - D: Add Versions page (THE MOAT — timeline + preview + "what changed" narrative)
 - E: Add Build Insights card (friendly prompt coaching from Phase 21 backend)
 - F: Mobile polish pass (responsive sidebar, project detail, preview iframe)
+
+**Phase C: "Try Before Register" + Seed Projects**
+Conversion funnel: users build first, register after seeing results.
+- Consumer: guest build → post-build register modal → link guest project to account
+- Enterprise + Studio: same flow + seed demo projects (populated Projects/Versions/Artifacts)
+- Auth pages on all three frontends (consumer light, enterprise/studio dark split-layout)
+- Google OAuth on all three
 
 **Design principles:** Simple > powerful, business language, mobile-first, light mode default, no developer jargon. Core flow: Describe → Build → Review → Revise.
 
