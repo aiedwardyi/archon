@@ -167,7 +167,7 @@ Codex rewrote consumer as indie-maker AI app builder (Lovable/v0 positioning):
 - 🔴 Phase D: Add Versions page (moat feature)
 - 🔴 Phase E: Add Build Insights card
 - 🔴 Phase F: Mobile polish pass
-- 🔴 Wire Restore Version in Enterprise + Studio (parity with Consumer)
+- ✅ Wire Restore Version in Enterprise + Studio (Complete Mar 9, 2026)
 
 ## Up Next
 
@@ -178,5 +178,6 @@ Codex rewrote consumer as indie-maker AI app builder (Lovable/v0 positioning):
 | 8.3 | Client shareable read-only links (primary moat feature) |
 | 18 | Unified Auth + Plan-Based UI Routing |
 | 19 | Product Tour + Onboarding Walkthrough |
+
 
 
