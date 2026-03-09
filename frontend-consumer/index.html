@@ -16,8 +16,8 @@
     <script>
       (() => {
         try {
-          const saved = JSON.parse(localStorage.getItem('adt_settings') || localStorage.getItem('da_settings') || '{}');
-          const theme = saved.theme === 'dark' ? 'dark' : 'light';
+          const explicitTheme = localStorage.getItem('archon_consumer_theme_preference');
+          const theme = explicitTheme === 'dark' || explicitTheme === 'light' ? explicitTheme : 'light';
           document.documentElement.classList.add(theme);
           document.body?.classList?.add(theme);
         } catch {

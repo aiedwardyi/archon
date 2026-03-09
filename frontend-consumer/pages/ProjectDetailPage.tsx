@@ -20,6 +20,7 @@ import ArtifactViewer from '../components/ArtifactViewer';
 import { getLang, t } from '../i18n';
 import {
   backend,
+  BriefRecord,
   classifyProjectMessage,
   fetchBrief,
   fetchChatHistory,
@@ -30,6 +31,8 @@ import {
   fetchVersionTree,
   fetchVersions,
   getPreviewUrl,
+  HttpError,
+  isAuthError,
   isNetworkError,
   PromptHistoryEntry,
   restoreVersion,
@@ -41,6 +44,8 @@ import { Artifact, EngineerTask, Project } from '../types';
 
 interface ProjectDetailPageProps {
   projectId: string;
+  hasSession: boolean;
+  onAuthError: () => void;
   onBack: () => void;
   onOpenSidebar: () => void;
   onOpenSettings: () => void;
@@ -83,6 +88,48 @@ function getProgress(project?: Project) {
   if (project.currentStage === 'planner') return 58;
   if (project.currentStage === 'engineer') return 86;
   return 12;
+}
+
+function getLatestVersion(versions: VersionRecord[]): number | null {
+  if (versions.length === 0) return null;
+  return versions.reduce((latest, current) => (current.version > latest ? current.version : latest), versions[0].version);
+}
+
+function buildIterationPromptHistory(
+  originalPrompt: string,
+  messages: PromptHistoryEntry[],
+  userMessage: PromptHistoryEntry
+): PromptHistoryEntry[] {
+  const trimmedOriginalPrompt = originalPrompt.trim();
+  const sanitized = [...messages, userMessage]
+    .map(({ role, content }) => ({ role, content: content.trim() }))
+    .filter((entry) => entry.content.length > 0);
+
+  if (!trimmedOriginalPrompt) {
+    return sanitized;
+  }
+
+  const withoutOriginalPrompt = sanitized.filter(
+    (entry) => !(entry.role === 'user' && entry.content === trimmedOriginalPrompt)
+  );
+
+  return [{ role: 'user', content: trimmedOriginalPrompt }, ...withoutOriginalPrompt];
+}
+
+async function loadWithRetry<T>(loader: () => Promise<T>, retries = 0, delayMs = 700): Promise<T> {
+  let attempt = 0;
+
+  while (true) {
+    try {
+      return await loader();
+    } catch (error) {
+      if (attempt >= retries || isAuthError(error)) {
+        throw error;
+      }
+      attempt += 1;
+      await new Promise((resolve) => window.setTimeout(resolve, delayMs * attempt));
+    }
+  }
 }
 
 const EmptyPanel: React.FC<{ icon: React.ReactNode; title: string; detail?: string }> = ({ icon, title, detail }) => (
@@ -202,7 +249,14 @@ const CodePanel: React.FC<{ lang: ReturnType<typeof getLang>; projectId: string;
   );
 };
 
-const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId, onBack, onOpenSidebar, onOpenSettings }) => {
+const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
+  projectId,
+  hasSession,
+  onAuthError,
+  onBack,
+  onOpenSidebar,
+  onOpenSettings,
+}) => {
   const lang = getLang();
   const [project, setProject] = useState<Project | undefined>(undefined);
   const [activeTab, setActiveTab] = useState<ActiveTab>('preview');
@@ -211,6 +265,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId, onBack
   const [messages, setMessages] = useState<PromptHistoryEntry[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
+  const [composerError, setComposerError] = useState<string | null>(null);
   const [versionsState, setVersionsState] = useState({
     loading: true,
     error: false,
@@ -218,11 +273,14 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId, onBack
     selectedId: null as string | null,
     versions: [] as VersionRecord[],
   });
-  const [briefState, setBriefState] = useState<RemoteState<any>>(EMPTY_REMOTE);
+  const [briefState, setBriefState] = useState<RemoteState<BriefRecord>>(EMPTY_REMOTE);
   const [planState, setPlanState] = useState<RemoteState<Artifact>>(EMPTY_REMOTE);
   const [changesState, setChangesState] = useState<RemoteState<EngineerTask[]>>(EMPTY_REMOTE);
   const [headError, setHeadError] = useState(false);
+  const [previewRefreshKey, setPreviewRefreshKey] = useState(() => Date.now());
   const endRef = useRef<HTMLDivElement>(null);
+  const previousStatusRef = useRef<Project['status'] | null>(null);
+  const previousPreviewVersionRef = useRef<number | null>(null);
 
   useEffect(() => {
     const sync = () => setProject(backend.getProject(projectId));
@@ -277,7 +335,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId, onBack
     const load = async () => {
       setVersionsState((current) => ({ ...current, loading: true, error: false }));
       try {
-        const versions = await fetchVersions(projectId);
+        const versions = [...(await fetchVersions(projectId))].sort((left, right) => right.version - left.version);
         if (!cancelled) {
           setVersionsState((current) => ({
             ...current,
@@ -299,13 +357,47 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId, onBack
     };
   }, [projectId, project?.status]);
 
+  const latestVersion = useMemo(() => getLatestVersion(versionsState.versions), [versionsState.versions]);
+  const resolvedVersion = version ?? latestVersion;
+  const previewSrc = resolvedVersion ? `${getPreviewUrl(projectId, resolvedVersion)}?refresh=${previewRefreshKey}` : null;
+
+  useEffect(() => {
+    if (version == null && latestVersion != null) {
+      setVersion(latestVersion);
+      setHeadError(false);
+    }
+  }, [latestVersion, version]);
+
+  useEffect(() => {
+    const previousStatus = previousStatusRef.current;
+
+    if (project?.status === 'COMPLETED' && previousStatus === 'RUNNING') {
+      if (latestVersion != null) {
+        setVersion(latestVersion);
+        setHeadError(false);
+      }
+      setPreviewRefreshKey(Date.now());
+    }
+
+    previousStatusRef.current = project?.status ?? null;
+  }, [latestVersion, project?.status]);
+
+  useEffect(() => {
+    if (!resolvedVersion) return;
+    if (previousPreviewVersionRef.current === resolvedVersion) return;
+
+    previousPreviewVersionRef.current = resolvedVersion;
+    setPreviewRefreshKey(Date.now());
+  }, [resolvedVersion]);
+
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      if (!version) {
-        setBriefState({ loading: false, error: headError, data: null });
-        setPlanState({ loading: false, error: headError, data: null });
-        setChangesState({ loading: false, error: headError, data: null });
+      if (!resolvedVersion) {
+        const hasVersionError = headError && latestVersion == null;
+        setBriefState({ loading: false, error: hasVersionError, data: null });
+        setPlanState({ loading: false, error: hasVersionError, data: null });
+        setChangesState({ loading: false, error: hasVersionError, data: null });
         return;
       }
 
@@ -313,21 +405,41 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId, onBack
       setPlanState({ loading: true, error: false, data: null });
       setChangesState({ loading: true, error: false, data: null });
 
+      const retries = project?.status === 'COMPLETED' ? 2 : 0;
       const [brief, plan, code] = await Promise.allSettled([
-        fetchBrief(projectId, version),
-        fetchPlan(projectId, version),
-        fetchCodeArtifact(projectId, version),
+        loadWithRetry(() => fetchBrief(projectId, resolvedVersion), retries),
+        loadWithRetry(() => fetchPlan(projectId, resolvedVersion), retries),
+        loadWithRetry(() => fetchCodeArtifact(projectId, resolvedVersion), retries),
       ]);
       if (cancelled) return;
 
-      setBriefState(brief.status === 'fulfilled' ? { loading: false, error: false, data: brief.value } : { loading: false, error: true, data: null });
+      const authFailure = [brief, plan, code].find(
+        (result) => result.status === 'rejected' && isAuthError(result.reason)
+      );
+      if (authFailure) {
+        onAuthError();
+      }
+
+      const treatAsPending = (result: PromiseSettledResult<unknown>) =>
+        result.status === 'rejected' &&
+        result.reason instanceof HttpError &&
+        result.reason.status === 404 &&
+        project?.status !== 'COMPLETED';
+
+      setBriefState(
+        brief.status === 'fulfilled'
+          ? { loading: false, error: false, data: brief.value }
+          : treatAsPending(brief)
+          ? { loading: false, error: false, data: null }
+          : { loading: false, error: true, data: null }
+      );
       setPlanState(
         plan.status === 'fulfilled'
           ? {
               loading: false,
               error: false,
               data: {
-                id: `plan-${projectId}-${version}`,
+                id: `plan-${projectId}-${resolvedVersion}`,
                 projectId,
                 type: 'PLAN',
                 title: t(lang, 'buildPlan'),
@@ -336,15 +448,23 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId, onBack
                 agent: 'Archon',
               },
             }
+          : treatAsPending(plan)
+          ? { loading: false, error: false, data: null }
           : { loading: false, error: true, data: null }
       );
-      setChangesState(code.status === 'fulfilled' ? { loading: false, error: false, data: code.value.tasks } : { loading: false, error: true, data: null });
+      setChangesState(
+        code.status === 'fulfilled'
+          ? { loading: false, error: false, data: code.value.tasks }
+          : treatAsPending(code)
+          ? { loading: false, error: false, data: [] }
+          : { loading: false, error: true, data: null }
+      );
     };
     void load();
     return () => {
       cancelled = true;
     };
-  }, [projectId, version, lang, headError]);
+  }, [project?.status, projectId, resolvedVersion, latestVersion, lang, headError, onAuthError]);
 
   const selectedVersion = useMemo(
     () => versionsState.versions.find((item) => item.id === versionsState.selectedId) || null,
@@ -374,7 +494,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId, onBack
 
   const handleSendMessage = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!chatInput.trim() || chatLoading || project?.status === 'RUNNING') return;
+    if (!chatInput.trim() || chatLoading || project?.status === 'RUNNING' || !hasSession) return;
 
     const userMessage: PromptHistoryEntry = {
       role: 'user',
@@ -382,10 +502,12 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId, onBack
       timestamp: new Date().toISOString(),
     };
     const nextMessages = [...messages, userMessage];
+    const promptHistory = buildIterationPromptHistory(project.description || project.name, messages, userMessage);
 
     setMessages(nextMessages);
     setChatInput('');
     setChatLoading(true);
+    setComposerError(null);
 
     try {
       const response = await classifyProjectMessage(projectId, userMessage.content);
@@ -400,11 +522,22 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId, onBack
         await saveChatMessages(projectId, updated);
       } else {
         setActiveTab('preview');
-        await backend.startIteration(projectId, userMessage.content, nextMessages);
+        await backend.startIteration(projectId, userMessage.content, promptHistory);
       }
     } catch (error) {
-      if (isNetworkError(error)) {
-        setMessages((current) => current.slice(0, -1));
+      setMessages((current) => {
+        if (current[current.length - 1]?.timestamp === userMessage.timestamp) {
+          return current.slice(0, -1);
+        }
+        return current;
+      });
+      if (isAuthError(error)) {
+        setComposerError(t(lang, 'authRequiredBody'));
+        onAuthError();
+      } else if (isNetworkError(error)) {
+        setComposerError(t(lang, 'backendRequired'));
+      } else {
+        setComposerError(t(lang, 'couldNotLoad'));
       }
       console.error('Failed to handle project chat', error);
     } finally {
@@ -552,16 +685,32 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId, onBack
               <div ref={endRef} />
             </div>
             <form onSubmit={handleSendMessage} className="border-t border-slate-200 px-5 py-4 dark:border-white/10">
+              {(!hasSession || composerError) && (
+                <div className="mb-3 rounded-[1.25rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
+                  {!hasSession ? t(lang, 'authRequiredBody') : composerError}
+                </div>
+              )}
               <textarea
                 value={chatInput}
-                onChange={(event) => setChatInput(event.target.value)}
-                disabled={chatLoading || project.status === 'RUNNING'}
-                placeholder={project.status === 'RUNNING' ? t(lang, 'buildInProgress') : t(lang, 'chatComposerPlaceholder')}
+                onChange={(event) => {
+                  setChatInput(event.target.value);
+                  if (composerError) {
+                    setComposerError(null);
+                  }
+                }}
+                disabled={chatLoading || project.status === 'RUNNING' || !hasSession}
+                placeholder={
+                  !hasSession
+                    ? t(lang, 'authRequiredBody')
+                    : project.status === 'RUNNING'
+                    ? t(lang, 'buildInProgress')
+                    : t(lang, 'chatComposerPlaceholder')
+                }
                 className="min-h-[120px] w-full resize-none rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-6 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-300 focus:bg-white dark:border-white/10 dark:bg-slate-950/40 dark:text-white dark:placeholder:text-slate-400/70 dark:focus:bg-slate-950"
               />
               <button
                 type="submit"
-                disabled={!chatInput.trim() || chatLoading || project.status === 'RUNNING'}
+                disabled={!chatInput.trim() || chatLoading || project.status === 'RUNNING' || !hasSession}
                 className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
               >
                 {chatLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
@@ -573,13 +722,13 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId, onBack
 
         <section className="custom-scrollbar order-1 overflow-y-auto lg:order-2">
           {activeTab === 'preview' &&
-            (version ? (
+            (resolvedVersion && previewSrc ? (
               <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#111827]">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4 dark:border-white/10">
                   <div>
                     <div className="text-sm font-semibold text-slate-950 dark:text-white">{t(lang, 'latestVersion')}</div>
                     <div className="mt-1 text-sm text-slate-500 dark:text-slate-300/70">
-                      {t(lang, 'versionHistory')} {version}
+                      {t(lang, 'versionHistory')} {resolvedVersion}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -611,10 +760,10 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId, onBack
                 </div>
                 <div className="bg-slate-100 p-4 dark:bg-slate-950/40 sm:p-6">
                   {viewport === 'desktop' ? (
-                    <iframe title="Project preview" src={getPreviewUrl(projectId, version)} className="h-[70vh] w-full rounded-[1.5rem] border-0 bg-white shadow-sm" />
+                    <iframe title="Project preview" src={previewSrc} className="h-[70vh] w-full rounded-[1.5rem] border-0 bg-white shadow-sm" />
                   ) : (
                     <div className="mx-auto w-[375px] max-w-full overflow-hidden rounded-[2.25rem] border-[10px] border-slate-950 bg-white shadow-2xl dark:border-slate-200">
-                      <iframe title="Project preview mobile" src={getPreviewUrl(projectId, version)} className="h-[70vh] w-full border-0 bg-white" />
+                      <iframe title="Project preview mobile" src={previewSrc} className="h-[70vh] w-full border-0 bg-white" />
                     </div>
                   )}
                 </div>
@@ -644,9 +793,11 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId, onBack
                     </ul>
                   </section>
                   <section className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-white/5">
-                    <h3 className="text-sm font-semibold text-slate-950 dark:text-white">{t(lang, 'buildPlan')}</h3>
+                    <h3 className="text-sm font-semibold text-slate-950 dark:text-white">{t(lang, 'briefGoals')}</h3>
                     <ul className="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-200/80">
-                      {(briefState.data.techStackRecommendation || []).map((item: string) => (
+                      {(
+                        briefState.data.goals.length > 0 ? briefState.data.goals : briefState.data.userStories
+                      ).map((item: string) => (
                         <li key={item} className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-950/40">
                           {item}
                         </li>
@@ -654,6 +805,18 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId, onBack
                     </ul>
                   </section>
                 </div>
+                {briefState.data.targetUsers?.length > 0 && (
+                  <section className="mt-6 rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-white/5">
+                    <h3 className="text-sm font-semibold text-slate-950 dark:text-white">{t(lang, 'briefAudience')}</h3>
+                    <ul className="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-200/80">
+                      {briefState.data.targetUsers.map((user: string) => (
+                        <li key={user} className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-950/40">
+                          {user}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
               </div>
             ) : (
               <EmptyPanel icon={<FileText size={22} />} title={t(lang, 'noBriefYet')} />
@@ -670,7 +833,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId, onBack
               <EmptyPanel icon={<Layers3 size={22} />} title={t(lang, 'noPlanYet')} />
             ))}
 
-          {activeTab === 'code' && <CodePanel lang={lang} projectId={projectId} version={version} />}
+          {activeTab === 'code' && <CodePanel lang={lang} projectId={projectId} version={resolvedVersion} />}
 
           {activeTab === 'changes' &&
             (changesState.loading ? (
@@ -694,7 +857,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ projectId, onBack
                 </div>
               </div>
             ) : (
-              <EmptyPanel icon={<History size={22} />} title={t(lang, 'couldNotLoad')} />
+              <EmptyPanel icon={<History size={22} />} title={t(lang, 'noChangesYet')} />
             ))}
 
           {activeTab === 'versions' &&

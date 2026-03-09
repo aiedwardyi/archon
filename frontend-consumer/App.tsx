@@ -5,8 +5,10 @@ import Sidebar from './components/Sidebar';
 import { getLang, setLang } from './i18n';
 import ProjectDetailPage from './pages/ProjectDetailPage';
 import ProjectsPage from './pages/ProjectsPage';
-import { backend, isNetworkError } from './services/orchestrator';
+import { backend, isAuthError, isNetworkError } from './services/orchestrator';
 import { Project, SystemSettings } from './types';
+
+const THEME_PREFERENCE_KEY = 'archon_consumer_theme_preference';
 
 function getInitialSettings(): SystemSettings {
   const saved = localStorage.getItem('adt_settings') || localStorage.getItem('da_settings');
@@ -19,7 +21,8 @@ function getInitialSettings(): SystemSettings {
       parsed = null;
     }
   }
-  const theme = parsed?.theme === 'dark' ? 'dark' : 'light';
+  const explicitTheme = localStorage.getItem(THEME_PREFERENCE_KEY);
+  const theme = explicitTheme === 'dark' || explicitTheme === 'light' ? explicitTheme : 'light';
   const language = parsed?.language === 'ko' || getLang() === 'ko' ? 'ko' : 'en';
 
   return {
@@ -35,7 +38,14 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [hasNetworkError, setHasNetworkError] = useState(false);
   const [isOverlayDismissed, setIsOverlayDismissed] = useState(true);
+  const [hasSession, setHasSession] = useState<boolean>(() => Boolean(localStorage.getItem('archon_token')));
   const [settings, setSettings] = useState<SystemSettings>(() => getInitialSettings());
+
+  const handleAuthError = () => {
+    localStorage.removeItem('archon_token');
+    localStorage.removeItem('archon_user');
+    setHasSession(false);
+  };
 
   useEffect(() => {
     const update = () => {
@@ -59,8 +69,24 @@ const App: React.FC = () => {
     root.classList.toggle('light', settings.theme === 'light');
     body.classList.toggle('light', settings.theme === 'light');
     setLang(settings.language);
-    localStorage.setItem('adt_settings', JSON.stringify(settings));
+    localStorage.setItem(
+      'adt_settings',
+      JSON.stringify({
+        ...settings,
+        themePreferenceSet: Boolean(localStorage.getItem(THEME_PREFERENCE_KEY)),
+      })
+    );
   }, [settings]);
+
+  useEffect(() => {
+    if (!hasSession) return;
+
+    void backend.fetchProjects().catch((error) => {
+      if (isAuthError(error)) {
+        handleAuthError();
+      }
+    });
+  }, [hasSession]);
 
   const handleCreateProject = async (name: string, description: string) => {
     if (backend.getHasNetworkError()) {
@@ -70,9 +96,13 @@ const App: React.FC = () => {
 
     try {
       const project = await backend.createProject(name, description);
+      setHasSession(true);
       setCurrentProjectId(project.id);
       await backend.startExecution(project.id);
     } catch (error) {
+      if (isAuthError(error)) {
+        handleAuthError();
+      }
       if (isNetworkError(error)) {
         setIsOverlayDismissed(false);
       }
@@ -92,6 +122,9 @@ const App: React.FC = () => {
   };
 
   const updateSettings = (updates: Partial<SystemSettings>) => {
+    if (updates.theme) {
+      localStorage.setItem(THEME_PREFERENCE_KEY, updates.theme);
+    }
     setSettings((current) => ({ ...current, ...updates }));
   };
 
@@ -138,6 +171,8 @@ const App: React.FC = () => {
         {currentProjectId ? (
           <ProjectDetailPage
             projectId={currentProjectId}
+            hasSession={hasSession}
+            onAuthError={handleAuthError}
             onBack={() => setCurrentProjectId(null)}
             onOpenSidebar={() => setIsSidebarOpen(true)}
             onOpenSettings={() => setIsSettingsOpen(true)}
@@ -145,6 +180,7 @@ const App: React.FC = () => {
         ) : (
           <ProjectsPage
             projects={projects}
+            hasSession={hasSession}
             onCreateProject={handleCreateProject}
             onSelectProject={setCurrentProjectId}
             onOpenSettings={() => setIsSettingsOpen(true)}

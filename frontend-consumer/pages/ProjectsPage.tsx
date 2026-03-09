@@ -5,6 +5,7 @@ import { Project } from '../types';
 
 interface ProjectsPageProps {
   projects: Project[];
+  hasSession: boolean;
   onCreateProject: (name: string, description: string) => Promise<void> | void;
   onSelectProject: (id: string) => void;
   onOpenSettings: () => void;
@@ -12,6 +13,7 @@ interface ProjectsPageProps {
 
 const ProjectsPage: React.FC<ProjectsPageProps> = ({
   projects,
+  hasSession,
   onCreateProject,
   onSelectProject,
   onOpenSettings,
@@ -34,7 +36,7 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!prompt.trim() || isSubmitting) return;
+    if (!prompt.trim() || isSubmitting || !hasSession) return;
 
     const name = prompt
       .trim()
@@ -118,7 +120,7 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({
                 <p className="text-sm text-slate-500 dark:text-slate-300/70">{t(lang, 'heroHint')}</p>
                 <button
                   type="submit"
-                  disabled={!prompt.trim() || isSubmitting}
+                  disabled={!prompt.trim() || isSubmitting || !hasSession}
                   className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 sm:px-6"
                 >
                   {isSubmitting ? t(lang, 'sending') : t(lang, 'startBuilding')}
@@ -127,6 +129,13 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({
               </div>
             </div>
           </form>
+
+          {!hasSession && (
+            <div className="mx-auto mt-4 w-full max-w-4xl rounded-[1.5rem] border border-amber-200 bg-amber-50 px-5 py-4 text-left shadow-sm shadow-amber-100/70 dark:border-amber-500/20 dark:bg-amber-500/10">
+              <div className="text-sm font-semibold text-amber-900 dark:text-amber-100">{t(lang, 'authRequiredTitle')}</div>
+              <div className="mt-1 text-sm leading-6 text-amber-800 dark:text-amber-100/80">{t(lang, 'authRequiredBody')}</div>
+            </div>
+          )}
 
           <section className="mx-auto mt-12 w-full max-w-5xl">
             <div className="mb-5 flex items-end justify-between gap-4">

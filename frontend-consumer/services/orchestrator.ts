@@ -10,6 +10,16 @@ export interface PromptHistoryEntry {
   timestamp?: string;
 }
 
+export interface BriefRecord {
+  title: string;
+  summary: string;
+  goals: string[];
+  features: string[];
+  userStories: string[];
+  targetUsers: string[];
+  techStackRecommendation: string[];
+}
+
 export interface VersionRecord {
   id: string;
   version: number;
@@ -81,7 +91,7 @@ export function isNetworkError(error: unknown): boolean {
 }
 
 export function isAuthError(error: unknown): boolean {
-  return error instanceof HttpError && (error.status === 401 || error.status === 403);
+  return error instanceof HttpError && (error.status === 401 || error.status === 403 || error.status === 422);
 }
 
 async function parseErrorBody(response: Response): Promise<unknown> {
@@ -114,13 +124,15 @@ export async function apiJson<T>(path: string, init: RequestInit = {}): Promise<
   return response.json() as Promise<T>;
 }
 
-export function normalizePrd(raw: any) {
+export function normalizePrd(raw: any): BriefRecord {
   const prd = raw?.prd || raw;
   return {
     title: prd?.document_title || prd?.title || 'Brief',
     summary: prd?.overview || prd?.summary || '',
+    goals: prd?.goals || prd?.requirements || [],
     features: prd?.core_features_mvp || prd?.features || prd?.goals || [],
     userStories: prd?.user_stories || prd?.userStories || [],
+    targetUsers: prd?.target_users || prd?.targetUsers || [],
     techStackRecommendation: prd?.technical_stack_recommendation || prd?.techStackRecommendation || [],
   };
 }
@@ -195,19 +207,38 @@ function normalizeProject(raw: any): Project {
 }
 
 export function buildTasksFromResult(raw: any): EngineerTask[] {
-  const writes = raw?.outputs?.writes || [];
+  const outputs = raw?.outputs || {};
+  const writes = outputs.writes || [];
   const producedAt = raw?._meta?.produced_at ? new Date(raw._meta.produced_at).getTime() : Date.now();
 
-  return writes.map((write: any, index: number) => {
-    const fullPath = String(write.path || '');
-    const filename = fullPath.split('\\').pop() || fullPath.split('/').pop() || `file-${index}`;
-    return {
+  if (writes.length > 0) {
+    return writes.map((write: any, index: number) => {
+      const fullPath = String(write.path || '');
+      const filename = fullPath.split('\\').pop() || fullPath.split('/').pop() || `file-${index}`;
+      return {
+        id: uuidv4(),
+        filename,
+        timestamp: producedAt + index * 100,
+        description: `Generated ${filename} (${write.bytes} bytes)`,
+      };
+    });
+  }
+
+  const summary = String(outputs.summary || '').trim();
+  const filesGenerated = Number(outputs.files_generated || 0);
+
+  if (!summary && !filesGenerated) {
+    return [];
+  }
+
+  return [
+    {
       id: uuidv4(),
-      filename,
-      timestamp: producedAt + index * 100,
-      description: `Generated ${filename} (${write.bytes} bytes)`,
-    };
-  });
+      filename: filesGenerated > 0 ? `${filesGenerated} file${filesGenerated === 1 ? '' : 's'} updated` : 'Build summary',
+      timestamp: producedAt,
+      description: summary || `Updated ${filesGenerated} generated file${filesGenerated === 1 ? '' : 's'}.`,
+    },
+  ];
 }
 
 export async function fetchProjectHead(projectId: string) {
@@ -289,7 +320,9 @@ class BackendService {
   private artifactExecutionIds = new Map<string, string>();
 
   constructor() {
-    void this.silentFetchProjects();
+    if (typeof window !== 'undefined' && localStorage.getItem('archon_token')) {
+      void this.silentFetchProjects();
+    }
   }
 
   subscribe(callback: () => void) {
