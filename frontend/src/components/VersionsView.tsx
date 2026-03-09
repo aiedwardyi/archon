@@ -6,6 +6,7 @@ import { fetchVersions } from "@/services/api";
 
 interface Version {
   id: number;
+  executionId: number;
   label: string;
   status: "completed" | "failed";
   description: string;
@@ -40,9 +41,25 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
   const [loadingVersions, setLoadingVersions] = useState(false);
   const [isProjectBuilding, setIsProjectBuilding] = useState(false);
   const [iframeKey, setIframeKey] = useState(0);
+  const [restoring, setRestoring] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const wasBuilding = useRef(false);
   const { t } = useLanguage();
+
+  const handleRestore = async (executionId: number) => {
+    setRestoring(true);
+    try {
+      await fetch(`http://localhost:5000/api/executions/${executionId}/restore`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${localStorage.getItem("archon_token")}` },
+      });
+      setIframeKey((k) => k + 1);
+    } catch (e) {
+      console.error("Restore failed:", e);
+    } finally {
+      setRestoring(false);
+    }
+  };
 
   const loadVersionData = async (projectId: number, cancelled: { value: boolean }) => {
     try {
@@ -77,6 +94,7 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
         if (imageCount > 0) parts.push(`${imageCount} image${imageCount !== 1 ? "s" : ""}`);
         return {
           id: v.version,
+          executionId: v.id,
           label: "v" + v.version,
           status: isSuccess ? "completed" as const : "failed" as const,
           description: lastUserMsg.length > 40 ? lastUserMsg.slice(0, 40) + "…" : lastUserMsg,
@@ -235,9 +253,15 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
             <button className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5">
               <Download className="h-3.5 w-3.5" /> {t("downloadReport")}
             </button>
-            <button className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5">
-              <RotateCcw className="h-3.5 w-3.5" /> {t("restoreToThisVersion")}
-            </button>
+            {version && latestVersionId !== null && version.id !== latestVersionId && (
+              <button
+                onClick={() => handleRestore(version.executionId)}
+                disabled={restoring}
+                className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {restoring ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />} {t("restoreToThisVersion")}
+              </button>
+            )}
           </div>
         </div>
 
