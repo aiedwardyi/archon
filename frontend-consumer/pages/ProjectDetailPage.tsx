@@ -1,21 +1,28 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  AlignLeft,
   ArrowLeft,
+  ArrowRight,
+  ChevronDown,
   Clock3,
   Code2,
   ExternalLink,
   FileCode2,
   FileText,
+  Globe2,
   History,
   Layers3,
+  Lightbulb,
   Loader2,
   Menu,
   Monitor,
+  Palette,
   RefreshCw,
   RotateCcw,
   Settings2,
   Smartphone,
   Sparkles,
+  Type,
 } from 'lucide-react';
 import ArtifactViewer from '../components/ArtifactViewer';
 import SessionMenu from '../components/SessionMenu';
@@ -28,6 +35,8 @@ import {
   fetchBrief,
   fetchChatHistory,
   fetchCodeArtifact,
+  fetchFactsheet,
+  fetchInsights,
   fetchPlan,
   fetchProjectHead,
   fetchVersionFile,
@@ -35,6 +44,7 @@ import {
   fetchVersions,
   getPreviewUrl,
   HttpError,
+  InsightRecord,
   isAuthError,
   isNetworkError,
   PromptHistoryEntry,
@@ -60,8 +70,14 @@ interface ProjectDetailPageProps {
 type ActiveTab = 'preview' | 'brief' | 'buildPlan' | 'code' | 'changes' | 'versions';
 type RemoteState<T> = { loading: boolean; error: boolean; data: T | null };
 type CodeFileRecord = { filename: string; content: string; language: string };
+type InsightCategoryKey = 'detail' | 'color' | 'content' | 'typography' | 'domain' | 'default';
+type InsightsState = { version: number | null; promptScore: number | null; insights: InsightRecord[] };
 
 const EMPTY_REMOTE = { loading: false, error: false, data: null };
+
+function createEmptyInsightsState(): InsightsState {
+  return { version: null, promptScore: null, insights: [] };
+}
 
 function flattenTree(nodes: VersionTreeNode[]): string[] {
   const files: string[] = [];
@@ -99,6 +115,75 @@ function getProgress(project?: Project) {
 function getLatestVersion(versions: VersionRecord[]): number | null {
   if (versions.length === 0) return null;
   return versions.reduce((latest, current) => (current.version > latest ? current.version : latest), versions[0].version);
+}
+
+function getInsightsCollapseStorageKey(projectId: string) {
+  return `archon-insights-collapsed-${projectId}`;
+}
+
+function clampScore(score?: number | null): number | null {
+  if (typeof score !== 'number' || Number.isNaN(score)) return null;
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function normalizeInsightPriority(priority: string): 'high' | 'medium' | 'low' {
+  const value = String(priority || '').toLowerCase();
+  if (value === 'high' || value === 'medium') return value;
+  return 'low';
+}
+
+function resolveInsightCategoryKey(insight: InsightRecord): InsightCategoryKey {
+  const category = String(insight.category || '').toLowerCase();
+  const hint = `${category} ${insight.suggestion}`.toLowerCase();
+  const mentionsTypography = /(font|typography|sans|serif|monospace|heading)/.test(hint);
+  const mentionsColor = /(color|colour|palette|accent|theme|gradient)/.test(hint);
+
+  if (category.includes('font') || category.includes('typography') || mentionsTypography) return 'typography';
+  if (category.includes('color') || category.includes('palette') || (category === 'visual' && mentionsColor)) return 'color';
+  if (category.includes('content') || category.includes('section')) return 'content';
+  if (category.includes('domain')) return 'domain';
+  if (category.includes('prompt_length') || category.includes('detail') || category.includes('clarity')) return 'detail';
+  if (category === 'visual') return 'color';
+  return 'default';
+}
+
+function getInsightCategoryLabel(lang: ReturnType<typeof getLang>, categoryKey: InsightCategoryKey) {
+  if (categoryKey === 'detail' || categoryKey === 'default') return t(lang, 'insightCategoryDetail');
+  if (categoryKey === 'color') return t(lang, 'insightCategoryColor');
+  if (categoryKey === 'content') return t(lang, 'insightCategoryContent');
+  if (categoryKey === 'typography') return t(lang, 'insightCategoryTypography');
+  return t(lang, 'insightCategoryDomain');
+}
+
+function getInsightCategoryIcon(categoryKey: InsightCategoryKey) {
+  if (categoryKey === 'detail') return AlignLeft;
+  if (categoryKey === 'color') return Palette;
+  if (categoryKey === 'content') return Layers3;
+  if (categoryKey === 'typography') return Type;
+  if (categoryKey === 'domain') return Globe2;
+  return Lightbulb;
+}
+
+function getPriorityBadgeStyles(priority: 'high' | 'medium' | 'low') {
+  if (priority === 'high') {
+    return 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200';
+  }
+  if (priority === 'medium') {
+    return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200';
+  }
+  return 'border-slate-200 bg-slate-100 text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300';
+}
+
+function getPriorityLabel(lang: ReturnType<typeof getLang>, priority: 'high' | 'medium' | 'low') {
+  if (priority === 'high') return t(lang, 'priorityHigh');
+  if (priority === 'medium') return t(lang, 'priorityMedium');
+  return t(lang, 'priorityLow');
+}
+
+function getScoreFillStyles(score: number) {
+  if (score >= 70) return 'bg-emerald-500 dark:bg-emerald-400';
+  if (score >= 40) return 'bg-amber-500 dark:bg-amber-400';
+  return 'bg-rose-500 dark:bg-rose-400';
 }
 
 function buildIterationPromptHistory(
@@ -255,6 +340,141 @@ const CodePanel: React.FC<{ lang: ReturnType<typeof getLang>; projectId: string;
   );
 };
 
+interface BuildInsightsCardProps {
+  lang: ReturnType<typeof getLang>;
+  version: number;
+  insights: InsightRecord[];
+  promptScore: number | null;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
+  onApplySuggestion: (suggestion: string) => void;
+}
+
+const BuildInsightsCard: React.FC<BuildInsightsCardProps> = ({
+  lang,
+  version,
+  insights,
+  promptScore,
+  collapsed,
+  onToggleCollapse,
+  onApplySuggestion,
+}) => {
+  const score = clampScore(promptScore);
+  const [isVisible, setIsVisible] = useState(false);
+  const [animateBar, setAnimateBar] = useState(false);
+
+  useEffect(() => {
+    setIsVisible(false);
+    setAnimateBar(false);
+
+    const visibilityTimer = window.setTimeout(() => setIsVisible(true), 24);
+    const barTimer = window.setTimeout(() => setAnimateBar(true), 180);
+
+    return () => {
+      window.clearTimeout(visibilityTimer);
+      window.clearTimeout(barTimer);
+    };
+  }, [version]);
+
+  return (
+    <div
+      className={`overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_20px_50px_rgba(15,23,42,0.08)] transition-all duration-500 ease-out dark:border-white/10 dark:bg-[#111827] dark:shadow-[0_20px_50px_rgba(2,6,23,0.32)] ${
+        isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
+      }`}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 bg-[linear-gradient(135deg,rgba(254,249,195,0.55),rgba(255,255,255,0.96),rgba(224,242,254,0.72))] px-5 py-4 dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(30,41,59,0.92),rgba(17,24,39,0.98),rgba(15,23,42,0.94))]">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300">
+            <Sparkles size={18} />
+          </div>
+          <div>
+            <div className="text-sm font-semibold text-slate-950 dark:text-white">{t(lang, 'buildInsights')}</div>
+            <div className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-300/60">v{version}</div>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onToggleCollapse}
+          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-3 py-2 text-xs font-medium text-slate-600 transition hover:bg-white hover:text-slate-950 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white"
+        >
+          {t(lang, collapsed ? 'expand' : 'collapse')}
+          <ChevronDown size={14} className={`transition-transform duration-300 ${collapsed ? '' : 'rotate-180'}`} />
+        </button>
+      </div>
+
+      <div className={`overflow-hidden transition-all duration-300 ease-out ${collapsed ? 'max-h-0 opacity-0' : 'max-h-[1200px] opacity-100'}`}>
+        <div className="grid gap-5 px-5 pb-5 pt-5 lg:grid-cols-[240px_minmax(0,1fr)]">
+          <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-slate-950/40">
+            <div className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400 dark:text-slate-300/60">{t(lang, 'promptScore')}</div>
+            <div className="mt-4 flex items-end gap-2">
+              <span className="text-4xl font-semibold tracking-tight text-slate-950 dark:text-white">{score ?? '—'}</span>
+              <span className="pb-1 text-sm text-slate-400 dark:text-slate-300/60">/100</span>
+            </div>
+            {score != null && (
+              <div className="mt-5">
+                <div className="flex items-center gap-3">
+                  <div className="h-3 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
+                    <div
+                      className={`h-full rounded-full transition-all duration-700 ease-out ${getScoreFillStyles(score)}`}
+                      style={{ width: animateBar ? `${score}%` : '0%' }}
+                    />
+                  </div>
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-200">{score}%</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <div className="text-sm font-semibold text-slate-950 dark:text-white">{t(lang, 'insightsTipsTitle')}</div>
+            <div className="mt-4 space-y-3">
+              {insights.map((insight, index) => {
+                const categoryKey = resolveInsightCategoryKey(insight);
+                const Icon = getInsightCategoryIcon(categoryKey);
+                const priority = normalizeInsightPriority(insight.priority);
+
+                return (
+                  <article
+                    key={`${insight.category}-${index}-${insight.suggestion}`}
+                    className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/5"
+                  >
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-slate-600 shadow-sm dark:bg-slate-950/70 dark:text-slate-100">
+                            <Icon size={16} />
+                          </span>
+                          <span className="text-sm font-semibold text-slate-950 dark:text-white">
+                            {getInsightCategoryLabel(lang, categoryKey)}
+                          </span>
+                          <span
+                            className={`inline-flex items-center rounded-full border px-2 py-1 text-[11px] font-medium ${getPriorityBadgeStyles(priority)}`}
+                          >
+                            {getPriorityLabel(lang, priority)}
+                          </span>
+                        </div>
+                        <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-200/80">{insight.suggestion}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => onApplySuggestion(insight.suggestion)}
+                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-950 sm:w-auto dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-100 dark:hover:bg-slate-950"
+                      >
+                        {t(lang, 'applySuggestion')}
+                        <ArrowRight size={14} />
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   projectId,
   hasSession,
@@ -288,6 +508,12 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   const [headError, setHeadError] = useState(false);
   const [previewRefreshKey, setPreviewRefreshKey] = useState(() => Date.now());
   const [showRegisterPrompt, setShowRegisterPrompt] = useState(false);
+  const [insightsState, setInsightsState] = useState<InsightsState>(() => createEmptyInsightsState());
+  const [insightsCollapsed, setInsightsCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem(getInsightsCollapseStorageKey(projectId)) === '1';
+  });
+  const chatTextareaRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const previousStatusRef = useRef<Project['status'] | null>(null);
   const previousPreviewVersionRef = useRef<number | null>(null);
@@ -408,6 +634,56 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
     previousPreviewVersionRef.current = resolvedVersion;
     setPreviewRefreshKey(Date.now());
   }, [resolvedVersion]);
+
+  useEffect(() => {
+    setInsightsCollapsed(typeof window !== 'undefined' && localStorage.getItem(getInsightsCollapseStorageKey(projectId)) === '1');
+  }, [projectId]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(getInsightsCollapseStorageKey(projectId), insightsCollapsed ? '1' : '0');
+  }, [insightsCollapsed, projectId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      if (project?.status !== 'COMPLETED' || resolvedVersion == null || versionsState.loading) {
+        if (!cancelled) setInsightsState(createEmptyInsightsState());
+        return;
+      }
+
+      const retries = 2;
+      const [insightsResult, factsheetResult] = await Promise.allSettled([
+        loadWithRetry(() => fetchInsights(projectId, resolvedVersion), retries),
+        loadWithRetry(() => fetchFactsheet(projectId, resolvedVersion), retries),
+      ]);
+
+      if (cancelled) return;
+
+      if (insightsResult.status !== 'fulfilled' || insightsResult.value.length === 0) {
+        setInsightsState(createEmptyInsightsState());
+        return;
+      }
+
+      const promptScore =
+        factsheetResult.status === 'fulfilled'
+          ? clampScore(factsheetResult.value.scoring?.prompt_quality?.score ?? null)
+          : null;
+
+      setInsightsState({
+        version: resolvedVersion,
+        promptScore,
+        insights: insightsResult.value.slice(0, 4),
+      });
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [project?.status, projectId, resolvedVersion, versionsState.loading]);
 
   useEffect(() => {
     let cancelled = false;
@@ -581,6 +857,16 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
     }
   };
 
+  const handleApplySuggestion = (suggestion: string) => {
+    setChatInput(suggestion);
+    setComposerError(null);
+    window.setTimeout(() => {
+      chatTextareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      chatTextareaRef.current?.focus();
+      chatTextareaRef.current?.setSelectionRange(suggestion.length, suggestion.length);
+    }, 0);
+  };
+
   if (!project) {
     return (
       <div className="flex h-full items-center justify-center bg-[var(--app-bg)] text-sm text-slate-500 dark:text-slate-300">
@@ -719,6 +1005,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                 </div>
               )}
               <textarea
+                ref={chatTextareaRef}
                 value={chatInput}
                 onChange={(event) => {
                   setChatInput(event.target.value);
@@ -746,7 +1033,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
           </div>
         </aside>
 
-        <section className="custom-scrollbar order-1 overflow-y-auto lg:order-2">
+        <section className="custom-scrollbar order-1 space-y-4 overflow-y-auto lg:order-2">
           {activeTab === 'preview' &&
             (resolvedVersion && previewSrc ? (
               <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#111827]">
@@ -966,6 +1253,19 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                 </div>
               </div>
             ))}
+
+          {insightsState.version != null && insightsState.insights.length > 0 && (
+            <BuildInsightsCard
+              key={`${projectId}-${insightsState.version}`}
+              lang={lang}
+              version={insightsState.version}
+              insights={insightsState.insights}
+              promptScore={insightsState.promptScore}
+              collapsed={insightsCollapsed}
+              onToggleCollapse={() => setInsightsCollapsed((current) => !current)}
+              onApplySuggestion={handleApplySuggestion}
+            />
+          )}
         </section>
       </div>
 

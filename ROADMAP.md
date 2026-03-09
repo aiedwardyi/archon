@@ -613,7 +613,7 @@ Consumer Restore Version works — Enterprise + Studio buttons need wiring (foll
 - B bug fixes (✅ Complete Mar 9, 2026)
 - C: "Try Before Register" auth + seed projects (🔧 In Progress)
 - D: Add Versions page (THE MOAT — timeline + preview + "what changed" narrative)
-- E: Build Insights slide-up card (🔧 In Progress)
+- E: Build Insights slide-up card (✅ Complete Mar 9, 2026)
 - F: Mobile polish pass (responsive sidebar, project detail, preview iframe)
 
 **Phase E: Build Insights — Post-Build Prompt Coaching Card**

@@ -165,7 +165,7 @@ Codex rewrote consumer as indie-maker AI app builder (Lovable/v0 positioning):
 - ✅ Phase B bug fixes (Complete Mar 9, 2026)
 - 🔧 Phase C: "Try Before Register" auth flow + seed projects (In Progress)
 - 🔴 Phase D: Add Versions page (moat feature)
-- 🔧 Phase E: Build Insights slide-up card (In Progress)
+- ✅ Phase E: Build Insights slide-up card (Complete Mar 9, 2026)
 - 🔴 Phase F: Mobile polish pass
 - ✅ Wire Restore Version in Enterprise + Studio (Complete Mar 9, 2026)
 
@@ -191,6 +191,24 @@ Codex rewrote consumer as indie-maker AI app builder (Lovable/v0 positioning):
 2. Backend: guest project creation + account linking
 3. Enterprise + Studio: seed project system
 4. Enterprise + Studio: try-before-register flow
+
+## Consumer UX Declutter Pass (Queued)
+
+**Problem:** Project detail page is too dense. New users don't know where to look — conversation, preview, tabs, AND Build Insights card all compete for attention in one view.
+
+**User feedback:** Eddie's friend took a while to understand what he was looking at. Too many words and elements crammed into one page.
+
+**Root cause:** Two-column layout (conversation left + preview/insights right) tries to show everything simultaneously. No visual hierarchy telling the user what matters most.
+
+**Possible fixes (decide during implementation):**
+1. **Progressive disclosure:** Hide insights card by default, show a small "View build tips" button that expands it. Don't auto-show on page load.
+2. **Tab the right panel:** Preview is its own tab view. Insights could live as a tab instead of stacking below preview.
+3. **Collapse conversation by default:** After build completes, conversation is less important than preview. Auto-collapse or minimize the chat column.
+4. **Full-width preview:** Make preview the hero of the page. Move conversation to a slide-out drawer or collapsible panel.
+5. **Reduce text density:** Shorter insight suggestions, bigger score number, fewer labels.
+6. **Mobile-first rethink:** Stack vertically — preview on top, tabs below, insights as expandable accordion.
+
+**Priority:** High — first impressions matter for conversion. Do this before showing to more friends/beta users.
 
 ## Quality Regression Investigation (Queued)
 
