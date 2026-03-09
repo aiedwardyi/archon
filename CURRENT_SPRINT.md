@@ -78,11 +78,29 @@ Files changed: WelcomeBanner.tsx, ProfileModal.tsx, Navbar.tsx, account-modals.t
 - ✅ 21.5 i18n: 12 Korean translation keys added (i18n.ts)
 - 🔴 Studio font regression: Geist Sans replaced by IBM Plex Sans during Phase 16.5 auth work — Codex fixing (globals.css, layout.tsx, project-dashboard.tsx)
 
+## Light Mode Contrast Fixes (✅ Complete Mar 9, 2026)
+
+### Enterprise (`fix/enterprise-lightmode-icons`)
+- ✅ All hexagon icons changed from `text-primary`/`text-blue-500` → `text-blue-600 dark:text-blue-500`
+- Files: Navbar.tsx, ProjectTable.tsx, PipelineStatus.tsx, Index.tsx (pipeline header + chat bubbles)
+- Visually verified: Projects, Pipeline, Versions pages in both light + dark mode
+
+### Studio (`fix/studio-lightmode-contrast`)
+- ✅ Navbar hexagon → `text-blue-600 dark:text-blue-500`, hover bg → `hover:bg-accent`
+- ✅ Project row hexagon → `text-blue-600 dark:text-blue-500`
+- ✅ Versions panel selected state → `bg-primary/10` (was `bg-accent`)
+- ✅ Darkened `--muted-foreground` from `oklch(0.45)` → `oklch(0.40)` for better text contrast
+- Files: navbar.tsx, project-dashboard.tsx, version-timeline.tsx, globals.css
+- Visually verified: Projects, Versions, navbar hover in light + dark mode
+
+### Google OAuth origin fix
+- ✅ Added `http://localhost:8080` to Google Cloud Console authorized origins + redirect URIs
+- Enterprise Google Sign-In now works on port 8080
+
 ## Up Next
 
 | Phase | Description |
 |-------|-------------|
-| — | Studio font fix (Codex in progress) |
 | — | Frontend-consumer full UX/UI audit + bug fixes |
 | — | Re-run eval after planner fix, decide merge of feat/quality-target-tuning |
 | 8.3 | Client shareable read-only links (primary moat feature) |
