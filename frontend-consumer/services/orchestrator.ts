@@ -35,6 +35,20 @@ export interface VersionTreeNode {
   children?: VersionTreeNode[];
 }
 
+export interface InsightRecord {
+  category: string;
+  suggestion: string;
+  priority: 'high' | 'medium' | 'low' | string;
+}
+
+export interface FactsheetRecord {
+  scoring?: {
+    prompt_quality?: {
+      score?: number | null;
+    };
+  };
+}
+
 export class HttpError extends Error {
   status: number;
   body: unknown;
@@ -308,6 +322,15 @@ export async function fetchVersionFile(projectId: string, version: number, path:
   return apiJson<{ path: string; content: string; language: string }>(
     `/projects/${projectId}/versions/${version}/files?path=${encodeURIComponent(path)}`
   );
+}
+
+export async function fetchInsights(projectId: string, version: number): Promise<InsightRecord[]> {
+  const data = await apiJson<{ insights?: InsightRecord[] }>(`/projects/${projectId}/versions/${version}/insights`);
+  return Array.isArray(data?.insights) ? data.insights : [];
+}
+
+export async function fetchFactsheet(projectId: string, version: number): Promise<FactsheetRecord> {
+  return apiJson<FactsheetRecord>(`/projects/${projectId}/versions/${version}/factsheet`);
 }
 
 class BackendService {
