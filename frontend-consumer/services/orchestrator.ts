@@ -407,6 +407,24 @@ class BackendService {
     }
   }
 
+  async seedProjects() {
+    try {
+      const result = await apiJson<{ seeded: boolean; projects?: any[] }>('/seed', {
+        method: 'POST',
+      });
+      this.setReachability(true);
+      return result;
+    } catch (error) {
+      if (isNetworkError(error)) {
+        this.setReachability(false);
+      } else {
+        this.setReachability(true);
+      }
+      this.notify();
+      throw error;
+    }
+  }
+
   getIsConnected() {
     return this.isConnected;
   }

@@ -1,0 +1,446 @@
+{
+  "milestones": [
+    {
+      "name": "Milestone 1: Project Setup & Initial Design",
+      "tasks": [
+        {
+          "id": "PLAN-1",
+          "description": "Define project scope, confirm technical stack, and gather initial design inspirations.",
+          "depends_on": [],
+          "outputs": [
+            "Project plan document",
+            "Technical stack confirmation",
+            "Design inspiration brief"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "FE-1",
+          "description": "Set up the base project structure including HTML, CSS, and JavaScript files, and configure development environment.",
+          "depends_on": [
+            "PLAN-1"
+          ],
+          "outputs": [
+            "Project directory structure",
+            "Basic HTML/CSS/JS files",
+            "Development environment configured"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "BE-1",
+          "description": "Source and prepare high-quality AI-generated images for Cloud, Barret, Tifa, weapons, and the Midgar background.",
+          "depends_on": [
+            "PLAN-1"
+          ],
+          "outputs": [
+            "Optimized character images",
+            "Optimized weapon images",
+            "High-resolution Midgar background image"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "FE-2",
+          "description": "Implement global CSS styles, typography, and integrate the blurred Midgar background image as the site's aesthetic foundation.",
+          "depends_on": [
+            "FE-1",
+            "BE-1"
+          ],
+          "outputs": [
+            "Global CSS stylesheet",
+            "Blurred Midgar background implemented"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        }
+      ]
+    },
+    {
+      "name": "Milestone 2: Core Fan Page Development",
+      "tasks": [
+        {
+          "id": "FE-BUILD-1",
+          "description": "Build the complete Final Fantasy 7 Fan Page Website as a single self-contained HTML file, incorporating the hero section, character showcase, weapon gallery, and interactive map placeholder.",
+          "depends_on": [
+            "FE-2"
+          ],
+          "outputs": [
+            "Initial src/index.html with core layout",
+            "Homepage hero section",
+            "Character showcase section",
+            "Weapon gallery section",
+            "Interactive map placeholder"
+          ],
+          "execution_hint": "engineer",
+          "task_type": "scaffold",
+          "output_files": [
+            "src/index.html"
+          ],
+          "ui_archetype": "landing",
+          "archetype_rules": {
+            "required_blocks": [
+              "hero",
+              "character_showcase",
+              "weapon_gallery",
+              "game_map"
+            ],
+            "required_interactions": [
+              "cta_click",
+              "map_navigation"
+            ],
+            "avoid": [
+              "sidebar",
+              "data_table",
+              "kanban_columns",
+              "ecommerce_features",
+              "pricing_section"
+            ],
+            "layout_contract": {
+              "regions": [
+                "header",
+                "hero",
+                "character_section",
+                "gallery_section",
+                "map_section",
+                "footer"
+              ],
+              "sidebar": null,
+              "topbar": [
+                "logo",
+                "nav"
+              ],
+              "main_grid": [
+                {
+                  "row": 1,
+                  "component": "hero",
+                  "count": null,
+                  "aspect_ratio": "16:6",
+                  "left": null,
+                  "right": null,
+                  "ratio": null
+                },
+                {
+                  "row": 2,
+                  "component": "character_grid",
+                  "count": 3,
+                  "aspect_ratio": null,
+                  "left": null,
+                  "right": null,
+                  "ratio": null
+                },
+                {
+                  "row": 3,
+                  "component": "weapon_gallery",
+                  "count": 5,
+                  "aspect_ratio": null,
+                  "left": null,
+                  "right": null,
+                  "ratio": null
+                },
+                {
+                  "row": 4,
+                  "component": "game_map",
+                  "count": null,
+                  "aspect_ratio": "16:9",
+                  "left": null,
+                  "right": null,
+                  "ratio": null
+                }
+              ],
+              "density": "comfortable"
+            },
+            "content_contract": {
+              "kpi_labels": [],
+              "table_columns": [],
+              "seed_rows": 0,
+              "required_states": [
+                "hover",
+                "active",
+                "map_zoom"
+              ]
+            }
+          }
+        },
+        {
+          "id": "FE-3",
+          "description": "Develop the homepage hero section, integrating AI-generated images of Cloud, Barret, and Tifa with appropriate styling.",
+          "depends_on": [
+            "FE-BUILD-1",
+            "BE-1"
+          ],
+          "outputs": [
+            "Hero section implemented with character images"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "FE-4",
+          "description": "Implement the weapons gallery section, displaying at least 5 different weapons with their respective AI-generated images.",
+          "depends_on": [
+            "FE-BUILD-1",
+            "BE-1"
+          ],
+          "outputs": [
+            "Weapons gallery populated with images"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "FE-5",
+          "description": "Integrate an interactive game map, allowing users to click on different locations and view basic information.",
+          "depends_on": [
+            "FE-BUILD-1"
+          ],
+          "outputs": [
+            "Interactive game map functionality"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "FE-6",
+          "description": "Ensure the core layout and content are responsive across various screen sizes and devices.",
+          "depends_on": [
+            "FE-BUILD-1",
+            "FE-3",
+            "FE-4",
+            "FE-5"
+          ],
+          "outputs": [
+            "Responsive design implemented for MVP sections"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        }
+      ]
+    },
+    {
+      "name": "Milestone 3: Content Refinement & Interactivity",
+      "tasks": [
+        {
+          "id": "FE-7",
+          "description": "Refine the interactive game map, adding more detailed location data and enhancing user interaction.",
+          "depends_on": [
+            "FE-5"
+          ],
+          "outputs": [
+            "Enhanced interactive map with detailed locations"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "FE-8",
+          "description": "Add basic navigation elements (e.g., header links) to allow users to easily move between the homepage, gallery, and map sections.",
+          "depends_on": [
+            "FE-BUILD-1"
+          ],
+          "outputs": [
+            "Functional site navigation"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "FE-9",
+          "description": "Implement hover effects and subtle animations for character images and weapon gallery items to enhance visual appeal.",
+          "depends_on": [
+            "FE-3",
+            "FE-4"
+          ],
+          "outputs": [
+            "UI hover effects and animations"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        }
+      ]
+    },
+    {
+      "name": "Milestone 4: Testing & Optimization",
+      "tasks": [
+        {
+          "id": "QA-1",
+          "description": "Conduct comprehensive cross-browser and device compatibility testing to ensure consistent user experience.",
+          "depends_on": [
+            "FE-6",
+            "FE-7",
+            "FE-8",
+            "FE-9"
+          ],
+          "outputs": [
+            "Compatibility test report",
+            "List of identified bugs"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "QA-2",
+          "description": "Optimize all images and code for faster page load times and improved overall website performance.",
+          "depends_on": [
+            "FE-BUILD-1",
+            "BE-1"
+          ],
+          "outputs": [
+            "Performance optimization report",
+            "Optimized assets"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "QA-3",
+          "description": "Review all content for accuracy, visual consistency, and adherence to Final Fantasy 7 theme.",
+          "depends_on": [
+            "FE-3",
+            "FE-4",
+            "FE-7"
+          ],
+          "outputs": [
+            "Content review report",
+            "Feedback for content adjustments"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "FE-10",
+          "description": "Implement basic accessibility features (e.g., alt text for images, keyboard navigation) to improve usability for all users.",
+          "depends_on": [
+            "FE-BUILD-1"
+          ],
+          "outputs": [
+            "Accessibility audit report",
+            "Implemented accessibility features"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        }
+      ]
+    },
+    {
+      "name": "Milestone 5: Deployment & Documentation",
+      "tasks": [
+        {
+          "id": "DEVOPS-1",
+          "description": "Prepare the hosting environment and configure domain settings for the fan page website.",
+          "depends_on": [
+            "QA-1",
+            "QA-2"
+          ],
+          "outputs": [
+            "Configured hosting environment",
+            "Domain setup"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "DOC-1",
+          "description": "Create comprehensive project documentation, including setup instructions, content update guidelines, and troubleshooting.",
+          "depends_on": [
+            "FE-BUILD-1",
+            "DEVOPS-1"
+          ],
+          "outputs": [
+            "Project documentation",
+            "Content management guide"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "DEVOPS-2",
+          "description": "Perform final deployment of the website to the production environment and verify all functionalities post-deployment.",
+          "depends_on": [
+            "DEVOPS-1",
+            "DOC-1"
+          ],
+          "outputs": [
+            "Live website",
+            "Deployment verification report"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        }
+      ]
+    }
+  ],
+  "assumptions": [
+    "AI-generated images will be available and of high quality.",
+    "Users will have access to the internet to view the website.",
+    "The website will not require extensive backend functionalities at launch.",
+    "Specific weapon details and map locations will be provided by the content team.",
+    "No complex user authentication or data storage is required for the MVP.",
+    "Hosting environment details and domain will be finalized before deployment."
+  ],
+  "risks": [
+    "Quality of AI-generated images may not meet aesthetic standards or require significant manual refinement.",
+    "Performance issues may arise with large image assets or complex interactive map features on slower connections.",
+    "Scope creep from 'nice-to-have' features could delay the MVP launch.",
+    "Lack of clear design guidelines or brand assets could lead to rework and inconsistencies.",
+    "Complexity of the interactive map implementation might exceed initial time estimates.",
+    "Ensuring cross-browser and device compatibility for all interactive elements could be challenging."
+  ]
+}

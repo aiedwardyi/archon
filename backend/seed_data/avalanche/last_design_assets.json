@@ -1,0 +1,44 @@
+{
+  "assets": [
+    {
+      "key": "hero_background",
+      "url": "https://oaidalleapiprodscus.blob.core.windows.net/private/org-6PQ0USkuoOCXWUsOjjWFWvYO/user-rYS1fLq1XmveZgvrjaShas6Q/img-E9gwFd8hgIxEEiEJfyhBC8Zb.png?st=2026-02-27T09%3A16%3A58Z&se=2026-02-27T11%3A16%3A58Z&sp=r&sv=2026-02-06&sr=b&rscd=inline&rsct=image/png&skoid=ed3ea2f9-5e38-44be-9a1b-7c1e65e4d54f&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-02-27T10%3A16%3A58Z&ske=2026-02-28T10%3A16%3A58Z&sks=b&skv=2026-02-06&sig=tCsnyFa3e/DUfbG/1TqR1Y0Hr0gGBzuryzeFXuU6JgU%3D",
+      "local_path": "C:\\Users\\mredw\\OneDrive\\Desktop\\ai-dev-team\\generated\\71\\v1\\assets\\hero_background.png",
+      "purpose": "hero section full-width background",
+      "prompt": "A blurred background image of the futuristic city of Midgar, showcasing towering structures and neon lights, with an atmospheric dusk setting. The scene should evoke a sense of nostalgia and adventure, featuring a moody color palette of blues and purples, with dramatic lighting reflecting off the buildings. Highly detailed, 8k resolution, capturing the essence of a beloved game world.",
+      "style": "photorealistic"
+    },
+    {
+      "key": "character_cloud",
+      "url": "https://oaidalleapiprodscus.blob.core.windows.net/private/org-6PQ0USkuoOCXWUsOjjWFWvYO/user-rYS1fLq1XmveZgvrjaShas6Q/img-fiLwMd7j9wTnNyEhC0TOy2Ek.png?st=2026-02-27T09%3A17%3A33Z&se=2026-02-27T11%3A17%3A33Z&sp=r&sv=2026-02-06&sr=b&rscd=inline&rsct=image/png&skoid=7daae675-7b42-4e2e-ab4c-8d8419a28d99&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-02-26T13%3A18%3A11Z&ske=2026-02-27T13%3A18%3A11Z&sks=b&skv=2026-02-06&sig=vux1nuNPXPd2iDf2nO6Gk6QJaRErXAf3RBePxJheD/E%3D",
+      "local_path": "C:\\Users\\mredw\\OneDrive\\Desktop\\ai-dev-team\\generated\\71\\v1\\assets\\character_cloud.png",
+      "purpose": "character showcase section",
+      "prompt": "A young male warrior with spiky blonde hair, wearing distinctive armor and wielding a large sword, standing heroically against a dramatic backdrop. The character should have an intense expression, embodying strength and determination, with dynamic lighting highlighting his features. The art should be highly detailed and capture the essence of a classic fantasy hero.",
+      "style": "digital_art"
+    },
+    {
+      "key": "character_barret",
+      "url": "https://oaidalleapiprodscus.blob.core.windows.net/private/org-6PQ0USkuoOCXWUsOjjWFWvYO/user-rYS1fLq1XmveZgvrjaShas6Q/img-3SOVcNkKlAokEl7tk9yi0lWV.png?st=2026-02-27T09%3A17%3A52Z&se=2026-02-27T11%3A17%3A52Z&sp=r&sv=2026-02-06&sr=b&rscd=inline&rsct=image/png&skoid=b1a0ae1f-618f-4548-84fd-8b16cacd5485&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-02-27T00%3A28%3A07Z&ske=2026-02-28T00%3A28%3A07Z&sks=b&skv=2026-02-06&sig=6OuHY9SF7iY5t8gbZgpPG1%2BS8jjLqRXHUgLcerPPgqo%3D",
+      "local_path": "C:\\Users\\mredw\\OneDrive\\Desktop\\ai-dev-team\\generated\\71\\v1\\assets\\character_barret.png",
+      "purpose": "character showcase section",
+      "prompt": "A muscular man with short, dark hair and a mechanical arm, dressed in rugged attire, exuding a strong and protective aura. He should be posed in a powerful stance, with a determined expression, showcasing his character's fierce loyalty and bravery. The artwork should feature dramatic lighting and details that emphasize his unique features, in a vibrant and engaging style.",
+      "style": "digital_art"
+    },
+    {
+      "key": "character_tifa",
+      "url": "https://oaidalleapiprodscus.blob.core.windows.net/private/org-6PQ0USkuoOCXWUsOjjWFWvYO/user-rYS1fLq1XmveZgvrjaShas6Q/img-WWWAqrxDomeXjCwb9b8a9Djn.png?st=2026-02-27T09%3A18%3A08Z&se=2026-02-27T11%3A18%3A08Z&sp=r&sv=2026-02-06&sr=b&rscd=inline&rsct=image/png&skoid=ed3ea2f9-5e38-44be-9a1b-7c1e65e4d54f&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-02-26T14%3A35%3A53Z&ske=2026-02-27T14%3A35%3A53Z&sks=b&skv=2026-02-06&sig=kqcZe6wakISAG2hBjd1zSrCuHqCXGdYZg3CK1bY24j0%3D",
+      "local_path": "C:\\Users\\mredw\\OneDrive\\Desktop\\ai-dev-team\\generated\\71\\v1\\assets\\character_tifa.png",
+      "purpose": "character showcase section",
+      "prompt": "A young female fighter with long, dark hair tied back, wearing a stylish yet practical outfit suited for combat. She should be depicted in a dynamic pose, showcasing her martial arts skills with a confident smile. The background should hint at a lively urban environment, with soft lighting that enhances her strong yet approachable character. The art should be rich in detail and convey a sense of action.",
+      "style": "digital_art"
+    },
+    {
+      "key": "weapons_gallery",
+      "url": "https://oaidalleapiprodscus.blob.core.windows.net/private/org-6PQ0USkuoOCXWUsOjjWFWvYO/user-rYS1fLq1XmveZgvrjaShas6Q/img-zkSh0DoYUnhGJhQ7R4irZxUS.png?st=2026-02-27T09%3A18%3A25Z&se=2026-02-27T11%3A18%3A25Z&sp=r&sv=2026-02-06&sr=b&rscd=inline&rsct=image/png&skoid=b1a0ae1f-618f-4548-84fd-8b16cacd5485&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-02-27T00%3A20%3A38Z&ske=2026-02-28T00%3A20%3A38Z&sks=b&skv=2026-02-06&sig=ZXgF8Xd/vAsiX91lJ/mFgZNWeLXugjuwOgKjpOJTpTY%3D",
+      "local_path": "C:\\Users\\mredw\\OneDrive\\Desktop\\ai-dev-team\\generated\\71\\v1\\assets\\weapons_gallery.png",
+      "purpose": "gallery section showcasing weapons",
+      "prompt": "An artistic showcase of various iconic weapons from a fantasy game, including a large sword, a gun-arm, and unique magical artifacts. The composition should present these weapons in an engaging way, with a dark and moody background that highlights their intricate designs and details. Dramatic lighting should enhance the visual appeal, making each weapon stand out as a work of art.",
+      "style": "concept_art"
+    }
+  ]
+}

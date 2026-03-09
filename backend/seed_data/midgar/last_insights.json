@@ -1,0 +1,14 @@
+{
+  "insights": [
+    {
+      "category": "responsive",
+      "suggestion": "Add mobile breakpoints for the filter controls and grid-to-list transitions so the card browser holds up on phones.",
+      "priority": "medium"
+    },
+    {
+      "category": "motion",
+      "suggestion": "Consider adding page transition or modal entrance animations to reinforce the premium game-archive feel.",
+      "priority": "low"
+    }
+  ]
+}

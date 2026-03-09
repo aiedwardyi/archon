@@ -147,6 +147,20 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!hasSession) return;
 
+    const loadProjects = async () => {
+      try {
+        await backend.fetchProjects();
+        if (backend.getProjects().length === 0) {
+          await backend.seedProjects();
+          await backend.fetchProjects();
+        }
+      } catch (error) {
+        if (isAuthError(error)) {
+          handleAuthError();
+        }
+      }
+    };
+
     if (!authUser) {
       void fetchCurrentUser()
         .then((user) => {
@@ -157,11 +171,7 @@ const App: React.FC = () => {
         });
     }
 
-    void backend.fetchProjects().catch((error) => {
-      if (isAuthError(error)) {
-        handleAuthError();
-      }
-    });
+    void loadProjects();
   }, [authUser, hasSession]);
 
   useEffect(() => {

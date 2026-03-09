@@ -1,0 +1,121 @@
+{
+  "factsheet_version": "1.1",
+  "generated_at": "2026-03-09T11:30:00+00:00",
+  "project": {
+    "id": 71,
+    "name": "FF7 — Avalanche Archive",
+    "version": 1,
+    "execution_id": 1
+  },
+  "prompt_summary": "Create a premium Final Fantasy VII fan archive with hero art, character spotlights, weapons, and an atmospheric Midgar world map.",
+  "pipeline": {
+    "status": "success",
+    "agent_sequence": [
+      "pm",
+      "planner",
+      "design",
+      "engineer"
+    ],
+    "duration_seconds": 45.0,
+    "ui_archetype": "game"
+  },
+  "model_registry": [
+    {
+      "agent_role": "Requirements Agent",
+      "model": "Gemini 2.5 Flash",
+      "provider": "Google"
+    },
+    {
+      "agent_role": "Architecture Agent",
+      "model": "Gemini 2.5 Flash",
+      "provider": "Google"
+    },
+    {
+      "agent_role": "Design Agent",
+      "model": "Imagen 4 Ultra + Gemini 2.5 Flash",
+      "provider": "Google"
+    },
+    {
+      "agent_role": "Build Agent",
+      "model": "Gemini 2.5 Flash",
+      "provider": "Google"
+    }
+  ],
+  "usage": {
+    "tokens_used": 18000,
+    "estimated_cost_usd": 0.0,
+    "credits_used": 7
+  },
+  "outputs": {
+    "files_generated": 2,
+    "images_generated": 5
+  },
+  "scoring": {
+    "prompt_quality": {
+      "score": 85,
+      "label": "good",
+      "sentiment": "positive",
+      "sentiment_score": 0.98,
+      "keywords": [
+        "Final Fantasy VII fan archive",
+        "character cards",
+        "world map"
+      ],
+      "domain": "gaming",
+      "powered_by": "IBM Watson NLU"
+    },
+    "build_confidence": {
+      "score": 88,
+      "label": "good",
+      "breakdown": [
+        {
+          "factor": "Code files",
+          "points": 28,
+          "note": "2 files"
+        },
+        {
+          "factor": "Visual assets",
+          "points": 40,
+          "note": "5 Imagen-backed PNGs"
+        },
+        {
+          "factor": "Pipeline success",
+          "points": 20,
+          "note": "Completed without error"
+        }
+      ]
+    }
+  },
+  "quality_indicators": [
+    {
+      "indicator": "Code generated",
+      "status": "pass",
+      "value": "2 file(s)"
+    },
+    {
+      "indicator": "Image quality",
+      "status": "pass",
+      "value": "5 production-ready PNGs"
+    },
+    {
+      "indicator": "Prompt clarity",
+      "status": "pass",
+      "value": "85/100"
+    },
+    {
+      "indicator": "Responsive polish",
+      "status": "warn",
+      "value": "Desktop-first layout"
+    }
+  ],
+  "readiness": {
+    "combined_score": 86,
+    "quality_tier": "good"
+  },
+  "compliance": {
+    "audit_trail": true,
+    "version_history": true,
+    "artifact_retention": true,
+    "human_review_required": true
+  }
+}

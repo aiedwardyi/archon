@@ -67,7 +67,26 @@ export function ProjectDashboard() {
       const res = await fetch(`${API_BASE}/api/projects`, {
         headers: getAuthHeaders(),
       })
-      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`)
+      }
+      let data = await res.json()
+      if (Array.isArray(data) && data.length === 0 && localStorage.getItem("archon_token")) {
+        const seedRes = await fetch(`${API_BASE}/api/seed`, {
+          method: "POST",
+          headers: getAuthHeaders(),
+        })
+        if (!seedRes.ok) {
+          throw new Error(`HTTP ${seedRes.status}`)
+        }
+        const refreshed = await fetch(`${API_BASE}/api/projects`, {
+          headers: getAuthHeaders(),
+        })
+        if (!refreshed.ok) {
+          throw new Error(`HTTP ${refreshed.status}`)
+        }
+        data = await refreshed.json()
+      }
       setProjects(Array.isArray(data) ? data : [])
     } catch (e) {
       setError("Could not connect to backend")
