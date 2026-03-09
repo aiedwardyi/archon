@@ -27,7 +27,7 @@ export const PipelineStatus = ({ agents }: PipelineStatusProps) => {
     <div className="border border-border rounded-md bg-card">
       <div className="px-3 py-2 border-b border-border flex items-center justify-between">
         <h3 className="text-xs font-semibold text-foreground tracking-wide uppercase flex items-center gap-1.5">
-          <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> {t("agentPipeline")}
+          <svg className="h-3.5 w-3.5 text-blue-600 dark:text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> {t("agentPipeline")}
         </h3>
         <span className="text-[10px] text-muted-foreground">{agents.filter(a => a.status === "done").length}/{agents.length} {t("complete")}</span>
       </div>
