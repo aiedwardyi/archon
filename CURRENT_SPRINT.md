@@ -135,7 +135,7 @@ Full audit of `frontend-consumer/` by Codex. Key findings:
 - Simplify copy: rename to client language, default light mode, core flow = Describe → Build → Review → Revise
 - Mobile-first: reduce sidebar weight, responsive project detail, collapsible tabs
 
-### Phase B: Implementation (🔧 In Progress Mar 9, 2026)
+### Phase B: Implementation (✅ Complete Mar 9, 2026)
 Codex rewrote consumer as indie-maker AI app builder (Lovable/v0 positioning):
 - ✅ Landing page: prompt-first hero, "What can I build for you?", founder-friendly suggestions (Landing Page, Portfolio Site, Dashboard, Online Store)
 - ✅ Copy rewrite: removed all developer jargon (Multi-Agent Swarm, PRD, Architecture, Pipeline, Vibe coding, Reasoning Engine)
@@ -149,20 +149,20 @@ Codex rewrote consumer as indie-maker AI app builder (Lovable/v0 positioning):
 - ✅ "Every version saved. Undo anything." differentiator copy
 - ✅ Tabs renamed: Preview, Brief, Build Plan, Code, What changed, Versions
 
-**Bugs found during live testing (Codex fixing):**
-- 🔴 Preview iframe doesn't auto-refresh after build completes
-- 🔴 Brief tab shows "Could not load" (auth/version mismatch on fetch)
-- 🔴 Build Plan tab shows "Could not load"
-- 🔴 "What changed" tab shows "Could not load"
-- 🔴 Brief tab content shows Build Plan data instead of Brief on second build
-- 🔴 Light mode not defaulting (old localStorage overrides new default)
-- 🔴 Second prompt iteration produces broken/unstyled preview
+**Bugs found during live testing (✅ All fixed Mar 9, 2026):**
+- ✅ Preview iframe auto-refreshes after build completes
+- ✅ Brief tab loads real brief data
+- ✅ Build Plan tab loads real plan data
+- ✅ "What changed" tab loads real file data
+- ✅ Brief/Plan data no longer swapped on second build
+- ✅ Light mode defaults correctly
+- ✅ Iteration produces properly styled preview
 
 **Discovered during testing:**
 - ✅ Consumer has working Restore Version button — Enterprise + Studio restore buttons are static/unwired. Wire them up as a follow-up task.
 
 ### Remaining phases:
-- 🔴 Phase B bug fixes (Codex in progress)
+- ✅ Phase B bug fixes (Complete Mar 9, 2026)
 - 🔴 Phase C: Add auth pages (login/register matching existing backend)
 - 🔴 Phase D: Add Versions page (moat feature)
 - 🔴 Phase E: Add Build Insights card
@@ -178,4 +178,5 @@ Codex rewrote consumer as indie-maker AI app builder (Lovable/v0 positioning):
 | 8.3 | Client shareable read-only links (primary moat feature) |
 | 18 | Unified Auth + Plan-Based UI Routing |
 | 19 | Product Tour + Onboarding Walkthrough |
+
 

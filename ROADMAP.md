@@ -1,4 +1,4 @@
-﻿# Archon — Execution Roadmap
+# Archon — Execution Roadmap
 
 ## Purpose
 
@@ -603,10 +603,10 @@ Codex audited all consumer frontend files + ran build + tsc + live browser test.
 Found 2 critical, 5 high, 5 medium issues + 7 feature gaps vs Enterprise/Studio.
 Top blockers: no auth (JWT never sent), fake chat composer (never calls /iterate), developer-oriented UX.
 
-**Phase B: Implementation (🔧 In Progress Mar 9, 2026)**
+**Phase B: Implementation (✅ Complete Mar 9, 2026)**
 Codex rewrote consumer as indie-maker AI app builder (Lovable/v0 competitor positioning).
 Prompt-first hero, founder-friendly copy, real chat/iterate API calls, auth headers, simplified settings.
-7 bugs found during live testing — Codex fixing: preview auto-refresh, tab data loading, light mode default, iteration quality.
+7 bugs found and fixed during live testing: preview auto-refresh, tab data loading, light mode default, iteration quality. All verified working.
 Consumer Restore Version works — Enterprise + Studio buttons need wiring (follow-up).
 
 **Remaining phases:**
@@ -652,3 +652,4 @@ Post-build suggestions that help users write better prompts. Positioned as intel
 - ✅ 21.4 Studio UI — matching section in Studio Governance tab, hardcoded English
 - ✅ 21.5 i18n — 12 Korean translation keys for categories, priorities, section title/description/empty state
 - Consumer UI deferred to full UX audit
+
