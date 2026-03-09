@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   Clock3,
   Code2,
+  ExternalLink,
   FileCode2,
   FileText,
   History,
@@ -17,7 +18,9 @@ import {
   Sparkles,
 } from 'lucide-react';
 import ArtifactViewer from '../components/ArtifactViewer';
+import SessionMenu from '../components/SessionMenu';
 import { getLang, t } from '../i18n';
+import { AuthUser } from '../services/auth';
 import {
   backend,
   BriefRecord,
@@ -45,10 +48,13 @@ import { Artifact, EngineerTask, Project } from '../types';
 interface ProjectDetailPageProps {
   projectId: string;
   hasSession: boolean;
+  authUser: AuthUser | null;
   onAuthError: () => void;
   onBack: () => void;
   onOpenSidebar: () => void;
   onOpenSettings: () => void;
+  onNavigate: (href: string) => void;
+  onSignOut: () => Promise<void> | void;
 }
 
 type ActiveTab = 'preview' | 'brief' | 'buildPlan' | 'code' | 'changes' | 'versions';
@@ -252,10 +258,13 @@ const CodePanel: React.FC<{ lang: ReturnType<typeof getLang>; projectId: string;
 const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   projectId,
   hasSession,
+  authUser,
   onAuthError,
   onBack,
   onOpenSidebar,
   onOpenSettings,
+  onNavigate,
+  onSignOut,
 }) => {
   const lang = getLang();
   const [project, setProject] = useState<Project | undefined>(undefined);
@@ -278,6 +287,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   const [changesState, setChangesState] = useState<RemoteState<EngineerTask[]>>(EMPTY_REMOTE);
   const [headError, setHeadError] = useState(false);
   const [previewRefreshKey, setPreviewRefreshKey] = useState(() => Date.now());
+  const [showRegisterPrompt, setShowRegisterPrompt] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const previousStatusRef = useRef<Project['status'] | null>(null);
   const previousPreviewVersionRef = useRef<number | null>(null);
@@ -377,10 +387,19 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
         setHeadError(false);
       }
       setPreviewRefreshKey(Date.now());
+      if (!localStorage.getItem('archon_token')) {
+        setShowRegisterPrompt(true);
+      }
     }
 
     previousStatusRef.current = project?.status ?? null;
   }, [latestVersion, project?.status]);
+
+  useEffect(() => {
+    if (hasSession && showRegisterPrompt) {
+      setShowRegisterPrompt(false);
+    }
+  }, [hasSession, showRegisterPrompt]);
 
   useEffect(() => {
     if (!resolvedVersion) return;
@@ -494,7 +513,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
 
   const handleSendMessage = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!chatInput.trim() || chatLoading || project?.status === 'RUNNING' || !hasSession) return;
+    if (!chatInput.trim() || chatLoading || project?.status === 'RUNNING') return;
 
     const userMessage: PromptHistoryEntry = {
       role: 'user',
@@ -571,6 +590,8 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
     );
   }
 
+  const signInHref = `/login?guest_project_id=${encodeURIComponent(projectId)}`;
+
   return (
     <div className="flex h-full flex-col bg-[var(--app-bg)]">
       <header className="border-b border-slate-200/80 bg-white/80 px-4 py-3 backdrop-blur dark:border-white/10 dark:bg-[#0f172a]/80 sm:px-6">
@@ -615,6 +636,13 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
             >
               {getStatusLabel(project, lang)}
             </span>
+            <SessionMenu
+              hasSession={hasSession}
+              user={authUser}
+              signInHref={signInHref}
+              onNavigate={onNavigate}
+              onSignOut={onSignOut}
+            />
             <button
               type="button"
               onClick={onOpenSettings}
@@ -685,9 +713,9 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               <div ref={endRef} />
             </div>
             <form onSubmit={handleSendMessage} className="border-t border-slate-200 px-5 py-4 dark:border-white/10">
-              {(!hasSession || composerError) && (
+              {composerError && (
                 <div className="mb-3 rounded-[1.25rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
-                  {!hasSession ? t(lang, 'authRequiredBody') : composerError}
+                  {composerError}
                 </div>
               )}
               <textarea
@@ -698,11 +726,9 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                     setComposerError(null);
                   }
                 }}
-                disabled={chatLoading || project.status === 'RUNNING' || !hasSession}
+                disabled={chatLoading || project.status === 'RUNNING'}
                 placeholder={
-                  !hasSession
-                    ? t(lang, 'authRequiredBody')
-                    : project.status === 'RUNNING'
+                  project.status === 'RUNNING'
                     ? t(lang, 'buildInProgress')
                     : t(lang, 'chatComposerPlaceholder')
                 }
@@ -710,7 +736,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               />
               <button
                 type="submit"
-                disabled={!chatInput.trim() || chatLoading || project.status === 'RUNNING' || !hasSession}
+                disabled={!chatInput.trim() || chatLoading || project.status === 'RUNNING'}
                 className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
               >
                 {chatLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
@@ -942,6 +968,40 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
             ))}
         </section>
       </div>
+
+      {showRegisterPrompt && !hasSession && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/30 p-4 backdrop-blur-sm sm:items-center">
+          <div className="w-full max-w-lg rounded-[2rem] border border-white/80 bg-white p-6 shadow-[0_30px_80px_rgba(15,23,42,0.16)] sm:p-7">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-emerald-700">
+              <Sparkles size={14} />
+              Build Ready
+            </div>
+            <h3 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950">
+              Your app is ready! Create a free account to save it and keep building.
+            </h3>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              You can keep reviewing this version right now. Create an account whenever you want to save this project and keep iterating from it.
+            </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => onNavigate(`/register?guest_project_id=${encodeURIComponent(projectId)}`)}
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-[1.25rem] bg-slate-950 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
+              >
+                Create Account
+                <ExternalLink size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowRegisterPrompt(false)}
+                className="inline-flex flex-1 items-center justify-center rounded-[1.25rem] border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+              >
+                Maybe Later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -9,7 +9,7 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from app import app
-from models import Project, User, get_session
+from models import Execution, Project, User, get_session
 
 
 TEST_EMAIL = "testguard@archon-test.com"
@@ -70,10 +70,21 @@ def test_get_endpoints_require_auth(client, endpoint):
     assert resp.status_code == 401, f"{endpoint} returned {resp.status_code}, expected 401"
 
 
-def test_post_projects_requires_auth(client):
-    """POST /api/projects without token should return 401."""
-    resp = client.post("/api/projects", json={"name": "test"})
-    assert resp.status_code == 401
+def test_post_projects_allows_guest_creation(client):
+    """POST /api/projects without auth should create a guest project."""
+    resp = client.post("/api/projects", json={"name": "Guest Flow Test Project"})
+    assert resp.status_code == 201
+    data = resp.get_json()
+    assert data["owner_id"] is None
+
+    db = get_session()
+    try:
+        project = db.get(Project, data["id"])
+        if project:
+            db.delete(project)
+            db.commit()
+    finally:
+        db.close()
 
 
 @pytest.mark.parametrize("endpoint", PROTECTED_GET_ENDPOINTS)
@@ -91,3 +102,78 @@ def test_post_projects_works_with_auth(client, auth_token):
         headers={"Authorization": f"Bearer {auth_token}"},
     )
     assert resp.status_code == 201, f"POST /api/projects returned {resp.status_code}, expected 201"
+
+
+def test_claim_endpoint_claims_guest_project_for_existing_user(client, auth_token):
+    guest_resp = client.post("/api/projects", json={"name": "Guest Claim Endpoint Project"})
+    assert guest_resp.status_code == 201
+    guest_project = guest_resp.get_json()
+
+    claim_resp = client.post(
+        f"/api/projects/{guest_project['id']}/claim",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert claim_resp.status_code == 200
+
+    db = get_session()
+    try:
+        user = db.query(User).filter(User.email == TEST_EMAIL).first()
+        project = db.get(Project, guest_project["id"])
+        assert user is not None
+        assert project is not None
+        assert project.owner_id == user.id
+    finally:
+        db.close()
+
+
+def test_register_claims_guest_project_and_executions(client):
+    guest_resp = client.post("/api/projects", json={"name": "Guest Register Claim Project"})
+    assert guest_resp.status_code == 201
+    guest_project = guest_resp.get_json()
+
+    db = get_session()
+    try:
+        execution = Execution(
+            project_id=guest_project["id"],
+            owner_id=None,
+            status="pending",
+            version=1,
+            is_active_head=True,
+        )
+        db.add(execution)
+        db.commit()
+        db.refresh(execution)
+        execution_id = execution.id
+    finally:
+        db.close()
+
+    register_email = f"guest-claim-{guest_project['id']}@archon-test.com"
+    register_resp = client.post(
+        "/api/auth/register",
+        json={
+            "email": register_email,
+            "password": TEST_PASSWORD,
+            "name": "Guest Claim",
+            "guest_project_id": guest_project["id"],
+        },
+    )
+    assert register_resp.status_code == 201
+    registered_user = register_resp.get_json()["user"]
+
+    db = get_session()
+    try:
+        project = db.get(Project, guest_project["id"])
+        execution = db.get(Execution, execution_id)
+        user = db.get(User, registered_user["id"])
+
+        assert project is not None
+        assert execution is not None
+        assert user is not None
+        assert project.owner_id == user.id
+        assert execution.owner_id == user.id
+
+        db.delete(project)
+        db.delete(user)
+        db.commit()
+    finally:
+        db.close()

@@ -408,6 +408,15 @@ class BackendService {
     return this.projects.find((project) => project.id === id);
   }
 
+  clearProjects() {
+    this.projects = [];
+    this.artifacts = [];
+    this.artifactExecutionIds.clear();
+    this.pollingIntervals.forEach((interval) => clearInterval(interval));
+    this.pollingIntervals.clear();
+    this.notify();
+  }
+
   getArtifacts(projectId: string) {
     return this.artifacts
       .filter((artifact) => artifact.projectId === projectId)

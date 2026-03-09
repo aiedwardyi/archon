@@ -18,9 +18,9 @@ from datetime import datetime, timezone
 # Suppress SQLAlchemy legacy Query.get() deprecation warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="sqlalchemy")
 
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import get_jwt_identity, jwt_required, verify_jwt_in_request
 from models import Project, Execution, User, get_session, init_db, get_next_version
-from auth import auth_bp, init_jwt
+from auth import auth_bp, claim_guest_project_for_user, init_jwt
 
 # NLU Agent — sentiment + keyword analysis before pipeline routing
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -229,6 +229,22 @@ def get_plan_ui_archetype(plan) -> str | None:
         for t in ms.tasks:
             if getattr(t, "execution_hint", None) == "engineer" and getattr(t, "task_type", None) == "scaffold":
                 return t.ui_archetype
+    return None
+
+
+def get_optional_request_user_id() -> int | None:
+    verify_jwt_in_request(optional=True)
+    identity = get_jwt_identity()
+    return int(identity) if identity is not None else None
+
+
+def get_project_access_error(project: Project, user_id: int | None):
+    if project.owner_id is None:
+        return None
+    if user_id is None:
+        return jsonify({"error": "Authentication required"}), 401
+    if project.owner_id != user_id:
+        return jsonify({"error": "Forbidden"}), 403
     return None
 
 
@@ -806,24 +822,45 @@ def get_activity():
 
 
 @app.route("/api/projects", methods=["POST"])
-@jwt_required()
 def create_project():
     session = get_session()
     try:
         data = request.get_json()
         if not data or not data.get("name"):
             return jsonify({"error": "Project name is required"}), 400
-        uid = get_jwt_identity()
+        uid = get_optional_request_user_id()
         project = Project(
             name=data["name"],
             description=data.get("description", ""),
             status="pending",
-            owner_id=int(uid),
+            owner_id=uid,
         )
         session.add(project)
         session.commit()
         session.refresh(project)
         return jsonify(project.to_dict()), 201
+    finally:
+        session.close()
+
+
+@app.route("/api/projects/<int:project_id>/claim", methods=["POST"])
+@jwt_required()
+def claim_project(project_id: int):
+    session = get_session()
+    try:
+        uid = int(get_jwt_identity())
+        try:
+            project = claim_guest_project_for_user(session, project_id, uid)
+        except LookupError:
+            session.rollback()
+            return jsonify({"error": "Project not found"}), 404
+        except ValueError:
+            session.rollback()
+            return jsonify({"error": "Project has already been claimed"}), 409
+
+        session.commit()
+        session.refresh(project)
+        return jsonify(project.to_dict()), 200
     finally:
         session.close()
 
@@ -968,6 +1005,7 @@ def iterate_project(project_id: int):
     if state["running"]:
         return jsonify({"error": "A pipeline is already running for this project"}), 409
 
+    user_id = get_optional_request_user_id()
     session = get_session()
     try:
         # Accept either JSON or multipart/form-data (for file uploads)
@@ -988,6 +1026,9 @@ def iterate_project(project_id: int):
         project = session.get(Project, project_id)
         if not project:
             return jsonify({"error": f"Project {project_id} not found"}), 404
+        access_error = get_project_access_error(project, user_id)
+        if access_error:
+            return access_error
 
         prompt = data["prompt"]
         prompt_history = data.get("prompt_history", [])
@@ -1024,6 +1065,7 @@ def iterate_project(project_id: int):
         next_version = get_next_version(session, project_id)
         execution = Execution(
             project_id=project_id,
+            owner_id=project.owner_id,
             status="pending",
             version=next_version,
             prompt_history=json.dumps(prompt_history),
@@ -1140,6 +1182,8 @@ def restore_execution(execution_id: int):
 
 @app.route("/api/execute-task", methods=["POST"])
 def execute_task():
+    project_id = None
+    user_id = get_optional_request_user_id()
     session = get_session()
     try:
         req_data = request.get_json()
@@ -1149,7 +1193,7 @@ def execute_task():
         project_id = req_data.get("project_id")
 
         if not project_id:
-            project = Project(name="Untitled Project", description="", status="in_progress")
+            project = Project(name="Untitled Project", description="", status="in_progress", owner_id=user_id)
             session.add(project)
             session.commit()
             session.refresh(project)
@@ -1158,6 +1202,9 @@ def execute_task():
             project = session.get(Project, project_id)
             if not project:
                 return jsonify({"error": f"Project {project_id} not found"}), 404
+            access_error = get_project_access_error(project, user_id)
+            if access_error:
+                return access_error
             project.status = "in_progress"
             project.updated_at = datetime.now(timezone.utc)
             session.commit()
@@ -1181,6 +1228,7 @@ def execute_task():
 
         execution = Execution(
             project_id=project_id,
+            owner_id=project.owner_id,
             status="pending",
             version=next_version,
             prompt_history=json.dumps(initial_history),
@@ -1606,6 +1654,7 @@ def project_chat(project_id: int):
     data = request.get_json()
     if not data or not data.get("message"):
         return jsonify({"error": "message is required"}), 400
+    user_id = get_optional_request_user_id()
     try:
         requested_archetype = detect_requested_archetype(data["message"])
         # Load PRD from active head version for context-aware replies
@@ -1613,9 +1662,13 @@ def project_chat(project_id: int):
         db = get_session()
         try:
             project = db.get(Project, project_id)
+            if not project:
+                return jsonify({"error": "Project not found"}), 404
+            access_error = get_project_access_error(project, user_id)
+            if access_error:
+                return access_error
             if (
-                project
-                and project.locked_ui_archetype
+                project.locked_ui_archetype
                 and requested_archetype
                 and requested_archetype != project.locked_ui_archetype
             ):

@@ -3,16 +3,31 @@ import BackendConnectionOverlay from './components/BackendConnectionOverlay';
 import SettingsModal from './components/SettingsModal';
 import Sidebar from './components/Sidebar';
 import { getLang, setLang } from './i18n';
+import LoginPage from './pages/LoginPage';
 import ProjectDetailPage from './pages/ProjectDetailPage';
 import ProjectsPage from './pages/ProjectsPage';
+import RegisterPage from './pages/RegisterPage';
+import { AuthUser, clearStoredSession, fetchCurrentUser, getStoredToken, getStoredUser, logout } from './services/auth';
 import { backend, isAuthError, isNetworkError } from './services/orchestrator';
 import { Project, SystemSettings } from './types';
 
 const THEME_PREFERENCE_KEY = 'archon_consumer_theme_preference';
 
+interface AppLocation {
+  pathname: string;
+  search: string;
+}
+
+function readLocation(): AppLocation {
+  return {
+    pathname: window.location.pathname,
+    search: window.location.search,
+  };
+}
+
 function getInitialSettings(): SystemSettings {
   const saved = localStorage.getItem('adt_settings') || localStorage.getItem('da_settings');
-  let parsed: any = null;
+  let parsed: unknown = null;
 
   if (saved) {
     try {
@@ -21,9 +36,10 @@ function getInitialSettings(): SystemSettings {
       parsed = null;
     }
   }
+
   const explicitTheme = localStorage.getItem(THEME_PREFERENCE_KEY);
   const theme = explicitTheme === 'dark' || explicitTheme === 'light' ? explicitTheme : 'light';
-  const language = parsed?.language === 'ko' || getLang() === 'ko' ? 'ko' : 'en';
+  const language = (parsed as { language?: string } | null)?.language === 'ko' || getLang() === 'ko' ? 'ko' : 'en';
 
   return {
     theme,
@@ -31,21 +47,71 @@ function getInitialSettings(): SystemSettings {
   };
 }
 
+function normalizePath(pathname: string) {
+  const normalized = pathname.replace(/\/+$/, '') || '/';
+  if (normalized === '/login') return '/login';
+  if (normalized === '/register') return '/register';
+  if (normalized === '/projects') return '/projects';
+  return '/';
+}
+
 const App: React.FC = () => {
+  const [location, setLocation] = useState<AppLocation>(() => readLocation());
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [hasNetworkError, setHasNetworkError] = useState(false);
   const [isOverlayDismissed, setIsOverlayDismissed] = useState(true);
-  const [hasSession, setHasSession] = useState<boolean>(() => Boolean(localStorage.getItem('archon_token')));
+  const [hasSession, setHasSession] = useState<boolean>(() => Boolean(getStoredToken()));
+  const [authUser, setAuthUser] = useState<AuthUser | null>(() => getStoredUser());
   const [settings, setSettings] = useState<SystemSettings>(() => getInitialSettings());
 
-  const handleAuthError = () => {
-    localStorage.removeItem('archon_token');
-    localStorage.removeItem('archon_user');
-    setHasSession(false);
+  const navigate = (href: string, options?: { replace?: boolean }) => {
+    const next = new URL(href, window.location.origin);
+    const method = options?.replace ? 'replaceState' : 'pushState';
+    window.history[method]({}, '', `${next.pathname}${next.search}${next.hash}`);
+    setLocation(readLocation());
   };
+
+  const handleAuthError = () => {
+    clearStoredSession();
+    backend.clearProjects();
+    setAuthUser(null);
+    setHasSession(false);
+    setCurrentProjectId(null);
+  };
+
+  const handleAuthSuccess = (user: AuthUser) => {
+    setAuthUser(user);
+    setHasSession(true);
+  };
+
+  const handleSignOut = async () => {
+    await logout();
+    backend.clearProjects();
+    setAuthUser(null);
+    setHasSession(false);
+    setCurrentProjectId(null);
+    setIsSidebarOpen(false);
+    navigate('/', { replace: true });
+  };
+
+  useEffect(() => {
+    const syncLocation = () => setLocation(readLocation());
+    const syncSession = () => {
+      setHasSession(Boolean(getStoredToken()));
+      setAuthUser(getStoredUser());
+    };
+
+    window.addEventListener('popstate', syncLocation);
+    window.addEventListener('storage', syncSession);
+
+    return () => {
+      window.removeEventListener('popstate', syncLocation);
+      window.removeEventListener('storage', syncSession);
+    };
+  }, []);
 
   useEffect(() => {
     const update = () => {
@@ -81,12 +147,29 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!hasSession) return;
 
+    if (!authUser) {
+      void fetchCurrentUser()
+        .then((user) => {
+          setAuthUser(user);
+        })
+        .catch(() => {
+          handleAuthError();
+        });
+    }
+
     void backend.fetchProjects().catch((error) => {
       if (isAuthError(error)) {
         handleAuthError();
       }
     });
-  }, [hasSession]);
+  }, [authUser, hasSession]);
+
+  useEffect(() => {
+    const path = normalizePath(location.pathname);
+    if (hasSession && (path === '/login' || path === '/register')) {
+      navigate('/projects', { replace: true });
+    }
+  }, [hasSession, location.pathname]);
 
   const handleCreateProject = async (name: string, description: string) => {
     if (backend.getHasNetworkError()) {
@@ -96,7 +179,6 @@ const App: React.FC = () => {
 
     try {
       const project = await backend.createProject(name, description);
-      setHasSession(true);
       setCurrentProjectId(project.id);
       await backend.startExecution(project.id);
     } catch (error) {
@@ -127,6 +209,16 @@ const App: React.FC = () => {
     }
     setSettings((current) => ({ ...current, ...updates }));
   };
+
+  const path = normalizePath(location.pathname);
+
+  if (path === '/login') {
+    return <LoginPage onAuthSuccess={handleAuthSuccess} onNavigate={navigate} />;
+  }
+
+  if (path === '/register') {
+    return <RegisterPage onAuthSuccess={handleAuthSuccess} onNavigate={navigate} />;
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--app-bg)] text-[var(--app-fg)] transition-colors duration-300">
@@ -172,18 +264,24 @@ const App: React.FC = () => {
           <ProjectDetailPage
             projectId={currentProjectId}
             hasSession={hasSession}
+            authUser={authUser}
             onAuthError={handleAuthError}
             onBack={() => setCurrentProjectId(null)}
             onOpenSidebar={() => setIsSidebarOpen(true)}
             onOpenSettings={() => setIsSettingsOpen(true)}
+            onNavigate={navigate}
+            onSignOut={handleSignOut}
           />
         ) : (
           <ProjectsPage
             projects={projects}
             hasSession={hasSession}
+            authUser={authUser}
             onCreateProject={handleCreateProject}
             onSelectProject={setCurrentProjectId}
             onOpenSettings={() => setIsSettingsOpen(true)}
+            onNavigate={navigate}
+            onSignOut={handleSignOut}
           />
         )}
       </main>

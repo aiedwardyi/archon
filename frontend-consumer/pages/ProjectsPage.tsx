@@ -1,22 +1,30 @@
 import React, { useMemo, useState } from 'react';
 import { ArrowRight, LayoutDashboard, MonitorSmartphone, Settings2, ShoppingBag, Sparkles, UserSquare2 } from 'lucide-react';
+import SessionMenu from '../components/SessionMenu';
 import { getLang, t } from '../i18n';
+import { AuthUser } from '../services/auth';
 import { Project } from '../types';
 
 interface ProjectsPageProps {
   projects: Project[];
   hasSession: boolean;
+  authUser: AuthUser | null;
   onCreateProject: (name: string, description: string) => Promise<void> | void;
   onSelectProject: (id: string) => void;
   onOpenSettings: () => void;
+  onNavigate: (href: string) => void;
+  onSignOut: () => Promise<void> | void;
 }
 
 const ProjectsPage: React.FC<ProjectsPageProps> = ({
   projects,
   hasSession,
+  authUser,
   onCreateProject,
   onSelectProject,
   onOpenSettings,
+  onNavigate,
+  onSignOut,
 }) => {
   const [prompt, setPrompt] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,7 +44,7 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!prompt.trim() || isSubmitting || !hasSession) return;
+    if (!prompt.trim() || isSubmitting) return;
 
     const name = prompt
       .trim()
@@ -68,14 +76,23 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onOpenSettings}
-            className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm shadow-slate-200/60 transition hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:hover:bg-white/10"
-          >
-            <Settings2 size={16} />
-            {t(lang, 'settings')}
-          </button>
+          <div className="flex items-center gap-2">
+            <SessionMenu
+              hasSession={hasSession}
+              user={authUser}
+              signInHref="/login"
+              onNavigate={onNavigate}
+              onSignOut={onSignOut}
+            />
+            <button
+              type="button"
+              onClick={onOpenSettings}
+              className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm shadow-slate-200/60 transition hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:hover:bg-white/10"
+            >
+              <Settings2 size={16} />
+              {t(lang, 'settings')}
+            </button>
+          </div>
         </header>
 
         <section className="flex flex-1 flex-col justify-center py-10 sm:py-16">
@@ -120,7 +137,7 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({
                 <p className="text-sm text-slate-500 dark:text-slate-300/70">{t(lang, 'heroHint')}</p>
                 <button
                   type="submit"
-                  disabled={!prompt.trim() || isSubmitting || !hasSession}
+                  disabled={!prompt.trim() || isSubmitting}
                   className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 sm:px-6"
                 >
                   {isSubmitting ? t(lang, 'sending') : t(lang, 'startBuilding')}
@@ -129,13 +146,6 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({
               </div>
             </div>
           </form>
-
-          {!hasSession && (
-            <div className="mx-auto mt-4 w-full max-w-4xl rounded-[1.5rem] border border-amber-200 bg-amber-50 px-5 py-4 text-left shadow-sm shadow-amber-100/70 dark:border-amber-500/20 dark:bg-amber-500/10">
-              <div className="text-sm font-semibold text-amber-900 dark:text-amber-100">{t(lang, 'authRequiredTitle')}</div>
-              <div className="mt-1 text-sm leading-6 text-amber-800 dark:text-amber-100/80">{t(lang, 'authRequiredBody')}</div>
-            </div>
-          )}
 
           <section className="mx-auto mt-12 w-full max-w-5xl">
             <div className="mb-5 flex items-end justify-between gap-4">
