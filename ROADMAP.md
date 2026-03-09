@@ -613,8 +613,17 @@ Consumer Restore Version works — Enterprise + Studio buttons need wiring (foll
 - B bug fixes (✅ Complete Mar 9, 2026)
 - C: "Try Before Register" auth + seed projects (🔧 In Progress)
 - D: Add Versions page (THE MOAT — timeline + preview + "what changed" narrative)
-- E: Add Build Insights card (friendly prompt coaching from Phase 21 backend)
+- E: Build Insights slide-up card (🔧 In Progress)
 - F: Mobile polish pass (responsive sidebar, project detail, preview iframe)
+
+**Phase E: Build Insights — Post-Build Prompt Coaching Card**
+Slide-up card appears on ProjectDetailPage after build completes. Shows prompt score, 2-4 actionable tips, and one-click "Apply suggestion" that pre-fills the iteration prompt. Non-blocking, collapsible, educational.
+- Backend already exists: GET /api/projects/<id>/versions/<ver>/insights (Phase 21)
+- Enterprise/Studio already have "Quality Recommendations" in Governance tab
+- Consumer implementation: slide-up card below preview iframe on ProjectDetailPage
+- Key UX: "Apply suggestion →" button pre-fills iteration input with the tip text
+- Progressive: shows prompt score so users see improvement over iterations
+- Stickiness play: users come back to keep improving their prompt skills
 
 **Phase C: "Try Before Register" + Seed Projects**
 Conversion funnel: users build first, register after seeing results.

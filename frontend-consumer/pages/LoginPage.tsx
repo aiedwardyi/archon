@@ -83,7 +83,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onAuthSuccess, onNavigate }) => {
             </button>
             <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-4 py-2 text-xs font-medium uppercase tracking-[0.24em] text-slate-500 shadow-sm">
               <Sparkles size={14} />
-              Consumer
+              ARCHON
             </div>
           </div>
 

@@ -31,15 +31,20 @@ const SessionMenu: React.FC<SessionMenuProps> = ({ hasSession, user, signInHref,
   const initials = useMemo(() => getInitials(user), [user]);
 
   useEffect(() => {
-    const handlePointerDown = (event: MouseEvent) => {
+    const handleDocumentClick = (event: MouseEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) {
         setOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handlePointerDown);
-    return () => document.removeEventListener('mousedown', handlePointerDown);
+    document.addEventListener('click', handleDocumentClick);
+    return () => document.removeEventListener('click', handleDocumentClick);
   }, []);
+
+  const handleSignOutClick = () => {
+    setOpen(false);
+    void onSignOut();
+  };
 
   if (!hasSession) {
     return (
@@ -80,10 +85,7 @@ const SessionMenu: React.FC<SessionMenuProps> = ({ hasSession, user, signInHref,
           </div>
           <button
             type="button"
-            onClick={() => {
-              setOpen(false);
-              void onSignOut();
-            }}
+            onClick={handleSignOutClick}
             className="mt-2 flex w-full items-center gap-2 rounded-[1.125rem] px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-950"
             role="menuitem"
           >
