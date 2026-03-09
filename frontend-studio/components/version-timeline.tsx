@@ -185,7 +185,7 @@ export function VersionTimeline() {
                       key={v.id}
                       onClick={() => handleVersionClick(v)}
                       className={`w-full text-left px-4 py-3 border-b border-border transition-colors ${
-                        isActive ? "bg-accent border-l-2 border-l-primary" : "hover:bg-muted/50 opacity-70 hover:opacity-100"
+                        isActive ? "bg-primary/10 border-l-2 border-l-primary" : "hover:bg-muted/50 opacity-70 hover:opacity-100"
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1">

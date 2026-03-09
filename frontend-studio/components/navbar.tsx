@@ -77,7 +77,7 @@ export function Navbar() {
     <header className="flex items-center justify-between h-14 border-b border-border bg-card px-6">
       <div className="flex items-center gap-8">
         <Link href="/" className="flex items-center gap-2">
-          <Hexagon className="h-5 w-5 text-primary" strokeWidth={2.5} />
+          <Hexagon className="h-5 w-5 text-blue-600 dark:text-blue-500" strokeWidth={2.5} />
           <span className="text-foreground font-semibold text-base tracking-tight">Archon</span>
         </Link>
         <nav className="flex items-center gap-1">
@@ -90,7 +90,7 @@ export function Navbar() {
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors ${
                   isActive
                     ? "bg-accent text-accent-foreground font-medium"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
                 }`}
               >
                 <item.icon className="h-4 w-4" />

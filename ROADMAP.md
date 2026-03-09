@@ -588,6 +588,12 @@ guessing. Tour design will be driven by real friction points, not assumptions.
 
 ---
 
+## Light Mode Contrast Fixes (✅ Complete Mar 9, 2026)
+- Enterprise: All hexagon icons unified to `text-blue-600 dark:text-blue-500` across Navbar, ProjectTable, PipelineStatus, Index.tsx
+- Studio: Same icon fix + navbar hover contrast + versions panel selected state + darkened muted-foreground CSS variable
+- Google OAuth: Added localhost:8080 to authorized origins (console config, not code)
+- Visually verified both frontends in light + dark mode
+
 ## Phase 21 — Build Insights (Prompt Coaching) (✅ Complete Mar 8, 2026)
 
 Post-build suggestions that help users write better prompts. Positioned as intelligent platform feedback, not a tutorial.
