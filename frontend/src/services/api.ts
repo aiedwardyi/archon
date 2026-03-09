@@ -80,6 +80,15 @@ export async function fetchProjects(): Promise<Project[]> {
   }));
 }
 
+export async function seedProjects(): Promise<{ seeded: boolean; projects?: Project[] }> {
+  const res = await fetch(`${API_BASE}/seed`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return await res.json();
+}
+
 export interface ProjectStats {
   total: number;
   running: number;
@@ -98,7 +107,11 @@ export function useProjects() {
 
     const load = async () => {
       try {
-        const data = await fetchProjects();
+        let data = await fetchProjects();
+        if (data.length === 0 && localStorage.getItem("archon_token")) {
+          await seedProjects();
+          data = await fetchProjects();
+        }
         if (cancelled) return;
         setProjects(data);
         setError(null);

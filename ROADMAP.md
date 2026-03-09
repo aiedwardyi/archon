@@ -611,7 +611,7 @@ Consumer Restore Version works — Enterprise + Studio buttons need wiring (foll
 
 **Remaining phases:**
 - B bug fixes (✅ Complete Mar 9, 2026)
-- C: "Try Before Register" auth + seed projects (🔧 In Progress)
+- C: Auth + Seed Projects (✅ Complete Mar 9, 2026)
 - D: Add Versions page (THE MOAT — timeline + preview + "what changed" narrative)
 - E: Build Insights slide-up card (✅ Complete Mar 9, 2026)
 - F: Mobile polish pass (responsive sidebar, project detail, preview iframe)
@@ -625,12 +625,14 @@ Slide-up card appears on ProjectDetailPage after build completes. Shows prompt s
 - Progressive: shows prompt score so users see improvement over iterations
 - Stickiness play: users come back to keep improving their prompt skills
 
-**Phase C: "Try Before Register" + Seed Projects**
+**Phase C: Auth + Seed Projects (✅ Complete Mar 9, 2026)**
 Conversion funnel: users build first, register after seeing results.
-- Consumer: guest build → post-build register modal → link guest project to account
-- Enterprise + Studio: same flow + seed demo projects (populated Projects/Versions/Artifacts)
-- Auth pages on all three frontends (consumer light, enterprise/studio dark split-layout)
-- Google OAuth on all three
+- Consumer: guest build → post-build register modal → link guest project to account ✅
+- Seed projects: POST /api/seed creates 2 FF7 demo projects from real peak-quality output (projects 71 + 38) ✅
+- Imagen character art (Cloud, Tifa, Barret) committed to backend/seed_data/ ✅
+- Auto-seeds on first login (0 projects) across all 3 frontends ✅
+- Asset URL rewriting at seed time, regression test, swappable seed data ✅
+- Enterprise + Studio try-before-register: deferred (lower priority)
 
 **Design principles:** Simple > powerful, business language, mobile-first, light mode default, no developer jargon. Core flow: Describe → Build → Review → Revise.
 

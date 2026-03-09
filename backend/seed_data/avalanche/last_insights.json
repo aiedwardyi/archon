@@ -1,0 +1,14 @@
+{
+  "insights": [
+    {
+      "category": "responsive",
+      "suggestion": "Add tighter mobile breakpoints for the hero and character cards so the seeded demo feels equally polished on smaller screens.",
+      "priority": "medium"
+    },
+    {
+      "category": "motion",
+      "suggestion": "Consider subtle page transition or section reveal animations to make navigation between the archive areas feel more cinematic.",
+      "priority": "low"
+    }
+  ]
+}

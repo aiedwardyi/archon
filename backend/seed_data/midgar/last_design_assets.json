@@ -1,0 +1,52 @@
+{
+  "assets": [
+    {
+      "key": "hero_background",
+      "url": "https://oaidalleapiprodscus.blob.core.windows.net/private/org-6PQ0USkuoOCXWUsOjjWFWvYO/user-rYS1fLq1XmveZgvrjaShas6Q/img-tZZ3S81TbopDKLeIExldtUaF.png?st=2026-02-23T08%3A17%3A53Z&se=2026-02-23T10%3A17%3A53Z&sp=r&sv=2026-02-06&sr=b&rscd=inline&rsct=image/png&skoid=f1dafa11-a0c2-4092-91d4-10981fbda051&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-02-23T00%3A57%3A38Z&ske=2026-02-24T00%3A57%3A38Z&sks=b&skv=2026-02-06&sig=zZPT05w/uU2S6LVqMHq5SMJunXQ7fWRPQthdcMffaew%3D",
+      "local_path": "C:\\Users\\mredw\\OneDrive\\Desktop\\ai-dev-team\\generated\\38\\v1\\assets\\hero_background.png",
+      "purpose": "hero section full-width background",
+      "prompt": "A vibrant and immersive fantasy landscape inspired by a classic RPG, featuring sprawling fields, majestic mountains, and a glowing sunset in the background. The scene should have intricate details like ancient ruins and mystical creatures peeking through the foliage, creating an inviting atmosphere for fans of fantasy games. The overall mood should be epic and adventurous, with highly detailed elements and cinematic lighting to draw viewers in.",
+      "style": "concept_art"
+    },
+    {
+      "key": "character_cloud",
+      "url": "https://oaidalleapiprodscus.blob.core.windows.net/private/org-6PQ0USkuoOCXWUsOjjWFWvYO/user-rYS1fLq1XmveZgvrjaShas6Q/img-xwkAvU3kHaB7bhxB88lNsz1R.png?st=2026-02-23T08%3A18%3A11Z&se=2026-02-23T10%3A18%3A11Z&sp=r&sv=2026-02-06&sr=b&rscd=inline&rsct=image/png&skoid=77e5a8ec-6bd1-4477-8afc-16703a64f029&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-02-23T03%3A27%3A41Z&ske=2026-02-24T03%3A27%3A41Z&sks=b&skv=2026-02-06&sig=8xMn0DVoZPSpmMy7goLchKrVXkUNX8n2VGk9rj%2Bof/Q%3D",
+      "local_path": "C:\\Users\\mredw\\OneDrive\\Desktop\\ai-dev-team\\generated\\38\\v1\\assets\\character_cloud.png",
+      "purpose": "character profile section",
+      "prompt": "A detailed portrait of a young male warrior with spiky blond hair, wearing a distinctive armored outfit with a large sword slung over his back. The character has a determined expression, standing heroically against a backdrop of a fantasy landscape. The lighting is dramatic, highlighting the character's features, and the overall style is highly detailed and vibrant, capturing the essence of a classic RPG hero.",
+      "style": "digital_art"
+    },
+    {
+      "key": "character_barret",
+      "url": "https://oaidalleapiprodscus.blob.core.windows.net/private/org-6PQ0USkuoOCXWUsOjjWFWvYO/user-rYS1fLq1XmveZgvrjaShas6Q/img-fPjRhWGtf24b8tzqJESawl5N.png?st=2026-02-23T08%3A18%3A28Z&se=2026-02-23T10%3A18%3A28Z&sp=r&sv=2026-02-06&sr=b&rscd=inline&rsct=image/png&skoid=8b33a531-2df9-46a3-bc02-d4b1430a422c&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-02-22T22%3A27%3A14Z&ske=2026-02-23T22%3A27%3A14Z&sks=b&skv=2026-02-06&sig=1d7LJSfid5uSSTYLQZLEyPgH2YmNdKX%2B0miYmcEPfak%3D",
+      "local_path": "C:\\Users\\mredw\\OneDrive\\Desktop\\ai-dev-team\\generated\\38\\v1\\assets\\character_barret.png",
+      "purpose": "character profile section",
+      "prompt": "A striking portrait of a muscular man with short hair and a cybernetic arm, wearing rugged clothing that reflects a tough warrior persona. He stands confidently with a serious expression, with a cityscape visible in the background. The image should convey strength and resilience, with dynamic lighting that emphasizes his features, rendered in a highly detailed and vibrant art style.",
+      "style": "digital_art"
+    },
+    {
+      "key": "character_tifa",
+      "url": "https://oaidalleapiprodscus.blob.core.windows.net/private/org-6PQ0USkuoOCXWUsOjjWFWvYO/user-rYS1fLq1XmveZgvrjaShas6Q/img-ZgKUlDa08lS9yvj5rywPLxKq.png?st=2026-02-23T08%3A18%3A44Z&se=2026-02-23T10%3A18%3A44Z&sp=r&sv=2026-02-06&sr=b&rscd=inline&rsct=image/png&skoid=f1dafa11-a0c2-4092-91d4-10981fbda051&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-02-22T14%3A30%3A41Z&ske=2026-02-23T14%3A30%3A41Z&sks=b&skv=2026-02-06&sig=gyzF7SoNTb1%2BCGgmz%2BhJ2qmDEWgag8kNBAx5/4l9f10%3D",
+      "local_path": "C:\\Users\\mredw\\OneDrive\\Desktop\\ai-dev-team\\generated\\38\\v1\\assets\\character_tifa.png",
+      "purpose": "character profile section",
+      "prompt": "A captivating portrait of a young female martial artist with long brown hair, dressed in a stylish yet practical outfit suitable for combat. She has a confident and inviting smile, positioned in a dynamic pose that suggests movement. The background features a lively urban scene, with warm lighting that enhances the character's personality. The artwork should be highly detailed and vibrant, embodying the spirit of a strong female hero.",
+      "style": "digital_art"
+    },
+    {
+      "key": "weapons_collection",
+      "url": "https://oaidalleapiprodscus.blob.core.windows.net/private/org-6PQ0USkuoOCXWUsOjjWFWvYO/user-rYS1fLq1XmveZgvrjaShas6Q/img-SFZo6sOQ7q7UfVW61JuV192T.png?st=2026-02-23T08%3A19%3A07Z&se=2026-02-23T10%3A19%3A07Z&sp=r&sv=2026-02-06&sr=b&rscd=inline&rsct=image/png&skoid=b1a0ae1f-618f-4548-84fd-8b16cacd5485&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-02-22T14%3A34%3A10Z&ske=2026-02-23T14%3A34%3A10Z&sks=b&skv=2026-02-06&sig=ViP6FIHJmB7wi0PFf98qqjrpSOk9FfXShNp5zO3uwtk%3D",
+      "local_path": "C:\\Users\\mredw\\OneDrive\\Desktop\\ai-dev-team\\generated\\38\\v1\\assets\\weapons_collection.png",
+      "purpose": "weapons section",
+      "prompt": "An artistic display of various fantasy weapons, including swords, guns, and other iconic items from a classic RPG. Each weapon is intricately designed, showcasing unique styles and elements, arranged artistically on a dark wooden table. The lighting is dramatic, casting shadows that enhance the details, creating an atmosphere of mystery and adventure. The artwork should be highly detailed and visually striking.",
+      "style": "digital_art"
+    },
+    {
+      "key": "interactive_map",
+      "url": "https://oaidalleapiprodscus.blob.core.windows.net/private/org-6PQ0USkuoOCXWUsOjjWFWvYO/user-rYS1fLq1XmveZgvrjaShas6Q/img-Bhila7OUlAd34exbOxI0VDl1.png?st=2026-02-23T08%3A19%3A30Z&se=2026-02-23T10%3A19%3A30Z&sp=r&sv=2026-02-06&sr=b&rscd=inline&rsct=image/png&skoid=7daae675-7b42-4e2e-ab4c-8d8419a28d99&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-02-22T23%3A34%3A58Z&ske=2026-02-23T23%3A34%3A58Z&sks=b&skv=2026-02-06&sig=OV7VFRHdyd2OKQ%2Ba0q7VO7huFXMbCgiG7%2BZTwKXPx14%3D",
+      "local_path": "C:\\Users\\mredw\\OneDrive\\Desktop\\ai-dev-team\\generated\\38\\v1\\assets\\interactive_map.png",
+      "purpose": "interactive map section",
+      "prompt": "An elaborate and colorful map of a fantasy game world, featuring diverse terrains like forests, mountains, and cities. The map is rich with details such as landmarks, paths, and mystical creatures. The style is vibrant and whimsical, capturing the essence of adventure. The design should be engaging, encouraging users to explore different areas and learn more about the game's lore.",
+      "style": "concept_art"
+    }
+  ]
+}

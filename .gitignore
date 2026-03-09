@@ -38,6 +38,10 @@ published/
 # Generated artifacts (user-generated, not source code)
 generated/
 
+# Committed seed demos
+!backend/seed_data/
+!backend/seed_data/**
+
 # Runtime data — never commit these
 generated/
 published/

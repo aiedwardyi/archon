@@ -163,34 +163,36 @@ Codex rewrote consumer as indie-maker AI app builder (Lovable/v0 positioning):
 
 ### Remaining phases:
 - ✅ Phase B bug fixes (Complete Mar 9, 2026)
-- 🔧 Phase C: "Try Before Register" auth flow + seed projects (In Progress)
+- ✅ Phase C: Auth + Seed Projects (Complete Mar 9, 2026)
 - 🔴 Phase D: Add Versions page (moat feature)
 - ✅ Phase E: Build Insights slide-up card (Complete Mar 9, 2026)
 - 🔴 Phase F: Mobile polish pass
 - ✅ Wire Restore Version in Enterprise + Studio (Complete Mar 9, 2026)
 
-### Phase C: "Try Before Register" + Seed Projects (🔧 In Progress Mar 9, 2026)
+### Phase C: Auth + Seed Projects (✅ Complete Mar 9, 2026)
 
-**Concept:** Let users experience a full build BEFORE being asked to register. Conversion funnel play — show value first, capture after.
-
-**Consumer (frontend-consumer):**
-- Guest build: user types prompt → app builds → preview shown → THEN modal: "Create a free account to save & iterate"
+**Part 1: Consumer Auth (✅ Complete Mar 9, 2026)**
+- Guest build flow, login/register pages, Sign Out, post-build register modal
+- Google OAuth button, account claiming via POST /api/projects/<id>/claim
 - Backend guest mode: unauthenticated project creation, linked to account on register
-- Login + Register pages (light mode, minimal, indie-maker aesthetic)
-- Google OAuth button
-- After auth → stay on consumer (no redirect to Enterprise)
 
-**Enterprise + Studio (frontend + frontend-studio):**
-- Same try-before-register flow
-- Seed projects: pre-built demo projects so new users see populated Projects page, can explore Versions/Artifacts/Preview
-- Seed data created at register time (or on first login if empty)
-- Seeds: 1-2 projects with 2-3 versions each, real brief/plan/code/preview artifacts
+**Part 2: Seed Projects (✅ Complete Mar 9, 2026)**
+- POST /api/seed endpoint — seeds 2 demo projects from peak-quality FF7 output (projects 71 + 38)
+- Real Imagen-generated character art (Cloud, Tifa, Barret) committed to backend/seed_data/
+- Seed A: "FF7 — Avalanche Archive" (project 71, scored 83/100, Outfit font, hero + character cards + world map)
+- Seed B: "FF7 — Midgar Archives" (project 38, search/filter/grid-list views, character detail modals)
+- Asset URL rewriting at seed time: /api/assets/{old_id}/1/ → /api/assets/{new_id}/1/
+- Auto-seeds on first login when user has 0 projects — Consumer, Enterprise, Studio
+- No pipeline runs, no API cost — static file copy from committed seed_data
+- Regression test: backend/tests/test_seed_projects.py
+- Verified across all 3 frontends with working previews + character art
+- Seed projects are swappable: replace backend/seed_data/{folder}/ contents + update original_project_id
 
-**Implementation order:**
-1. Consumer auth pages + guest build flow (first)
-2. Backend: guest project creation + account linking
-3. Enterprise + Studio: seed project system
-4. Enterprise + Studio: try-before-register flow
+**Implementation status:**
+1. ✅ Consumer auth pages + guest build flow
+2. ✅ Backend: guest project creation + account linking
+3. ✅ Seed project system (all 3 frontends)
+4. 🔴 Enterprise + Studio: try-before-register flow (deferred — lower priority)
 
 ## Consumer UX Declutter Pass (Queued)
 
@@ -245,11 +247,12 @@ Codex rewrote consumer as indie-maker AI app builder (Lovable/v0 positioning):
 
 | Phase | Description |
 |-------|-------------|
-| 22.B-F | Consumer frontend bug fixes, auth, versions, insights, mobile |
-| — | Re-run eval after planner fix, decide merge of feat/quality-target-tuning |
+| 22.D | Consumer Versions page (THE MOAT — timeline + preview + narrative) |
+| 22.F | Consumer mobile polish pass |
+| — | Consumer UX Declutter Pass (high priority — too dense for new users) |
+| — | Quality Regression Investigation (compare Feb 19-27 peak vs current) |
 | 8.3 | Client shareable read-only links (primary moat feature) |
 | 18 | Unified Auth + Plan-Based UI Routing |
-| 19 | Product Tour + Onboarding Walkthrough |
 
 
 

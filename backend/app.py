@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify, send_file, Response
 from flask_cors import CORS
 import json
 import os
+import shutil
 import sys
 import warnings
 import re
@@ -91,6 +92,29 @@ jwt = init_jwt(app)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PUBLIC_DIR = REPO_ROOT / "generated"
+SEED_DATA_DIR = REPO_ROOT / "backend" / "seed_data"
+SEED_PROJECTS = [
+    {
+        "name": "FF7 — Avalanche Archive",
+        "description": (
+            "A fan tribute site for Final Fantasy VII with character profiles, "
+            "weapons gallery, and interactive world map"
+        ),
+        "archetype": "game",
+        "folder": "avalanche",
+        "original_project_id": 71,
+    },
+    {
+        "name": "FF7 — Midgar Archives",
+        "description": (
+            "An interactive Final Fantasy VII database with search, filtering, "
+            "grid/list views, and character detail modals"
+        ),
+        "archetype": "game",
+        "folder": "midgar",
+        "original_project_id": 38,
+    },
+]
 
 execution_state: dict = {}  # keyed by project_id (int)
 
@@ -150,6 +174,60 @@ def add_log(message: str, log_type: str = "info", project_id: int = None):
 
 def get_version_dir(project_id: int, version: int) -> Path:
     return PUBLIC_DIR / str(project_id) / f"v{version}"
+
+
+def rewrite_seed_version(version_dir: Path, original_project_id: int, new_project_id: int):
+    original_windows_prefix = str(Path("generated") / str(original_project_id) / "v1").replace("/", "\\") + "\\"
+    new_windows_prefix = str(Path("generated") / str(new_project_id) / "v1").replace("/", "\\") + "\\"
+    original_windows_text_prefix = original_windows_prefix.replace("\\", "\\\\")
+    new_windows_text_prefix = new_windows_prefix.replace("\\", "\\\\")
+    original_posix_prefix = f"generated/{original_project_id}/v1/"
+    new_posix_prefix = f"generated/{new_project_id}/v1/"
+    replacements = {
+        f"/api/assets/{original_project_id}/1/": f"/api/assets/{new_project_id}/1/",
+        original_windows_prefix: new_windows_prefix,
+        original_windows_text_prefix: new_windows_text_prefix,
+        original_posix_prefix: new_posix_prefix,
+    }
+    text_suffixes = {".css", ".html", ".js", ".json", ".jsx", ".md", ".py", ".ts", ".tsx", ".txt"}
+
+    for path in version_dir.rglob("*"):
+        if not path.is_file() or path.suffix.lower() not in text_suffixes:
+            continue
+        try:
+            content = path.read_text(encoding="utf-8-sig")
+        except UnicodeDecodeError:
+            continue
+        updated = content
+        for old, new in replacements.items():
+            updated = updated.replace(old, new)
+        if updated != content:
+            path.write_text(updated, encoding="utf-8")
+
+
+def update_seed_factsheet(version_dir: Path, project: Project, execution: Execution) -> Dict[str, Any] | None:
+    factsheet_path = version_dir / "last_factsheet.json"
+    factsheet = read_json_file(factsheet_path)
+    if not factsheet:
+        return None
+
+    project_info = factsheet.setdefault("project", {})
+    project_info["id"] = project.id
+    project_info["name"] = project.name
+    project_info["version"] = execution.version
+    project_info["execution_id"] = execution.id
+
+    pipeline = factsheet.setdefault("pipeline", {})
+    pipeline["status"] = execution.status
+    pipeline.setdefault("ui_archetype", project.locked_ui_archetype)
+    pipeline.setdefault("duration_seconds", execution.duration_seconds)
+
+    usage = factsheet.setdefault("usage", {})
+    usage.setdefault("tokens_used", execution.tokens_used)
+    usage.setdefault("credits_used", execution.credits_used)
+
+    write_json_file(factsheet_path, factsheet)
+    return factsheet
 
 
 def build_file_tree(root: Path, base: Path):
@@ -896,6 +974,89 @@ def delete_project(project_id: int):
         except FileNotFoundError:
             pass
         return jsonify({"message": "Project deleted"}), 200
+    finally:
+        session.close()
+
+
+@app.route("/api/seed", methods=["POST"])
+@jwt_required()
+def seed_projects():
+    session = get_session()
+    created_dirs: list[Path] = []
+    try:
+        user_id = int(get_jwt_identity())
+        existing_project = (
+            session.query(Project.id)
+            .filter(Project.owner_id == user_id)
+            .first()
+        )
+        if existing_project:
+            return jsonify({"seeded": False}), 200
+
+        seeded_projects: list[Project] = []
+
+        for seed in SEED_PROJECTS:
+            source_dir = SEED_DATA_DIR / seed["folder"]
+            if not source_dir.exists():
+                raise FileNotFoundError(f"Seed data folder not found: {source_dir}")
+
+            project = Project(
+                name=seed["name"],
+                description=seed["description"],
+                status="completed",
+                owner_id=user_id,
+                locked_ui_archetype=seed["archetype"],
+            )
+            session.add(project)
+            session.flush()
+
+            execution = Execution(
+                project_id=project.id,
+                owner_id=user_id,
+                status="success",
+                version=1,
+                is_active_head=True,
+                model_used="Gemini 2.5 Flash",
+                duration_seconds=45.0,
+                tokens_used=18000,
+                credits_used=7,
+            )
+            session.add(execution)
+            session.flush()
+
+            version_dir = get_version_dir(project.id, execution.version)
+            created_dirs.append(version_dir)
+            if version_dir.exists():
+                shutil.rmtree(version_dir, ignore_errors=True)
+            version_dir.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(source_dir, version_dir)
+
+            rewrite_seed_version(version_dir, seed["original_project_id"], project.id)
+            factsheet = update_seed_factsheet(version_dir, project, execution)
+
+            execution.prd_path = str(version_dir / "last_prd.json")
+            execution.plan_path = str(version_dir / "last_plan.json")
+            execution.result_path = str(version_dir / "last_execution_result.json")
+
+            if factsheet:
+                readiness = factsheet.get("readiness") or {}
+                execution.governance_log = json.dumps(factsheet)
+                execution.readiness_score = readiness.get("combined_score")
+                execution.quality_tier = readiness.get("quality_tier")
+
+            seeded_projects.append(project)
+
+        session.commit()
+        return jsonify({
+            "seeded": True,
+            "projects": [project.to_dict() for project in seeded_projects],
+        }), 200
+    except Exception as e:
+        session.rollback()
+        for path in reversed(created_dirs):
+            shutil.rmtree(path, ignore_errors=True)
+        print(f"Failed to seed projects: {e}")
+        return jsonify({"error": "Failed to seed starter projects"}), 500
     finally:
         session.close()
 
