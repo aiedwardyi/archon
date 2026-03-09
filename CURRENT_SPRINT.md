@@ -135,12 +135,39 @@ Full audit of `frontend-consumer/` by Codex. Key findings:
 - Simplify copy: rename to client language, default light mode, core flow = Describe → Build → Review → Revise
 - Mobile-first: reduce sidebar weight, responsive project detail, collapsible tabs
 
+### Phase B: Implementation (🔧 In Progress Mar 9, 2026)
+Codex rewrote consumer as indie-maker AI app builder (Lovable/v0 positioning):
+- ✅ Landing page: prompt-first hero, "What can I build for you?", founder-friendly suggestions (Landing Page, Portfolio Site, Dashboard, Online Store)
+- ✅ Copy rewrite: removed all developer jargon (Multi-Agent Swarm, PRD, Architecture, Pipeline, Vibe coding, Reasoning Engine)
+- ✅ API layer: auth headers via `archon_token`, configurable API base, real `/chat` + `/iterate` calls
+- ✅ Fake composer fixed: now calls real backend chat/iterate APIs
+- ✅ Connection state: only shows "Backend Offline" for network errors, not 401/403
+- ✅ Settings modal: simplified to theme + language only
+- ✅ Dead code removed: LivePreview, ProjectCard, StageStepper, gemini.ts
+- ✅ index.html cleaned: removed CDN scripts, importmap, duplicate tags
+- ✅ Recent projects grid below hero on landing page
+- ✅ "Every version saved. Undo anything." differentiator copy
+- ✅ Tabs renamed: Preview, Brief, Build Plan, Code, What changed, Versions
+
+**Bugs found during live testing (Codex fixing):**
+- 🔴 Preview iframe doesn't auto-refresh after build completes
+- 🔴 Brief tab shows "Could not load" (auth/version mismatch on fetch)
+- 🔴 Build Plan tab shows "Could not load"
+- 🔴 "What changed" tab shows "Could not load"
+- 🔴 Brief tab content shows Build Plan data instead of Brief on second build
+- 🔴 Light mode not defaulting (old localStorage overrides new default)
+- 🔴 Second prompt iteration produces broken/unstyled preview
+
+**Discovered during testing:**
+- ✅ Consumer has working Restore Version button — Enterprise + Studio restore buttons are static/unwired. Wire them up as a follow-up task.
+
 ### Remaining phases:
-- 🔴 Phase B: Fix bugs + critical UX issues
-- 🔴 Phase C: Add auth (login/register matching existing backend)
+- 🔴 Phase B bug fixes (Codex in progress)
+- 🔴 Phase C: Add auth pages (login/register matching existing backend)
 - 🔴 Phase D: Add Versions page (moat feature)
 - 🔴 Phase E: Add Build Insights card
 - 🔴 Phase F: Mobile polish pass
+- 🔴 Wire Restore Version in Enterprise + Studio (parity with Consumer)
 
 ## Up Next
 

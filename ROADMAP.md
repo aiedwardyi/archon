@@ -603,8 +603,14 @@ Codex audited all consumer frontend files + ran build + tsc + live browser test.
 Found 2 critical, 5 high, 5 medium issues + 7 feature gaps vs Enterprise/Studio.
 Top blockers: no auth (JWT never sent), fake chat composer (never calls /iterate), developer-oriented UX.
 
-**Planned phases:**
-- B: Fix bugs + critical UX (remove dead code, fix connection state, simplify developer chrome)
+**Phase B: Implementation (🔧 In Progress Mar 9, 2026)**
+Codex rewrote consumer as indie-maker AI app builder (Lovable/v0 competitor positioning).
+Prompt-first hero, founder-friendly copy, real chat/iterate API calls, auth headers, simplified settings.
+7 bugs found during live testing — Codex fixing: preview auto-refresh, tab data loading, light mode default, iteration quality.
+Consumer Restore Version works — Enterprise + Studio buttons need wiring (follow-up).
+
+**Remaining phases:**
+- B bug fixes (in progress)
 - C: Add auth pages (login/register/Google OAuth matching existing backend)
 - D: Add Versions page (THE MOAT — timeline + preview + "what changed" narrative)
 - E: Add Build Insights card (friendly prompt coaching from Phase 21 backend)
