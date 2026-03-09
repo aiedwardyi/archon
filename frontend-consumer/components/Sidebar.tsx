@@ -1,10 +1,9 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Project } from '../types';
-import { Plus, LayoutGrid, Search, Hexagon, Moon, Sun, Trash2, X, AlertCircle, Settings, Server, ServerOff } from 'lucide-react';
+import { MenuSquare, Plus, Settings, Trash2, X } from 'lucide-react';
 import { backend } from '../services/orchestrator';
-import { t, getLang, Lang } from '../i18n';
+import { getLang, t } from '../i18n';
+import { Project } from '../types';
 
 interface SidebarProps {
   projects: Project[];
@@ -13,33 +12,23 @@ interface SidebarProps {
   onNewProject: () => void;
   onOpenSettings: () => void;
   onDeleteProject: (id: string) => void;
-  theme: 'dark' | 'light';
-  onToggleTheme: () => void;
   isOpen?: boolean;
   onClose?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ 
-  projects, 
-  currentId, 
-  onSelect, 
-  onNewProject, 
+const Sidebar: React.FC<SidebarProps> = ({
+  projects,
+  currentId,
+  onSelect,
+  onNewProject,
   onOpenSettings,
   onDeleteProject,
-  theme,
-  onToggleTheme,
   isOpen = false,
-  onClose
+  onClose,
 }) => {
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
-  const [deleteConfirmation, setDeleteConfirmation] = useState('');
-  const [isConnected, setIsConnected] = useState(true);
-  const [lang, setLangState] = useState<Lang>(getLang());
-
-  useEffect(() => {
-    const interval = setInterval(() => setLangState(getLang()), 500);
-    return () => clearInterval(interval);
-  }, []);
+  const lang = getLang();
+  const [isConnected, setIsConnected] = useState(backend.getIsConnected());
 
   useEffect(() => {
     const update = () => setIsConnected(backend.getIsConnected());
@@ -47,196 +36,157 @@ const Sidebar: React.FC<SidebarProps> = ({
     return backend.subscribe(update);
   }, []);
 
-  const handleDeleteClick = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    setDeletingProjectId(id);
-    setDeleteConfirmation('');
-  };
-
-  const confirmDelete = () => {
-    if (deleteConfirmation === 'DELETE' && deletingProjectId) {
-      onDeleteProject(deletingProjectId);
-      setDeletingProjectId(null);
-    }
-  };
-
-  const cancelDelete = () => {
-    setDeletingProjectId(null);
-    setDeleteConfirmation('');
-  };
-
-  const deletingProject = projects.find(p => p.id === deletingProjectId);
+  const deletingProject = projects.find((project) => project.id === deletingProjectId);
 
   return (
-    <aside className={`
-      fixed inset-y-0 left-0 z-[80] w-64 bg-surface-light dark:bg-[#080a0f] border-r border-slate-200 dark:border-white/5 
-      flex flex-col transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0
-      ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-    `}>
-      <div className="p-6 relative">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-2 cursor-pointer group" onClick={onNewProject}>
-            <Hexagon className="h-5 w-5 text-violet-500" strokeWidth={2.5} />
-            <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-white">Arch<span className="text-violet-600 dark:text-violet-400">on</span></span>
-          </div>
-          {/* Mobile Close Button */}
-          <button 
-            onClick={onClose}
-            className="lg:hidden p-1 text-slate-400 hover:text-white transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Status Indicator */}
-        <div className="mb-6 px-1">
-          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-widest transition-all duration-500 ${
-            isConnected 
-            ? 'bg-emerald-500/5 border-emerald-500/10 text-emerald-600 dark:text-emerald-500' 
-            : 'bg-red-500/5 border-red-500/10 text-red-600 dark:text-red-500 animate-pulse'
-          }`}>
-            <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
-            {isConnected ? (
-              <span className="flex items-center gap-1.5"><Server size={10} /> {t(lang, 'backendOnline')}</span>
-            ) : (
-              <span className="flex items-center gap-1.5"><ServerOff size={10} /> {t(lang, 'backendOffline')}</span>
-            )}
-          </div>
-        </div>
-
-        <button 
+    <aside
+      className={`fixed inset-y-0 left-0 z-40 flex w-[280px] flex-col border-r border-white/60 bg-white/95 px-5 pb-5 pt-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur lg:relative lg:translate-x-0 dark:border-white/10 dark:bg-[#0f172a]/95 ${
+        isOpen ? 'translate-x-0' : '-translate-x-full'
+      } transition-transform duration-300`}
+    >
+      <div className="mb-6 flex items-center justify-between">
+        <button
+          type="button"
           onClick={onNewProject}
-          className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 border border-slate-200 dark:border-white/5 transition-all text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-indigo-200/60 hover:text-indigo-600 dark:hover:text-white"
+          className="flex items-center gap-3 text-left"
         >
-          <span>{t(lang, 'newProject')}</span>
-          <Plus size={14} />
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-950 text-white dark:bg-white dark:text-slate-950">
+            <MenuSquare size={18} />
+          </div>
+          <div>
+            <div className="text-sm font-semibold text-slate-950 dark:text-white">Archon</div>
+            <div className="text-xs text-slate-500 dark:text-slate-300/70">{t(lang, 'heroHint')}</div>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 lg:hidden dark:hover:bg-white/5 dark:hover:text-white"
+          aria-label="Close sidebar"
+        >
+          <X size={18} />
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 space-y-8 custom-scrollbar">
-        <div>
-          <h3 className="px-4 text-[10px] font-bold text-slate-400 dark:text-indigo-400/60 uppercase tracking-[0.2em] mb-4">{t(lang, 'navigation')}</h3>
-          <nav className="space-y-1">
-            <button className="w-full flex items-center gap-3 px-4 py-2 rounded-lg bg-indigo-600/10 dark:bg-indigo-600/20 text-indigo-700 dark:text-indigo-100 text-sm font-bold border border-indigo-500/20 shadow-lg shadow-indigo-500/5 transition-all">
-              <LayoutGrid size={16} className="text-indigo-600 dark:text-indigo-400" />
-              {t(lang, 'dashboard')}
-            </button>
-            <button className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-slate-400 dark:text-indigo-200/50 hover:text-indigo-600 dark:hover:text-indigo-100 text-sm font-bold transition-colors">
-              <Search size={16} />
-              {t(lang, 'browse')}
-            </button>
-          </nav>
-        </div>
+      <div className="mb-5 flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs dark:border-white/10 dark:bg-white/5">
+        <span className="font-medium text-slate-600 dark:text-slate-300">
+          {isConnected ? t(lang, 'backendOnline') : t(lang, 'backendOffline')}
+        </span>
+        <span className={`h-2.5 w-2.5 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+      </div>
 
-        <div>
-          <h3 className="px-4 text-[10px] font-bold text-slate-400 dark:text-indigo-400/60 uppercase tracking-[0.2em] mb-4">{t(lang, 'recentProjects')}</h3>
-          <div className="space-y-1">
-            {projects.slice(0, 20).map((project) => (
-              <button
-                key={project.id}
-                onClick={() => onSelect(project.id)}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-all group relative overflow-hidden ${
-                  currentId === project.id 
-                  ? 'bg-slate-100 dark:bg-white/10 text-indigo-700 dark:text-indigo-100 border border-slate-200 dark:border-white/5 shadow-inner' 
-                  : 'text-slate-400 dark:text-indigo-200/40 hover:text-indigo-600 dark:hover:text-indigo-100 hover:bg-slate-100 dark:hover:bg-white/5'
+      <button
+        type="button"
+        onClick={onNewProject}
+        className="mb-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
+      >
+        <Plus size={16} />
+        {t(lang, 'startBuilding')}
+      </button>
+
+      <div className="flex-1 overflow-hidden">
+        <div className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-slate-400 dark:text-slate-300/60">
+          {t(lang, 'recentProjects')}
+        </div>
+        <div className="custom-scrollbar h-full space-y-2 overflow-y-auto pr-1">
+          {projects.map((project) => (
+            <button
+              key={project.id}
+              type="button"
+              onClick={() => onSelect(project.id)}
+              className={`group flex w-full items-start gap-3 rounded-2xl border px-4 py-3 text-left transition ${
+                currentId === project.id
+                  ? 'border-slate-950 bg-slate-950 text-white dark:border-white dark:bg-white dark:text-slate-950'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:hover:bg-white/10'
+              }`}
+            >
+              <div
+                className={`mt-1 h-2.5 w-2.5 rounded-full ${
+                  project.status === 'RUNNING'
+                    ? 'bg-amber-500'
+                    : project.status === 'COMPLETED'
+                    ? 'bg-emerald-500'
+                    : project.status === 'FAILED'
+                    ? 'bg-rose-500'
+                    : 'bg-slate-300 dark:bg-slate-600'
                 }`}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-medium">{project.name}</div>
+                <div className="mt-1 line-clamp-2 text-xs opacity-70">{project.description}</div>
+              </div>
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setDeletingProjectId(project.id);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setDeletingProjectId(project.id);
+                  }
+                }}
+                className={`rounded-full p-2 opacity-0 transition group-hover:opacity-100 ${
+                  currentId === project.id
+                    ? 'text-white/75 hover:bg-white/10 hover:text-white dark:text-slate-700 dark:hover:bg-slate-200'
+                    : 'text-slate-400 hover:bg-slate-100 hover:text-rose-500 dark:hover:bg-white/10'
+                }`}
+                aria-label={t(lang, 'deleteProject')}
               >
-                <div className={`w-1.5 h-1.5 rounded-full ${
-                  project.status === 'RUNNING' ? 'bg-indigo-500 animate-pulse' : 
-                  project.status === 'COMPLETED' ? 'bg-indigo-500 dark:bg-indigo-400' : 'bg-slate-300 dark:bg-indigo-900/50'
-                }`} />
-                <span className="truncate flex-1 text-left font-bold">{project.name}</span>
-                
-                <div 
-                  onClick={(e) => handleDeleteClick(e, project.id)}
-                  className="p-1 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all cursor-pointer z-10"
-                >
-                  <Trash2 size={14} />
-                </div>
-
-                {currentId === project.id && (
-                  <div className="absolute left-0 w-[2px] h-4 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
-                )}
-              </button>
-            ))}
-          </div>
+                <Trash2 size={14} />
+              </span>
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="p-4 border-t border-slate-200 dark:border-white/5 space-y-2">
-        <button 
-          onClick={onToggleTheme}
-          className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-slate-400 dark:text-indigo-200/50 hover:text-indigo-600 dark:hover:text-indigo-100 text-sm transition-all font-bold group"
-        >
-          {theme === 'dark' ? <Sun size={16} className="group-hover:rotate-45 transition-transform" /> : <Moon size={16} className="group-hover:-rotate-12 transition-transform" />}
-          <span>{theme === 'dark' ? t(lang, 'lightMode') : t(lang, 'darkMode')}</span>
-        </button>
-        <button 
-          onClick={onOpenSettings}
-          className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-slate-400 dark:text-indigo-200/50 hover:text-indigo-600 dark:hover:text-indigo-100 text-sm transition-colors font-bold group"
-        >
-          <Settings size={16} className="group-hover:rotate-90 transition-transform" />
-          {t(lang, 'settings')}
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={onOpenSettings}
+        className="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-white/10 dark:text-slate-100 dark:hover:bg-white/5"
+      >
+        <Settings size={16} />
+        {t(lang, 'settings')}
+      </button>
 
-      {deletingProjectId && createPortal(
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white dark:bg-[#0B0E14] border border-slate-200 dark:border-white/10 w-full max-w-[400px] rounded-[2rem] overflow-hidden shadow-2xl p-6 md:p-8 space-y-6 animate-fade-in-up relative">
-            <div className="flex flex-col items-center text-center gap-4 relative z-10">
-              <div className="w-16 h-16 rounded-full bg-red-50 dark:bg-[#1A1D24] border border-red-100 dark:border-white/5 flex items-center justify-center text-red-500 mb-2 shadow-lg">
-                <AlertCircle size={32} />
-              </div>
-              
-              <div>
-                <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight uppercase mb-2">Confirm Deletion</h2>
-                <p className="text-[13px] text-slate-500 dark:text-slate-400 font-bold leading-relaxed px-2 md:px-4">
-                  You are about to permanently erase <span className="text-red-500 font-black">"{deletingProject?.name}"</span>. 
-                  This action is irreversible and all artifacts will be lost.
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-6 relative z-10">
-              <div className="space-y-3">
-                <label className="text-[10px] font-black text-slate-400 dark:text-indigo-400/60 uppercase tracking-[0.2em] text-center block w-full">
-                  Type <span className="text-slate-900 dark:text-white">DELETE</span> to confirm
-                </label>
-                <input 
-                  type="text" 
-                  autoFocus
-                  value={deleteConfirmation}
-                  onChange={(e) => setDeleteConfirmation(e.target.value.toUpperCase())}
-                  placeholder="Type here..."
-                  className="w-full bg-slate-50 dark:bg-[#080a0f] border border-red-400/50 dark:border-white/10 rounded-xl px-4 py-3.5 text-center text-sm text-slate-900 dark:text-white focus:outline-none focus:border-red-500 transition-colors font-bold tracking-widest uppercase placeholder:normal-case placeholder:font-medium placeholder:text-slate-300 dark:placeholder:text-slate-600"
-                />
-              </div>
-
-              <div className="flex items-center gap-3 pt-2">
-                <button 
-                  onClick={cancelDelete}
-                  className="flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest text-slate-600 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer"
+      {deletingProjectId &&
+        createPortal(
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-sm rounded-[2rem] border border-white/60 bg-white p-6 shadow-[0_30px_80px_rgba(15,23,42,0.16)] dark:border-white/10 dark:bg-[#111827]">
+              <h3 className="text-lg font-semibold text-slate-950 dark:text-white">{t(lang, 'deleteConfirmTitle')}</h3>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-300/70">{t(lang, 'deleteConfirmBody')}</p>
+              <p className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 dark:bg-white/5 dark:text-slate-100">
+                {deletingProject?.name}
+              </p>
+              <div className="mt-5 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDeletingProjectId(null)}
+                  className="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
                 >
-                  Cancel
+                  {t(lang, 'cancel')}
                 </button>
-                <button 
-                  onClick={confirmDelete}
-                  disabled={deleteConfirmation !== 'DELETE'}
-                  className={`flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 cursor-pointer border ${
-                    deleteConfirmation === 'DELETE' 
-                    ? 'bg-red-500 hover:bg-red-600 text-white border-red-500 shadow-lg shadow-red-500/20 active:scale-95' 
-                    : 'bg-slate-200 dark:bg-[#1A1D24] text-slate-400 dark:text-slate-600 border-transparent cursor-not-allowed'
-                  }`}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (deletingProjectId) {
+                      onDeleteProject(deletingProjectId);
+                    }
+                    setDeletingProjectId(null);
+                  }}
+                  className="flex-1 rounded-2xl bg-rose-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-rose-500"
                 >
-                  <Trash2 size={14} />
-                  Delete
+                  {t(lang, 'confirmDelete')}
                 </button>
               </div>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
+          </div>,
+          document.body
+        )}
     </aside>
   );
 };

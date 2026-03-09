@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --app-bg: #edf3ff;
+    --app-fg: #0f172a;
+  }
+
+  html {
+    color-scheme: light;
+    background: var(--app-bg);
+  }
+
+  html.dark {
+    color-scheme: dark;
+    --app-bg: #020617;
+    --app-fg: #e5eefc;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(circle at top, rgba(255, 255, 255, 0.95), rgba(244, 247, 255, 0.92) 42%, rgba(236, 242, 255, 0.85) 100%);
+    color: var(--app-fg);
+    font-family: Aptos, "Segoe UI Variable Text", "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body.dark {
+    background:
+      radial-gradient(circle at top, rgba(17, 24, 39, 0.96), rgba(15, 23, 42, 0.96) 45%, rgba(2, 6, 23, 0.98) 100%);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  code,
+  pre {
+    font-family: "Cascadia Code", "IBM Plex Mono", "SFMono-Regular", monospace;
+  }
+}
+
+@layer utilities {
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: rgba(148, 163, 184, 0.38);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.55);
+  }
+}
