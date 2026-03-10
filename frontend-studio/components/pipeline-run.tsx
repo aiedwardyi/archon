@@ -515,6 +515,7 @@ export function PipelineRun() {
         body: JSON.stringify({ message: prompt }),
       })
       const chatData = await chatRes.json()
+      const nluResult = chatData?.nlu_result
 
       if (chatData.response_type === "chat") {
         const archonMsg: ChatMessage = {
@@ -569,6 +570,9 @@ export function PipelineRun() {
         const formData = new FormData()
         formData.append("prompt", prompt)
         formData.append("prompt_history", JSON.stringify(newHistory))
+        if (nluResult) {
+          formData.append("nlu_result", JSON.stringify(nluResult))
+        }
         for (const file of filesToSend) {
           formData.append("reference_images", file)
         }
@@ -580,7 +584,7 @@ export function PipelineRun() {
         res = await fetch(`${API_BASE}/api/projects/${projectId}/iterate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt, prompt_history: newHistory }),
+          body: JSON.stringify({ prompt, prompt_history: newHistory, nlu_result: nluResult }),
         })
       }
       const data = await res.json()

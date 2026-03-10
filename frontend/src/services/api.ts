@@ -381,7 +381,10 @@ export interface ChatMessage {
 }
 
 /** POST /api/projects/:id/chat — classify intent, returns {response_type, message?} */
-export async function projectChat(projectId: number, message: string): Promise<{ response_type: "chat" | "build"; message?: string }> {
+export async function projectChat(
+  projectId: number,
+  message: string,
+): Promise<{ response_type: "chat" | "build"; message?: string; nlu_result?: Record<string, any> }> {
   const res = await fetch(`${API_BASE}/projects/${projectId}/chat`, {
     method: "POST",
     headers: getAuthHeaders(),
@@ -397,12 +400,14 @@ export async function iterateProject(
   prompt: string,
   promptHistory: ChatMessage[],
   referenceImages?: File[],
+  nluResult?: Record<string, any>,
 ): Promise<{ status: string; project_id: number; execution_id: number; version: number }> {
   let res: Response;
   if (referenceImages && referenceImages.length > 0) {
     const formData = new FormData();
     formData.append("prompt", prompt);
     formData.append("prompt_history", JSON.stringify(promptHistory));
+    if (nluResult) formData.append("nlu_result", JSON.stringify(nluResult));
     for (const file of referenceImages) {
       formData.append("reference_images", file);
     }
@@ -416,7 +421,7 @@ export async function iterateProject(
     res = await fetch(`${API_BASE}/projects/${projectId}/iterate`, {
       method: "POST",
       headers: getAuthHeaders(),
-      body: JSON.stringify({ prompt, prompt_history: promptHistory }),
+      body: JSON.stringify({ prompt, prompt_history: promptHistory, nlu_result: nluResult }),
     });
   }
   if (!res.ok) {

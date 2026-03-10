@@ -1253,6 +1253,12 @@ def iterate_project(project_id: int):
                     data["prompt_history"] = json.loads(ph)
                 except Exception:
                     data["prompt_history"] = []
+            nlu_payload = request.form.get("nlu_result")
+            if nlu_payload:
+                try:
+                    data["nlu_result"] = json.loads(nlu_payload)
+                except Exception:
+                    data["nlu_result"] = nlu_payload
         else:
             data = request.get_json()
 
@@ -1270,8 +1276,19 @@ def iterate_project(project_id: int):
         prompt_history = data.get("prompt_history", [])
         if not prompt_history:
             prompt_history = [{"role": "user", "content": prompt}]
-        nlu_result = nlu_agent.analyze(prompt)
-        print(f"[NLU] Full analysis: {nlu_result}")
+        provided_nlu_result = data.get("nlu_result")
+        if isinstance(provided_nlu_result, str):
+            try:
+                provided_nlu_result = json.loads(provided_nlu_result)
+            except Exception:
+                provided_nlu_result = None
+        if isinstance(provided_nlu_result, dict):
+            nlu_result = provided_nlu_result
+            print("[NLU] Using provided analysis from /chat")
+            print(f"[NLU] Full analysis: {nlu_result}")
+        else:
+            nlu_result = nlu_agent.analyze(prompt)
+            print(f"[NLU] Full analysis: {nlu_result}")
 
         requested_archetype = detect_requested_archetype(prompt)
         if (
@@ -2043,7 +2060,7 @@ def project_chat(project_id: int):
         intent = pm.classify_intent(data["message"], project_context=project_context)
         if intent.get("type") == "chat":
             return jsonify({"response_type": "chat", "message": intent["message"]}), 200
-        return jsonify({"response_type": "build"}), 200
+        return jsonify({"response_type": "build", "nlu_result": nlu_result}), 200
     except Exception as e:
         print(f"Chat classify error: {e}")
         return jsonify({

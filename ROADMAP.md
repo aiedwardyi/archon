@@ -695,7 +695,8 @@ Modified: agents/nlu_agent.py, agents/engineer_agent.py, agents/planner_agent.py
 
 - ✅ Quality Recommendations restored in Governance tab (Enterprise + Studio) — insights fetch with auth, category icons, priority badges (48d27ed)
 - ✅ Imagen image rendering fixed — resilient asset resolver with multi-path fallback + prior version scan, preview URL normalization, nested path support (58a9f8f)
-- 🔧 Remaining: Double NLU call, generated app interactivity, notification sound, AuthGuard token expiry
+- ✅ Double NLU call eliminated — /chat forwards nlu_result to /iterate, skips re-analysis (d862863)
+- 🔧 Remaining: generated app interactivity, notification sound, AuthGuard token expiry
 
 ## Phase 24 — Asset Reuse Library (⬜ Planned)
 

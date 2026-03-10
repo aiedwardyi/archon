@@ -395,7 +395,13 @@ const Index = () => {
 
       setSending(true);
       sendingRef.current = true;
-      await iterateProject(selectedProjectId, prompt, promptHistory as ChatMessage[], filesToSend.length > 0 ? filesToSend : undefined);
+      await iterateProject(
+        selectedProjectId,
+        prompt,
+        promptHistory as ChatMessage[],
+        filesToSend.length > 0 ? filesToSend : undefined,
+        chatResult.nlu_result,
+      );
       // Force-start polling immediately — don't wait for next render cycle
       pipeline.startPolling();
       // New execution is now active head — safe to save
