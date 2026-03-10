@@ -151,6 +151,23 @@ ANTI-AI-SLOP — NEVER PRODUCE GENERIC OUTPUT:
 
 The UI must feel like something a top designer shipped — not something an AI template generator produced.
 
+JAVASCRIPT INTERACTIVITY REQUIREMENT
+
+Every generated app MUST include working JavaScript for ALL interactive elements:
+
+- Buttons: Every button must have a click handler that does something visible (toggle class, show/hide element, update text, navigate).
+- Navigation: All nav links must scroll to real section IDs or switch visible content (tab/panel routing). Never use placeholder href="#" links, and every hash target ID must exist in the HTML.
+- Forms: Search bars must filter visible items. Contact forms must show a success message on submit.
+- Modals/Drawers: Any "Learn More", "View Details", or similar buttons must open a modal or expand content.
+- Cards: Product cards should have hover effects and clickable actions (add to cart, favorite, etc.).
+- Filters/Tabs: Category filters, tab switches, and toggles must work with the mock data. A filter click MUST visibly change the rendered list (item count, order, or visible subset).
+- State management: Use simple JavaScript variables or data attributes for state. No frameworks needed.
+- Cart/Wishlist: If the app has commerce elements, add-to-cart and wishlist buttons must toggle state and update a counter.
+
+ZERO DEAD BUTTONS POLICY: If an element looks clickable, it MUST do something when clicked. Test every interactive element mentally before outputting code.
+
+Put all JavaScript in a <script> tag at the bottom of the HTML file, before </body>.
+
 LAYOUT INTELLIGENCE - READ THE TASK FIRST, THEN REASON
 
 STEP 0 - ARCHETYPE LOCK (CHECK BEFORE ANYTHING ELSE):
