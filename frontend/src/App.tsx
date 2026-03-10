@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { useEffect, useState } from "react";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -19,7 +20,50 @@ const PUBLIC_PATHS = ["/login", "/register", "/forgot-password"];
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  if (!localStorage.getItem("archon_token") && !PUBLIC_PATHS.includes(location.pathname)) {
+  const [verified, setVerified] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const isPublicPath = PUBLIC_PATHS.includes(window.location.pathname);
+    if (isPublicPath) {
+      setVerified(true);
+      setChecking(false);
+      return;
+    }
+
+    const token = localStorage.getItem("archon_token");
+    if (!token) {
+      setChecking(false);
+      return;
+    }
+
+    fetch("http://localhost:5000/api/auth/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Token validation failed");
+        }
+        setVerified(true);
+      })
+      .catch(() => {
+        localStorage.removeItem("archon_token");
+        localStorage.removeItem("archon_user");
+      })
+      .finally(() => {
+        setChecking(false);
+      });
+  }, []);
+
+  if (PUBLIC_PATHS.includes(location.pathname)) {
+    return <>{children}</>;
+  }
+
+  if (checking) {
+    return null;
+  }
+
+  if (!verified) {
     return <Navigate to="/login" replace />;
   }
   return <>{children}</>;
