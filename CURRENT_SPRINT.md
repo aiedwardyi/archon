@@ -302,7 +302,7 @@ Branch: feat/watson-discovery (4 commits: 09dce26, da95bd8, 8b38ebe) → merged 
 | ~~Quality Recommendations missing~~ | ✅ Fixed Mar 10 | Restored Quality Recommendations section after Compliance in Governance tab (Enterprise + Studio). Added insights fetch with auth header, category icons, priority badges, empty state. Commit 48d27ed. |
 | ~~Imagen images not rendering~~ | ✅ Fixed Mar 10 | Resilient asset resolver: checks current assets/, code/src/assets/, last_design_assets.json local_path, and prior version fallback. Preview rewriting normalizes relative asset URLs. Expanded asset route for nested paths + MIME detection. Commit 58a9f8f. |
 | ~~Generated apps have no interactivity~~ | ✅ Fixed Mar 10 | Added JS interactivity requirements to engineer_core.txt (Zero Dead Buttons Policy) + planner.txt quality_target. Verified: filters, cart counter, nav scroll all working. Some footer anchors still missing targets. Commit 18f0ce0. |
-| ~~Notification sound missing~~ | ✅ Fixed Mar 10 | AudioContext resume + pre-unlock on first user gesture. Transition-based triggers (RUNNING→COMPLETED/FAILED). Shared AudioContext via ref. Enterprise + Studio. Commit 61ab5b4. |
+| ~~Notification sound missing~~ | ✅ Fixed Mar 10 | AudioContext resume + pre-unlock on first user gesture. Transition-based triggers (RUNNING→COMPLETED/FAILED). Shared AudioContext via ref. Studio sound moved to global app-shell so chime plays from any page. Enterprise + Studio. Commits 61ab5b4, 1b10893. |
 
 ## Up Next
 

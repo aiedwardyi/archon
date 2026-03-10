@@ -25,7 +25,6 @@ import {
   Paperclip,
 } from "lucide-react"
 import { useLanguage } from "@/contexts/LanguageContext"
-import { useNotificationSound } from "@/hooks/useNotificationSound"
 
 const API_BASE = "http://localhost:5000"
 const POLL_INTERVAL_MS = 1500
@@ -63,7 +62,6 @@ function AgentStatusLabel({ status }: { status: AgentStatus }) {
 
 export function PipelineRun() {
   const { t } = useLanguage()
-  const { playSuccess, playFailure } = useNotificationSound()
   const [inputValue, setInputValue] = useState("")
   const [attachedFiles, setAttachedFiles] = useState<File[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -94,7 +92,6 @@ export function PipelineRun() {
   const executionIdRef = useRef<number | null>(null)
   const versionRef = useRef<number | null>(null)
   const isRunningRef = useRef(false)
-  const prevExecutionStatusRef = useRef<"RUNNING" | "COMPLETED" | "FAILED" | null>(null)
   const newRunRef = useRef(false)
   const buildStartTimeRef = useRef<number | null>(null)
   const [isStuck, setIsStuck] = useState(false)
@@ -373,10 +370,6 @@ export function PipelineRun() {
       const currentPid = projectId || sessionStorage.getItem("archon_current_project_id")
       const res = await fetch(`${API_BASE}/api/execution-status${currentPid ? `?project_id=${currentPid}` : ""}`)
       const data = await res.json()
-      const status = data.status as "RUNNING" | "COMPLETED" | "FAILED" | undefined
-      const transitionedFromRunning = prevExecutionStatusRef.current === "RUNNING"
-      const completedTransition = status === "COMPLETED" && transitionedFromRunning
-      const failedTransition = status === "FAILED" && transitionedFromRunning
 
       const newLogs: LogEntry[] = data.logs || []
       setLogs(newLogs)
@@ -399,7 +392,6 @@ export function PipelineRun() {
       sessionStorage.setItem("archon_current_stage", derivedStage)
 
       if (data.status === "COMPLETED") {
-        if (completedTransition) void playSuccess()
         setCurrentStage("engineer")
         sessionStorage.setItem("archon_current_stage", "engineer")
         setPipelineStatus("complete")
@@ -432,16 +424,11 @@ export function PipelineRun() {
           })
         }
       } else if (data.status === "FAILED") {
-        if (failedTransition) void playFailure()
         setPipelineStatus("failed")
         sessionStorage.setItem("archon_pipeline_status", "failed")
         setIsRunning(false)
         isRunningRef.current = false
         stopPolling()
-      }
-
-      if (status === "RUNNING" || status === "COMPLETED" || status === "FAILED") {
-        prevExecutionStatusRef.current = status
       }
     } catch (e) {
       console.error("Poll error:", e)
@@ -566,7 +553,6 @@ export function PipelineRun() {
       sessionStorage.removeItem("archon_current_stage")
 
       isRunningRef.current = true
-      prevExecutionStatusRef.current = "RUNNING"
       setIsRunning(true)
       setPipelineStatus("running")
       sessionStorage.setItem("archon_pipeline_status", "running")
@@ -614,8 +600,6 @@ export function PipelineRun() {
       pollRef.current = setInterval(pollStatus, POLL_INTERVAL_MS)
 
     } catch (e) {
-      void playFailure()
-      prevExecutionStatusRef.current = "FAILED"
       setPipelineStatus("failed")
       sessionStorage.setItem("archon_pipeline_status", "failed")
       setIsRunning(false)
@@ -705,7 +689,6 @@ export function PipelineRun() {
         if (data.status === "COMPLETED") {
           setCurrentStage("engineer")
           setPipelineStatus("complete")
-          prevExecutionStatusRef.current = "COMPLETED"
           sessionStorage.setItem("archon_pipeline_status", "complete")
           sessionStorage.setItem("archon_current_stage", "engineer")
           setIsRunning(false)
@@ -714,7 +697,6 @@ export function PipelineRun() {
         } else if (data.status === "RUNNING") {
           setCurrentStage(data.currentStage || "pm")
           setPipelineStatus("running")
-          prevExecutionStatusRef.current = "RUNNING"
           sessionStorage.setItem("archon_pipeline_status", "running")
           if (!pollRef.current) {
             isRunningRef.current = true
@@ -725,7 +707,6 @@ export function PipelineRun() {
           // Only show Failed if this project has actually been built before
           if (data.logs && data.logs.length > 0) {
             setPipelineStatus("failed")
-            prevExecutionStatusRef.current = "FAILED"
           }
           setIsRunning(false)
           isRunningRef.current = false
