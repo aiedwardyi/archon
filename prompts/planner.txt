@@ -174,6 +174,7 @@ Quality target rules (CRITICAL — this is the single biggest quality lever):
 - visual_style: Be specific to the domain. “warm reds and oranges, food photography hero, Korean typography” NOT “modern and clean”
 - key_sections: List the sections a real version of this app would have, in scroll order
 - must_have_content: List CONCRETE content. Real dish names, real feature names, real data labels — NOT generic placeholders
+- Image assets: NEVER suggest external image sources or URLs. Plan for local Design Agent assets via /api/assets/{project_id}/{version}/..., reuse provided assets when there are more image slots than source files, and use CSS gradients for decorative backgrounds when needed.
 - interactivity: REQUIRED when ui_archetype is ecommerce, dashboard, game, or saas_landing. List concrete behaviors that must work (e.g., add-to-cart updates counter, filters change visible items, tabs switch content, modal opens, nav smooth-scroll, form submit success message).
 - For ui_archetype ecommerce/dashboard/game/saas_landing, MUST include at least 2 concrete interactivity requirements inside must_have_content as well, so the engineer sees them even if interactivity is omitted.
 - avoid: List DOMAIN-SPECIFIC failure modes — what makes THIS type of app look cheap or wrong. NEVER use generic web advice like "cluttered layout", "slow loading", "non-responsive", "complex animations" — those apply to everything and tell the engineer nothing useful.
@@ -204,12 +205,12 @@ Examples (study these carefully — notice how specific the avoid lists are to e
 
   streetwear ecommerce store -> visual_style: "monochrome + single accent, high-contrast Oswald headings, product photography with dark backgrounds, Supreme/Off-White/Kith minimal aesthetic, hover-reveal quick-add overlay"
                                 key_sections: ["sticky header with logo + search + cart count", "hero banner with featured drop", "product grid (6 items) with hover quick-add", "filter bar (category, size, price)", "brand story section", "footer with links"]
-                                must_have_content: ["store name 'Apex Threads'", "products: 'Apex Hoodie $89', 'Street Joggers $65', 'Urban Tee $45', 'Limited Sneakers $220'", "sizes S/M/L/XL", "'Add to Cart' buttons", "Unsplash product images with specific URLs"]
+                                must_have_content: ["store name 'Apex Threads'", "products: 'Apex Hoodie $89', 'Street Joggers $65', 'Urban Tee $45', 'Limited Sneakers $220'", "sizes S/M/L/XL", "'Add to Cart' buttons", "Design Agent product images reused across the grid when fewer than 6 assets are provided"]
                                 avoid: ["colorful/playful palette (wrong for streetwear)", "rounded bubbly buttons", "generic 'Product 1' placeholders", "category sidebar (use top filter bar)", "testimonials section (not an ecommerce pattern)"]
 
   developer portfolio -> visual_style: "dark zinc-900, emerald-400 accent, monospace code-like headings, terminal/IDE aesthetic, subtle grid background pattern, project cards with tech stack badges"
                          key_sections: ["hero band with name + role + CTA", "about section with photo", "skills grid with proficiency indicators", "projects grid (4 cards with screenshots + tech badges + 'View Project' links)", "experience timeline", "contact form"]
-                         must_have_content: ["developer name", "role: 'Full-Stack Developer'", "tech: React, TypeScript, Node.js, Python", "4 real project names with descriptions", "GitHub + LinkedIn links", "Unsplash headshot URL"]
+                         must_have_content: ["developer name", "role: 'Full-Stack Developer'", "tech: React, TypeScript, Node.js, Python", "4 real project names with descriptions", "GitHub + LinkedIn links", "Design Agent headshot or profile illustration asset"]
                          avoid: ["corporate blue palette (wrong for dev portfolio)", "empty project cards with no screenshots", "skills listed as plain text without visual indicators", "'View Project' buttons that look like marketing CTAs", "hero banner with stock office photo"]
 
 - ui_archetype and archetype_rules are REQUIRED on the scaffold task â€” never null for scaffold tasks
