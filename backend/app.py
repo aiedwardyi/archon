@@ -388,7 +388,13 @@ def resolve_project_version(q_project_id=None, q_version=None):
     return project_id, version
 
 
-def run_full_pipeline_async(task_description: str, prompt_history: list = None, project_id: int = None, reference_images: list = None):
+def run_full_pipeline_async(
+    task_description: str,
+    prompt_history: list = None,
+    project_id: int = None,
+    reference_images: list = None,
+    nlu_context: dict | None = None,
+):
     state = get_project_state(project_id)
 
     sys.path.insert(0, str(REPO_ROOT))
@@ -461,6 +467,27 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None, 
         from agents.pm_agent import PMAgent
         pm_agent = PMAgent()
 
+        nlu_context = nlu_context or {
+            "keywords": [],
+            "concepts": [],
+            "entities": [],
+            "categories": [],
+            "domain": "general",
+            "prompt_richness": "sparse",
+        }
+        entities_context = ", ".join(
+            f"{e.get('text', '')} ({e.get('type', 'Unknown')})"
+            for e in nlu_context.get("entities", [])
+            if e.get("text")
+        )
+        nlu_context_str = (
+            "NLU Analysis: "
+            f"keywords=[{', '.join(nlu_context.get('keywords', []))}], "
+            f"concepts=[{', '.join(nlu_context.get('concepts', []))}], "
+            f"entities=[{entities_context}], "
+            f"prompt_richness={nlu_context.get('prompt_richness', 'sparse')}"
+        )
+
         context_input = task_description
         if prompt_history and len(prompt_history) > 1:
             history_text = "\n".join(
@@ -468,6 +495,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None, 
                 for turn in prompt_history
             )
             context_input = f"Full conversation history:\n{history_text}\n\nLatest request: {task_description}"
+        context_input += f"\n\n{nlu_context_str}"
         if existing_code:
             # Extract app title from previous HTML to preserve it
             import re as _re
@@ -497,6 +525,8 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None, 
             locked_ui_archetype=locked_ui_archetype,
             is_iteration=is_iteration,
             reference_images=reference_images or [],
+            project_context=context_input,
+            nlu_context=nlu_context,
         )
 
         plan_dict = {
@@ -536,7 +566,13 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None, 
                 prd_data = read_json_file(version_dir / "last_prd.json") or {}
                 design_agent = DesignAgent()
                 assets_dir = version_dir / "assets"
-                design_assets = design_agent.run(prd_data, max_images=10, save_dir=assets_dir, reference_images=reference_images or None)
+                design_assets = design_agent.run(
+                    prd_data,
+                    max_images=10,
+                    save_dir=assets_dir,
+                    reference_images=reference_images or None,
+                    nlu_context=nlu_context,
+                )
                 if design_assets:
                     write_json_file(version_dir / "last_design_assets.json", {"assets": design_assets})
                     add_log(f"Design Agent: {len(design_assets)} images ready.", project_id=project_id)
@@ -1195,6 +1231,8 @@ def iterate_project(project_id: int):
         prompt_history = data.get("prompt_history", [])
         if not prompt_history:
             prompt_history = [{"role": "user", "content": prompt}]
+        nlu_result = nlu_agent.analyze(prompt)
+        print(f"[NLU] Full analysis: {nlu_result}")
 
         requested_archetype = detect_requested_archetype(prompt)
         if (
@@ -1279,7 +1317,7 @@ def iterate_project(project_id: int):
         print(f"Starting iteration v{next_version} for project {project_id}: {prompt}")
         thread = threading.Thread(
             target=run_full_pipeline_async,
-            args=(prompt, prompt_history, project_id, reference_images),
+            args=(prompt, prompt_history, project_id, reference_images, nlu_result),
             daemon=True,
         )
         thread.start()
@@ -1372,6 +1410,8 @@ def execute_task():
 
         next_version = get_next_version(session, project_id)
         task_description = project.description or project.name
+        nlu_result = nlu_agent.analyze(task_description)
+        print(f"[NLU] Full analysis: {nlu_result}")
         requested_archetype = detect_requested_archetype(task_description)
         if (
             project.locked_ui_archetype
@@ -1410,7 +1450,7 @@ def execute_task():
         print(f"Starting v{next_version} for project {project_id}: {task_description}")
         thread = threading.Thread(
             target=run_full_pipeline_async,
-            args=(task_description, initial_history, project_id),
+            args=(task_description, initial_history, project_id, None, nlu_result),
             daemon=True,
         )
         thread.start()
@@ -1879,6 +1919,7 @@ def project_chat(project_id: int):
 
         # NLU pre-analysis — frustrated sentiment short-circuits to chat
         nlu_result = nlu_agent.analyze(data["message"])
+        print(f"[NLU] Full analysis: {nlu_result}")
         print(f"[NLU] sentiment={nlu_result['sentiment']} score={nlu_result['sentiment_score']:.2f} domain={nlu_result['domain']} keywords={nlu_result['keywords']}")
         if nlu_result["frustrated"]:
             print("[NLU] Frustrated sentiment — routing to chat")
@@ -1888,9 +1929,19 @@ def project_chat(project_id: int):
             }), 200
 
         # Append NLU context to project context for better classify_intent routing
-        if nlu_result["keywords"]:
-            nlu_context_str = f"\nUser intent signals — domain: {nlu_result['domain']}, keywords: {', '.join(nlu_result['keywords'])}, sentiment: {nlu_result['sentiment']}"
-            project_context = (project_context or "") + nlu_context_str
+        entity_terms = ", ".join(
+            f"{e.get('text', '')} ({e.get('type', 'Unknown')})"
+            for e in nlu_result.get("entities", [])
+            if e.get("text")
+        )
+        nlu_context_str = (
+            "\nNLU Analysis: "
+            f"keywords=[{', '.join(nlu_result.get('keywords', []))}], "
+            f"concepts=[{', '.join(nlu_result.get('concepts', []))}], "
+            f"entities=[{entity_terms}], "
+            f"prompt_richness={nlu_result.get('prompt_richness', 'sparse')}"
+        )
+        project_context = (project_context or "") + nlu_context_str
 
         from agents.pm_agent import PMAgent
         pm = PMAgent()
