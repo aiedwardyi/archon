@@ -269,23 +269,34 @@ Conclusion: Manual kit changes show targeted dimension improvements but prompt/k
 ### Next lever: Watson Discovery feedback loop
 Instead of prompt rewriting, feed actual high-scoring HTML/CSS as reference templates into the engineer agent. See Phase 23 below.
 
-## Phase 23 — Watson Discovery Integration (🔴 Next)
+## Phase 23 — Watson Discovery Integration (✅ Complete Mar 10, 2026)
 
-IBM Cloud Credit Usage ($200, expires in ~35 days)
-Three connected ideas to maximize IBM Cloud credits for Archon:
-1. Watson Discovery — "Best Builds" Reference DB
-   Store high-scoring generated projects in Watson Discovery with their prompt, plan, code, AND eval scores. When a similar prompt comes in, pipeline retrieves the highest-scored past build as a reference template. Agents learn from proven winners instead of generating from scratch.
-2. Eval Loop → Discovery Feedback Loop
-   The eval loop already scores builds. Route high-scoring builds (85+) into Discovery automatically. Agents query Discovery before generating, pulling the best-scored match for the current archetype. This creates a learning system — Archon gets better with every build cycle.
-3. Expanded Watson NLU — Richer Prompt Analysis
-   Currently NLU only checks sentiment. Expand to extract keywords, categories, concepts, and entities. Feed richer analysis into PM Agent → Planner → Design Agent to improve design quality output.
-Bonus benefit: The Discovery score database could also help calibrate the inconsistent evaluator — compare stored scores against actual quality to find where the rubric is off.
+IBM Cloud Credit Usage ($200, expires in ~34 days)
+
+### 23.1 — Expanded NLU (✅ Mar 10, 2026)
+- ✅ Added ConceptsOptions + EntitiesOptions to NLU agent (agents/nlu_agent.py)
+- ✅ New fields: concepts, entities, prompt_richness (rich/moderate/sparse)
+- ✅ Richer NLU context passed to PM Agent classify_intent, Planner, and Design Agent
+- ✅ Graceful fallback when credentials missing
+
+### 23.2 — Watson Discovery Client + Best Builds Ingestion (✅ Mar 10, 2026)
+- ✅ DiscoveryClient wrapper (utils/watson_discovery.py) — graceful fallback, lazy collection resolution, idempotent ingest
+- ✅ Ingestion script (scripts/ingest_best_builds.py) — 5/5 best builds ingested
+- ✅ Best builds: Ecommerce 88.5 (pid 163), Game 84.5 (161), Portfolio 83.5 (169), Dashboard 81.0 (155), SaaS Landing 76.0 (162)
+- ✅ Query test confirmed all 5 archetypes retrievable
+
+### 23.3 — Pipeline Integration + Eval Auto-Ingest (✅ Mar 10, 2026)
+- ✅ EngineerAgent.run() accepts reference_code (dict) — injects Discovery HTML/CSS as reference context for initial builds only
+- ✅ Pipeline queries Discovery before Engineer Agent runs, resolves archetype aliases via DESIGN_KIT_ALIASES
+- ✅ Eval loop auto-ingests builds scoring >=85 into Discovery (lazy import, canonical archetype, non-fatal)
+- ✅ Complete learning loop: build → score → if 85+, ingest → next build retrieves best reference
+
+Branch: feat/watson-discovery (4 commits: 09dce26, da95bd8, 8b38ebe) → merged to main
 
 ## Up Next
 
 | Phase | Description |
 |-------|-------------|
-| 23 | Watson Discovery — Best Builds reference DB + eval feedback loop + expanded NLU |
 | 22.D | Consumer Versions page (THE MOAT — timeline + preview + narrative) |
 | 22.F | Consumer mobile polish pass |
 | — | Consumer UX Declutter Pass (high priority — too dense for new users) |
