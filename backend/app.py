@@ -26,7 +26,10 @@ from auth import auth_bp, claim_guest_project_for_user, init_jwt
 # NLU Agent — sentiment + keyword analysis before pipeline routing
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from agents.nlu_agent import NLUAgent
+from agents.engineer_agent import DESIGN_KIT_ALIASES
+from utils.watson_discovery import DiscoveryClient
 nlu_agent = NLUAgent()
+discovery_client = DiscoveryClient()
 
 app = Flask(__name__)
 
@@ -582,6 +585,35 @@ def run_full_pipeline_async(
                 print(f"DesignAgent failed (non-fatal): {design_err}")
                 add_log("Design Agent: Skipped, continuing with build...", project_id=project_id)
 
+        # Query Watson Discovery for best archetype-matched build (initial build only)
+        reference_code = None
+        if not is_iteration:
+            detected_archetype = get_plan_ui_archetype(plan) or locked_ui_archetype
+            if detected_archetype:
+                canonical_archetype = DESIGN_KIT_ALIASES.get(detected_archetype, detected_archetype)
+                try:
+                    best_build = discovery_client.query_best_build(canonical_archetype)
+                    if best_build:
+                        reference_code = {
+                            "html": best_build.get("html_code", ""),
+                            "css": best_build.get("css_code", ""),
+                            "score": best_build.get("eval_score", "N/A"),
+                        }
+                        msg = (
+                            f"[Discovery] Found reference build for '{canonical_archetype}' "
+                            f"(score: {reference_code['score']})"
+                        )
+                        print(msg)
+                        add_log(msg, project_id=project_id)
+                    else:
+                        msg = f"[Discovery] No reference build found for '{canonical_archetype}'"
+                        print(msg)
+                        add_log(msg, project_id=project_id)
+                except Exception as disc_err:
+                    print(f"[Discovery] Query failed (non-fatal): {disc_err}")
+            else:
+                print("[Discovery] Skipping query: no archetype detected from plan or project lock")
+
         add_log("Build Agent: Writing your code...", project_id=project_id)
 
         engineer_task = None
@@ -628,7 +660,13 @@ def run_full_pipeline_async(
         else:
             task_description_with_assets = task_description
 
-        result = engineer.run(engineer_task, user_prompt=task_description_with_assets, existing_code=existing_code, reference_images=reference_images or None)
+        result = engineer.run(
+            engineer_task,
+            user_prompt=task_description_with_assets,
+            existing_code=existing_code,
+            reference_images=reference_images or None,
+            reference_code=reference_code,
+        )
 
         from scripts.safe_write import safe_write_text, enforce_iteration_scope
         allow_dir = version_dir / "code"

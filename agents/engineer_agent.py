@@ -6,6 +6,7 @@ import os
 import re
 import time
 from pathlib import Path
+from typing import Any
 
 try:
     from json_repair import repair_json
@@ -469,7 +470,14 @@ class EngineerAgent:
     def __init__(self, client: genai.Client | None):
         self.client = client
 
-    def run(self, task: Task, user_prompt: str = None, existing_code: str = None, reference_images: list[str] | None = None) -> EngineeringResult:
+    def run(
+        self,
+        task: Task,
+        user_prompt: str = None,
+        existing_code: str = None,
+        reference_images: list[str] | None = None,
+        reference_code: dict[str, Any] | None = None,
+    ) -> EngineeringResult:
         if task.execution_hint != "engineer":
             raise ValueError("EngineerAgent called with non-executable task")
 
@@ -522,6 +530,24 @@ class EngineerAgent:
                 f"--- END EXISTING CODE ---\n\n"
             )
 
+        reference_context = ""
+        if reference_code and not existing_code:
+            print(
+                f"[Discovery] EngineerAgent using reference build "
+                f"(score: {reference_code.get('score', 'N/A')})"
+            )
+            reference_context = (
+                "=== REFERENCE BUILD (high-scoring example for this archetype) ===\n"
+                "Study this working example carefully. It scored well on design quality.\n"
+                "Use it as INSPIRATION for layout structure, visual patterns, and CSS techniques.\n"
+                "Do NOT copy it verbatim — create something original that matches or exceeds its quality.\n"
+                "--- REFERENCE HTML ---\n"
+                f"{reference_code.get('html', '')}\n"
+                "--- REFERENCE CSS ---\n"
+                f"{reference_code.get('css', '')}\n"
+                "=== END REFERENCE BUILD ===\n\n"
+            )
+
         archetype_block = ""
         if task.ui_archetype:
             rules = task.archetype_rules
@@ -550,6 +576,7 @@ class EngineerAgent:
 
         contents = (
             f"{iteration_context}"
+            f"{reference_context}"
             f"{prompt}\n\n"
             f"{user_context}"
             f"--- TASK START ---\n"

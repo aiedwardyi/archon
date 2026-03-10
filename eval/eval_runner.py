@@ -13,7 +13,7 @@ import sys
 import time
 import logging
 import argparse
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Ensure eval/ is on the path
@@ -213,6 +213,59 @@ async def run_eval_loop(config: dict = None):
                 logger.error(f"Scoring failed for {archetype}: {e}")
                 save_json({"error": f"Scoring failed: {e}"}, output_dir / "scoring_error.json")
                 continue
+
+            # Auto-ingest high-scoring builds into Watson Discovery (non-fatal)
+            if scores.weighted_total >= 85:
+                try:
+                    repo_root = Path(__file__).resolve().parent.parent
+                    if str(repo_root) not in sys.path:
+                        sys.path.insert(0, str(repo_root))
+                    from agents.engineer_agent import DESIGN_KIT_ALIASES
+                    from utils.watson_discovery import DiscoveryClient
+
+                    dc = DiscoveryClient()
+                    if dc.enabled:
+                        project_id = build_result.get("project_id")
+                        version = build_result.get("version", 1)
+                        if project_id is None:
+                            logger.warning("[Discovery] Auto-ingest skipped: missing project_id")
+                            continue
+                        canonical_archetype = DESIGN_KIT_ALIASES.get(archetype, archetype)
+                        version_dir = repo_root / "generated" / str(project_id) / f"v{version}"
+                        html_path = version_dir / "code" / "src" / "index.html"
+                        css_path = version_dir / "code" / "src" / "style.css"
+                        base_css_path = version_dir / "code" / "src" / "base.css"
+                        plan_path = version_dir / "last_plan.json"
+                        factsheet_path = version_dir / "last_factsheet.json"
+
+                        plan_data = json.loads(plan_path.read_text(encoding="utf-8")) if plan_path.exists() else None
+                        factsheet_data = (
+                            json.loads(factsheet_path.read_text(encoding="utf-8"))
+                            if factsheet_path.exists() else None
+                        )
+
+                        doc = {
+                            "archetype": canonical_archetype,
+                            "prompt": prompt,
+                            "plan_json": json.dumps(plan_data, ensure_ascii=False) if plan_data else "",
+                            "factsheet_json": json.dumps(factsheet_data, ensure_ascii=False) if factsheet_data else "",
+                            "html_code": html_path.read_text(encoding="utf-8") if html_path.exists() else "",
+                            "css_code": css_path.read_text(encoding="utf-8") if css_path.exists() else "",
+                            "base_css": base_css_path.read_text(encoding="utf-8") if base_css_path.exists() else "",
+                            "eval_score": scores.weighted_total,
+                            "project_id": project_id,
+                            "version": version,
+                            "created_at": datetime.now(timezone.utc).isoformat(),
+                        }
+                        dc.ingest_build(doc)
+                        logger.info(
+                            f"[Discovery] Auto-ingested build {project_id} "
+                            f"({canonical_archetype}, score {scores.weighted_total})"
+                        )
+                    else:
+                        logger.info("[Discovery] Auto-ingest skipped: Discovery disabled")
+                except Exception as e:
+                    logger.warning(f"[Discovery] Auto-ingest failed (non-fatal): {e}")
 
             # 5. Rollback check — if score dropped, revert to best prompt
             prev_best = best_scores.get(archetype)
