@@ -297,7 +297,7 @@ Branch: feat/watson-discovery (4 commits: 09dce26, da95bd8, 8b38ebe) → merged 
 
 | Bug | Severity | Description |
 |-----|----------|-------------|
-| AuthGuard token expiry | 🟡 Medium | AuthGuard checks if `archon_token` exists in localStorage but doesn't validate expiry. Stale/expired tokens let users past the login page, then API returns 401. Fix: AuthGuard should call `/api/auth/me` on load and redirect to /login if 401. Affects Enterprise + Studio. |
+| ~~AuthGuard token expiry~~ | ✅ Fixed Mar 10 | AuthGuard now validates token via /api/auth/me on mount. Clears stale tokens and redirects to /login on 401. Enterprise + Studio. Cross-origin handoff preserved. Commit d6b5d8d. |
 | ~~Double NLU call~~ | ✅ Fixed Mar 10 | /chat returns nlu_result in response, frontend forwards to /iterate, /iterate skips re-analysis if present. Enterprise + Studio both patched. Commit d862863. |
 | ~~Quality Recommendations missing~~ | ✅ Fixed Mar 10 | Restored Quality Recommendations section after Compliance in Governance tab (Enterprise + Studio). Added insights fetch with auth header, category icons, priority badges, empty state. Commit 48d27ed. |
 | ~~Imagen images not rendering~~ | ✅ Fixed Mar 10 | Resilient asset resolver: checks current assets/, code/src/assets/, last_design_assets.json local_path, and prior version fallback. Preview rewriting normalizes relative asset URLs. Expanded asset route for nested paths + MIME detection. Commit 58a9f8f. |

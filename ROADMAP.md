@@ -698,7 +698,9 @@ Modified: agents/nlu_agent.py, agents/engineer_agent.py, agents/planner_agent.py
 - ✅ Double NLU call eliminated — /chat forwards nlu_result to /iterate, skips re-analysis (d862863)
 - ✅ Generated app interactivity — Zero Dead Buttons Policy in engineer_core.txt, planner quality_target interactivity dimension (18f0ce0)
 - ✅ Notification sound fixed — AudioContext resume, pre-unlock on user gesture, transition-based triggers. Studio moved to global app-shell for chime on any page (61ab5b4, 1b10893)
-- 🔧 Remaining: AuthGuard token expiry
+- ✅ AuthGuard token expiry — validates JWT via /api/auth/me on mount, clears stale tokens, redirects to /login (d6b5d8d)
+
+All 6 bugs resolved.
 
 ## Phase 24 — Asset Reuse Library (⬜ Planned)
 
