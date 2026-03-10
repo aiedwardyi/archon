@@ -29,6 +29,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from agents.nlu_agent import NLUAgent
 from agents.engineer_agent import DESIGN_KIT_ALIASES
 from utils.watson_discovery import DiscoveryClient
+from utils.image_asset_catalog import catalog_design_assets
+from utils.asset_filler import fill_missing_assets
 nlu_agent = NLUAgent()
 discovery_client = DiscoveryClient()
 
@@ -543,6 +545,7 @@ def run_full_pipeline_async(
         flat_plan = plan.model_dump()
         write_json_file(version_dir / "last_plan.json", flat_plan)
         write_json_file(version_dir / "last_plan_artifact.json", plan_dict)
+        effective_archetype = locked_ui_archetype or get_plan_ui_archetype(plan)
 
         add_log("Architecture Agent: Build plan ready.", project_id=project_id)
         milestone_count = len(plan.milestones)
@@ -580,6 +583,20 @@ def run_full_pipeline_async(
                 if design_assets:
                     write_json_file(version_dir / "last_design_assets.json", {"assets": design_assets})
                     add_log(f"Design Agent: {len(design_assets)} images ready.", project_id=project_id)
+                    try:
+                        cataloged_count = catalog_design_assets(
+                            project_id=project_id,
+                            version=version,
+                            design_assets=design_assets,
+                            archetype=effective_archetype,
+                        )
+                        if cataloged_count:
+                            add_log(
+                                f"Image Catalog: Cataloged {cataloged_count} new images.",
+                                project_id=project_id,
+                            )
+                    except Exception as catalog_err:
+                        print(f"Image catalog hook failed (non-fatal): {catalog_err}")
                 else:
                     add_log("Design Agent: No images generated, continuing...", project_id=project_id)
             except Exception as design_err:
@@ -691,6 +708,20 @@ def run_full_pipeline_async(
                 print(f"Skipped file: {skip_err}")
         add_log("Build complete.", project_id=project_id)
         state["result_ready"] = True
+
+        filled_assets_count = 0
+        try:
+            filled_assets_count = fill_missing_assets(
+                project_id=project_id,
+                version=version,
+                archetype=effective_archetype,
+            )
+            add_log(
+                f"Asset Filler: Filled {filled_assets_count} missing images from library",
+                project_id=project_id,
+            )
+        except Exception as asset_fill_err:
+            print(f"Asset filler failed (non-fatal): {asset_fill_err}")
 
         execution_result = {
             "kind": "execution_result",
@@ -2997,7 +3028,5 @@ if __name__ == "__main__":
     print(f"PUBLIC_DIR: {PUBLIC_DIR}")
     print(f"CORS enabled for: http://localhost:5173, http://localhost:3000")
     app.run(debug=True, port=5000)
-
-
 
 
