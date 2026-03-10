@@ -48,6 +48,7 @@ Schema (informal):
             "visual_style": "string — specific visual direction for THIS build (colors, typography, imagery style, mood, cultural references)",
             "key_sections": ["string", "..."] — sections that MUST appear, in priority order,
             "must_have_content": ["string", "..."] — concrete content items that must be present (real names, real data, domain-specific details),
+            "interactivity": ["string", "..."] — REQUIRED for ecommerce/dashboard/game/saas_landing; list the key user interactions that MUST work in the generated app,
             "avoid": ["string", "..."] — anti-patterns to avoid for this specific build
           } | null
         }
@@ -173,8 +174,16 @@ Quality target rules (CRITICAL — this is the single biggest quality lever):
 - visual_style: Be specific to the domain. “warm reds and oranges, food photography hero, Korean typography” NOT “modern and clean”
 - key_sections: List the sections a real version of this app would have, in scroll order
 - must_have_content: List CONCRETE content. Real dish names, real feature names, real data labels — NOT generic placeholders
+- interactivity: REQUIRED when ui_archetype is ecommerce, dashboard, game, or saas_landing. List concrete behaviors that must work (e.g., add-to-cart updates counter, filters change visible items, tabs switch content, modal opens, nav smooth-scroll, form submit success message).
+- For ui_archetype ecommerce/dashboard/game/saas_landing, MUST include at least 2 concrete interactivity requirements inside must_have_content as well, so the engineer sees them even if interactivity is omitted.
 - avoid: List DOMAIN-SPECIFIC failure modes — what makes THIS type of app look cheap or wrong. NEVER use generic web advice like "cluttered layout", "slow loading", "non-responsive", "complex animations" — those apply to everything and tell the engineer nothing useful.
 - Set quality_target: null on all non-scaffold tasks
+
+Interactivity dimension requirements (only when task_type is scaffold):
+- dashboard: quality_target.interactivity MUST include working filter/sort controls, row-details expansion/modal, and at least one chart or period toggle interaction that visibly updates UI state.
+- ecommerce: quality_target.interactivity MUST include add-to-cart state with cart count updates, working category/price/sort filters, product quick-view/details interaction, and functional search.
+- game: quality_target.interactivity MUST include smooth-scroll nav between sections, interactive character/weapons cards (hover + click reveal), and at least one expandable lore/details interaction.
+- saas_landing: quality_target.interactivity MUST include CTA click behavior, pricing monthly/annual toggle, FAQ accordion behavior, and form/email capture submit feedback.
 
 Examples (study these carefully — notice how specific the avoid lists are to each domain):
 
