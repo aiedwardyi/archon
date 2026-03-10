@@ -293,6 +293,28 @@ IBM Cloud Credit Usage ($200, expires in ~34 days)
 
 Branch: feat/watson-discovery (4 commits: 09dce26, da95bd8, 8b38ebe) → merged to main
 
+## Phase 24 — Asset Reuse Library (✅ Complete Mar 10, 2026)
+
+Eliminates broken images by filling missing `<img>` slots from a library of previously generated Imagen assets.
+
+- ✅ 24.1 ImageAsset SQLite table + bulk ingestion script (scripts/ingest_image_library.py) + auto-ingest hook after Design Agent
+- ✅ 24.2 Post-build missing image scanner + library lookup + file copy (utils/asset_filler.py)
+- ✅ 24.3 Category detection: key-based heuristic (hero, product, character, lifestyle, collection, icon, pattern, abstract, other) + prompt text fallback
+- 🔴 24.4 Admin UI (deferred)
+
+Bulk ingestion: 872 images across 9 categories from 205 projects. Idempotent (0 on second run).
+
+Branch: `feat/asset-reuse-library`
+
+**New files:**
+- backend/models.py (ImageAsset model)
+- utils/image_asset_catalog.py (shared cataloging helper)
+- scripts/ingest_image_library.py (bulk ingester)
+- utils/asset_filler.py (post-build missing image scanner + filler)
+
+**Modified:**
+- backend/app.py (auto-catalog after Design Agent + fill_missing_assets after Engineer Agent)
+
 ## Known Bugs
 
 | Bug | Severity | Description |
@@ -312,7 +334,7 @@ Branch: feat/watson-discovery (4 commits: 09dce26, da95bd8, 8b38ebe) → merged 
 | 22.F | Consumer mobile polish pass |
 | — | Consumer UX Declutter Pass (high priority — too dense for new users) |
 | — | Quality Regression Investigation (compare Feb 19-27 peak vs current) |
-| 24 | Asset Reuse Library — fill broken images from past builds, reduce Imagen costs |
+| 24 | Asset Reuse Library — fill broken images from past builds, reduce Imagen costs (✅ Complete) |
 | 8.3 | Client shareable read-only links (primary moat feature) |
 | 18 | Unified Auth + Plan-Based UI Routing |
 

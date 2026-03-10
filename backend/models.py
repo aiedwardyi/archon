@@ -163,6 +163,23 @@ class Execution(Base):
         }
 
 
+class ImageAsset(Base):
+    __tablename__ = "image_assets"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    filename = Column(String(255), nullable=False)
+    key = Column(String(255), nullable=False)
+    category = Column(String(50), nullable=False, default="other")
+    archetype = Column(String(50), nullable=True)
+    source_project_id = Column(Integer, nullable=False)
+    source_version = Column(Integer, nullable=False)
+    local_path = Column(String(1000), nullable=False, unique=True, index=True)
+    width = Column(Integer, nullable=True)
+    height = Column(Integer, nullable=True)
+    prompt = Column(Text, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+
 def get_next_version(session, project_id: int) -> int:
     from sqlalchemy import func
     result = session.query(func.max(Execution.version)).filter(
@@ -231,6 +248,58 @@ def init_db():
             conn.commit()
     except Exception as e:
         print(f"Warning: could not ensure auth columns: {e}")
+    # Migration: ensure image asset catalog table exists and has expected columns
+    try:
+        with engine.connect() as conn:
+            tables = {row[0] for row in conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            )).fetchall()}
+            if "image_assets" not in tables:
+                conn.execute(text(
+                    """
+                    CREATE TABLE image_assets (
+                        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        filename VARCHAR(255) NOT NULL,
+                        key VARCHAR(255) NOT NULL,
+                        category VARCHAR(50) NOT NULL,
+                        archetype VARCHAR(50),
+                        source_project_id INTEGER NOT NULL,
+                        source_version INTEGER NOT NULL,
+                        local_path VARCHAR(1000) NOT NULL UNIQUE,
+                        width INTEGER,
+                        height INTEGER,
+                        prompt TEXT,
+                        created_at DATETIME NOT NULL
+                    )
+                    """
+                ))
+                conn.execute(text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS ix_image_assets_local_path ON image_assets (local_path)"
+                ))
+                conn.commit()
+            else:
+                cols = [row[1] for row in conn.execute(text("PRAGMA table_info(image_assets)")).fetchall()]
+                for col_name, col_type in [
+                    ("filename", "VARCHAR(255)"),
+                    ("key", "VARCHAR(255)"),
+                    ("category", "VARCHAR(50)"),
+                    ("archetype", "VARCHAR(50)"),
+                    ("source_project_id", "INTEGER"),
+                    ("source_version", "INTEGER"),
+                    ("local_path", "VARCHAR(1000)"),
+                    ("width", "INTEGER"),
+                    ("height", "INTEGER"),
+                    ("prompt", "TEXT"),
+                    ("created_at", "DATETIME"),
+                ]:
+                    if col_name not in cols:
+                        conn.execute(text(f"ALTER TABLE image_assets ADD COLUMN {col_name} {col_type}"))
+                conn.execute(text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS ix_image_assets_local_path ON image_assets (local_path)"
+                ))
+                conn.commit()
+    except Exception as e:
+        print(f"Warning: could not ensure image_assets table: {e}")
     # Mark any stuck RUNNING executions as FAILED (handles Flask crash mid-build)
     try:
         with engine.connect() as conn:

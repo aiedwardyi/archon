@@ -702,30 +702,30 @@ Modified: agents/nlu_agent.py, agents/engineer_agent.py, agents/planner_agent.py
 
 All 6 bugs resolved.
 
-## Phase 24 — Asset Reuse Library (⬜ Planned)
+## Phase 24 — Asset Reuse Library (✅ Complete Mar 10, 2026)
 
 Intelligent image fallback system that eliminates broken images and reduces Imagen costs.
 
-**Problem:** Engineer Agent often creates more `<img>` slots than the Design Agent's generation cap allows (e.g. 12 image slots but only 5-10 generated). Excess slots show broken images — a common issue on the platform.
+**Problem:** Engineer Agent often creates more `<img>` slots than the Design Agent's generation cap allows (e.g. 12 image slots but only 5-10 generated). Excess slots show broken images.
 
 **Solution:** When a generated HTML references an image that doesn't exist, pull a visually similar image from a library of previously generated assets instead of leaving it broken.
 
-**Architecture:**
-- Image metadata table in SQLite: filename, category (hero_background, product_shot, character_portrait, lifestyle, etc.), archetype, source project_id, dimensions
-- Post-build step: scan Engineer output HTML for `<img>` tags referencing missing files
-- For each missing image, query library by (category + archetype) and copy best match into project assets
-- Auto-ingest: every successfully generated Imagen image gets catalogued into the library
-- Zero broken images guaranteed — every `<img>` tag gets a real file
-
-**Benefits:**
-- No more broken image placeholders in preview
-- Reduced Imagen API costs (reuse existing assets when close enough)
-- Quality floor — reused images come from successful builds
-- Differentiator vs Lovable/v0 (learned asset reuse across builds)
+**Implementation:**
+- ImageAsset SQLAlchemy model: filename, key, category, archetype, source_project_id, source_version, local_path, prompt
+- 9 categories auto-detected from key name: hero_background, product_shot, character_portrait, lifestyle, collection, icon, pattern, abstract, other (prompt text fallback)
+- Bulk ingestion: 872 images from 205 projects. Idempotent.
+- Auto-ingest hook after Design Agent in pipeline
+- Post-engineer filler: scans HTML for missing image refs, queries library by (category + archetype), copies best match
+- Match priority: same archetype + same category > same category any archetype > same archetype any category
 
 **Sub-phases:**
-- 24.1 SQLite image_assets table + auto-ingest on Imagen generation
-- 24.2 Post-build missing image scanner + library lookup + copy
-- 24.3 Category detection (parse Imagen prompt or filename conventions)
-- 24.4 Admin UI to browse/manage image library (optional)
+- ✅ 24.1 ImageAsset table + bulk ingestion + auto-ingest hook
+- ✅ 24.2 Post-build missing image scanner + filler (utils/asset_filler.py)
+- ✅ 24.3 Category detection (key heuristic + prompt fallback)
+- 🔴 24.4 Admin UI (deferred)
+
+Branch: `feat/asset-reuse-library`
+
+**New files:** utils/image_asset_catalog.py, scripts/ingest_image_library.py, utils/asset_filler.py
+**Modified:** backend/models.py, backend/app.py
 
