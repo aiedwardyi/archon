@@ -316,6 +316,77 @@ def get_plan_ui_archetype(plan) -> str | None:
     return None
 
 
+def get_plan_scaffold_task(plan):
+    for milestone in getattr(plan, "milestones", []):
+        for task in getattr(milestone, "tasks", []):
+            if getattr(task, "execution_hint", None) != "engineer":
+                continue
+            if getattr(task, "task_type", None) != "scaffold":
+                continue
+            return task
+    return None
+
+
+def get_plan_scaffold_seed_rows(plan) -> int | None:
+    task = get_plan_scaffold_task(plan)
+    if not task:
+        return None
+
+    archetype_rules = getattr(task, "archetype_rules", None)
+    if isinstance(archetype_rules, dict):
+        content_contract = archetype_rules.get("content_contract", {}) or {}
+        seed_rows = content_contract.get("seed_rows")
+    else:
+        content_contract = getattr(archetype_rules, "content_contract", None)
+        seed_rows = getattr(content_contract, "seed_rows", None) if content_contract else None
+
+    if seed_rows is None:
+        return None
+
+    try:
+        return int(seed_rows)
+    except (TypeError, ValueError):
+        return None
+
+
+def get_plan_scaffold_image_item_count(plan) -> int:
+    task = get_plan_scaffold_task(plan)
+    if not task:
+        return 0
+
+    quality_target = getattr(task, "quality_target", None)
+    if isinstance(quality_target, dict):
+        must_have_content = quality_target.get("must_have_content", []) or []
+    else:
+        must_have_content = getattr(quality_target, "must_have_content", []) or []
+
+    image_keywords = [
+        "pet",
+        "card",
+        "photo",
+        "product",
+        "image",
+        "character",
+        "profile",
+        "item",
+        "dish",
+        "property",
+        "course",
+        "job",
+        "restaurant",
+    ]
+
+    image_item_count = 0
+    for item in must_have_content:
+        if not isinstance(item, str):
+            continue
+        text = item.lower()
+        if any(keyword in text for keyword in image_keywords):
+            image_item_count += 1
+
+    return image_item_count
+
+
 def get_optional_request_user_id() -> int | None:
     verify_jwt_in_request(optional=True)
     identity = get_jwt_identity()
@@ -552,6 +623,19 @@ def run_full_pipeline_async(
         task_count = sum(len(m.tasks) for m in plan.milestones)
         print(f"Plan saved: {milestone_count} milestones, {task_count} tasks")
 
+        seed_rows = get_plan_scaffold_seed_rows(plan)
+        image_item_count = get_plan_scaffold_image_item_count(plan)
+        effective_rows = max(seed_rows or 0, image_item_count)
+        if effective_rows > 0:
+            smart_max_images = max(effective_rows, 5)
+            smart_max_images = min(smart_max_images + 1, 12)
+        else:
+            smart_max_images = 10
+        print(
+            f"Design Agent: targeting {smart_max_images} images "
+            f"(seed_rows={seed_rows}, image_item_count={image_item_count})"
+        )
+
         design_assets = []
         if is_iteration and ancestor_version_dir:
             ancestor_assets_file = ancestor_version_dir / "last_design_assets.json"
@@ -575,7 +659,7 @@ def run_full_pipeline_async(
                 assets_dir = version_dir / "assets"
                 design_assets = design_agent.run(
                     prd_data,
-                    max_images=10,
+                    max_images=smart_max_images,
                     save_dir=assets_dir,
                     reference_images=reference_images or None,
                     nlu_context=nlu_context,
