@@ -795,9 +795,8 @@ def run_full_pipeline_async(
                 version=version,
                 archetype=effective_archetype,
             )
-            add_log(
-                f"Asset Filler: Filled {filled_assets_count} missing images from library",
-                project_id=project_id,
+            print(
+                f"Asset filler: filled {filled_assets_count} missing images from library"
             )
         except Exception as asset_fill_err:
             print(f"Asset filler failed (non-fatal): {asset_fill_err}")
