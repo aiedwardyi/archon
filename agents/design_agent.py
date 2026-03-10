@@ -1,3 +1,4 @@
+import base64
 import concurrent.futures
 import json
 import re
@@ -24,6 +25,17 @@ def _repair_json_array(raw: str) -> list:
 
 
 def _generate_one(req, client, save_dir):
+    def _normalize_image_bytes(raw: Any) -> bytes:
+        if isinstance(raw, str):
+            if raw.startswith("iVBOR"):
+                return base64.b64decode(raw.encode("ascii"))
+            return raw.encode("utf-8")
+        if isinstance(raw, bytes):
+            if raw.startswith(b"iVBOR"):
+                return base64.b64decode(raw)
+            return raw
+        raise TypeError(f"Unexpected image payload type: {type(raw).__name__}")
+
     def _call_imagen(prompt):
         result = client.models.generate_images(
             model="imagen-4.0-ultra-generate-001",
@@ -49,7 +61,7 @@ def _generate_one(req, client, save_dir):
             save_dir.mkdir(parents=True, exist_ok=True)
             img_filename = f"{req['key']}.png"
             img_dest = save_dir / img_filename
-            img_dest.write_bytes(generated.image.image_bytes)
+            img_dest.write_bytes(_normalize_image_bytes(generated.image.image_bytes))
             local_path = str(img_dest)
             print(f"  saved -> {img_dest.name}")
 
