@@ -243,10 +243,49 @@ Codex rewrote consumer as indie-maker AI app builder (Lovable/v0 positioning):
 
 **Key question:** Did the design kit CSS class assembly system lose the raw creative CSS generation that produced the Apple-like aesthetic?
 
+## Eval Loop Results (Mar 10, 2026)
+
+### Overnight Run (5 iterations, all 5 archetypes)
+Branch: eval/loops, commit 58f7fcc
+- Auth blocker fixed in eval/api_client.py (JWT auto-register/login)
+- Playwright permission issue resolved
+- Manual kit improvements applied post-run to dashboard, game, saas_landing (.css + .txt)
+
+| Archetype | Baseline (Mar 6) | Best (Mar 10) | Delta |
+|-----------|-------------------|---------------|-------|
+| Ecommerce | 87.0 | 88.5 | +1.5 |
+| Game (FF8) | 83.2 | 84.5 | +1.3 |
+| Portfolio | 81.8 | 83.5 | +1.7 |
+| Dashboard | 79.0 | 81.0 | +2.0 |
+| SaaS Landing | 78.2 | 76.0 | -2.2 |
+
+Average: 82.7/100. Target: 90+.
+
+### Score-Only Kit Test (commit 70f376d)
+All archetypes dropped due to build variance (untouched archetypes also dropped 3-4 pts).
+Dimension-level signal: Game interactivity 6→7, SaaS visual_hierarchy 7→8, layout 7→8.
+Conclusion: Manual kit changes show targeted dimension improvements but prompt/kit tweaking alone has hit diminishing returns.
+
+### Next lever: Watson Discovery feedback loop
+Instead of prompt rewriting, feed actual high-scoring HTML/CSS as reference templates into the engineer agent. See Phase 23 below.
+
+## Phase 23 — Watson Discovery Integration (🔴 Next)
+
+IBM Cloud Credit Usage ($200, expires in ~35 days)
+Three connected ideas to maximize IBM Cloud credits for Archon:
+1. Watson Discovery — "Best Builds" Reference DB
+   Store high-scoring generated projects in Watson Discovery with their prompt, plan, code, AND eval scores. When a similar prompt comes in, pipeline retrieves the highest-scored past build as a reference template. Agents learn from proven winners instead of generating from scratch.
+2. Eval Loop → Discovery Feedback Loop
+   The eval loop already scores builds. Route high-scoring builds (85+) into Discovery automatically. Agents query Discovery before generating, pulling the best-scored match for the current archetype. This creates a learning system — Archon gets better with every build cycle.
+3. Expanded Watson NLU — Richer Prompt Analysis
+   Currently NLU only checks sentiment. Expand to extract keywords, categories, concepts, and entities. Feed richer analysis into PM Agent → Planner → Design Agent to improve design quality output.
+Bonus benefit: The Discovery score database could also help calibrate the inconsistent evaluator — compare stored scores against actual quality to find where the rubric is off.
+
 ## Up Next
 
 | Phase | Description |
 |-------|-------------|
+| 23 | Watson Discovery — Best Builds reference DB + eval feedback loop + expanded NLU |
 | 22.D | Consumer Versions page (THE MOAT — timeline + preview + narrative) |
 | 22.F | Consumer mobile polish pass |
 | — | Consumer UX Declutter Pass (high priority — too dense for new users) |

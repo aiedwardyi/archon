@@ -671,3 +671,24 @@ Post-build suggestions that help users write better prompts. Positioned as intel
 - ✅ 21.5 i18n — 12 Korean translation keys for categories, priorities, section title/description/empty state
 - Consumer UI deferred to full UX audit
 
+## Eval Loop Optimization (✅ Complete Mar 10, 2026)
+- Auth blocker fixed in eval/api_client.py — JWT auto-register/login for eval user
+- 5-iteration overnight run across all 5 archetypes (dashboard, game, saas_landing, ecommerce, portfolio)
+- Best scores: Ecommerce 88.5, Game 84.5, Portfolio 83.5, Dashboard 81.0, SaaS Landing 76.0
+- Average: 82.7/100 (up from ~69.6 original baseline)
+- Manual kit improvements (CSS + txt) for dashboard, game, saas_landing
+- Score-only validation pass confirmed dimension-level improvements but prompt/kit tweaking hitting diminishing returns
+- Conclusion: Next quality lever is Watson Discovery reference templates, not more prompt iteration
+
+## Phase 23 — Watson Discovery Integration (🔴 Next)
+
+IBM Cloud Credit Usage ($200, expires in ~35 days)
+Three connected ideas to maximize IBM Cloud credits for Archon:
+1. Watson Discovery — "Best Builds" Reference DB
+   Store high-scoring generated projects in Watson Discovery with their prompt, plan, code, AND eval scores. When a similar prompt comes in, pipeline retrieves the highest-scored past build as a reference template. Agents learn from proven winners instead of generating from scratch.
+2. Eval Loop → Discovery Feedback Loop
+   The eval loop already scores builds. Route high-scoring builds (85+) into Discovery automatically. Agents query Discovery before generating, pulling the best-scored match for the current archetype. This creates a learning system — Archon gets better with every build cycle.
+3. Expanded Watson NLU — Richer Prompt Analysis
+   Currently NLU only checks sentiment. Expand to extract keywords, categories, concepts, and entities. Feed richer analysis into PM Agent → Planner → Design Agent to improve design quality output.
+Bonus benefit: The Discovery score database could also help calibrate the inconsistent evaluator — compare stored scores against actual quality to find where the rubric is off.
+

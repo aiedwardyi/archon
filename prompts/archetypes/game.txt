@@ -107,6 +107,7 @@ REQUIRED 4 SECTIONS (in this order)
    - Stat bar widths MUST vary: use 60%, 75%, 85%, 95% etc. NEVER all same width
    - Stat values: show numeric value (e.g. "85", "70", "92") — never "0"
    - Use REAL character names and descriptions from the game
+   - Every character card must include one explicit interactive control (e.g. "View Loadout" button) with class `.btn-primary` or `.weapon-cta`
 
 4. WEAPONS — eyebrow "ARSENAL" or similar + section title. Must include:
    - .weapons-showcase container
@@ -114,12 +115,14 @@ REQUIRED 4 SECTIONS (in this order)
    - Below: .grid-weapons with 3 .weapon-card, each with .weapon-type (badge), .weapon-name, owner in accent, .weapon-desc, .weapon-stats with ATK + MAG .weapon-stat-value numbers
    - Use REAL weapon names from the game
    - ATK/MAG values: realistic numbers (e.g. ATK: 96, MAG: 24) — never "0"
+   - NEVER leave weapons banner empty; if image fails, render a CSS fallback panel with weapon silhouettes and labels
 
 5. WORLD MAP — eyebrow "EXPLORATION" or similar + section title. Must include:
    - .world-map-showcase container
    - .world-map-image containing ONE large <img> (design agent world map illustration)
    - Below: .grid-locations with 3-4 .location-card, each with .location-region (badge), .location-name, .location-desc
    - Use REAL location names from the game
+   - Map must include 3-4 labeled location chips overlaid on the image to avoid placeholder appearance
 
 ALSO INCLUDE:
 - Noise overlay: <div class="noise-overlay"></div> immediately after <body> — MANDATORY
@@ -141,6 +144,8 @@ Use these for:
 
 For EVERY <img> tag, add an onerror fallback:
   onerror="this.style.background='linear-gradient(135deg,var(--surface-1),var(--surface-2))';this.style.minHeight='200px'"
+
+If an image cannot load, do NOT leave blank space; include fallback text labels (e.g. "Balamb Garden", "Gunblade Arsenal") inside the same container.
 
 If no design agent images are available, use solid gradient backgrounds as fallback — NEVER leave broken image icons visible.
 
