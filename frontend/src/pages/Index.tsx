@@ -266,13 +266,9 @@ const Index = () => {
 
   // Stop sending state when pipeline finishes
   useEffect(() => {
-    if (pipeline.status === "COMPLETED" && prevPipelineStatusRef.current !== "COMPLETED" && sendingRef.current) playSuccess();
-    // Only play failure sound if build was genuinely running for >5 seconds — suppresses false flash
-    if (pipeline.status === "FAILED" && prevPipelineStatusRef.current !== "FAILED" && sendingRef.current) {
-      if (buildStartTimeRef.current && Date.now() - buildStartTimeRef.current > 5000) {
-        playFailure();
-      }
-    }
+    const transitionedFromRunning = prevPipelineStatusRef.current === "RUNNING";
+    if (pipeline.status === "COMPLETED" && transitionedFromRunning && sendingRef.current) void playSuccess();
+    if (pipeline.status === "FAILED" && transitionedFromRunning && sendingRef.current) void playFailure();
 
     if (pipeline.status === "COMPLETED" || pipeline.status === "FAILED") {
       setSending(false);

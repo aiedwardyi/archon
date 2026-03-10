@@ -25,7 +25,6 @@ import {
   Paperclip,
 } from "lucide-react"
 import { useLanguage } from "@/contexts/LanguageContext"
-import { useNotificationSound } from "@/hooks/useNotificationSound"
 
 const API_BASE = "http://localhost:5000"
 const POLL_INTERVAL_MS = 1500
@@ -63,7 +62,6 @@ function AgentStatusLabel({ status }: { status: AgentStatus }) {
 
 export function PipelineRun() {
   const { t } = useLanguage()
-  const { playSuccess, playFailure } = useNotificationSound()
   const [inputValue, setInputValue] = useState("")
   const [attachedFiles, setAttachedFiles] = useState<File[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -394,7 +392,6 @@ export function PipelineRun() {
       sessionStorage.setItem("archon_current_stage", derivedStage)
 
       if (data.status === "COMPLETED") {
-        playSuccess()
         setCurrentStage("engineer")
         sessionStorage.setItem("archon_current_stage", "engineer")
         setPipelineStatus("complete")
@@ -427,7 +424,6 @@ export function PipelineRun() {
           })
         }
       } else if (data.status === "FAILED") {
-        playFailure()
         setPipelineStatus("failed")
         sessionStorage.setItem("archon_pipeline_status", "failed")
         setIsRunning(false)
