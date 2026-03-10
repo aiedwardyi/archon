@@ -341,7 +341,7 @@ Branch: `feat/asset-reuse-library`
 | Feature | Branch | What to test |
 |---------|--------|--------------|
 | Smart image count from seed_rows | feat/smart-image-count (merged) | Run pet adoption prompt. Check Flask log for "Design Agent: targeting N images (seed_rows=X, image_items=Y)". Verify N > 5 and all pet cards have real images (no light blue placeholder boxes). If placeholders still appear, quality_target.must_have_content heuristic may need keyword tuning. |
-| Hide Asset Filler from Live Output | fix/hide-asset-filler-log (merged) | Run any build. Check Live Output panel — "Asset Filler: Filled X missing images" should NOT appear. Check Flask terminal — "Asset filler: filled X missing images" should still print there. |
+| Hide Asset Filler from Live Output | fix/hide-asset-filler-log (merged) | Run any build. Check Live Output panel — "Asset Filler: Filled X missing images" should NOT appear. Check Flask terminal — "Asset filler: filled X missing images" should still print there. Commit 9edc351. |
 | Testimonial overlap prompt fix | fix/testimonial-overlap-prompt (merged) | Run pet adoption prompt. Check testimonials section — quote cards should have solid dark backgrounds (rgba(0,0,0,0.85)), NOT bare text floating over a photo. |
 
 ## Up Next
