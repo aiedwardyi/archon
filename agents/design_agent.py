@@ -76,11 +76,36 @@ class DesignAgent:
             from utils.genai_client import get_genai_client
             self.client = get_genai_client()
 
-    def run(self, prd_dict: dict, max_images: int = 4, save_dir: Path | None = None, reference_images: list[str] | None = None) -> list[dict[str, Any]]:
+    def run(
+        self,
+        prd_dict: dict,
+        max_images: int = 4,
+        save_dir: Path | None = None,
+        reference_images: list[str] | None = None,
+        nlu_context: dict | None = None,
+    ) -> list[dict[str, Any]]:
         prompt_template = (PROMPTS_DIR / "design_agent.txt").read_text(encoding="utf-8")
         prd_summary = json.dumps(prd_dict, indent=2)[:3000]
-
-        text_content = f"{prompt_template}\n\nPRD:\n{prd_summary}"
+        nlu_hint = ""
+        if nlu_context:
+            keywords = nlu_context.get("keywords", []) or []
+            entities = nlu_context.get("entities", []) or []
+            concepts = nlu_context.get("concepts", []) or []
+            entity_terms = [
+                f"{e.get('text', '')} ({e.get('type', 'Unknown')})"
+                for e in entities
+                if e.get("text")
+            ]
+            nlu_hint = (
+                "\n\nNLU CONTEXT FOR IMAGE PROMPTS:\n"
+                f"- domain: {nlu_context.get('domain', 'general')}\n"
+                f"- prompt_richness: {nlu_context.get('prompt_richness', 'sparse')}\n"
+                f"- keywords: {', '.join(keywords) if keywords else '(none)'}\n"
+                f"- concepts: {', '.join(concepts) if concepts else '(none)'}\n"
+                f"- entities: {', '.join(entity_terms) if entity_terms else '(none)'}\n"
+                "- Use relevant terms from these signals when crafting image prompts."
+            )
+        text_content = f"{prompt_template}\n\nPRD:\n{prd_summary}{nlu_hint}"
 
         # Build multimodal content if reference images provided
         if reference_images:

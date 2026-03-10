@@ -20,6 +20,8 @@ class PlannerAgent:
         locked_ui_archetype: str | None = None,
         is_iteration: bool = False,
         reference_images: list[str] | None = None,
+        project_context: str | None = None,
+        nlu_context: dict | None = None,
     ) -> Plan:
         """
         Legacy method: Generate plan from PRD text.
@@ -46,7 +48,15 @@ class PlannerAgent:
                 "New functionality (scripts, extra styles) must be added inline in index.html using <script> and <style> tags\n"
                 '- output_files: ["src/index.html", "src/style.css"]\n'
             )
-        text_content = f"{prompt}{lock_note}{iteration_note}\n\n--- PRD START ---\n{prd_text}\n--- PRD END ---"
+        context_note = ""
+        if project_context:
+            context_note += f"\n\nPROJECT CONTEXT:\n{project_context}"
+        if nlu_context:
+            context_note += f"\n\nNLU CONTEXT:\n{json.dumps(nlu_context, ensure_ascii=False)}"
+        text_content = (
+            f"{prompt}{lock_note}{iteration_note}{context_note}"
+            f"\n\n--- PRD START ---\n{prd_text}\n--- PRD END ---"
+        )
 
         # Build multimodal content if reference images provided
         if reference_images:
@@ -90,6 +100,8 @@ class PlannerAgent:
         locked_ui_archetype: str | None = None,
         is_iteration: bool = False,
         reference_images: list[str] | None = None,
+        project_context: str | None = None,
+        nlu_context: dict | None = None,
     ) -> Plan:
         """
         Phase 5: Generate plan from PRD artifact.
@@ -115,6 +127,8 @@ class PlannerAgent:
             locked_ui_archetype=locked_ui_archetype,
             is_iteration=is_iteration,
             reference_images=reference_images,
+            project_context=project_context,
+            nlu_context=nlu_context,
         )
 
     def _format_prd_as_text(self, prd) -> str:
@@ -167,6 +181,8 @@ class PlannerAgent:
         locked_ui_archetype: str | None = None,
         is_iteration: bool = False,
         reference_images: list[str] | None = None,
+        project_context: str | None = None,
+        nlu_context: dict | None = None,
     ) -> Plan:
         """Backward compatible method."""
         return self.run_from_prd_text(
@@ -174,6 +190,8 @@ class PlannerAgent:
             locked_ui_archetype=locked_ui_archetype,
             is_iteration=is_iteration,
             reference_images=reference_images,
+            project_context=project_context,
+            nlu_context=nlu_context,
         )
 
 

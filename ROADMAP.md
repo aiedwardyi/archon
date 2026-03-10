@@ -680,15 +680,14 @@ Post-build suggestions that help users write better prompts. Positioned as intel
 - Score-only validation pass confirmed dimension-level improvements but prompt/kit tweaking hitting diminishing returns
 - Conclusion: Next quality lever is Watson Discovery reference templates, not more prompt iteration
 
-## Phase 23 — Watson Discovery Integration (🔴 Next)
+## Phase 23 — Watson Discovery Integration (✅ Complete Mar 10, 2026)
 
-IBM Cloud Credit Usage ($200, expires in ~35 days)
-Three connected ideas to maximize IBM Cloud credits for Archon:
-1. Watson Discovery — "Best Builds" Reference DB
-   Store high-scoring generated projects in Watson Discovery with their prompt, plan, code, AND eval scores. When a similar prompt comes in, pipeline retrieves the highest-scored past build as a reference template. Agents learn from proven winners instead of generating from scratch.
-2. Eval Loop → Discovery Feedback Loop
-   The eval loop already scores builds. Route high-scoring builds (85+) into Discovery automatically. Agents query Discovery before generating, pulling the best-scored match for the current archetype. This creates a learning system — Archon gets better with every build cycle.
-3. Expanded Watson NLU — Richer Prompt Analysis
-   Currently NLU only checks sentiment. Expand to extract keywords, categories, concepts, and entities. Feed richer analysis into PM Agent → Planner → Design Agent to improve design quality output.
-Bonus benefit: The Discovery score database could also help calibrate the inconsistent evaluator — compare stored scores against actual quality to find where the rubric is off.
+### 23.1 Expanded NLU — concepts, entities, prompt_richness fed into PM/Planner/Design agents
+### 23.2 Discovery Client — 5 best builds ingested (ecommerce 88.5, game 84.5, portfolio 83.5, dashboard 81.0, saas_landing 76.0)
+### 23.3 Pipeline Integration — Engineer queries Discovery for reference HTML/CSS on initial builds; eval auto-ingests 85+ scores
+
+Learning loop: build → score → if 85+, ingest into Discovery → next build retrieves best reference → quality improves
+
+New files: utils/watson_discovery.py, scripts/ingest_best_builds.py
+Modified: agents/nlu_agent.py, agents/engineer_agent.py, agents/planner_agent.py, agents/design_agent.py, backend/app.py, eval/eval_runner.py
 

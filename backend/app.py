@@ -26,7 +26,10 @@ from auth import auth_bp, claim_guest_project_for_user, init_jwt
 # NLU Agent — sentiment + keyword analysis before pipeline routing
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from agents.nlu_agent import NLUAgent
+from agents.engineer_agent import DESIGN_KIT_ALIASES
+from utils.watson_discovery import DiscoveryClient
 nlu_agent = NLUAgent()
+discovery_client = DiscoveryClient()
 
 app = Flask(__name__)
 
@@ -388,7 +391,13 @@ def resolve_project_version(q_project_id=None, q_version=None):
     return project_id, version
 
 
-def run_full_pipeline_async(task_description: str, prompt_history: list = None, project_id: int = None, reference_images: list = None):
+def run_full_pipeline_async(
+    task_description: str,
+    prompt_history: list = None,
+    project_id: int = None,
+    reference_images: list = None,
+    nlu_context: dict | None = None,
+):
     state = get_project_state(project_id)
 
     sys.path.insert(0, str(REPO_ROOT))
@@ -461,6 +470,27 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None, 
         from agents.pm_agent import PMAgent
         pm_agent = PMAgent()
 
+        nlu_context = nlu_context or {
+            "keywords": [],
+            "concepts": [],
+            "entities": [],
+            "categories": [],
+            "domain": "general",
+            "prompt_richness": "sparse",
+        }
+        entities_context = ", ".join(
+            f"{e.get('text', '')} ({e.get('type', 'Unknown')})"
+            for e in nlu_context.get("entities", [])
+            if e.get("text")
+        )
+        nlu_context_str = (
+            "NLU Analysis: "
+            f"keywords=[{', '.join(nlu_context.get('keywords', []))}], "
+            f"concepts=[{', '.join(nlu_context.get('concepts', []))}], "
+            f"entities=[{entities_context}], "
+            f"prompt_richness={nlu_context.get('prompt_richness', 'sparse')}"
+        )
+
         context_input = task_description
         if prompt_history and len(prompt_history) > 1:
             history_text = "\n".join(
@@ -468,6 +498,7 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None, 
                 for turn in prompt_history
             )
             context_input = f"Full conversation history:\n{history_text}\n\nLatest request: {task_description}"
+        context_input += f"\n\n{nlu_context_str}"
         if existing_code:
             # Extract app title from previous HTML to preserve it
             import re as _re
@@ -497,6 +528,8 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None, 
             locked_ui_archetype=locked_ui_archetype,
             is_iteration=is_iteration,
             reference_images=reference_images or [],
+            project_context=context_input,
+            nlu_context=nlu_context,
         )
 
         plan_dict = {
@@ -536,7 +569,13 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None, 
                 prd_data = read_json_file(version_dir / "last_prd.json") or {}
                 design_agent = DesignAgent()
                 assets_dir = version_dir / "assets"
-                design_assets = design_agent.run(prd_data, max_images=10, save_dir=assets_dir, reference_images=reference_images or None)
+                design_assets = design_agent.run(
+                    prd_data,
+                    max_images=10,
+                    save_dir=assets_dir,
+                    reference_images=reference_images or None,
+                    nlu_context=nlu_context,
+                )
                 if design_assets:
                     write_json_file(version_dir / "last_design_assets.json", {"assets": design_assets})
                     add_log(f"Design Agent: {len(design_assets)} images ready.", project_id=project_id)
@@ -545,6 +584,35 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None, 
             except Exception as design_err:
                 print(f"DesignAgent failed (non-fatal): {design_err}")
                 add_log("Design Agent: Skipped, continuing with build...", project_id=project_id)
+
+        # Query Watson Discovery for best archetype-matched build (initial build only)
+        reference_code = None
+        if not is_iteration:
+            detected_archetype = get_plan_ui_archetype(plan) or locked_ui_archetype
+            if detected_archetype:
+                canonical_archetype = DESIGN_KIT_ALIASES.get(detected_archetype, detected_archetype)
+                try:
+                    best_build = discovery_client.query_best_build(canonical_archetype)
+                    if best_build:
+                        reference_code = {
+                            "html": best_build.get("html_code", ""),
+                            "css": best_build.get("css_code", ""),
+                            "score": best_build.get("eval_score", "N/A"),
+                        }
+                        msg = (
+                            f"[Discovery] Found reference build for '{canonical_archetype}' "
+                            f"(score: {reference_code['score']})"
+                        )
+                        print(msg)
+                        add_log(msg, project_id=project_id)
+                    else:
+                        msg = f"[Discovery] No reference build found for '{canonical_archetype}'"
+                        print(msg)
+                        add_log(msg, project_id=project_id)
+                except Exception as disc_err:
+                    print(f"[Discovery] Query failed (non-fatal): {disc_err}")
+            else:
+                print("[Discovery] Skipping query: no archetype detected from plan or project lock")
 
         add_log("Build Agent: Writing your code...", project_id=project_id)
 
@@ -592,7 +660,13 @@ def run_full_pipeline_async(task_description: str, prompt_history: list = None, 
         else:
             task_description_with_assets = task_description
 
-        result = engineer.run(engineer_task, user_prompt=task_description_with_assets, existing_code=existing_code, reference_images=reference_images or None)
+        result = engineer.run(
+            engineer_task,
+            user_prompt=task_description_with_assets,
+            existing_code=existing_code,
+            reference_images=reference_images or None,
+            reference_code=reference_code,
+        )
 
         from scripts.safe_write import safe_write_text, enforce_iteration_scope
         allow_dir = version_dir / "code"
@@ -1195,6 +1269,8 @@ def iterate_project(project_id: int):
         prompt_history = data.get("prompt_history", [])
         if not prompt_history:
             prompt_history = [{"role": "user", "content": prompt}]
+        nlu_result = nlu_agent.analyze(prompt)
+        print(f"[NLU] Full analysis: {nlu_result}")
 
         requested_archetype = detect_requested_archetype(prompt)
         if (
@@ -1279,7 +1355,7 @@ def iterate_project(project_id: int):
         print(f"Starting iteration v{next_version} for project {project_id}: {prompt}")
         thread = threading.Thread(
             target=run_full_pipeline_async,
-            args=(prompt, prompt_history, project_id, reference_images),
+            args=(prompt, prompt_history, project_id, reference_images, nlu_result),
             daemon=True,
         )
         thread.start()
@@ -1372,6 +1448,8 @@ def execute_task():
 
         next_version = get_next_version(session, project_id)
         task_description = project.description or project.name
+        nlu_result = nlu_agent.analyze(task_description)
+        print(f"[NLU] Full analysis: {nlu_result}")
         requested_archetype = detect_requested_archetype(task_description)
         if (
             project.locked_ui_archetype
@@ -1410,7 +1488,7 @@ def execute_task():
         print(f"Starting v{next_version} for project {project_id}: {task_description}")
         thread = threading.Thread(
             target=run_full_pipeline_async,
-            args=(task_description, initial_history, project_id),
+            args=(task_description, initial_history, project_id, None, nlu_result),
             daemon=True,
         )
         thread.start()
@@ -1879,6 +1957,7 @@ def project_chat(project_id: int):
 
         # NLU pre-analysis — frustrated sentiment short-circuits to chat
         nlu_result = nlu_agent.analyze(data["message"])
+        print(f"[NLU] Full analysis: {nlu_result}")
         print(f"[NLU] sentiment={nlu_result['sentiment']} score={nlu_result['sentiment_score']:.2f} domain={nlu_result['domain']} keywords={nlu_result['keywords']}")
         if nlu_result["frustrated"]:
             print("[NLU] Frustrated sentiment — routing to chat")
@@ -1888,9 +1967,19 @@ def project_chat(project_id: int):
             }), 200
 
         # Append NLU context to project context for better classify_intent routing
-        if nlu_result["keywords"]:
-            nlu_context_str = f"\nUser intent signals — domain: {nlu_result['domain']}, keywords: {', '.join(nlu_result['keywords'])}, sentiment: {nlu_result['sentiment']}"
-            project_context = (project_context or "") + nlu_context_str
+        entity_terms = ", ".join(
+            f"{e.get('text', '')} ({e.get('type', 'Unknown')})"
+            for e in nlu_result.get("entities", [])
+            if e.get("text")
+        )
+        nlu_context_str = (
+            "\nNLU Analysis: "
+            f"keywords=[{', '.join(nlu_result.get('keywords', []))}], "
+            f"concepts=[{', '.join(nlu_result.get('concepts', []))}], "
+            f"entities=[{entity_terms}], "
+            f"prompt_richness={nlu_result.get('prompt_richness', 'sparse')}"
+        )
+        project_context = (project_context or "") + nlu_context_str
 
         from agents.pm_agent import PMAgent
         pm = PMAgent()
