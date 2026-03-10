@@ -783,7 +783,7 @@ def run_full_pipeline_async(
                 models_used={
                     "Requirements Agent": "Gemini 2.5 Flash",
                     "Architecture Agent": "Gemini 2.5 Flash",
-                    "Design Agent": "Imagen 3.0 + Gemini 2.5 Flash",
+                    "Design Agent": "Imagen 4.0 Ultra + Gemini 2.5 Flash",
                     "Build Agent": "Gemini 2.5 Flash",
                 },
                 tokens_used=exec_for_gov.tokens_used if exec_for_gov else None,
