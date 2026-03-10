@@ -591,10 +591,7 @@ def run_full_pipeline_async(
                             archetype=effective_archetype,
                         )
                         if cataloged_count:
-                            add_log(
-                                f"Image Catalog: Cataloged {cataloged_count} new images.",
-                                project_id=project_id,
-                            )
+                            print(f"Image Catalog: Cataloged {cataloged_count} new images.")
                     except Exception as catalog_err:
                         print(f"Image catalog hook failed (non-fatal): {catalog_err}")
                 else:
@@ -622,11 +619,9 @@ def run_full_pipeline_async(
                             f"(score: {reference_code['score']})"
                         )
                         print(msg)
-                        add_log(msg, project_id=project_id)
                     else:
                         msg = f"[Discovery] No reference build found for '{canonical_archetype}'"
                         print(msg)
-                        add_log(msg, project_id=project_id)
                 except Exception as disc_err:
                     print(f"[Discovery] Query failed (non-fatal): {disc_err}")
             else:

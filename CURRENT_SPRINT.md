@@ -314,6 +314,14 @@ Branch: `feat/asset-reuse-library`
 
 **Modified:**
 - backend/app.py (auto-catalog after Design Agent + fill_missing_assets after Engineer Agent)
+- agents/design_agent.py (base64→PNG decode fix — Imagen API returns base64 string, not raw bytes)
+
+**Critical bug found during testing:**
+- Imagen 4 Ultra API returns image_bytes as base64-encoded string, not raw bytes
+- All previously generated images on disk are base64 text files (broken in browser)
+- Fix: design_agent.py detects `iVBOR` prefix and decodes before writing
+- All future builds now produce valid PNG files
+- Discovery/Image Catalog log messages removed from frontend Live Output (print-only now)
 
 ## Known Bugs
 
