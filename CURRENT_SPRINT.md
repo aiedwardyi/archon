@@ -293,6 +293,12 @@ IBM Cloud Credit Usage ($200, expires in ~34 days)
 
 Branch: feat/watson-discovery (4 commits: 09dce26, da95bd8, 8b38ebe) → merged to main
 
+## Known Bugs
+
+| Bug | Severity | Description |
+|-----|----------|-------------|
+| AuthGuard token expiry | 🟡 Medium | AuthGuard checks if `archon_token` exists in localStorage but doesn't validate expiry. Stale/expired tokens let users past the login page, then API returns 401. Fix: AuthGuard should call `/api/auth/me` on load and redirect to /login if 401. Affects Enterprise + Studio. |
+
 ## Up Next
 
 | Phase | Description |
