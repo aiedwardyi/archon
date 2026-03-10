@@ -384,7 +384,7 @@ export interface ChatMessage {
 export async function projectChat(projectId: number, message: string): Promise<{ response_type: "chat" | "build"; message?: string }> {
   const res = await fetch(`${API_BASE}/projects/${projectId}/chat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ message }),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -406,14 +406,16 @@ export async function iterateProject(
     for (const file of referenceImages) {
       formData.append("reference_images", file);
     }
+    const token = localStorage.getItem("archon_token");
     res = await fetch(`${API_BASE}/projects/${projectId}/iterate`, {
       method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
     });
   } else {
     res = await fetch(`${API_BASE}/projects/${projectId}/iterate`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ prompt, prompt_history: promptHistory }),
     });
   }
