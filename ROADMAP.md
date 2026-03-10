@@ -691,3 +691,36 @@ Learning loop: build → score → if 85+, ingest into Discovery → next build 
 New files: utils/watson_discovery.py, scripts/ingest_best_builds.py
 Modified: agents/nlu_agent.py, agents/engineer_agent.py, agents/planner_agent.py, agents/design_agent.py, backend/app.py, eval/eval_runner.py
 
+## Bug Fix Session (Mar 10, 2026)
+
+- ✅ Quality Recommendations restored in Governance tab (Enterprise + Studio) — insights fetch with auth, category icons, priority badges (48d27ed)
+- ✅ Imagen image rendering fixed — resilient asset resolver with multi-path fallback + prior version scan, preview URL normalization, nested path support (58a9f8f)
+- 🔧 Remaining: Double NLU call, generated app interactivity, notification sound, AuthGuard token expiry
+
+## Phase 24 — Asset Reuse Library (⬜ Planned)
+
+Intelligent image fallback system that eliminates broken images and reduces Imagen costs.
+
+**Problem:** Engineer Agent often creates more `<img>` slots than the Design Agent's generation cap allows (e.g. 12 image slots but only 5-10 generated). Excess slots show broken images — a common issue on the platform.
+
+**Solution:** When a generated HTML references an image that doesn't exist, pull a visually similar image from a library of previously generated assets instead of leaving it broken.
+
+**Architecture:**
+- Image metadata table in SQLite: filename, category (hero_background, product_shot, character_portrait, lifestyle, etc.), archetype, source project_id, dimensions
+- Post-build step: scan Engineer output HTML for `<img>` tags referencing missing files
+- For each missing image, query library by (category + archetype) and copy best match into project assets
+- Auto-ingest: every successfully generated Imagen image gets catalogued into the library
+- Zero broken images guaranteed — every `<img>` tag gets a real file
+
+**Benefits:**
+- No more broken image placeholders in preview
+- Reduced Imagen API costs (reuse existing assets when close enough)
+- Quality floor — reused images come from successful builds
+- Differentiator vs Lovable/v0 (learned asset reuse across builds)
+
+**Sub-phases:**
+- 24.1 SQLite image_assets table + auto-ingest on Imagen generation
+- 24.2 Post-build missing image scanner + library lookup + copy
+- 24.3 Category detection (parse Imagen prompt or filename conventions)
+- 24.4 Admin UI to browse/manage image library (optional)
+
