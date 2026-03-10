@@ -11,6 +11,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
+    const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname);
     const params = new URLSearchParams(window.location.search);
     const urlToken = params.get("token");
     const isSwitch = params.get("switch") === "1";
@@ -41,20 +42,44 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         .catch(() => {})
         .finally(() => {
           cleanAndCheck();
-          if (!PUBLIC_ROUTES.includes(pathname) && !authService.isLoggedIn()) {
+          if (!isPublicRoute && !authService.isLoggedIn()) {
+            localStorage.removeItem("archon_token");
+            localStorage.removeItem("archon_user");
             router.replace("/login");
           } else {
             setChecked(true);
           }
         });
     } else {
-      if (!PUBLIC_ROUTES.includes(pathname) && !authService.isLoggedIn()) {
-        router.replace("/login");
-      } else {
+      if (isPublicRoute) {
         setChecked(true);
+        return;
       }
+
+      const token = localStorage.getItem("archon_token");
+      if (!token) {
+        router.replace("/login");
+        setChecked(true);
+        return;
+      }
+
+      fetch("http://localhost:5000/api/auth/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Token validation failed");
+          }
+          setChecked(true);
+        })
+        .catch(() => {
+          localStorage.removeItem("archon_token");
+          localStorage.removeItem("archon_user");
+          router.replace("/login");
+          setChecked(true);
+        });
     }
-  }, [pathname, router]);
+  }, [router]);
 
   if (!PUBLIC_ROUTES.includes(pathname) && !checked) return null;
   return <>{children}</>;
