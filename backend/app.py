@@ -10,6 +10,7 @@ import shutil
 import sys
 import warnings
 import re
+import mimetypes
 from pathlib import Path
 from typing import Any, Dict
 import threading
@@ -1771,6 +1772,19 @@ def get_preview(project_id: int, version: int):
                     html = html.replace(f'{script_tag}</script>', f"<script>{js}</script>")
                 elif "</body>" in html:
                     html = html.replace("</body>", f"<script>{js}</script>\n</body>")
+        # Normalize local asset paths so preview can always resolve them through the backend.
+        html = re.sub(
+            r'((?:src|href)=["\'])(?:\./|\.\./)?assets/([^"\']+)(["\'])',
+            rf'\1/api/assets/{project_id}/{version}/\2\3',
+            html,
+            flags=re.IGNORECASE,
+        )
+        html = re.sub(
+            r'(url\(["\']?)(?:\./|\.\./)?assets/([^)"\']+)(["\']?\))',
+            rf'\1/api/assets/{project_id}/{version}/\2\3',
+            html,
+            flags=re.IGNORECASE,
+        )
         return Response(html, mimetype="text/html")
 
     return Response(PREVIEW_PLACEHOLDER, mimetype="text/html", status=200)
@@ -1880,12 +1894,55 @@ def health():
     return jsonify({"status": "ok"}), 200
 
 
-@app.route("/api/assets/<int:project_id>/<int:version>/<filename>", methods=["GET"])
+def _resolve_asset_path(project_id: int, version: int, filename: str) -> Path | None:
+    filename_path = Path(filename)
+    if any(part == ".." for part in filename_path.parts):
+        return None
+
+    version_dir = get_version_dir(project_id, version)
+    candidates = [
+        version_dir / "assets" / filename_path,
+        version_dir / "code" / "src" / "assets" / filename_path,
+    ]
+    for candidate in candidates:
+        if candidate.exists() and candidate.is_file():
+            return candidate
+
+    # Reused design assets may point to a previous version via local_path.
+    manifest = read_json_file(version_dir / "last_design_assets.json") or {}
+    target_name = filename_path.name
+    for asset in manifest.get("assets", []):
+        local_path_raw = asset.get("local_path")
+        if not local_path_raw:
+            continue
+        local_path = Path(local_path_raw)
+        key = str(asset.get("key", "")).strip()
+        expected_name = f"{key}.png" if key else ""
+        if target_name not in {local_path.name, expected_name}:
+            continue
+        if local_path.exists() and local_path.is_file():
+            return local_path
+
+    # Last resort: check older versions for the same relative path.
+    for prior_version in range(version - 1, 0, -1):
+        prior_dir = get_version_dir(project_id, prior_version)
+        prior_candidates = [
+            prior_dir / "assets" / filename_path,
+            prior_dir / "code" / "src" / "assets" / filename_path,
+        ]
+        for candidate in prior_candidates:
+            if candidate.exists() and candidate.is_file():
+                return candidate
+    return None
+
+
+@app.route("/api/assets/<int:project_id>/<int:version>/<path:filename>", methods=["GET"])
 def get_asset(project_id: int, version: int, filename: str):
-    asset_path = get_version_dir(project_id, version) / "assets" / filename
-    if not asset_path.exists():
+    asset_path = _resolve_asset_path(project_id, version, filename)
+    if not asset_path:
         return jsonify({"error": "Asset not found"}), 404
-    return send_file(asset_path, mimetype="image/png")
+    guessed_mime, _ = mimetypes.guess_type(asset_path.name)
+    return send_file(asset_path, mimetype=guessed_mime or "application/octet-stream")
 
 
 @app.route("/api/projects/<int:project_id>/chat", methods=["POST"])
