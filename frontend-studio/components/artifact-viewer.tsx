@@ -18,6 +18,10 @@ import {
   Loader2,
   CheckCircle2,
   Circle,
+  AlignLeft,
+  Palette,
+  MessageSquare,
+  Globe,
 } from "lucide-react"
 import { PreviewPanel } from "@/components/preview-panel"
 import { useLanguage } from "@/contexts/LanguageContext"
@@ -799,6 +803,7 @@ interface StudioFactsheet {
 
 function GovernanceTab({ projectId, version }: { projectId: number | null; version: number | null }) {
   const [factsheet, setFactsheet] = useState<StudioFactsheet | null>(null)
+  const [insights, setInsights] = useState<Array<{category: string; suggestion: string; priority: string}>>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -839,6 +844,31 @@ function GovernanceTab({ projectId, version }: { projectId: number | null; versi
     return () => { cancelled = true }
   }, [projectId, version])
 
+  useEffect(() => {
+    if (!projectId || !version) {
+      setInsights([])
+      return
+    }
+
+    let cancelled = false
+    ;(async () => {
+      try {
+        const token = localStorage.getItem("archon_token")
+        const res = await fetch(
+          `${API_BASE}/api/projects/${projectId}/versions/${version}/insights`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+        if (!res.ok) throw new Error("insights not found")
+        const data = await res.json()
+        if (!cancelled) setInsights(Array.isArray(data?.insights) ? data.insights : [])
+      } catch {
+        if (!cancelled) setInsights([])
+      }
+    })()
+
+    return () => { cancelled = true }
+  }, [projectId, version])
+
   if (loading) return <div className="flex items-center gap-2 py-8 justify-center"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /><span className="text-sm text-muted-foreground">Loading factsheet...</span></div>
   if (error) return <div className="text-sm text-muted-foreground italic py-8 text-center">{error}</div>
   if (!factsheet) return <div className="text-sm text-muted-foreground italic py-8 text-center">No factsheet data.</div>
@@ -859,6 +889,28 @@ function GovernanceTab({ projectId, version }: { projectId: number | null; versi
   }
 
   const ts = factsheet.generated_at ? new Date(factsheet.generated_at).toLocaleString() : "Unknown"
+  const getInsightIcon = (category: string) => {
+    switch (category) {
+      case "prompt_detail":
+        return AlignLeft
+      case "design":
+        return Palette
+      case "content":
+        return FileText
+      case "clarity":
+        return MessageSquare
+      case "domain":
+        return Globe
+      default:
+        return FileText
+    }
+  }
+  const getPriorityBadgeClass = (priority: string) => {
+    const normalized = priority.toLowerCase()
+    if (normalized === "high") return "border-red-300 text-red-600 dark:text-red-400 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10"
+    if (normalized === "medium") return "border-amber-300 text-amber-600 dark:text-amber-400 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10"
+    return "border-gray-300 text-gray-600 dark:text-gray-300 dark:border-gray-500/30 bg-gray-50 dark:bg-gray-500/10"
+  }
 
   const qualityTier = factsheet.readiness?.quality_tier ?? null
   const combinedScore = factsheet.readiness?.combined_score ?? null
@@ -1082,6 +1134,35 @@ function GovernanceTab({ projectId, version }: { projectId: number | null; versi
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="bg-card border border-border rounded-lg p-5">
+        <h3 className="text-sm font-semibold text-foreground mb-1">Quality Recommendations</h3>
+        <p className="text-xs text-muted-foreground italic mb-3">Suggestions to improve your next iteration</p>
+        {insights.length === 0 ? (
+          <div className="flex items-center gap-2 text-sm text-success">
+            <CheckCircle2 className="h-4 w-4" />
+            <span>No recommendations — your prompt covered all key areas.</span>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {insights.map((insight, idx) => {
+              const Icon = getInsightIcon(insight.category)
+              const priority = insight.priority || "low"
+              return (
+                <div key={`${insight.category}-${idx}`} className="flex items-start justify-between gap-3 border border-border rounded-md p-3">
+                  <div className="flex items-start gap-2 min-w-0">
+                    <Icon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                    <p className="text-sm text-foreground leading-relaxed">{insight.suggestion}</p>
+                  </div>
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border shrink-0 ${getPriorityBadgeClass(priority)}`}>
+                    {capitalize(priority)}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )

@@ -3,7 +3,7 @@ import {
   FileText, Target, Code2, ListChecks, ScrollText, Eye,
   Monitor, Smartphone, ChevronRight, Download, Upload,
   Braces, FolderOpen, FileCode, CheckCircle2, Circle, Clock,
-  AlertCircle, Loader2, Copy, Check, ExternalLink, Shield,
+  AlertCircle, Loader2, Copy, Check, ExternalLink, Shield, AlignLeft, Palette, MessageSquare, Globe,
 } from "lucide-react";
 import { fetchVersions, fetchPrd, fetchPlan, fetchCodeFiles, fetchLogs } from "@/services/api";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -639,6 +639,7 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
   const { t, language } = useLanguage();
   const ko = language === "ko";
   const [factsheet, setFactsheet] = useState<Factsheet | null>(null);
+  const [insights, setInsights] = useState<Array<{category: string; suggestion: string; priority: string}>>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -676,6 +677,31 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
         if (!cancelled) setLoading(false);
       }
     })();
+    return () => { cancelled = true; };
+  }, [projectId, version]);
+
+  useEffect(() => {
+    if (!projectId || !version) {
+      setInsights([]);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = localStorage.getItem("archon_token");
+        const res = await fetch(
+          `http://localhost:5000/api/projects/${projectId}/versions/${version}/insights`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!res.ok) throw new Error("insights not found");
+        const data = await res.json();
+        if (!cancelled) setInsights(Array.isArray(data?.insights) ? data.insights : []);
+      } catch {
+        if (!cancelled) setInsights([]);
+      }
+    })();
+
     return () => { cancelled = true; };
   }, [projectId, version]);
 
@@ -750,6 +776,32 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
   };
 
   const ts = factsheet.generated_at ? new Date(factsheet.generated_at).toLocaleString(ko ? "ko-KR" : "en-US") : ko ? "알 수 없음" : "Unknown";
+  const getInsightIcon = (category: string) => {
+    switch (category) {
+      case "prompt_detail":
+        return AlignLeft;
+      case "design":
+        return Palette;
+      case "content":
+        return FileText;
+      case "clarity":
+        return MessageSquare;
+      case "domain":
+        return Globe;
+      default:
+        return FileText;
+    }
+  };
+  const getPriorityBadgeClass = (priority: string) => {
+    const normalized = priority.toLowerCase();
+    if (normalized === "high") {
+      return "border-red-300 text-red-600 dark:text-red-400 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10";
+    }
+    if (normalized === "medium") {
+      return "border-amber-300 text-amber-600 dark:text-amber-400 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10";
+    }
+    return "border-gray-300 text-gray-600 dark:text-gray-300 dark:border-gray-500/30 bg-gray-50 dark:bg-gray-500/10";
+  };
 
   return (
     <div className="max-w-2xl space-y-4">
@@ -972,6 +1024,35 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="border border-border rounded-md p-5">
+        <h2 className="text-sm font-bold text-foreground mb-1">Quality Recommendations</h2>
+        <p className="text-xs text-muted-foreground italic mb-3">Suggestions to improve your next iteration</p>
+        {insights.length === 0 ? (
+          <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="h-4 w-4" />
+            <span>No recommendations — your prompt covered all key areas.</span>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {insights.map((insight, idx) => {
+              const Icon = getInsightIcon(insight.category);
+              const priority = insight.priority || "low";
+              return (
+                <div key={`${insight.category}-${idx}`} className="flex items-start justify-between gap-3 border border-border rounded-md p-3">
+                  <div className="flex items-start gap-2 min-w-0">
+                    <Icon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                    <p className="text-sm text-foreground leading-relaxed">{insight.suggestion}</p>
+                  </div>
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border shrink-0 ${getPriorityBadgeClass(priority)}`}>
+                    {capitalize(priority)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
