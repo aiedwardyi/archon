@@ -215,6 +215,7 @@ def parse_float(value: str | None) -> float | None:
 
 def read_latest_operator_log_score(archetype: str) -> float | None:
     entries = parse_operator_log_entries()
+    best_committed: float | None = None
     for entry in reversed(entries):
         if entry.get("archetype") != archetype:
             continue
@@ -224,10 +225,11 @@ def read_latest_operator_log_score(archetype: str) -> float | None:
         baseline_avg = parse_float(entry.get("baseline_average_across_3_runs"))
 
         if verdict in {"committed", "kept"} and test_avg is not None:
-            return test_avg
+            best_committed = max(best_committed, test_avg) if best_committed is not None else test_avg
+            continue
         if baseline_avg is not None:
-            return baseline_avg
-    return None
+            return best_committed if best_committed is not None else baseline_avg
+    return best_committed
 
 
 def compute_average_from_score_paths(score_paths: list[Path]) -> float | None:
