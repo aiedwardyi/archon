@@ -267,8 +267,8 @@ const Index = () => {
   // Stop sending state when pipeline finishes
   useEffect(() => {
     const transitionedFromRunning = prevPipelineStatusRef.current === "RUNNING";
-    if (pipeline.status === "COMPLETED" && transitionedFromRunning && sendingRef.current) void playSuccess();
-    if (pipeline.status === "FAILED" && transitionedFromRunning && sendingRef.current) void playFailure();
+    if (pipeline.status === "COMPLETED" && transitionedFromRunning) void playSuccess();
+    if (pipeline.status === "FAILED" && transitionedFromRunning) void playFailure();
 
     if (pipeline.status === "COMPLETED" || pipeline.status === "FAILED") {
       setSending(false);
@@ -287,7 +287,7 @@ const Index = () => {
     }
 
     prevPipelineStatusRef.current = pipeline.status;
-  }, [pipeline.status]);
+  }, [pipeline.status, playFailure, playSuccess]);
 
   useEffect(() => {
     if (projects.length > 0 && selectedProjectId === null) {
