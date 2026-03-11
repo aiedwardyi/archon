@@ -1,6 +1,6 @@
 ﻿"use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   Clock,
   RotateCcw,
@@ -23,6 +23,7 @@ const API_BASE = "http://localhost:5000"
 type Version = {
   id: number
   version: number
+  parentVersion?: number
   prompt: string
   timestamp: string
   date: string
@@ -33,6 +34,9 @@ type Version = {
 }
 
 function parseVersions(raw: any[]): Version[] {
+  const parentVersionByExecutionId = new Map(
+    raw.map((e) => [Number(e.id), Number(e.version)])
+  )
   return raw.map((e) => {
     const date = new Date(e.created_at || e.updated_at || Date.now())
     const now = new Date()
@@ -54,7 +58,8 @@ function parseVersions(raw: any[]): Version[] {
       running: "running", in_progress: "running", pending: "pending",
     }
     return {
-      id: e.id, version: e.version, prompt: promptRaw,
+      id: Number(e.id), version: Number(e.version), prompt: promptRaw,
+      parentVersion: e.parent_execution_id != null ? parentVersionByExecutionId.get(Number(e.parent_execution_id)) : undefined,
       timestamp: date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
       date: dateLabel, status: statusMap[e.status] ?? "pending", filesChanged: e.files_generated ?? 0,
       qualityTier: e.quality_tier ?? null,
@@ -79,7 +84,9 @@ export function VersionTimeline() {
   const [projectName, setProjectName] = useState<string>("Project")
   const [loading, setLoading] = useState(true)
   const [restoring, setRestoring] = useState(false)
+  const [restoreConfirmedExecutionId, setRestoreConfirmedExecutionId] = useState<number | null>(null)
   const [isProjectBuilding, setIsProjectBuilding] = useState(false)
+  const restoreConfirmationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const pid = sessionStorage.getItem("archon_current_project_id")
@@ -110,7 +117,7 @@ export function VersionTimeline() {
       const data = await res.json()
       const parsed = parseVersions(data.versions || [])
       setVersions(parsed)
-      if (parsed.length > 0 && selectedVersionId === null) {
+      if (parsed.length > 0 && (selectedVersionId === null || !parsed.find((v) => v.id === selectedVersionId))) {
         setSelectedVersionId(parsed[0].id)
         // Also fire the event for the default selection so navbar + artifacts sync
         sessionStorage.setItem("archon_selected_version", String(parsed[0].version))
@@ -130,10 +137,25 @@ export function VersionTimeline() {
     setRestoring(true)
     try {
       await fetch(`${API_BASE}/api/executions/${executionId}/restore`, { method: "POST" })
+      setRestoreConfirmedExecutionId(executionId)
+      if (restoreConfirmationTimeoutRef.current) {
+        clearTimeout(restoreConfirmationTimeoutRef.current)
+      }
+      restoreConfirmationTimeoutRef.current = setTimeout(() => {
+        setRestoreConfirmedExecutionId(null)
+      }, 2000)
       await fetchVersions()
     } catch (e) { console.error("Restore failed:", e) }
     finally { setRestoring(false) }
   }
+
+  useEffect(() => {
+    return () => {
+      if (restoreConfirmationTimeoutRef.current) {
+        clearTimeout(restoreConfirmationTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const selected = versions.find((v) => v.id === selectedVersionId)
   const headVersion = versions[0]
@@ -203,6 +225,9 @@ export function VersionTimeline() {
                       <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                         <span>{v.filesChanged} {t("filesChanged")}</span>
                       </div>
+                      {typeof v.parentVersion === "number" && v.parentVersion < v.version - 1 && (
+                        <p className="text-xs text-muted-foreground mt-1">↩ branched from v{v.parentVersion}</p>
+                      )}
                       {v.qualityTier === "high" && (
                         <span className="inline-block mt-1.5 bg-blue-500/10 text-blue-500 border border-blue-400/40 shadow-[0_0_6px_rgba(59,130,246,0.4)] text-[10px] px-1.5 py-0.5 rounded">High Quality</span>
                       )}
@@ -250,10 +275,11 @@ export function VersionTimeline() {
                   <button
                     onClick={() => handleRestore(selected.id)}
                     disabled={restoring}
+                    title="Future builds will continue from this version"
                     className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
                   >
                     {restoring ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3" />}
-                    {t("restoreToThisVersion")}
+                    {restoreConfirmedExecutionId === selected.id ? "Set ✓" : "Set as iteration base"}
                   </button>
                 )}
               </div>
