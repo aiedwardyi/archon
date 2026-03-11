@@ -65,3 +65,15 @@ Use one section per experiment. Update this file before moving to the next arche
 - Verdict: committed
 - Notes: Branch eval/loops. Improvement exceeded +1.0.
 - Next hypothesis: Move to the next weakest archetype.
+
+### Cycle 005 - 2026-03-11 15:41
+- Archetype: saas_landing
+- Baseline average across 3 runs: 72.5
+- Weakest dimensions: typography, interactivity_cues
+- Exact change made: Updated saas_landing.txt with one targeted instruction cluster for typography, interactivity_cues.
+- File changed: C:/Users/mredw/Desktop/ai-dev-team/prompts/archetypes/saas_landing.txt
+- Test average across 3 runs: 74.0
+- Delta: +1.50
+- Verdict: committed
+- Notes: Branch eval/loops. Improvement exceeded +1.0.
+- Next hypothesis: Move to the next weakest archetype.
