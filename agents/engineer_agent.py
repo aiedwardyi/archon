@@ -641,7 +641,18 @@ class EngineerAgent:
                         print(f"EngineerAgent: dedup style.css {original_len} -> {new_len} chars (-{original_len - new_len})")
                     break
 
-        if kit_archetype == "saas_landing":
+        reference_kit_archetype = None
+        if reference_code:
+            reference_archetype = reference_code.get("archetype")
+            if isinstance(reference_archetype, str):
+                reference_kit_archetype = DESIGN_KIT_ALIASES.get(reference_archetype, reference_archetype)
+
+        should_strip_saas_images = (
+            kit_archetype == "saas_landing"
+            and (reference_code is None or reference_kit_archetype == "saas_landing")
+        )
+
+        if should_strip_saas_images:
             count = 0
             for f in result.files:
                 if f.path.endswith(".html"):
