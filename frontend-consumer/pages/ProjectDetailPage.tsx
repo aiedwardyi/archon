@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import ArtifactViewer from '../components/ArtifactViewer';
 import SessionMenu from '../components/SessionMenu';
-import { getLang, t } from '../i18n';
+import { t, type Lang } from '../i18n';
 import { AuthUser } from '../services/auth';
 import {
   backend,
@@ -54,6 +54,7 @@ import { Artifact, EngineerTask, Project } from '../types';
 
 interface ProjectDetailPageProps {
   projectId: string;
+  lang: Lang;
   hasSession: boolean;
   authUser: AuthUser | null;
   onAuthError: () => void;
@@ -92,7 +93,7 @@ function formatTimestamp(value?: string | number) {
   return date.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
-function getStatusLabel(project: Project, lang: ReturnType<typeof getLang>) {
+function getStatusLabel(project: Project, lang: Lang) {
   if (project.status === 'COMPLETED') return t(lang, 'statusCompleted');
   if (project.status === 'FAILED') return t(lang, 'statusFailed');
   if (project.status === 'RUNNING') return t(lang, 'statusRunning');
@@ -144,7 +145,7 @@ function resolveInsightCategoryKey(insight: InsightRecord): InsightCategoryKey {
   return 'default';
 }
 
-function getInsightCategoryLabel(lang: ReturnType<typeof getLang>, categoryKey: InsightCategoryKey) {
+function getInsightCategoryLabel(lang: Lang, categoryKey: InsightCategoryKey) {
   if (categoryKey === 'color') return t(lang, 'insightCategoryColor');
   if (categoryKey === 'content') return t(lang, 'insightCategoryContent');
   return t(lang, 'insightCategoryDetail');
@@ -156,7 +157,7 @@ function getPriorityBadge(priority: 'high' | 'medium' | 'low') {
   return 'border-white/10 bg-white/[0.04] text-white/68';
 }
 
-function getPriorityLabel(lang: ReturnType<typeof getLang>, priority: 'high' | 'medium' | 'low') {
+function getPriorityLabel(lang: Lang, priority: 'high' | 'medium' | 'low') {
   if (priority === 'high') return t(lang, 'priorityHigh');
   if (priority === 'medium') return t(lang, 'priorityMedium');
   return t(lang, 'priorityLow');
@@ -272,15 +273,17 @@ const NeuralBuildScreen: React.FC<{ message: string; stage?: string | null }> = 
   </div>
 );
 
-const CodePanel: React.FC<{ lang: ReturnType<typeof getLang>; projectId: string; version: number | null }> = ({
+const CodePanel: React.FC<{ lang: Lang; projectId: string; version: number | null; isBuilding: boolean }> = ({
   lang,
   projectId,
   version,
+  isBuilding,
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [files, setFiles] = useState<CodeFileRecord[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
+  const codePanelRef = useRef<HTMLPreElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -330,10 +333,40 @@ const CodePanel: React.FC<{ lang: ReturnType<typeof getLang>; projectId: string;
 
   const activeFile = files.find((file) => file.filename === selected);
 
-  if (!version) return <EmptyPanel icon={<Code2 size={22} />} title={t(lang, 'noCodeYet')} />;
+  if (!version) {
+    return isBuilding ? (
+      <EmptyPanel
+        icon={<RefreshCw size={22} />}
+        title="Building..."
+        detail="This will be ready when the build completes."
+      />
+    ) : (
+      <EmptyPanel icon={<Code2 size={22} />} title={t(lang, 'noCodeYet')} />
+    );
+  }
   if (loading) return <EmptyPanel icon={<Loader2 size={22} className="animate-spin" />} title={t(lang, 'sending')} />;
-  if (error) return <EmptyPanel icon={<RefreshCw size={22} />} title={t(lang, 'couldNotLoad')} />;
-  if (files.length === 0) return <EmptyPanel icon={<Code2 size={22} />} title={t(lang, 'noCodeYet')} />;
+  if (error) {
+    return isBuilding ? (
+      <EmptyPanel
+        icon={<RefreshCw size={22} />}
+        title="Building..."
+        detail="This will be ready when the build completes."
+      />
+    ) : (
+      <EmptyPanel icon={<RefreshCw size={22} />} title={t(lang, 'couldNotLoad')} />
+    );
+  }
+  if (files.length === 0) {
+    return isBuilding ? (
+      <EmptyPanel
+        icon={<RefreshCw size={22} />}
+        title="Building..."
+        detail="This will be ready when the build completes."
+      />
+    ) : (
+      <EmptyPanel icon={<Code2 size={22} />} title={t(lang, 'noCodeYet')} />
+    );
+  }
 
   return (
     <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#07101f] shadow-[0_24px_80px_rgba(2,6,23,0.34)]">
@@ -348,7 +381,10 @@ const CodePanel: React.FC<{ lang: ReturnType<typeof getLang>; projectId: string;
               <button
                 key={file.filename}
                 type="button"
-                onClick={() => setSelected(file.filename)}
+                onClick={() => {
+                  setSelected(file.filename);
+                  codePanelRef.current?.scrollTo({ top: 0 });
+                }}
                 className={`block w-full rounded-[1.2rem] px-3 py-2 text-left text-sm transition ${
                   selected === file.filename
                     ? 'bg-[linear-gradient(135deg,rgba(79,70,229,0.3),rgba(124,58,237,0.18))] text-white'
@@ -368,7 +404,9 @@ const CodePanel: React.FC<{ lang: ReturnType<typeof getLang>; projectId: string;
                 <div className="text-sm font-semibold text-white">{activeFile.filename}</div>
                 <div className="mt-1 text-xs uppercase tracking-[0.22em] text-white/38">{activeFile.language}</div>
               </div>
-              <pre className="custom-scrollbar max-h-[520px] overflow-auto p-5 text-sm leading-7 text-white/78">{activeFile.content}</pre>
+              <pre ref={codePanelRef} className="custom-scrollbar max-h-[520px] overflow-auto p-5 text-sm leading-7 text-white/78">
+                {activeFile.content}
+              </pre>
             </>
           ) : (
             <EmptyPanel icon={<FileCode2 size={22} />} title={t(lang, 'selectFile')} />
@@ -380,7 +418,7 @@ const CodePanel: React.FC<{ lang: ReturnType<typeof getLang>; projectId: string;
 };
 
 interface BuildInsightsCardProps {
-  lang: ReturnType<typeof getLang>;
+  lang: Lang;
   version: number;
   insights: InsightRecord[];
   promptScore: number | null;
@@ -546,6 +584,7 @@ const BuildInsightsCard: React.FC<BuildInsightsCardProps> = ({
 
 const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   projectId,
+  lang,
   hasSession,
   authUser,
   onAuthError,
@@ -555,7 +594,6 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   onNavigate,
   onSignOut,
 }) => {
-  const lang = getLang();
   const [project, setProject] = useState<Project | undefined>(undefined);
   const [activeTab, setActiveTab] = useState<ActiveTab>('preview');
   const [version, setVersion] = useState<number | null>(null);
@@ -584,6 +622,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   });
   const chatTextareaRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const rightPanelRef = useRef<HTMLElement>(null);
   const previousStatusRef = useRef<Project['status'] | null>(null);
   const previousPreviewVersionRef = useRef<number | null>(null);
 
@@ -860,6 +899,11 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
     { id: 'versions' as const, label: t(lang, 'versions'), icon: Clock3 },
   ];
 
+  const handleTabChange = (tab: ActiveTab) => {
+    setActiveTab(tab);
+    rightPanelRef.current?.scrollTo({ top: 0 });
+  };
+
   const handleSendMessage = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!chatInput.trim() || chatLoading || project?.status === 'RUNNING') return;
@@ -889,7 +933,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
         setMessages(updated);
         await saveChatMessages(projectId, updated);
       } else {
-        setActiveTab('preview');
+        handleTabChange('preview');
         await backend.startIteration(projectId, userMessage.content, promptHistory);
       }
     } catch (error) {
@@ -923,7 +967,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
       const versions = await fetchVersions(projectId);
       setVersion(Number(head.version));
       setVersionsState((current) => ({ ...current, restoringId: null, versions, selectedId: selectedVersion.id }));
-      setActiveTab('preview');
+      handleTabChange('preview');
     } catch (error) {
       console.error('Failed to restore version', error);
       setVersionsState((current) => ({ ...current, restoringId: null }));
@@ -951,6 +995,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
 
   const signInHref = `/login?guest_project_id=${encodeURIComponent(projectId)}`;
   const tone = getStatusTone(project.status);
+  const isBuilding = project.status === 'RUNNING';
 
   let activePanel: React.ReactNode;
 
@@ -1015,7 +1060,11 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
     activePanel = briefState.loading ? (
       <EmptyPanel icon={<Loader2 size={22} className="animate-spin" />} title={t(lang, 'sending')} />
     ) : briefState.error ? (
-      <EmptyPanel icon={<RefreshCw size={22} />} title={t(lang, 'couldNotLoad')} />
+      <EmptyPanel
+        icon={<RefreshCw size={22} />}
+        title={isBuilding ? 'Building...' : t(lang, 'couldNotLoad')}
+        detail={isBuilding ? 'This will be ready when the build completes.' : undefined}
+      />
     ) : briefState.data ? (
       <div className="rounded-[2rem] border border-white/10 bg-[#07101f] p-6 shadow-[0_24px_80px_rgba(2,6,23,0.34)] sm:p-8">
         <div className="inline-flex rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-white/40">
@@ -1059,25 +1108,41 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
         )}
       </div>
     ) : (
-      <EmptyPanel icon={<FileText size={22} />} title={t(lang, 'noBriefYet')} />
+      <EmptyPanel
+        icon={isBuilding ? <RefreshCw size={22} /> : <FileText size={22} />}
+        title={isBuilding ? 'Building...' : t(lang, 'noBriefYet')}
+        detail={isBuilding ? 'This will be ready when the build completes.' : undefined}
+      />
     );
   } else if (activeTab === 'buildPlan') {
     activePanel = planState.loading ? (
       <EmptyPanel icon={<Loader2 size={22} className="animate-spin" />} title={t(lang, 'sending')} />
     ) : planState.error ? (
-      <EmptyPanel icon={<RefreshCw size={22} />} title={t(lang, 'couldNotLoad')} />
+      <EmptyPanel
+        icon={<RefreshCw size={22} />}
+        title={isBuilding ? 'Building...' : t(lang, 'couldNotLoad')}
+        detail={isBuilding ? 'This will be ready when the build completes.' : undefined}
+      />
     ) : planState.data ? (
       <ArtifactViewer artifact={planState.data} />
     ) : (
-      <EmptyPanel icon={<Layers3 size={22} />} title={t(lang, 'noPlanYet')} />
+      <EmptyPanel
+        icon={isBuilding ? <RefreshCw size={22} /> : <Layers3 size={22} />}
+        title={isBuilding ? 'Building...' : t(lang, 'noPlanYet')}
+        detail={isBuilding ? 'This will be ready when the build completes.' : undefined}
+      />
     );
   } else if (activeTab === 'code') {
-    activePanel = <CodePanel lang={lang} projectId={projectId} version={resolvedVersion} />;
+    activePanel = <CodePanel lang={lang} projectId={projectId} version={resolvedVersion} isBuilding={isBuilding} />;
   } else if (activeTab === 'changes') {
     activePanel = changesState.loading ? (
       <EmptyPanel icon={<Loader2 size={22} className="animate-spin" />} title={t(lang, 'sending')} />
     ) : changesState.error ? (
-      <EmptyPanel icon={<RefreshCw size={22} />} title={t(lang, 'couldNotLoad')} />
+      <EmptyPanel
+        icon={<RefreshCw size={22} />}
+        title={isBuilding ? 'Building...' : t(lang, 'couldNotLoad')}
+        detail={isBuilding ? 'This will be ready when the build completes.' : undefined}
+      />
     ) : changesState.data && changesState.data.length > 0 ? (
       <div className="rounded-[2rem] border border-white/10 bg-[#07101f] p-6 shadow-[0_24px_80px_rgba(2,6,23,0.34)] sm:p-8">
         <h2 className="text-2xl font-semibold tracking-tight text-white">{t(lang, 'whatChangedTitle')}</h2>
@@ -1095,15 +1160,27 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
         </div>
       </div>
     ) : (
-      <EmptyPanel icon={<History size={22} />} title={t(lang, 'noChangesYet')} />
+      <EmptyPanel
+        icon={isBuilding ? <RefreshCw size={22} /> : <History size={22} />}
+        title={isBuilding ? 'Building...' : t(lang, 'noChangesYet')}
+        detail={isBuilding ? 'This will be ready when the build completes.' : undefined}
+      />
     );
   } else {
     activePanel = versionsState.loading ? (
       <EmptyPanel icon={<Loader2 size={22} className="animate-spin" />} title={t(lang, 'loadingVersions')} />
     ) : versionsState.error ? (
-      <EmptyPanel icon={<RefreshCw size={22} />} title={t(lang, 'couldNotLoad')} />
+      <EmptyPanel
+        icon={<RefreshCw size={22} />}
+        title={isBuilding ? 'Building...' : t(lang, 'couldNotLoad')}
+        detail={isBuilding ? 'This will be ready when the build completes.' : undefined}
+      />
     ) : versionsState.versions.length === 0 ? (
-      <EmptyPanel icon={<Clock3 size={22} />} title={t(lang, 'noVersionsYet')} />
+      <EmptyPanel
+        icon={isBuilding ? <RefreshCw size={22} /> : <Clock3 size={22} />}
+        title={isBuilding ? 'Building...' : t(lang, 'noVersionsYet')}
+        detail={isBuilding ? 'This will be ready when the build completes.' : undefined}
+      />
     ) : (
       <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#07101f] shadow-[0_24px_80px_rgba(2,6,23,0.34)]">
         <div className="grid min-h-[620px] lg:grid-cols-[330px_minmax(0,1fr)]">
@@ -1159,19 +1236,21 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                     <div className="text-lg font-semibold text-white">v{selectedVersion.version}</div>
                     <div className="mt-1 text-sm text-white/46">{formatTimestamp(selectedVersion.created_at)}</div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleRestore}
-                    disabled={versionsState.restoringId === selectedVersion.id}
-                    className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#4f46e5,#7c3aed,#0891b2)] px-5 py-3 text-sm font-semibold text-white transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {versionsState.restoringId === selectedVersion.id ? (
-                      <Loader2 size={16} className="animate-spin" />
-                    ) : (
-                      <RotateCcw size={16} />
-                    )}
-                    {versionsState.restoringId === selectedVersion.id ? t(lang, 'restoring') : t(lang, 'restoreVersion')}
-                  </button>
+                  {versionsState.versions.length > 1 && selectedVersion.version !== latestVersion && (
+                    <button
+                      type="button"
+                      onClick={handleRestore}
+                      disabled={versionsState.restoringId === selectedVersion.id}
+                      className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#4f46e5,#7c3aed,#0891b2)] px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {versionsState.restoringId === selectedVersion.id ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <RotateCcw size={16} />
+                      )}
+                      {versionsState.restoringId === selectedVersion.id ? t(lang, 'restoring') : t(lang, 'restoreVersion')}
+                    </button>
+                  )}
                 </div>
 
                 <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4">
@@ -1254,6 +1333,11 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
         .content-panel-enter {
           animation: panelIn 220ms ease-out;
         }
+        button, a {
+          -webkit-font-smoothing: antialiased;
+          backface-visibility: hidden;
+          transform: translateZ(0);
+        }
       `}</style>
       <div className="pointer-events-none absolute inset-0 detail-grid" />
 
@@ -1316,9 +1400,9 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
 
       <div className="relative z-10 min-h-0 flex-1 overflow-hidden p-4 sm:p-6">
         <div className="grid h-full min-h-0 gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
-          <aside className="relative min-h-0 overflow-hidden rounded-[2rem] border border-white/10 bg-[#07101f] shadow-[0_24px_80px_rgba(2,6,23,0.34)]">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.18),transparent_42%),radial-gradient(circle_at_bottom,rgba(8,145,178,0.12),transparent_36%)]" />
-            <div className="relative flex h-full min-h-0 flex-col">
+          <aside className="relative min-h-0 rounded-[2rem] border border-white/10 bg-[#07101f] shadow-[0_24px_80px_rgba(2,6,23,0.34)]">
+            <div className="absolute inset-0 rounded-[2rem] bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.18),transparent_42%),radial-gradient(circle_at_bottom,rgba(8,145,178,0.12),transparent_36%)]" />
+            <div className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-[2rem]">
               <div className="border-b border-white/10 px-5 py-5">
                 <div className="flex items-start gap-3">
                   <div className="min-w-0 flex-1">
@@ -1408,7 +1492,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                     <button
                       type="submit"
                       disabled={!chatInput.trim() || chatLoading || project.status === 'RUNNING'}
-                      className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#4f46e5,#7c3aed,#0891b2)] px-4 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(79,70,229,0.28)] transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+                      className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#4f46e5,#7c3aed,#0891b2)] px-4 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(79,70,229,0.28)] transition hover:scale-[1.005] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {chatLoading ? <Loader2 size={16} className="animate-spin" /> : <SendHorizontal size={16} />}
                       {chatLoading ? t(lang, 'thinking') : t(lang, 'askForChanges')}
@@ -1416,33 +1500,32 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                   </div>
                 </form>
               </div>
-
-              <div className="absolute right-0 top-[84px] hidden -translate-x-3 lg:block">
-                <div className="flex flex-col gap-2 rounded-full border border-white/10 bg-[#060b19]/92 p-2 backdrop-blur-xl">
-                  {tabs.map((tab) => (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      title={tab.label}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`group relative flex h-10 w-10 items-center justify-center rounded-full transition ${
-                        activeTab === tab.id
-                          ? 'bg-[linear-gradient(135deg,#4f46e5,#7c3aed)] text-white shadow-[0_12px_30px_rgba(79,70,229,0.35)]'
-                          : 'bg-white/[0.04] text-white/56 hover:bg-white/[0.08] hover:text-white'
-                      }`}
-                    >
-                      <tab.icon size={16} />
-                      <span className="pointer-events-none absolute right-[calc(100%+10px)] whitespace-nowrap rounded-full border border-white/10 bg-[#09101f] px-3 py-1.5 text-xs font-medium text-white/80 opacity-0 transition group-hover:opacity-100">
-                        {tab.label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+            </div>
+            <div className="absolute right-[-52px] top-[84px] hidden lg:block">
+              <div className="flex flex-col gap-2 rounded-full border border-white/10 bg-[#060b19]/92 p-2 backdrop-blur-xl">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    title={tab.label}
+                    onClick={() => handleTabChange(tab.id)}
+                    className={`group relative flex h-10 w-10 items-center justify-center rounded-full transition ${
+                      activeTab === tab.id
+                        ? 'bg-[linear-gradient(135deg,#4f46e5,#7c3aed)] text-white shadow-[0_12px_30px_rgba(79,70,229,0.35)]'
+                        : 'bg-white/[0.04] text-white/56 hover:bg-white/[0.08] hover:text-white'
+                    }`}
+                  >
+                    <tab.icon size={16} />
+                    <span className="pointer-events-none absolute right-[calc(100%+10px)] whitespace-nowrap rounded-full border border-white/10 bg-[#09101f] px-3 py-1.5 text-xs font-medium text-white/80 opacity-0 transition group-hover:opacity-100">
+                      {tab.label}
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
           </aside>
 
-          <section className="custom-scrollbar min-h-0 overflow-y-auto pr-1">
+          <section ref={rightPanelRef} className="custom-scrollbar min-h-0 overflow-y-auto pr-1">
             <div key={`${activeTab}-${resolvedVersion ?? 'none'}-${project.status}`} className="content-panel-enter space-y-4">
               {activePanel}
               {insightsState.version != null && insightsState.insights.length > 0 && (
@@ -1479,7 +1562,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               <button
                 type="button"
                 onClick={() => onNavigate(`/register?guest_project_id=${encodeURIComponent(projectId)}`)}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-[1.25rem] bg-[linear-gradient(135deg,#4f46e5,#7c3aed,#0891b2)] px-4 py-3 text-sm font-semibold text-white transition hover:scale-[1.01]"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-[1.25rem] bg-[linear-gradient(135deg,#4f46e5,#7c3aed,#0891b2)] px-4 py-3 text-sm font-semibold text-white transition hover:brightness-110"
               >
                 Create Account
                 <ExternalLink size={16} />

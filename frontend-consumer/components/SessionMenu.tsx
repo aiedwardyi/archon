@@ -51,7 +51,7 @@ const SessionMenu: React.FC<SessionMenuProps> = ({ hasSession, user, signInHref,
       <button
         type="button"
         onClick={() => onNavigate(signInHref)}
-        className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white/90 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-white"
+        className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-white/80 backdrop-blur-xl transition hover:bg-white/[0.08] hover:text-white"
       >
         Sign In
       </button>

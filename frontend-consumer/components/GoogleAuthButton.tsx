@@ -109,7 +109,7 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({ text = 'continue_wi
           },
         });
         window.google.accounts.id.renderButton(containerRef.current, {
-          theme: 'outline',
+          theme: 'filled_black',
           size: 'large',
           shape: 'pill',
           text,
@@ -136,7 +136,7 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({ text = 'continue_wi
   return (
     <div className="w-full">
       {!ready && (
-        <div className="mb-3 flex min-h-[44px] items-center justify-center rounded-full border border-slate-200 bg-white/80 text-sm text-slate-500 shadow-sm">
+        <div className="mb-3 flex min-h-[44px] items-center justify-center rounded-[1.2rem] border border-white/10 bg-white/[0.05] text-sm text-white/60">
           Loading Google...
         </div>
       )}

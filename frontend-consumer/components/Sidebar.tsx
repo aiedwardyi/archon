@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { MenuSquare, Plus, Settings, Trash2, X } from 'lucide-react';
 import { backend } from '../services/orchestrator';
-import { getLang, t } from '../i18n';
+import { getPreviewUrl } from '../services/orchestrator';
+import { t, type Lang } from '../i18n';
 import { Project } from '../types';
 
 interface SidebarProps {
+  lang: Lang;
   projects: Project[];
   currentId: string | null;
   onSelect: (id: string) => void;
@@ -24,6 +26,7 @@ function getStatusColor(status: Project['status']) {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
+  lang,
   projects,
   currentId,
   onSelect,
@@ -35,7 +38,6 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(backend.getIsConnected());
-  const lang = getLang();
 
   useEffect(() => {
     const update = () => setIsConnected(backend.getIsConnected());
@@ -76,6 +78,11 @@ const Sidebar: React.FC<SidebarProps> = ({
         .sidebar-accent {
           animation: accentSlide 220ms ease-out;
           transform-origin: center;
+        }
+        button, a {
+          -webkit-font-smoothing: antialiased;
+          backface-visibility: hidden;
+          transform: translateZ(0);
         }
       `}</style>
 
@@ -126,7 +133,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       <button
         type="button"
         onClick={onNewProject}
-        className="relative mb-6 inline-flex items-center justify-center gap-2 overflow-hidden rounded-[1.3rem] bg-[linear-gradient(135deg,#4f46e5,#7c3aed,#0891b2)] px-4 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(79,70,229,0.3)] transition hover:scale-[1.01]"
+        className="relative mb-6 inline-flex items-center justify-center gap-2 overflow-hidden rounded-[1.3rem] bg-[linear-gradient(135deg,#4f46e5,#7c3aed,#0891b2)] px-4 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(79,70,229,0.3)] transition hover:brightness-110"
       >
         <Plus size={16} />
         <span className="sidebar-start-text">{t(lang, 'startBuilding')}</span>
@@ -144,7 +151,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 key={project.id}
                 type="button"
                 onClick={() => onSelect(project.id)}
-                className={`group relative flex w-full items-start gap-3 overflow-hidden rounded-[1.35rem] px-4 py-3 text-left transition ${
+                className={`group relative flex w-full flex-col overflow-hidden rounded-[1.35rem] px-4 py-3 text-left transition ${
                   isActive
                     ? 'bg-white/[0.09] shadow-[0_14px_40px_rgba(79,70,229,0.2)]'
                     : 'bg-white/[0.03] hover:bg-white/[0.06]'
@@ -153,33 +160,43 @@ const Sidebar: React.FC<SidebarProps> = ({
                 {isActive && (
                   <span className="sidebar-accent absolute inset-y-3 left-0 w-1 rounded-r-full bg-indigo-500 shadow-[0_0_24px_rgba(99,102,241,0.8)]" />
                 )}
-                <span
-                  className="mt-1 h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: getStatusColor(project.status) }}
-                />
-                <span className="min-w-0 flex-1 pl-1">
-                  <span className="block truncate text-sm font-medium text-white">{project.name}</span>
-                  <span className="mt-1 block line-clamp-2 text-xs leading-5 text-white/42">{project.description}</span>
-                </span>
-                <span
-                  role="button"
-                  tabIndex={0}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setDeletingProjectId(project.id);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
+                <div className="mb-3 h-[72px] w-full overflow-hidden rounded-[1rem] border border-white/10 bg-[#03050f]">
+                  <iframe
+                    title={`${project.name} thumbnail`}
+                    src={getPreviewUrl(project.id, 1)}
+                    className="pointer-events-none h-[288px] w-[400%] origin-top-left border-0 bg-white"
+                    style={{ transform: 'scale(0.25)', display: 'block' }}
+                  />
+                </div>
+                <div className="flex w-full items-start gap-3">
+                  <span
+                    className="mt-1 h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: getStatusColor(project.status) }}
+                  />
+                  <span className="min-w-0 flex-1 pl-1">
+                    <span className="block truncate text-sm font-medium text-white">{project.name}</span>
+                    <span className="mt-1 block line-clamp-2 text-xs leading-5 text-white/42">{project.description}</span>
+                  </span>
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(event) => {
                       event.stopPropagation();
                       setDeletingProjectId(project.id);
-                    }
-                  }}
-                  className="rounded-full p-2 text-white/26 opacity-0 transition group-hover:opacity-100 hover:bg-white/10 hover:text-rose-300"
-                  aria-label={t(lang, 'deleteProject')}
-                >
-                  <Trash2 size={14} />
-                </span>
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setDeletingProjectId(project.id);
+                      }
+                    }}
+                    className="rounded-full p-2 text-white/26 opacity-0 transition group-hover:opacity-100 hover:bg-white/10 hover:text-rose-300"
+                    aria-label={t(lang, 'deleteProject')}
+                  >
+                    <Trash2 size={14} />
+                  </span>
+                </div>
               </button>
             );
           })}
