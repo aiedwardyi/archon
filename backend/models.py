@@ -65,6 +65,7 @@ class Project(Base):
             "name": self.name,
             "description": self.description,
             "status": self.status,
+            "locked_ui_archetype": self.locked_ui_archetype,
             "owner_id": self.owner_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,

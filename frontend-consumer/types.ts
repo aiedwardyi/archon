@@ -6,6 +6,7 @@ export interface Project {
   createdAt: number;
   status: 'IDLE' | 'RUNNING' | 'COMPLETED' | 'FAILED';
   currentStage: AgentStage;
+  uiArchetype?: string | null;
   engineerTasks?: EngineerTask[];
 }
 

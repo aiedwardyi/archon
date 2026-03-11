@@ -1670,6 +1670,7 @@ def execution_status():
     state = get_project_state(project_id)
     version = None
     execution_id = state.get("current_execution_id")
+    project = None
 
     if execution_id:
         session = get_session()
@@ -1677,6 +1678,7 @@ def execution_status():
             execution = session.get(Execution, execution_id)
             if execution:
                 version = execution.version
+                project = session.get(Project, execution.project_id)
                 # 7C.2: DB is ground truth when pipeline not actively running
                 if not state["running"] and execution.status in ("success", "error"):
                     db_status = "COMPLETED" if execution.status == "success" else "FAILED"
@@ -1685,6 +1687,7 @@ def execution_status():
                         "currentStage": "engineer",
                         "logs": state.get("logs", []),
                         "engineerTasks": [],
+                        "locked_ui_archetype": project.locked_ui_archetype if project else None,
                         "project_id": project_id,
                         "execution_id": execution_id,
                     }), 200
@@ -1695,6 +1698,7 @@ def execution_status():
                         "currentStage": "engineer",
                         "logs": state.get("logs", []),
                         "engineerTasks": [],
+                        "locked_ui_archetype": project.locked_ui_archetype if project else None,
                         "project_id": project_id,
                         "execution_id": execution_id,
                     }), 200
@@ -1734,6 +1738,7 @@ def execution_status():
             "currentStage": "engineer",
             "logs": logs,
             "engineerTasks": [],
+            "locked_ui_archetype": project.locked_ui_archetype if project else None,
             "project_id": project_id,
             "execution_id": execution_id,
         }), 200
@@ -1744,6 +1749,7 @@ def execution_status():
             "currentStage": current_stage,
             "logs": logs,
             "engineerTasks": [],
+            "locked_ui_archetype": project.locked_ui_archetype if project else None,
             "project_id": project_id,
             "execution_id": execution_id,
         }), 200
@@ -1753,6 +1759,7 @@ def execution_status():
         "currentStage": "complete",
         "logs": logs,
         "engineerTasks": [],
+        "locked_ui_archetype": project.locked_ui_archetype if project else None,
         "project_id": project_id,
         "execution_id": execution_id,
     }), 200
