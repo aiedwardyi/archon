@@ -249,7 +249,7 @@ async def run_sample_builds(
     return SampleSet(archetype=archetype, phase=phase, runs=sample_runs)
 
 
-def choose_weakest_archetype(
+async def choose_weakest_archetype(
     *,
     refresh_if_missing: bool,
     config: dict[str, Any],
@@ -264,18 +264,16 @@ def choose_weakest_archetype(
         log.info("Missing comparable scores, running one score-only sample for tracked archetypes")
         refreshed: dict[str, float] = {}
         for archetype in TRACKED_ARCHETYPES:
-            sample = asyncio.run(
-                run_sample_builds(
-                    config=config,
-                    api=api,
-                    screenshotter=screenshotter,
-                    scorer=scorer,
-                    refs=refs,
-                    archetype=archetype,
-                    runs=1,
-                    phase="refresh",
-                    stamp=stamp,
-                )
+            sample = await run_sample_builds(
+                config=config,
+                api=api,
+                screenshotter=screenshotter,
+                scorer=scorer,
+                refs=refs,
+                archetype=archetype,
+                runs=1,
+                phase="refresh",
+                stamp=stamp,
             )
             refreshed[archetype] = sample.average_total
         current_scores = refreshed
@@ -463,7 +461,7 @@ def commit_win(paths: list[Path], archetype: str, baseline_avg: float, test_avg:
     subprocess.run(["git", "commit", "-m", msg], cwd=REPO_ROOT, check=True)
 
 
-async def run_cycle(args: argparse.Namespace) -> None:
+async def run_cycle(args: argparse.Namespace) -> dict[str, Any]:
     branch = verify_branch(args.expected_branch)
     load_env_from_backend()
     config = load_config(args.config)
@@ -481,15 +479,17 @@ async def run_cycle(args: argparse.Namespace) -> None:
     refs = ReferenceLoader()
     stamp = cycle_timestamp()
 
-    weakest = args.archetype or choose_weakest_archetype(
-        refresh_if_missing=True,
-        config=config,
-        api=api,
-        screenshotter=screenshotter,
-        scorer=scorer,
-        refs=refs,
-        stamp=stamp,
-    )
+    weakest = args.archetype
+    if not weakest:
+        weakest = await choose_weakest_archetype(
+            refresh_if_missing=True,
+            config=config,
+            api=api,
+            screenshotter=screenshotter,
+            scorer=scorer,
+            refs=refs,
+            stamp=stamp,
+        )
 
     baseline = await run_sample_builds(
         config=config,
@@ -574,21 +574,34 @@ async def run_cycle(args: argparse.Namespace) -> None:
     if accepted and args.commit_wins:
         commit_win([changed_path, LOG_PATH], weakest, baseline.average_total, b_test.average_total)
 
-    print(
-        json.dumps(
-            {
-                "branch": branch,
-                "archetype": weakest,
-                "baseline_average": baseline.average_total,
-                "b_test_average": b_test.average_total,
-                "delta": delta,
-                "accepted": accepted,
-                "changed_file": str(changed_path.relative_to(REPO_ROOT)),
-                "operator_results": str((OPERATOR_RESULTS_DIR / stamp).relative_to(REPO_ROOT)),
-            },
-            indent=2,
-        )
-    )
+    result = {
+        "branch": branch,
+        "archetype": weakest,
+        "baseline_average": baseline.average_total,
+        "b_test_average": b_test.average_total,
+        "delta": delta,
+        "accepted": accepted,
+        "changed_file": str(changed_path.relative_to(REPO_ROOT)),
+        "operator_results": str((OPERATOR_RESULTS_DIR / stamp).relative_to(REPO_ROOT)),
+    }
+    print(json.dumps(result, indent=2))
+    return result
+
+
+async def run_forever(args: argparse.Namespace) -> None:
+    cycle_count = 0
+    while args.max_cycles == 0 or cycle_count < args.max_cycles:
+        cycle_count += 1
+        log.info("Starting operator cycle %s", cycle_count)
+        try:
+            await run_cycle(args)
+        except Exception:
+            log.exception("Operator cycle %s failed", cycle_count)
+            if args.stop_on_error:
+                raise
+        if args.max_cycles != 0 and cycle_count >= args.max_cycles:
+            break
+        await asyncio.sleep(args.sleep_seconds)
 
 
 def main() -> None:
@@ -599,9 +612,12 @@ def main() -> None:
     parser.add_argument("--baseline-runs", type=int, default=3)
     parser.add_argument("--expected-branch", help="Fail if current branch does not match")
     parser.add_argument("--commit-wins", action="store_true", help="Commit accepted prompt/kit change plus log")
+    parser.add_argument("--max-cycles", type=int, default=1, help="0 means run indefinitely")
+    parser.add_argument("--sleep-seconds", type=int, default=30)
+    parser.add_argument("--stop-on-error", action="store_true")
     args = parser.parse_args()
 
-    asyncio.run(run_cycle(args))
+    asyncio.run(run_forever(args))
 
 
 if __name__ == "__main__":
