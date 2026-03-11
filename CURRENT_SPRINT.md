@@ -340,9 +340,23 @@ Branch: `feat/asset-reuse-library`
 
 | Feature | Branch | What to test |
 |---------|--------|--------------|
-| Smart image count from seed_rows | feat/smart-image-count (merged) | Run pet adoption prompt. Check Flask log for "Design Agent: targeting N images (seed_rows=X, image_items=Y)". Verify N > 5 and all pet cards have real images (no light blue placeholder boxes). If placeholders still appear, quality_target.must_have_content heuristic may need keyword tuning. |
-| Hide Asset Filler from Live Output | fix/hide-asset-filler-log (merged) | Run any build. Check Live Output panel — "Asset Filler: Filled X missing images" should NOT appear. Check Flask terminal — "Asset filler: filled X missing images" should still print there. Commit 9edc351. |
-| Testimonial overlap prompt fix | fix/testimonial-overlap-prompt (merged) | Run pet adoption prompt. Check testimonials section — quote cards should have solid dark backgrounds (rgba(0,0,0,0.85)), NOT bare text floating over a photo. |
+| Smart image count from seed_rows | feat/smart-image-count (merged) | ✅ Verified Mar 11 — Flask log confirmed "targeting 7 images (seed_rows=6, image_item_count=5)". |
+| Hide Asset Filler from Live Output | fix/hide-asset-filler-log (merged) | ✅ Verified Mar 11 — only in Flask terminal, not in Live Output panel. |
+| Testimonial overlap prompt fix | fix/testimonial-overlap-prompt (merged) | ✅ Verified Mar 11 — semi-transparent cards over background photo, text readable. |
+
+## fix/multi-bug-sprint (✅ Merged Mar 11, 2026)
+
+5 fixes across backend + Enterprise + Studio frontends.
+
+| Commit | Fix | Status |
+|--------|-----|--------|
+| bfd6910 | Discovery archetype mismatch — only inject reference if archetype matches engineer kit | ✅ Committed |
+| 5ac7d09 | "Set as iteration base" UX — renamed Restore button, tooltip, Set ✓ confirmation flash, ↩ branched from vN label | ✅ Verified |
+| 657d6c0 | Versions page auto-selects latest version when new build completes | ✅ Verified |
+| 97fb517 | Notification sound regression — AudioContext pre-unlock, transition-based RUNNING→COMPLETED/FAILED trigger | ✅ Verified |
+| 0b27cc2 | base.css copied forward on iteration builds — fixes CSS loss on v2+ previews | ✅ Verified (v3 fully styled) |
+
+**Versioning strategy confirmed:** Restore to previous version + iterate = next sequential version number (v11, not v2a). Parent chain tracked via `parent_execution_id` in DB. Sidebar shows "↩ branched from vN" for non-sequential parents.
 
 ## Up Next
 
