@@ -50,6 +50,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
 OPERATOR_RESULTS_DIR = RESULTS_DIR / "operator_loop"
 LOG_PATH = RESULTS_DIR / "codex_improvements.md"
+OVERNIGHT_SUMMARY_PATH = RESULTS_DIR / "overnight_summary.md"
+CHECKPOINT_PATH = RESULTS_DIR / "checkpoint.md"
 
 TRACKED_ARCHETYPES = ["dashboard", "game", "saas_landing", "ecommerce", "portfolio"]
 DIMENSION_PRIORITY = [
@@ -171,7 +173,162 @@ def phase_dir(archetype: str, phase: str, stamp: str) -> Path:
     return OPERATOR_RESULTS_DIR / stamp / archetype / phase
 
 
+def parse_operator_log_entries() -> list[dict[str, Any]]:
+    if not LOG_PATH.exists():
+        return []
+
+    entries: list[dict[str, Any]] = []
+    current: dict[str, Any] | None = None
+
+    for raw_line in LOG_PATH.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if line.startswith("### Cycle "):
+            if current:
+                entries.append(current)
+            current = {"header": line}
+            continue
+        if current is None or not line.startswith("- "):
+            continue
+        if ":" not in line:
+            continue
+        key, value = line[2:].split(":", 1)
+        current[key.strip().lower().replace(" ", "_")] = value.strip()
+
+    if current:
+        entries.append(current)
+    return entries
+
+
+def parse_float(value: str | None) -> float | None:
+    if not value:
+        return None
+    cleaned = value.strip()
+    if cleaned.lower() == "pending":
+        return None
+    if cleaned.startswith("+"):
+        cleaned = cleaned[1:]
+    try:
+        return float(cleaned)
+    except ValueError:
+        return None
+
+
+def read_latest_operator_log_score(archetype: str) -> float | None:
+    entries = parse_operator_log_entries()
+    for entry in reversed(entries):
+        if entry.get("archetype") != archetype:
+            continue
+
+        verdict = (entry.get("verdict") or "").lower()
+        test_avg = parse_float(entry.get("test_average_across_3_runs"))
+        baseline_avg = parse_float(entry.get("baseline_average_across_3_runs"))
+
+        if verdict in {"committed", "kept"} and test_avg is not None:
+            return test_avg
+        if baseline_avg is not None:
+            return baseline_avg
+    return None
+
+
+def compute_average_from_score_paths(score_paths: list[Path]) -> float | None:
+    totals: list[float] = []
+    for score_path in score_paths:
+        try:
+            data = json.loads(score_path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        weighted = data.get("weighted_total")
+        if weighted is None:
+            continue
+        totals.append(float(weighted))
+    if not totals:
+        return None
+    return round(sum(totals) / len(totals), 2)
+
+
+def _normalize_archetype_label(label: str) -> str:
+    raw = label.strip().lower()
+    mapping = {
+        "game (ff8)": "game",
+        "saas landing": "saas_landing",
+    }
+    return mapping.get(raw, raw.replace(" ", "_").replace("-", "_"))
+
+
+def parse_best_scores_from_markdown(path: Path) -> dict[str, float]:
+    if not path.exists():
+        return {}
+
+    scores: dict[str, float] = {}
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line.startswith("|"):
+            continue
+        parts = [part.strip() for part in line.strip("|").split("|")]
+        if len(parts) < 2:
+            continue
+        archetype = _normalize_archetype_label(parts[0])
+        if archetype not in TRACKED_ARCHETYPES:
+            continue
+
+        numeric_values: list[float] = []
+        for part in parts[1:]:
+            cleaned = part.replace("**", "").replace("+", "").strip()
+            try:
+                numeric_values.append(float(cleaned))
+            except ValueError:
+                continue
+        if numeric_values:
+            scores[archetype] = max(numeric_values)
+    return scores
+
+
+def read_summary_score(archetype: str) -> float | None:
+    for path in [OVERNIGHT_SUMMARY_PATH, CHECKPOINT_PATH]:
+        scores = parse_best_scores_from_markdown(path)
+        if archetype in scores:
+            return scores[archetype]
+    return None
+
+
+def read_latest_operator_results_score(archetype: str) -> float | None:
+    if not OPERATOR_RESULTS_DIR.exists():
+        return None
+
+    latest: tuple[str, float] | None = None
+    for cycle_dir in sorted([p for p in OPERATOR_RESULTS_DIR.iterdir() if p.is_dir()]):
+        archetype_dir = cycle_dir / archetype
+        if not archetype_dir.exists():
+            continue
+
+        baseline_paths = sorted((archetype_dir / "baseline").glob("run_*/scores.json"))
+        b_test_paths = sorted((archetype_dir / "b_test").glob("run_*/scores.json"))
+        baseline_avg = compute_average_from_score_paths(baseline_paths)
+        b_test_avg = compute_average_from_score_paths(b_test_paths)
+
+        score = b_test_avg if b_test_avg is not None else baseline_avg
+        if score is None:
+            continue
+        latest = (cycle_dir.name, score)
+
+    if latest is None:
+        return None
+    return latest[1]
+
+
 def read_latest_weighted_total(archetype: str) -> float | None:
+    operator_log_score = read_latest_operator_log_score(archetype)
+    if operator_log_score is not None:
+        return operator_log_score
+
+    summary_score = read_summary_score(archetype)
+    if summary_score is not None:
+        return summary_score
+
+    operator_results_score = read_latest_operator_results_score(archetype)
+    if operator_results_score is not None:
+        return operator_results_score
+
     archetype_dir = RESULTS_DIR / archetype
     if not archetype_dir.exists():
         return None
