@@ -356,5 +356,9 @@ Branch: `feat/asset-reuse-library`
 | 8.3 | Client shareable read-only links (primary moat feature) |
 | 18 | Unified Auth + Plan-Based UI Routing |
 
+## Eval Loop Dual-PC Workflow
+
+See `docs/EVAL_WORKFLOW.md` for the full parallel eval loop process.
+
 
 
