@@ -358,15 +358,34 @@ Branch: `feat/asset-reuse-library`
 
 **Versioning strategy confirmed:** Restore to previous version + iterate = next sequential version number (v11, not v2a). Parent chain tracked via `parent_execution_id` in DB. Sidebar shows "↩ branched from vN" for non-sequential parents.
 
+## Phase 22.G — Archetype Shimmer Skeleton (✅ Complete Mar 11, 2026)
+
+During initial builds (no preview yet), the consumer preview panel now shows a fake browser window with shimmer skeleton blocks instead of an empty panel. The skeleton layout matches the detected archetype and updates live as the planner stage resolves `locked_ui_archetype`.
+
+- ✅ `BuildSkeletonScreen` component in `ProjectDetailPage.tsx` — fake browser chrome (traffic-light dots, shimmer URL pill, stage status text) + archetype layout
+- ✅ 5 archetype layouts: landing/saas_landing, dashboard, ecommerce, portfolio, game/default
+- ✅ CSS shimmer keyframes injected via inline `<style>` — light + dark mode variants
+- ✅ Stage text updates: pm → "Understanding your idea..." / planner → "Planning your layout..." / engineer → "Writing your code..."
+- ✅ Skeleton disappears and iframe renders on build completion
+- ✅ Iteration builds (v2+) never show skeleton — existing iframe continues
+- ✅ Backend: `locked_ui_archetype` added to `/api/execution-status` response + `Project.to_dict()`
+- ✅ Frontend: `uiArchetype` added to `Project` type, normalized in `orchestrator.ts`, updated live during polling
+- ✅ Verified: dashboard build showed skeleton immediately, archetype layout matched, preview replaced skeleton on completion
+- Branch: `feat/build-loading-cards`
+
+**Known issues found during testing:**
+- 🔴 Generated dashboard CSS has overlapping/broken text on bottom of page (pre-existing quality issue, unrelated to skeleton)
+- 🔴 Build Insights returns 401 for guest users — insights endpoint needs optional-auth like preview endpoint
+
 ## Up Next
 
 | Phase | Description |
 |-------|-------------|
 | 22.D | Consumer Versions page (THE MOAT — timeline + preview + narrative) |
 | 22.F | Consumer mobile polish pass |
+| — | Fix Build Insights for guest users (insights endpoint → optional-auth) |
 | — | Consumer UX Declutter Pass (high priority — too dense for new users) |
 | — | Quality Regression Investigation (compare Feb 19-27 peak vs current) |
-| 24 | Asset Reuse Library — fill broken images from past builds, reduce Imagen costs (✅ Complete) |
 | 8.3 | Client shareable read-only links (primary moat feature) |
 | 18 | Unified Auth + Plan-Based UI Routing |
 

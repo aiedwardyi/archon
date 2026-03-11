@@ -216,6 +216,7 @@ function normalizeProject(raw: any): Project {
     createdAt: raw.createdAt ?? (raw.created_at ? new Date(raw.created_at).getTime() : Date.now()),
     status: normalizeStatus(raw.status),
     currentStage: normalizeStage(raw.currentStage),
+    uiArchetype: raw.uiArchetype ?? raw.ui_archetype ?? raw.locked_ui_archetype ?? null,
     engineerTasks: raw.engineerTasks || [],
   };
 }
@@ -589,6 +590,7 @@ class BackendService {
 
         project.status = normalizeStatus(data.status);
         project.currentStage = normalizeStage(data.currentStage);
+        project.uiArchetype = data.ui_archetype ?? data.locked_ui_archetype ?? project.uiArchetype ?? null;
         project.engineerTasks = data.engineerTasks || [];
         this.setReachability(true);
 
