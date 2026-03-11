@@ -2028,9 +2028,9 @@ def get_factsheet(project_id: int, version: int):
 
 
 @app.route("/api/projects/<int:project_id>/versions/<int:version>/insights", methods=["GET"])
-@jwt_required()
 def get_insights(project_id: int, version: int):
     """Return Build Insights (prompt coaching suggestions) for a specific version."""
+    get_optional_request_user_id()  # optional auth — guests can read insights
     insights_path = get_version_dir(project_id, version) / "last_insights.json"
     data = read_json_file(insights_path)
     if data:
