@@ -108,6 +108,14 @@ Use x-data for:
 - FAQ accordion (open/close with chevron rotation)
 
 ═══════════════════════════════════════
+INTERACTIVITY & TYPOGRAPHY GUIDELINES
+═══════════════════════════════════════
+
+- INTERACTIVE ELEMENTS: All interactive elements (buttons, links, toggle options, FAQ questions, card-links) MUST have distinct and smooth hover, focus, AND active states. Utilize base.css's provided hover transitions and box-shadows. Ensure `cursor: pointer` is applied to all interactive elements. All interactive elements must be keyboard navigable, with clear focus outlines, and use appropriate semantic HTML or `aria-labels` for accessibility where context is not immediately clear.
+
+- TYPOGRAPHY HIERARCHY: Use Space Grotesk for all headings (h1-h6) with appropriate weights (700, 800) to establish clear visual hierarchy. Use Inter for body text, descriptions, and smaller elements (400, 500, 600). Pay close attention to line-height (e.g., 1.2 for headings, 1.5 for body) and letter-spacing for optimal readability and visual appeal across all text. Ensure responsive font sizing, especially for headings, to maintain readability and visual impact across all screen sizes. All body text and descriptions must maintain high contrast against their background (e.g., `var(--text-body)` on `var(--surface)`).
+
+═══════════════════════════════════════
 SELF-CHECK BEFORE OUTPUT
 ═══════════════════════════════════════
 
