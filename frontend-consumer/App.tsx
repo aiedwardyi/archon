@@ -37,8 +37,7 @@ function getInitialSettings(): SystemSettings {
     }
   }
 
-  const explicitTheme = localStorage.getItem(THEME_PREFERENCE_KEY);
-  const theme = explicitTheme === 'dark' || explicitTheme === 'light' ? explicitTheme : 'light';
+  const theme = 'dark';
   const language = (parsed as { language?: string } | null)?.language === 'ko' || getLang() === 'ko' ? 'ko' : 'en';
 
   return {
@@ -248,6 +247,7 @@ const App: React.FC = () => {
           )}
 
           <Sidebar
+            lang={settings.language}
             projects={projects}
             currentId={currentProjectId}
             onSelect={(id) => {
@@ -273,6 +273,7 @@ const App: React.FC = () => {
         {currentProjectId ? (
           <ProjectDetailPage
             projectId={currentProjectId}
+            lang={settings.language}
             hasSession={hasSession}
             authUser={authUser}
             onAuthError={handleAuthError}
@@ -284,6 +285,7 @@ const App: React.FC = () => {
           />
         ) : (
           <ProjectsPage
+            lang={settings.language}
             projects={projects}
             hasSession={hasSession}
             authUser={authUser}

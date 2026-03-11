@@ -8,11 +8,13 @@ import {
   UserSquare2,
 } from 'lucide-react';
 import SessionMenu from '../components/SessionMenu';
-import { getLang, t } from '../i18n';
+import { t, type Lang } from '../i18n';
+import { getPreviewUrl } from '../services/orchestrator';
 import { AuthUser } from '../services/auth';
 import { Project } from '../types';
 
 interface ProjectsPageProps {
+  lang: Lang;
   projects: Project[];
   hasSession: boolean;
   authUser: AuthUser | null;
@@ -30,7 +32,7 @@ function getStatusAccent(status: Project['status']) {
   return '#64748b';
 }
 
-function getStatusLabel(status: Project['status'], lang: ReturnType<typeof getLang>) {
+function getStatusLabel(status: Project['status'], lang: Lang) {
   if (status === 'COMPLETED') return t(lang, 'statusCompleted');
   if (status === 'FAILED') return t(lang, 'statusFailed');
   if (status === 'RUNNING') return t(lang, 'statusRunning');
@@ -38,6 +40,7 @@ function getStatusLabel(status: Project['status'], lang: ReturnType<typeof getLa
 }
 
 const ProjectsPage: React.FC<ProjectsPageProps> = ({
+  lang,
   projects,
   hasSession,
   authUser,
@@ -50,7 +53,6 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({
   const [prompt, setPrompt] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const lang = getLang();
 
   const inspirationCards = useMemo(
     () => [
@@ -180,6 +182,11 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({
           box-shadow: 0 22px 70px rgba(79, 70, 229, 0.22);
           border-color: rgba(129, 140, 248, 0.36);
         }
+        button, a {
+          -webkit-font-smoothing: antialiased;
+          backface-visibility: hidden;
+          transform: translateZ(0);
+        }
       `}</style>
 
       <div className="projects-mesh pointer-events-none absolute inset-0 overflow-hidden">
@@ -250,6 +257,14 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({
               <textarea
                 value={prompt}
                 onChange={(event) => setPrompt(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    if (prompt.trim() && !isSubmitting) {
+                      event.currentTarget.form?.requestSubmit();
+                    }
+                  }
+                }}
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
                 placeholder={t(lang, 'promptPlaceholder')}
@@ -261,7 +276,7 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({
                 <button
                   type="submit"
                   disabled={!prompt.trim() || isSubmitting}
-                  className="cta-button inline-flex items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#4f46e5,#7c3aed,#0891b2)] px-6 py-3 text-sm font-semibold text-white transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="cta-button inline-flex items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#4f46e5,#7c3aed,#0891b2)] px-6 py-3 text-sm font-semibold text-white transition hover:scale-[1.005] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSubmitting ? t(lang, 'sending') : t(lang, 'startBuilding')}
                   <ArrowRight size={16} />
@@ -309,12 +324,20 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({
                     onClick={() => onSelectProject(project.id)}
                     className="recent-card min-w-[320px] max-w-[360px] flex-1 text-left"
                   >
-                    <div className="recent-shell relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-white/[0.06] p-5 backdrop-blur-2xl transition duration-300">
-                      <div
-                        className="absolute inset-y-5 left-0 w-1 rounded-r-full"
-                        style={{ backgroundColor: getStatusAccent(project.status) }}
-                      />
-                      <div className="pl-3">
+                    <div className="recent-shell relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-white/[0.06] backdrop-blur-2xl transition duration-300">
+                      <div className="relative h-[140px] overflow-hidden rounded-t-[1.8rem] border-b border-white/10 bg-[#03050f]">
+                        <iframe
+                          title={`${project.name} preview`}
+                          src={getPreviewUrl(project.id, 1)}
+                          className="pointer-events-none absolute left-0 top-0 h-[560px] w-[400%] origin-top-left border-0 bg-white"
+                          style={{ transform: 'scale(0.25)' }}
+                        />
+                        <div
+                          className="absolute inset-y-0 left-0 w-1"
+                          style={{ backgroundColor: getStatusAccent(project.status) }}
+                        />
+                      </div>
+                      <div className="relative p-4 pl-5">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <div className="truncate text-base font-semibold text-white">{project.name}</div>
@@ -327,7 +350,7 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({
                             className="recent-arrow mt-0.5 shrink-0 -translate-x-3 opacity-0 text-indigo-200 transition duration-300"
                           />
                         </div>
-                        <p className="mt-4 line-clamp-3 text-sm leading-6 text-white/54">{project.description}</p>
+                        <p className="mt-3 line-clamp-2 text-sm leading-6 text-white/54">{project.description}</p>
                       </div>
                     </div>
                   </button>
