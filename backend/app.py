@@ -739,6 +739,15 @@ def run_full_pipeline_async(
 
         add_log("Build Agent: Writing your code...", project_id=project_id)
 
+        if is_iteration and ancestor_version_dir:
+            ancestor_base_css = ancestor_version_dir / "code" / "src" / "base.css"
+            current_src_dir = version_dir / "code" / "src"
+            current_base_css = current_src_dir / "base.css"
+            if ancestor_base_css.exists() and not current_base_css.exists():
+                current_src_dir.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(ancestor_base_css, current_base_css)
+                add_log("Build Agent: Copied base.css from previous version.", project_id=project_id)
+
         from agents.engineer_agent import EngineerAgent
         engineer = EngineerAgent(genai_client)
         # Inject design assets into engineer prompt if available
