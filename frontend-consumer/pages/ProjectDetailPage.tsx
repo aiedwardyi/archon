@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  AlignLeft,
   ArrowLeft,
   ArrowRight,
   ChevronDown,
@@ -9,20 +8,18 @@ import {
   ExternalLink,
   FileCode2,
   FileText,
-  Globe2,
   History,
   Layers3,
   Lightbulb,
   Loader2,
   Menu,
   Monitor,
-  Palette,
   RefreshCw,
   RotateCcw,
+  SendHorizontal,
   Settings2,
   Smartphone,
   Sparkles,
-  Type,
 } from 'lucide-react';
 import ArtifactViewer from '../components/ArtifactViewer';
 import SessionMenu from '../components/SessionMenu';
@@ -70,7 +67,7 @@ interface ProjectDetailPageProps {
 type ActiveTab = 'preview' | 'brief' | 'buildPlan' | 'code' | 'changes' | 'versions';
 type RemoteState<T> = { loading: boolean; error: boolean; data: T | null };
 type CodeFileRecord = { filename: string; content: string; language: string };
-type InsightCategoryKey = 'detail' | 'color' | 'content' | 'typography' | 'domain' | 'default';
+type InsightCategoryKey = 'detail' | 'color' | 'content' | 'default';
 type InsightsState = { version: number | null; promptScore: number | null; insights: InsightRecord[] };
 
 const EMPTY_REMOTE = { loading: false, error: false, data: null };
@@ -100,6 +97,13 @@ function getStatusLabel(project: Project, lang: ReturnType<typeof getLang>) {
   if (project.status === 'FAILED') return t(lang, 'statusFailed');
   if (project.status === 'RUNNING') return t(lang, 'statusRunning');
   return t(lang, 'statusIdle');
+}
+
+function getStatusTone(status: Project['status']) {
+  if (status === 'COMPLETED') return { color: '#34d399', glow: 'rgba(52,211,153,0.45)' };
+  if (status === 'FAILED') return { color: '#fb7185', glow: 'rgba(251,113,133,0.38)' };
+  if (status === 'RUNNING') return { color: '#818cf8', glow: 'rgba(129,140,248,0.46)' };
+  return { color: '#94a3b8', glow: 'rgba(148,163,184,0.3)' };
 }
 
 function getProgress(project?: Project) {
@@ -133,57 +137,29 @@ function normalizeInsightPriority(priority: string): 'high' | 'medium' | 'low' {
 }
 
 function resolveInsightCategoryKey(insight: InsightRecord): InsightCategoryKey {
-  const category = String(insight.category || '').toLowerCase();
-  const hint = `${category} ${insight.suggestion}`.toLowerCase();
-  const mentionsTypography = /(font|typography|sans|serif|monospace|heading)/.test(hint);
-  const mentionsColor = /(color|colour|palette|accent|theme|gradient)/.test(hint);
-
-  if (category.includes('font') || category.includes('typography') || mentionsTypography) return 'typography';
-  if (category.includes('color') || category.includes('palette') || (category === 'visual' && mentionsColor)) return 'color';
-  if (category.includes('content') || category.includes('section')) return 'content';
-  if (category.includes('domain')) return 'domain';
-  if (category.includes('prompt_length') || category.includes('detail') || category.includes('clarity')) return 'detail';
-  if (category === 'visual') return 'color';
+  const value = `${insight.category} ${insight.suggestion}`.toLowerCase();
+  if (/(color|colour|palette|theme|gradient|visual)/.test(value)) return 'color';
+  if (/(content|section|copy|story)/.test(value)) return 'content';
+  if (/(detail|clarity|specific|prompt)/.test(value)) return 'detail';
   return 'default';
 }
 
 function getInsightCategoryLabel(lang: ReturnType<typeof getLang>, categoryKey: InsightCategoryKey) {
-  if (categoryKey === 'detail' || categoryKey === 'default') return t(lang, 'insightCategoryDetail');
   if (categoryKey === 'color') return t(lang, 'insightCategoryColor');
   if (categoryKey === 'content') return t(lang, 'insightCategoryContent');
-  if (categoryKey === 'typography') return t(lang, 'insightCategoryTypography');
-  return t(lang, 'insightCategoryDomain');
+  return t(lang, 'insightCategoryDetail');
 }
 
-function getInsightCategoryIcon(categoryKey: InsightCategoryKey) {
-  if (categoryKey === 'detail') return AlignLeft;
-  if (categoryKey === 'color') return Palette;
-  if (categoryKey === 'content') return Layers3;
-  if (categoryKey === 'typography') return Type;
-  if (categoryKey === 'domain') return Globe2;
-  return Lightbulb;
-}
-
-function getPriorityBadgeStyles(priority: 'high' | 'medium' | 'low') {
-  if (priority === 'high') {
-    return 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200';
-  }
-  if (priority === 'medium') {
-    return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200';
-  }
-  return 'border-slate-200 bg-slate-100 text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300';
+function getPriorityBadge(priority: 'high' | 'medium' | 'low') {
+  if (priority === 'high') return 'border-rose-400/30 bg-rose-500/10 text-rose-100';
+  if (priority === 'medium') return 'border-amber-400/30 bg-amber-500/10 text-amber-100';
+  return 'border-white/10 bg-white/[0.04] text-white/68';
 }
 
 function getPriorityLabel(lang: ReturnType<typeof getLang>, priority: 'high' | 'medium' | 'low') {
   if (priority === 'high') return t(lang, 'priorityHigh');
   if (priority === 'medium') return t(lang, 'priorityMedium');
   return t(lang, 'priorityLow');
-}
-
-function getScoreFillStyles(score: number) {
-  if (score >= 70) return 'bg-emerald-500 dark:bg-emerald-400';
-  if (score >= 40) return 'bg-amber-500 dark:bg-amber-400';
-  return 'bg-rose-500 dark:bg-rose-400';
 }
 
 function buildIterationPromptHistory(
@@ -224,217 +200,83 @@ async function loadWithRetry<T>(loader: () => Promise<T>, retries = 0, delayMs =
 }
 
 const EmptyPanel: React.FC<{ icon: React.ReactNode; title: string; detail?: string }> = ({ icon, title, detail }) => (
-  <div className="flex min-h-[360px] flex-col items-center justify-center rounded-[2rem] border border-slate-200 bg-white px-6 text-center shadow-sm dark:border-white/10 dark:bg-[#111827]">
-    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-200">{icon}</div>
-    <h3 className="mt-5 text-lg font-semibold text-slate-950 dark:text-white">{title}</h3>
-    {detail && <p className="mt-2 max-w-md text-sm leading-6 text-slate-500 dark:text-slate-300/70">{detail}</p>}
+  <div className="flex min-h-[340px] flex-col items-center justify-center rounded-[2rem] border border-white/10 bg-[#07101f] px-6 text-center shadow-[0_24px_80px_rgba(2,6,23,0.34)]">
+    <div className="flex h-14 w-14 items-center justify-center rounded-[1.35rem] bg-white/[0.05] text-indigo-200">{icon}</div>
+    <h3 className="mt-5 text-lg font-semibold text-white">{title}</h3>
+    {detail && <p className="mt-2 max-w-md text-sm leading-6 text-white/50">{detail}</p>}
   </div>
 );
 
-interface BuildSkeletonScreenProps {
-  currentStage?: string | null;
-  archetype?: string | null;
-}
-
-const skeletonBlock = (className: string) => <div className={`archon-shimmer rounded-[1.25rem] ${className}`} />;
-
-function renderLandingSkeleton() {
-  return (
-    <div className="space-y-4">
-      {skeletonBlock('h-8 w-full rounded-2xl')}
-      {skeletonBlock('h-48 w-full rounded-[1.5rem]')}
-      <div className="grid gap-4 md:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, index) => (
-          <div key={index} className="space-y-3 rounded-[1.5rem] border border-slate-200/60 p-4 dark:border-white/5">
-            {skeletonBlock('h-20 w-full rounded-[1.25rem]')}
-            {skeletonBlock('h-4 w-3/4')}
-            {skeletonBlock('h-4 w-1/2')}
-          </div>
-        ))}
-      </div>
-      {skeletonBlock('h-16 w-full rounded-[1.5rem]')}
-      {skeletonBlock('h-12 w-full rounded-2xl')}
-    </div>
-  );
-}
-
-function renderDashboardSkeleton() {
-  return (
-    <div className="space-y-4">
-      {skeletonBlock('h-8 w-full rounded-2xl')}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="space-y-3 rounded-[1.5rem] border border-slate-200/60 p-4 dark:border-white/5">
-            {skeletonBlock('h-6 w-2/5')}
-            {skeletonBlock('h-8 w-3/5')}
-          </div>
-        ))}
-      </div>
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        {skeletonBlock('h-48 w-full rounded-[1.5rem]')}
-        {skeletonBlock('h-48 w-full rounded-[1.5rem]')}
-      </div>
-      <div className="space-y-3 rounded-[1.5rem] border border-slate-200/60 p-4 dark:border-white/5">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className={`archon-shimmer h-8 rounded-xl ${index % 2 === 1 ? 'opacity-70' : ''}`} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function renderEcommerceSkeleton() {
-  return (
-    <div className="space-y-4">
-      {skeletonBlock('h-8 w-full rounded-2xl')}
-      {skeletonBlock('h-32 w-full rounded-[1.5rem]')}
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, index) => (
-          <div key={index} className="space-y-3 rounded-[1.5rem] border border-slate-200/60 p-4 dark:border-white/5">
-            {skeletonBlock('h-24 w-full rounded-[1.25rem]')}
-            {skeletonBlock('h-4 w-3/4')}
-            {skeletonBlock('h-4 w-1/2')}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function renderPortfolioSkeleton() {
-  return (
-    <div className="space-y-4">
-      {skeletonBlock('h-8 w-full rounded-2xl')}
-      <div className="flex items-center gap-4 rounded-[1.5rem] border border-slate-200/60 p-5 dark:border-white/5">
-        <div className="archon-shimmer h-12 w-12 rounded-full" />
-        <div className="flex-1 space-y-3">
-          {skeletonBlock('h-4 w-2/5')}
-          {skeletonBlock('h-4 w-3/5')}
-        </div>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="space-y-3 rounded-[1.5rem] border border-slate-200/60 p-4 dark:border-white/5">
-            {skeletonBlock('h-24 w-full rounded-[1.25rem]')}
-            {skeletonBlock('h-4 w-2/3')}
-            {skeletonBlock('h-4 w-1/2')}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function renderGameSkeleton() {
-  return (
-    <div className="space-y-4">
-      {skeletonBlock('h-56 w-full rounded-[1.75rem]')}
-      <div className="grid gap-4 md:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, index) => (
-          <div key={index} className="space-y-3 rounded-[1.5rem] border border-slate-200/60 p-4 dark:border-white/5">
-            {skeletonBlock('h-16 w-full rounded-[1.25rem]')}
-            {skeletonBlock('h-4 w-3/4')}
-          </div>
-        ))}
-      </div>
-      {skeletonBlock('h-20 w-full rounded-[1.5rem]')}
-    </div>
-  );
-}
-
-const BuildSkeletonScreen: React.FC<BuildSkeletonScreenProps> = ({ currentStage, archetype }) => {
-  const normalizedArchetype = String(archetype || '').toLowerCase();
-  const stageMessage =
-    currentStage === 'pm'
-      ? 'Understanding your idea...'
-      : currentStage === 'planner'
-        ? 'Planning your layout...'
-        : currentStage === 'engineer'
-          ? 'Writing your code...'
-          : 'Building your app...';
-
-  const skeleton =
-    normalizedArchetype === 'landing' || normalizedArchetype === 'saas_landing'
-      ? renderLandingSkeleton()
-      : normalizedArchetype === 'dashboard'
-        ? renderDashboardSkeleton()
-        : normalizedArchetype === 'ecommerce'
-          ? renderEcommerceSkeleton()
-          : normalizedArchetype === 'portfolio'
-            ? renderPortfolioSkeleton()
-            : renderGameSkeleton();
-
-  return (
-    <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#111827]">
-      <style>{`
-        @keyframes archon-shimmer {
-          0% { background-position: -200% center; }
-          100% { background-position: 200% center; }
-        }
-        .archon-shimmer {
-          background: linear-gradient(90deg,
-            rgba(148,163,184,0.12) 25%,
-            rgba(148,163,184,0.28) 50%,
-            rgba(148,163,184,0.12) 75%
-          );
-          background-size: 200% 100%;
-          animation: archon-shimmer 1.8s linear infinite;
-        }
-        .dark .archon-shimmer {
-          background: linear-gradient(90deg,
-            rgba(255,255,255,0.04) 25%,
-            rgba(255,255,255,0.10) 50%,
-            rgba(255,255,255,0.04) 75%
-          );
-          background-size: 200% 100%;
-          animation: archon-shimmer 1.8s linear infinite;
-        }
-      `}</style>
-      <div className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 dark:border-white/10 dark:bg-slate-800">
-        <div className="flex items-center gap-1.5">
-          <div className="h-2 w-2 rounded-full bg-rose-400" />
-          <div className="h-2 w-2 rounded-full bg-amber-400" />
-          <div className="h-2 w-2 rounded-full bg-emerald-400" />
-        </div>
-        <div className="archon-shimmer h-5 w-32 rounded-full sm:w-48" />
-        <div className="ml-auto flex items-center gap-2 text-right text-xs text-slate-500 dark:text-slate-300/70">
-          <span
-            className="inline-block text-sm text-slate-950 dark:text-white"
-            style={{ animation: 'archon-shimmer 2s ease-in-out infinite' }}
-          >
-            ✦
-          </span>
-          <span>{stageMessage}</span>
-        </div>
-      </div>
-      <div className="bg-slate-100 p-4 dark:bg-slate-900 sm:p-6">
-        <div className="min-h-[70vh] rounded-b-[1.5rem] rounded-t-[1.5rem] bg-white p-4 shadow-sm dark:bg-slate-950/60 sm:p-6">
-          {skeleton}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const Bubble: React.FC<{ message: PromptHistoryEntry }> = ({ message }) => {
+const ChatBubble: React.FC<{ message: PromptHistoryEntry }> = ({ message }) => {
   const isUser = message.role === 'user';
+
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`max-w-[88%] rounded-[1.5rem] px-4 py-3 text-sm leading-6 shadow-sm ${
+        className={`max-w-[88%] rounded-[1.4rem] px-4 py-3 text-sm leading-6 shadow-[0_16px_40px_rgba(2,6,23,0.2)] ${
           isUser
-            ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950'
-            : 'border border-slate-200 bg-white text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-100'
+            ? 'bg-[linear-gradient(135deg,#4f46e5,#7c3aed)] text-white'
+            : 'border border-white/10 bg-white/[0.06] text-white/78 backdrop-blur-xl'
         }`}
       >
         <div>{message.content}</div>
-        {message.timestamp && <div className="mt-2 text-xs opacity-70">{formatTimestamp(message.timestamp)}</div>}
+        {message.timestamp && <div className="mt-2 text-[11px] uppercase tracking-[0.18em] opacity-60">{formatTimestamp(message.timestamp)}</div>}
       </div>
     </div>
   );
 };
 
-const CodePanel: React.FC<{ lang: ReturnType<typeof getLang>; projectId: string; version: number | null }> = ({ lang, projectId, version }) => {
+const NeuralBuildScreen: React.FC<{ message: string; stage?: string | null }> = ({ message, stage }) => (
+  <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#07101f] p-6 shadow-[0_24px_80px_rgba(2,6,23,0.34)]">
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.18),transparent_52%),radial-gradient(circle_at_bottom_right,rgba(8,145,178,0.14),transparent_46%)]" />
+    <div className="relative">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <div className="text-xs uppercase tracking-[0.26em] text-white/42">{stage || 'Build'}</div>
+          <div className="mt-2 text-lg font-semibold text-white">{message}</div>
+        </div>
+        <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs uppercase tracking-[0.22em] text-white/54">
+          Live
+        </div>
+      </div>
+      <div className="relative h-[70vh] min-h-[420px] overflow-hidden rounded-[1.8rem] border border-white/10 bg-[#03050f]">
+        <div className="neural-line absolute left-[18%] top-[24%] h-px w-[26%] origin-left rotate-[14deg] bg-gradient-to-r from-transparent via-indigo-300/80 to-transparent" />
+        <div className="neural-line absolute left-[38%] top-[30%] h-px w-[24%] origin-left rotate-[-12deg] bg-gradient-to-r from-transparent via-cyan-300/80 to-transparent" />
+        <div className="neural-line absolute left-[26%] top-[54%] h-px w-[30%] origin-left rotate-[-8deg] bg-gradient-to-r from-transparent via-violet-300/80 to-transparent" />
+        <div className="neural-line absolute left-[52%] top-[52%] h-px w-[18%] origin-left rotate-[22deg] bg-gradient-to-r from-transparent via-indigo-300/80 to-transparent" />
+        <div className="neural-line absolute left-[34%] top-[42%] h-px w-[18%] origin-left rotate-[75deg] bg-gradient-to-r from-transparent via-cyan-300/80 to-transparent" />
+        <div className="neural-line absolute left-[58%] top-[34%] h-px w-[12%] origin-left rotate-[82deg] bg-gradient-to-r from-transparent via-violet-300/80 to-transparent" />
+        {[
+          ['18%', '24%'],
+          ['40%', '30%'],
+          ['62%', '24%'],
+          ['26%', '54%'],
+          ['50%', '46%'],
+          ['70%', '58%'],
+        ].map(([left, top], index) => (
+          <span
+            key={`${left}-${top}`}
+            className="neural-node absolute h-4 w-4 rounded-full"
+            style={{
+              left,
+              top,
+              animationDelay: `${index * 0.22}s`,
+              background:
+                index % 3 === 0 ? '#4f46e5' : index % 3 === 1 ? '#7c3aed' : '#0891b2',
+            }}
+          />
+        ))}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.04),transparent_55%)]" />
+      </div>
+    </div>
+  </div>
+);
+
+const CodePanel: React.FC<{ lang: ReturnType<typeof getLang>; projectId: string; version: number | null }> = ({
+  lang,
+  projectId,
+  version,
+}) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [files, setFiles] = useState<CodeFileRecord[]>([]);
@@ -442,6 +284,7 @@ const CodePanel: React.FC<{ lang: ReturnType<typeof getLang>; projectId: string;
 
   useEffect(() => {
     let cancelled = false;
+
     const load = async () => {
       if (!version) {
         setFiles([]);
@@ -449,8 +292,10 @@ const CodePanel: React.FC<{ lang: ReturnType<typeof getLang>; projectId: string;
         setError(false);
         return;
       }
+
       setLoading(true);
       setError(false);
+
       try {
         const tree = await fetchVersionTree(projectId, version);
         const paths = flattenTree(tree.tree || []);
@@ -460,6 +305,7 @@ const CodePanel: React.FC<{ lang: ReturnType<typeof getLang>; projectId: string;
             return { filename: path, content: file.content || '', language: file.language || 'text' };
           })
         );
+
         if (!cancelled) {
           setFiles(loaded);
           setSelected(loaded[0]?.filename || null);
@@ -474,35 +320,39 @@ const CodePanel: React.FC<{ lang: ReturnType<typeof getLang>; projectId: string;
         if (!cancelled) setLoading(false);
       }
     };
+
     void load();
+
     return () => {
       cancelled = true;
     };
   }, [projectId, version]);
 
   const activeFile = files.find((file) => file.filename === selected);
+
   if (!version) return <EmptyPanel icon={<Code2 size={22} />} title={t(lang, 'noCodeYet')} />;
   if (loading) return <EmptyPanel icon={<Loader2 size={22} className="animate-spin" />} title={t(lang, 'sending')} />;
   if (error) return <EmptyPanel icon={<RefreshCw size={22} />} title={t(lang, 'couldNotLoad')} />;
   if (files.length === 0) return <EmptyPanel icon={<Code2 size={22} />} title={t(lang, 'noCodeYet')} />;
+
   return (
-    <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#111827]">
-      <div className="grid min-h-[520px] lg:grid-cols-[260px_minmax(0,1fr)]">
-        <aside className="border-b border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-slate-950/30 lg:border-b-0 lg:border-r">
-          <div className="mb-4 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-slate-400 dark:text-slate-300/60">
+    <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#07101f] shadow-[0_24px_80px_rgba(2,6,23,0.34)]">
+      <div className="grid min-h-[560px] lg:grid-cols-[270px_minmax(0,1fr)]">
+        <aside className="border-b border-white/10 bg-white/[0.03] p-4 lg:border-b-0 lg:border-r">
+          <div className="mb-4 flex items-center gap-2 text-xs uppercase tracking-[0.26em] text-white/38">
             <FileCode2 size={14} />
             {t(lang, 'files')}
           </div>
-          <div className="space-y-2">
+          <div className="custom-scrollbar max-h-[520px] space-y-2 overflow-y-auto pr-1">
             {files.map((file) => (
               <button
                 key={file.filename}
                 type="button"
                 onClick={() => setSelected(file.filename)}
-                className={`block w-full rounded-2xl px-3 py-2 text-left text-sm transition ${
+                className={`block w-full rounded-[1.2rem] px-3 py-2 text-left text-sm transition ${
                   selected === file.filename
-                    ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950'
-                    : 'text-slate-600 hover:bg-white hover:text-slate-950 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white'
+                    ? 'bg-[linear-gradient(135deg,rgba(79,70,229,0.3),rgba(124,58,237,0.18))] text-white'
+                    : 'bg-white/[0.03] text-white/62 hover:bg-white/[0.06] hover:text-white'
                 }`}
               >
                 <div className="truncate font-medium">{file.filename}</div>
@@ -510,14 +360,18 @@ const CodePanel: React.FC<{ lang: ReturnType<typeof getLang>; projectId: string;
             ))}
           </div>
         </aside>
+
         <div className="min-w-0">
           {activeFile ? (
             <>
-              <div className="border-b border-slate-200 px-5 py-4 text-xs text-slate-400 dark:border-white/10 dark:text-slate-300/60">{activeFile.language}</div>
-              <pre className="custom-scrollbar overflow-auto p-5 text-sm leading-6 text-slate-800 dark:text-slate-100">{activeFile.content}</pre>
+              <div className="border-b border-white/10 px-5 py-4">
+                <div className="text-sm font-semibold text-white">{activeFile.filename}</div>
+                <div className="mt-1 text-xs uppercase tracking-[0.22em] text-white/38">{activeFile.language}</div>
+              </div>
+              <pre className="custom-scrollbar max-h-[520px] overflow-auto p-5 text-sm leading-7 text-white/78">{activeFile.content}</pre>
             </>
           ) : (
-            <EmptyPanel icon={<Code2 size={22} />} title={t(lang, 'selectFile')} />
+            <EmptyPanel icon={<FileCode2 size={22} />} title={t(lang, 'selectFile')} />
           )}
         </div>
       </div>
@@ -545,105 +399,135 @@ const BuildInsightsCard: React.FC<BuildInsightsCardProps> = ({
   onApplySuggestion,
 }) => {
   const score = clampScore(promptScore);
-  const [isVisible, setIsVisible] = useState(false);
-  const [animateBar, setAnimateBar] = useState(false);
+  const [displayScore, setDisplayScore] = useState(0);
+  const [visible, setVisible] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setIsVisible(false);
-    setAnimateBar(false);
+    setVisible(false);
+    setDisplayScore(0);
 
-    const visibilityTimer = window.setTimeout(() => setIsVisible(true), 24);
-    const barTimer = window.setTimeout(() => setAnimateBar(true), 180);
+    const node = rootRef.current;
+    if (!node) return;
 
-    return () => {
-      window.clearTimeout(visibilityTimer);
-      window.clearTimeout(barTimer);
-    };
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+        }
+      },
+      { threshold: 0.35 }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
   }, [version]);
 
+  useEffect(() => {
+    if (!visible || score == null) return;
+
+    let frame = 0;
+    const start = performance.now();
+    const duration = 900;
+
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - start) / duration);
+      setDisplayScore(Math.round(score * progress));
+      if (progress < 1) {
+        frame = window.requestAnimationFrame(tick);
+      }
+    };
+
+    frame = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frame);
+  }, [score, visible]);
+
+  const circumference = 2 * Math.PI * 44;
+  const dashoffset = score == null ? circumference : circumference - (circumference * displayScore) / 100;
+
   return (
-    <div
-      className={`overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_20px_50px_rgba(15,23,42,0.08)] transition-all duration-500 ease-out dark:border-white/10 dark:bg-[#111827] dark:shadow-[0_20px_50px_rgba(2,6,23,0.32)] ${
-        isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
-      }`}
-    >
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 bg-[linear-gradient(135deg,rgba(254,249,195,0.55),rgba(255,255,255,0.96),rgba(224,242,254,0.72))] px-5 py-4 dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(30,41,59,0.92),rgba(17,24,39,0.98),rgba(15,23,42,0.94))]">
+    <div ref={rootRef} className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#07101f] shadow-[0_24px_80px_rgba(2,6,23,0.34)]">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[linear-gradient(135deg,rgba(79,70,229,0.18),rgba(124,58,237,0.12),rgba(8,145,178,0.14))] px-5 py-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300">
+          <div className="flex h-11 w-11 items-center justify-center rounded-[1.2rem] bg-white/[0.08] text-indigo-200">
             <Sparkles size={18} />
           </div>
           <div>
-            <div className="text-sm font-semibold text-slate-950 dark:text-white">{t(lang, 'buildInsights')}</div>
-            <div className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-300/60">v{version}</div>
+            <div className="text-sm font-semibold text-white">{t(lang, 'buildInsights')}</div>
+            <div className="mt-1 text-xs uppercase tracking-[0.2em] text-white/40">v{version}</div>
           </div>
         </div>
         <button
           type="button"
           onClick={onToggleCollapse}
-          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-3 py-2 text-xs font-medium text-slate-600 transition hover:bg-white hover:text-slate-950 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white"
+          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-white/70 transition hover:bg-white/[0.08] hover:text-white"
         >
           {t(lang, collapsed ? 'expand' : 'collapse')}
           <ChevronDown size={14} className={`transition-transform duration-300 ${collapsed ? '' : 'rotate-180'}`} />
         </button>
       </div>
 
-      <div className={`overflow-hidden transition-all duration-300 ease-out ${collapsed ? 'max-h-0 opacity-0' : 'max-h-[1200px] opacity-100'}`}>
-        <div className="grid gap-5 px-5 pb-5 pt-5 lg:grid-cols-[240px_minmax(0,1fr)]">
-          <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-slate-950/40">
-            <div className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400 dark:text-slate-300/60">{t(lang, 'promptScore')}</div>
-            <div className="mt-4 flex items-end gap-2">
-              <span className="text-4xl font-semibold tracking-tight text-slate-950 dark:text-white">{score ?? '—'}</span>
-              <span className="pb-1 text-sm text-slate-400 dark:text-slate-300/60">/100</span>
-            </div>
-            {score != null && (
-              <div className="mt-5">
-                <div className="flex items-center gap-3">
-                  <div className="h-3 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
-                    <div
-                      className={`h-full rounded-full transition-all duration-700 ease-out ${getScoreFillStyles(score)}`}
-                      style={{ width: animateBar ? `${score}%` : '0%' }}
-                    />
-                  </div>
-                  <span className="text-sm font-medium text-slate-600 dark:text-slate-200">{score}%</span>
+      <div className={`transition-all duration-300 ${collapsed ? 'max-h-0 overflow-hidden opacity-0' : 'max-h-[1200px] opacity-100'}`}>
+        <div className="grid gap-5 px-5 py-5 lg:grid-cols-[240px_minmax(0,1fr)]">
+          <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-5">
+            <div className="text-xs uppercase tracking-[0.24em] text-white/38">{t(lang, 'promptScore')}</div>
+            <div className="mt-5 flex items-center justify-center">
+              <div className="relative h-32 w-32">
+                <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
+                  <circle cx="60" cy="60" r="44" stroke="rgba(255,255,255,0.08)" strokeWidth="10" fill="none" />
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="44"
+                    stroke="url(#score-ring)"
+                    strokeWidth="10"
+                    strokeLinecap="round"
+                    fill="none"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={dashoffset}
+                    style={{ transition: 'stroke-dashoffset 220ms ease-out' }}
+                  />
+                  <defs>
+                    <linearGradient id="score-ring" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#4f46e5" />
+                      <stop offset="50%" stopColor="#7c3aed" />
+                      <stop offset="100%" stopColor="#0891b2" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className="text-3xl font-semibold text-white">{score == null ? '—' : displayScore}</div>
+                  <div className="text-xs uppercase tracking-[0.2em] text-white/36">/100</div>
                 </div>
               </div>
-            )}
+            </div>
           </div>
 
           <div>
-            <div className="text-sm font-semibold text-slate-950 dark:text-white">{t(lang, 'insightsTipsTitle')}</div>
+            <div className="text-sm font-semibold text-white">{t(lang, 'insightsTipsTitle')}</div>
             <div className="mt-4 space-y-3">
               {insights.map((insight, index) => {
                 const categoryKey = resolveInsightCategoryKey(insight);
-                const Icon = getInsightCategoryIcon(categoryKey);
                 const priority = normalizeInsightPriority(insight.priority);
-
                 return (
-                  <article
-                    key={`${insight.category}-${index}-${insight.suggestion}`}
-                    className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/5"
-                  >
+                  <article key={`${insight.category}-${index}-${insight.suggestion}`} className="rounded-[1.45rem] border border-white/10 bg-white/[0.04] p-4">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-slate-600 shadow-sm dark:bg-slate-950/70 dark:text-slate-100">
-                            <Icon size={16} />
+                          <span className="inline-flex h-9 w-9 items-center justify-center rounded-[1rem] bg-white/[0.07] text-indigo-200">
+                            <Lightbulb size={16} />
                           </span>
-                          <span className="text-sm font-semibold text-slate-950 dark:text-white">
-                            {getInsightCategoryLabel(lang, categoryKey)}
-                          </span>
-                          <span
-                            className={`inline-flex items-center rounded-full border px-2 py-1 text-[11px] font-medium ${getPriorityBadgeStyles(priority)}`}
-                          >
+                          <span className="text-sm font-semibold text-white">{getInsightCategoryLabel(lang, categoryKey)}</span>
+                          <span className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-medium ${getPriorityBadge(priority)}`}>
                             {getPriorityLabel(lang, priority)}
                           </span>
                         </div>
-                        <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-200/80">{insight.suggestion}</p>
+                        <p className="mt-3 text-sm leading-6 text-white/60">{insight.suggestion}</p>
                       </div>
                       <button
                         type="button"
                         onClick={() => onApplySuggestion(insight.suggestion)}
-                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-950 sm:w-auto dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-100 dark:hover:bg-slate-950"
+                        className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-2 text-xs font-medium text-white/78 transition hover:bg-white/[0.12] hover:text-white"
                       >
                         {t(lang, 'applySuggestion')}
                         <ArrowRight size={14} />
@@ -763,7 +647,10 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
             loading: false,
             error: false,
             versions,
-            selectedId: current.selectedId && versions.some((item) => item.id === current.selectedId) ? current.selectedId : versions[0]?.id || null,
+            selectedId:
+              current.selectedId && versions.some((item) => item.id === current.selectedId)
+                ? current.selectedId
+                : versions[0]?.id || null,
           }));
         }
       } catch {
@@ -910,8 +797,8 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
         brief.status === 'fulfilled'
           ? { loading: false, error: false, data: brief.value }
           : treatAsPending(brief)
-          ? { loading: false, error: false, data: null }
-          : { loading: false, error: true, data: null }
+            ? { loading: false, error: false, data: null }
+            : { loading: false, error: true, data: null }
       );
       setPlanState(
         plan.status === 'fulfilled'
@@ -929,15 +816,15 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               },
             }
           : treatAsPending(plan)
-          ? { loading: false, error: false, data: null }
-          : { loading: false, error: true, data: null }
+            ? { loading: false, error: false, data: null }
+            : { loading: false, error: true, data: null }
       );
       setChangesState(
         code.status === 'fulfilled'
           ? { loading: false, error: false, data: code.value.tasks }
           : treatAsPending(code)
-          ? { loading: false, error: false, data: [] }
-          : { loading: false, error: true, data: null }
+            ? { loading: false, error: false, data: [] }
+            : { loading: false, error: true, data: null }
       );
     };
     void load();
@@ -955,14 +842,15 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
     project?.status === 'FAILED'
       ? t(lang, 'buildFailed')
       : project?.status === 'COMPLETED'
-      ? t(lang, 'buildReady')
-      : project?.currentStage === 'pm'
-      ? t(lang, 'creatingBrief')
-      : project?.currentStage === 'planner'
-      ? t(lang, 'planningBuild')
-      : project?.currentStage === 'engineer'
-      ? t(lang, 'writingCode')
-      : t(lang, 'buildingApp');
+        ? t(lang, 'buildReady')
+        : project?.currentStage === 'pm'
+          ? t(lang, 'creatingBrief')
+          : project?.currentStage === 'planner'
+            ? t(lang, 'planningBuild')
+            : project?.currentStage === 'engineer'
+              ? t(lang, 'writingCode')
+              : t(lang, 'buildingApp');
+
   const tabs = [
     { id: 'preview' as const, label: t(lang, 'preview'), icon: Monitor },
     { id: 'brief' as const, label: t(lang, 'brief'), icon: FileText },
@@ -1054,7 +942,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
 
   if (!project) {
     return (
-      <div className="flex h-full items-center justify-center bg-[var(--app-bg)] text-sm text-slate-500 dark:text-slate-300">
+      <div className="flex h-full items-center justify-center bg-[#03050f] text-sm text-white/60">
         <Loader2 size={18} className="mr-2 animate-spin" />
         {t(lang, 'sending')}
       </div>
@@ -1062,16 +950,320 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   }
 
   const signInHref = `/login?guest_project_id=${encodeURIComponent(projectId)}`;
+  const tone = getStatusTone(project.status);
+
+  let activePanel: React.ReactNode;
+
+  if (activeTab === 'preview') {
+    activePanel =
+      project.status === 'RUNNING' ? (
+        <NeuralBuildScreen message={statusMessage} stage={project.currentStage} />
+      ) : resolvedVersion && previewSrc ? (
+        <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#07101f] shadow-[0_24px_80px_rgba(2,6,23,0.34)]">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
+            <div>
+              <div className="text-sm font-semibold text-white">{t(lang, 'latestVersion')}</div>
+              <div className="mt-1 text-xs uppercase tracking-[0.22em] text-white/38">
+                {t(lang, 'versionHistory')} {resolvedVersion}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setViewport('desktop')}
+                className={`rounded-full border px-3 py-2 transition ${
+                  viewport === 'desktop'
+                    ? 'border-indigo-400/40 bg-indigo-500/20 text-white'
+                    : 'border-white/10 bg-white/[0.04] text-white/60 hover:bg-white/[0.08] hover:text-white'
+                }`}
+                aria-label="Desktop preview"
+              >
+                <Monitor size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewport('mobile')}
+                className={`rounded-full border px-3 py-2 transition ${
+                  viewport === 'mobile'
+                    ? 'border-indigo-400/40 bg-indigo-500/20 text-white'
+                    : 'border-white/10 bg-white/[0.04] text-white/60 hover:bg-white/[0.08] hover:text-white'
+                }`}
+                aria-label="Mobile preview"
+              >
+                <Smartphone size={16} />
+              </button>
+            </div>
+          </div>
+          <div className="bg-[#03050f] p-4 sm:p-6">
+            {viewport === 'desktop' ? (
+              <iframe title="Project preview" src={previewSrc} className="h-[72vh] w-full rounded-[1.5rem] border-0 bg-white" />
+            ) : (
+              <div className="mx-auto w-[390px] max-w-full overflow-hidden rounded-[2.2rem] border-[10px] border-slate-950 bg-white shadow-[0_24px_80px_rgba(2,6,23,0.45)]">
+                <iframe title="Project preview mobile" src={previewSrc} className="h-[72vh] w-full border-0 bg-white" />
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <EmptyPanel
+          icon={<Monitor size={22} />}
+          title={headError ? t(lang, 'couldNotLoad') : t(lang, 'noPreviewYet')}
+          detail={headError ? undefined : t(lang, 'savedVersionsHint')}
+        />
+      );
+  } else if (activeTab === 'brief') {
+    activePanel = briefState.loading ? (
+      <EmptyPanel icon={<Loader2 size={22} className="animate-spin" />} title={t(lang, 'sending')} />
+    ) : briefState.error ? (
+      <EmptyPanel icon={<RefreshCw size={22} />} title={t(lang, 'couldNotLoad')} />
+    ) : briefState.data ? (
+      <div className="rounded-[2rem] border border-white/10 bg-[#07101f] p-6 shadow-[0_24px_80px_rgba(2,6,23,0.34)] sm:p-8">
+        <div className="inline-flex rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-white/40">
+          {t(lang, 'brief')}
+        </div>
+        <h2 className="mt-5 text-3xl font-semibold tracking-tight text-white">{briefState.data.title}</h2>
+        <p className="mt-4 max-w-3xl text-base leading-7 text-white/58">{briefState.data.summary}</p>
+        <div className="mt-8 grid gap-5 lg:grid-cols-2">
+          <section className="rounded-[1.7rem] border border-white/10 bg-white/[0.04] p-5">
+            <h3 className="text-sm font-semibold text-white">{t(lang, 'brief')}</h3>
+            <div className="mt-4 space-y-3">
+              {(briefState.data.features || []).map((feature) => (
+                <div key={feature} className="rounded-[1.2rem] bg-white/[0.04] px-4 py-3 text-sm text-white/68">
+                  {feature}
+                </div>
+              ))}
+            </div>
+          </section>
+          <section className="rounded-[1.7rem] border border-white/10 bg-white/[0.04] p-5">
+            <h3 className="text-sm font-semibold text-white">{t(lang, 'briefGoals')}</h3>
+            <div className="mt-4 space-y-3">
+              {(briefState.data.goals.length > 0 ? briefState.data.goals : briefState.data.userStories).map((item) => (
+                <div key={item} className="rounded-[1.2rem] bg-white/[0.04] px-4 py-3 text-sm text-white/68">
+                  {item}
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+        {briefState.data.targetUsers?.length > 0 && (
+          <section className="mt-5 rounded-[1.7rem] border border-white/10 bg-white/[0.04] p-5">
+            <h3 className="text-sm font-semibold text-white">{t(lang, 'briefAudience')}</h3>
+            <div className="mt-4 flex flex-wrap gap-3">
+              {briefState.data.targetUsers.map((user) => (
+                <span key={user} className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-sm text-white/66">
+                  {user}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+    ) : (
+      <EmptyPanel icon={<FileText size={22} />} title={t(lang, 'noBriefYet')} />
+    );
+  } else if (activeTab === 'buildPlan') {
+    activePanel = planState.loading ? (
+      <EmptyPanel icon={<Loader2 size={22} className="animate-spin" />} title={t(lang, 'sending')} />
+    ) : planState.error ? (
+      <EmptyPanel icon={<RefreshCw size={22} />} title={t(lang, 'couldNotLoad')} />
+    ) : planState.data ? (
+      <ArtifactViewer artifact={planState.data} />
+    ) : (
+      <EmptyPanel icon={<Layers3 size={22} />} title={t(lang, 'noPlanYet')} />
+    );
+  } else if (activeTab === 'code') {
+    activePanel = <CodePanel lang={lang} projectId={projectId} version={resolvedVersion} />;
+  } else if (activeTab === 'changes') {
+    activePanel = changesState.loading ? (
+      <EmptyPanel icon={<Loader2 size={22} className="animate-spin" />} title={t(lang, 'sending')} />
+    ) : changesState.error ? (
+      <EmptyPanel icon={<RefreshCw size={22} />} title={t(lang, 'couldNotLoad')} />
+    ) : changesState.data && changesState.data.length > 0 ? (
+      <div className="rounded-[2rem] border border-white/10 bg-[#07101f] p-6 shadow-[0_24px_80px_rgba(2,6,23,0.34)] sm:p-8">
+        <h2 className="text-2xl font-semibold tracking-tight text-white">{t(lang, 'whatChangedTitle')}</h2>
+        <p className="mt-2 text-sm text-white/46">{t(lang, 'whatChangedSubtitle')}</p>
+        <div className="mt-8 space-y-4">
+          {changesState.data.map((task) => (
+            <div key={task.id} className="rounded-[1.45rem] border border-white/10 bg-white/[0.04] px-5 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="text-sm font-semibold text-white">{task.filename}</div>
+                <div className="text-xs uppercase tracking-[0.18em] text-white/34">{formatTimestamp(task.timestamp)}</div>
+              </div>
+              <div className="mt-3 text-sm leading-6 text-white/58">{task.description}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ) : (
+      <EmptyPanel icon={<History size={22} />} title={t(lang, 'noChangesYet')} />
+    );
+  } else {
+    activePanel = versionsState.loading ? (
+      <EmptyPanel icon={<Loader2 size={22} className="animate-spin" />} title={t(lang, 'loadingVersions')} />
+    ) : versionsState.error ? (
+      <EmptyPanel icon={<RefreshCw size={22} />} title={t(lang, 'couldNotLoad')} />
+    ) : versionsState.versions.length === 0 ? (
+      <EmptyPanel icon={<Clock3 size={22} />} title={t(lang, 'noVersionsYet')} />
+    ) : (
+      <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#07101f] shadow-[0_24px_80px_rgba(2,6,23,0.34)]">
+        <div className="grid min-h-[620px] lg:grid-cols-[330px_minmax(0,1fr)]">
+          <aside className="border-b border-white/10 bg-white/[0.03] p-4 lg:border-b-0 lg:border-r">
+            <div className="mb-4">
+              <div className="text-sm font-semibold text-white">{t(lang, 'versionHistory')}</div>
+              <div className="mt-1 text-sm text-white/46">{t(lang, 'savedVersionsHint')}</div>
+            </div>
+            <div className="custom-scrollbar max-h-[560px] space-y-3 overflow-y-auto pr-1">
+              {versionsState.versions.map((item) => {
+                const promptPreview =
+                  item.prompt_history?.filter((entry) => entry.role === 'user').slice(-1)[0]?.content ||
+                  t(lang, 'promptVersionFallback');
+                const isActive = versionsState.selectedId === item.id;
+
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setVersionsState((current) => ({ ...current, selectedId: item.id }))}
+                    className={`block w-full overflow-hidden rounded-[1.4rem] border p-3 text-left transition ${
+                      isActive
+                        ? 'border-indigo-400/35 bg-indigo-500/10 text-white'
+                        : 'border-white/10 bg-white/[0.04] text-white/70 hover:bg-white/[0.08] hover:text-white'
+                    }`}
+                  >
+                    <div className="overflow-hidden rounded-[1rem] border border-white/10 bg-black">
+                      <div className="relative h-[120px] overflow-hidden rounded-[1rem]">
+                        <iframe
+                          title={`Version ${item.version} thumbnail`}
+                          src={getPreviewUrl(projectId, item.version)}
+                          className="pointer-events-none absolute left-0 top-0 h-[480px] w-[400%] origin-top-left border-0 bg-white"
+                          style={{ transform: 'scale(0.25)' }}
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between gap-3">
+                      <div className="text-sm font-semibold">v{item.version}</div>
+                      <div className="text-[11px] uppercase tracking-[0.18em] text-white/34">{formatTimestamp(item.created_at)}</div>
+                    </div>
+                    <div className="mt-2 line-clamp-2 text-sm text-white/52">{promptPreview}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+
+          <div className="min-w-0 p-4 sm:p-6">
+            {selectedVersion ? (
+              <div className="flex h-full flex-col gap-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="text-lg font-semibold text-white">v{selectedVersion.version}</div>
+                    <div className="mt-1 text-sm text-white/46">{formatTimestamp(selectedVersion.created_at)}</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRestore}
+                    disabled={versionsState.restoringId === selectedVersion.id}
+                    className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#4f46e5,#7c3aed,#0891b2)] px-5 py-3 text-sm font-semibold text-white transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {versionsState.restoringId === selectedVersion.id ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <RotateCcw size={16} />
+                    )}
+                    {versionsState.restoringId === selectedVersion.id ? t(lang, 'restoring') : t(lang, 'restoreVersion')}
+                  </button>
+                </div>
+
+                <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4">
+                  <div className="text-xs uppercase tracking-[0.22em] text-white/36">{t(lang, 'askForChanges')}</div>
+                  <div className="mt-3 text-sm leading-6 text-white/64">
+                    {selectedVersion.prompt_history?.filter((entry) => entry.role === 'user').slice(-1)[0]?.content ||
+                      t(lang, 'promptVersionFallback')}
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-hidden rounded-[1.6rem] border border-white/10 bg-black p-3">
+                  <div className="h-full overflow-hidden rounded-[1.2rem]">
+                    <iframe
+                      title={`Version ${selectedVersion.version} preview`}
+                      src={getPreviewUrl(projectId, selectedVersion.version)}
+                      className="h-[68vh] w-full border-0 bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <EmptyPanel icon={<Clock3 size={22} />} title={t(lang, 'selectVersion')} />
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-full flex-col bg-[var(--app-bg)]">
-      <header className="border-b border-slate-200/80 bg-white/80 px-4 py-3 backdrop-blur dark:border-white/10 dark:bg-[#0f172a]/80 sm:px-6">
+    <div className="relative flex h-full flex-col overflow-hidden bg-[#03050f] text-white">
+      <style>{`
+        @keyframes detailPulse {
+          0% { box-shadow: 0 0 0 0 rgba(129,140,248,0.45); opacity: 0.8; }
+          70% { box-shadow: 0 0 0 12px rgba(129,140,248,0); opacity: 0; }
+          100% { box-shadow: 0 0 0 0 rgba(129,140,248,0); opacity: 0; }
+        }
+        @keyframes progressSweep {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(240%); }
+        }
+        @keyframes nodePulse {
+          0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,255,255,0.14); }
+          50% { transform: scale(1.28); box-shadow: 0 0 30px rgba(129,140,248,0.35); }
+        }
+        @keyframes lineTravel {
+          0% { opacity: 0.15; background-position: 0% 50%; }
+          50% { opacity: 0.95; background-position: 100% 50%; }
+          100% { opacity: 0.15; background-position: 200% 50%; }
+        }
+        @keyframes panelIn {
+          0% { opacity: 0; transform: translateY(8px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        .detail-grid {
+          background:
+            radial-gradient(circle at top, rgba(79,70,229,0.16), transparent 32%),
+            radial-gradient(circle at bottom right, rgba(8,145,178,0.14), transparent 26%),
+            linear-gradient(180deg, rgba(255,255,255,0.02), transparent 35%);
+        }
+        .composer-shell:focus-within {
+          border-color: rgba(129,140,248,0.42);
+          box-shadow: 0 0 0 1px rgba(129,140,248,0.22), 0 0 40px rgba(79,70,229,0.14);
+        }
+        .build-progress::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.46), transparent);
+          animation: progressSweep 1.8s linear infinite;
+        }
+        .neural-node {
+          box-shadow: 0 0 24px currentColor;
+          animation: nodePulse 2.2s ease-in-out infinite;
+        }
+        .neural-line {
+          background-size: 200% 100%;
+          animation: lineTravel 2.4s linear infinite;
+        }
+        .content-panel-enter {
+          animation: panelIn 220ms ease-out;
+        }
+      `}</style>
+      <div className="pointer-events-none absolute inset-0 detail-grid" />
+
+      <header className="relative z-10 border-b border-white/10 bg-[#040815]/88 px-4 py-3 backdrop-blur-xl sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
               onClick={onOpenSidebar}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 lg:hidden dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:hover:bg-white/10"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/72 transition hover:bg-white/[0.08] hover:text-white lg:hidden"
               aria-label="Open sidebar"
             >
               <Menu size={18} />
@@ -1079,32 +1271,28 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
             <button
               type="button"
               onClick={onBack}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:hover:bg-white/10"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/72 transition hover:bg-white/[0.08] hover:text-white"
               aria-label="Back to home"
             >
               <ArrowLeft size={18} />
             </button>
             <div className="min-w-0">
-              <div className="text-sm font-semibold text-slate-950 dark:text-white">{project.name}</div>
-              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-300/70">
-                <span className="line-clamp-1">{project.description}</span>
-                <span className="hidden h-1 w-1 rounded-full bg-slate-300 sm:inline-block dark:bg-slate-500" />
-                <span>{t(lang, 'savedVersionsHint')}</span>
-              </div>
+              <div className="truncate text-sm font-semibold text-white">{project.name}</div>
+              <div className="mt-1 text-xs uppercase tracking-[0.2em] text-white/36">{t(lang, 'savedVersionsHint')}</div>
             </div>
           </div>
+
           <div className="flex items-center gap-2">
-            <span
-              className={`rounded-full px-3 py-1.5 text-xs font-medium ${
-                project.status === 'COMPLETED'
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
-                  : project.status === 'FAILED'
-                  ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300'
-                  : project.status === 'RUNNING'
-                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
-                  : 'bg-slate-100 text-slate-700 dark:bg-white/5 dark:text-slate-200'
-              }`}
-            >
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-white/72">
+              <span className="relative inline-flex h-2.5 w-2.5">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: tone.color, boxShadow: `0 0 16px ${tone.glow}` }} />
+                {project.status === 'RUNNING' && (
+                  <span
+                    className="absolute inset-0 rounded-full border border-indigo-300/50"
+                    style={{ animation: 'detailPulse 1.8s ease-out infinite' }}
+                  />
+                )}
+              </span>
               {getStatusLabel(project, lang)}
             </span>
             <SessionMenu
@@ -1117,368 +1305,181 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
             <button
               type="button"
               onClick={onOpenSettings}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:hover:bg-white/10"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/72 transition hover:bg-white/[0.08] hover:text-white"
               aria-label="Open settings"
             >
               <Settings2 size={18} />
             </button>
           </div>
         </div>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
-                activeTab === tab.id
-                  ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950'
-                  : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10'
-              }`}
-            >
-              <tab.icon size={16} />
-              {tab.label}
-            </button>
-          ))}
-        </div>
       </header>
 
-      <div className="grid min-h-0 flex-1 gap-6 overflow-hidden p-4 sm:p-6 lg:grid-cols-[340px_minmax(0,1fr)]">
-        <aside className="custom-scrollbar order-2 overflow-y-auto lg:order-1">
-          <div className="rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#111827]">
-            <div className="border-b border-slate-200 px-5 py-4 dark:border-white/10">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-950 dark:text-white">
-                <Sparkles size={16} />
-                {t(lang, 'projectConversation')}
-              </div>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-300/70">{t(lang, 'savedVersionsHint')}</p>
-            </div>
-            <div className="custom-scrollbar max-h-[420px] space-y-4 overflow-y-auto px-5 py-5 lg:h-[calc(100vh-27rem)] lg:max-h-none">
-              <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/5">
-                <div className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400 dark:text-slate-300/60">{t(lang, 'originalPrompt')}</div>
-                <div className="mt-3 text-sm leading-6 text-slate-700 dark:text-slate-100">{project.description}</div>
-              </div>
-              {messages.length > 0 ? (
-                messages.map((message, index) => <Bubble key={`${message.role}-${index}-${message.content}`} message={message} />)
-              ) : (
-                <div className="rounded-[1.5rem] border border-dashed border-slate-300 p-4 text-sm text-slate-500 dark:border-white/10 dark:text-slate-300/70">
-                  {t(lang, 'emptyConversation')}
-                </div>
-              )}
-              {project.status === 'RUNNING' && (
-                <div className="rounded-[1.5rem] border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/20 dark:bg-amber-500/10">
-                  <div className="flex items-center gap-3">
-                    <Loader2 size={18} className="animate-spin text-amber-600 dark:text-amber-300" />
-                    <div>
-                      <div className="text-sm font-medium text-amber-900 dark:text-amber-100">{statusMessage}</div>
-                      <div className="mt-1 text-xs text-amber-700 dark:text-amber-200/80">{progress}%</div>
+      <div className="relative z-10 min-h-0 flex-1 overflow-hidden p-4 sm:p-6">
+        <div className="grid h-full min-h-0 gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
+          <aside className="relative min-h-0 overflow-hidden rounded-[2rem] border border-white/10 bg-[#07101f] shadow-[0_24px_80px_rgba(2,6,23,0.34)]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.18),transparent_42%),radial-gradient(circle_at_bottom,rgba(8,145,178,0.12),transparent_36%)]" />
+            <div className="relative flex h-full min-h-0 flex-col">
+              <div className="border-b border-white/10 px-5 py-5">
+                <div className="flex items-start gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-lg font-semibold text-white">{project.name}</div>
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="relative inline-flex h-3 w-3">
+                        <span className="h-3 w-3 rounded-full" style={{ backgroundColor: tone.color, boxShadow: `0 0 20px ${tone.glow}` }} />
+                        {project.status === 'RUNNING' && (
+                          <span
+                            className="absolute inset-0 rounded-full border border-indigo-300/50"
+                            style={{ animation: 'detailPulse 1.8s ease-out infinite' }}
+                          />
+                        )}
+                      </span>
+                      <span className="text-xs uppercase tracking-[0.2em] text-white/44">{getStatusLabel(project, lang)}</span>
                     </div>
                   </div>
-                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-amber-100 dark:bg-white/10">
-                    <div className="h-full rounded-full bg-amber-500 transition-all duration-500" style={{ width: `${progress}%` }} />
-                  </div>
                 </div>
-              )}
-              {project.status === 'COMPLETED' && <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100">{t(lang, 'buildReady')}</div>}
-              {project.status === 'FAILED' && <div className="rounded-[1.5rem] border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-100">{t(lang, 'buildFailed')}</div>}
-              <div ref={endRef} />
-            </div>
-            <form onSubmit={handleSendMessage} className="border-t border-slate-200 px-5 py-4 dark:border-white/10">
-              {composerError && (
-                <div className="mb-3 rounded-[1.25rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
-                  {composerError}
-                </div>
-              )}
-              <textarea
-                ref={chatTextareaRef}
-                value={chatInput}
-                onChange={(event) => {
-                  setChatInput(event.target.value);
-                  if (composerError) {
-                    setComposerError(null);
-                  }
-                }}
-                onKeyDown={(event) => {
-                  if (event.key !== 'Enter' || event.shiftKey) return;
-                  event.preventDefault();
-                  event.currentTarget.form?.requestSubmit();
-                }}
-                disabled={chatLoading || project.status === 'RUNNING'}
-                placeholder={
-                  project.status === 'RUNNING'
-                    ? t(lang, 'buildInProgress')
-                    : t(lang, 'chatComposerPlaceholder')
-                }
-                className="min-h-[120px] w-full resize-none rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-6 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-300 focus:bg-white dark:border-white/10 dark:bg-slate-950/40 dark:text-white dark:placeholder:text-slate-400/70 dark:focus:bg-slate-950"
-              />
-              <button
-                type="submit"
-                disabled={!chatInput.trim() || chatLoading || project.status === 'RUNNING'}
-                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
-              >
-                {chatLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                {chatLoading ? t(lang, 'thinking') : t(lang, 'askForChanges')}
-              </button>
-            </form>
-          </div>
-        </aside>
 
-        <section className="custom-scrollbar order-1 space-y-4 overflow-y-auto lg:order-2">
-          {activeTab === 'preview' &&
-            (resolvedVersion && previewSrc ? (
-              <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#111827]">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4 dark:border-white/10">
-                  <div>
-                    <div className="text-sm font-semibold text-slate-950 dark:text-white">{t(lang, 'latestVersion')}</div>
-                    <div className="mt-1 text-sm text-slate-500 dark:text-slate-300/70">
-                      {t(lang, 'versionHistory')} {resolvedVersion}
+                {project.status === 'RUNNING' && (
+                  <div className="mt-5">
+                    <div className="mb-2 flex items-center justify-between text-[11px] uppercase tracking-[0.18em] text-white/38">
+                      <span>{statusMessage}</span>
+                      <span>{progress}%</span>
+                    </div>
+                    <div className="relative h-2 overflow-hidden rounded-full bg-white/[0.07]">
+                      <div className="build-progress relative h-full rounded-full bg-[linear-gradient(90deg,#4f46e5,#7c3aed,#0891b2)]" style={{ width: `${progress}%` }} />
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setViewport('desktop')}
-                      className={`rounded-full p-2 transition ${
-                        viewport === 'desktop'
-                          ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950'
-                          : 'border border-slate-200 bg-white text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-200'
-                      }`}
-                      aria-label="Desktop preview"
-                    >
-                      <Monitor size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setViewport('mobile')}
-                      className={`rounded-full p-2 transition ${
-                        viewport === 'mobile'
-                          ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950'
-                          : 'border border-slate-200 bg-white text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-200'
-                      }`}
-                      aria-label="Mobile preview"
-                    >
-                      <Smartphone size={16} />
-                    </button>
-                  </div>
-                </div>
-                <div className="bg-slate-100 p-4 dark:bg-slate-950/40 sm:p-6">
-                  {viewport === 'desktop' ? (
-                    <iframe title="Project preview" src={previewSrc} className="h-[70vh] w-full rounded-[1.5rem] border-0 bg-white shadow-sm" />
-                  ) : (
-                    <div className="mx-auto w-[375px] max-w-full overflow-hidden rounded-[2.25rem] border-[10px] border-slate-950 bg-white shadow-2xl dark:border-slate-200">
-                      <iframe title="Project preview mobile" src={previewSrc} className="h-[70vh] w-full border-0 bg-white" />
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : project?.status === 'RUNNING' ? (
-              <BuildSkeletonScreen currentStage={project.currentStage} archetype={project.uiArchetype} />
-            ) : (
-              <EmptyPanel icon={<Monitor size={22} />} title={headError ? t(lang, 'couldNotLoad') : t(lang, 'noPreviewYet')} detail={headError ? undefined : t(lang, 'savedVersionsHint')} />
-            ))}
-
-          {activeTab === 'brief' &&
-            (briefState.loading ? (
-              <EmptyPanel icon={<Loader2 size={22} className="animate-spin" />} title={t(lang, 'sending')} />
-            ) : briefState.error ? (
-              <EmptyPanel icon={<RefreshCw size={22} />} title={t(lang, 'couldNotLoad')} />
-            ) : briefState.data ? (
-              <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-[#111827] sm:p-8">
-                <h2 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">{briefState.data.title}</h2>
-                <p className="mt-4 text-base leading-7 text-slate-600 dark:text-slate-200/80">{briefState.data.summary}</p>
-                <div className="mt-8 grid gap-6 lg:grid-cols-2">
-                  <section className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-white/5">
-                    <h3 className="text-sm font-semibold text-slate-950 dark:text-white">{t(lang, 'brief')}</h3>
-                    <ul className="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-200/80">
-                      {(briefState.data.features || []).map((feature: string) => (
-                        <li key={feature} className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-950/40">
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                  <section className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-white/5">
-                    <h3 className="text-sm font-semibold text-slate-950 dark:text-white">{t(lang, 'briefGoals')}</h3>
-                    <ul className="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-200/80">
-                      {(
-                        briefState.data.goals.length > 0 ? briefState.data.goals : briefState.data.userStories
-                      ).map((item: string) => (
-                        <li key={item} className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-950/40">
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                </div>
-                {briefState.data.targetUsers?.length > 0 && (
-                  <section className="mt-6 rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-white/5">
-                    <h3 className="text-sm font-semibold text-slate-950 dark:text-white">{t(lang, 'briefAudience')}</h3>
-                    <ul className="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-200/80">
-                      {briefState.data.targetUsers.map((user: string) => (
-                        <li key={user} className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-950/40">
-                          {user}
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
                 )}
               </div>
-            ) : (
-              <EmptyPanel icon={<FileText size={22} />} title={t(lang, 'noBriefYet')} />
-            ))}
 
-          {activeTab === 'buildPlan' &&
-            (planState.loading ? (
-              <EmptyPanel icon={<Loader2 size={22} className="animate-spin" />} title={t(lang, 'sending')} />
-            ) : planState.error ? (
-              <EmptyPanel icon={<RefreshCw size={22} />} title={t(lang, 'couldNotLoad')} />
-            ) : planState.data ? (
-              <ArtifactViewer artifact={planState.data} />
-            ) : (
-              <EmptyPanel icon={<Layers3 size={22} />} title={t(lang, 'noPlanYet')} />
-            ))}
+              <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+                <div className="mb-4 text-xs uppercase tracking-[0.24em] text-white/34">{t(lang, 'projectConversation')}</div>
+                <div className="space-y-4">
+                  <div className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-4">
+                    <div className="text-[11px] uppercase tracking-[0.22em] text-white/36">{t(lang, 'originalPrompt')}</div>
+                    <div className="mt-3 text-sm leading-6 text-white/66">{project.description}</div>
+                  </div>
 
-          {activeTab === 'code' && <CodePanel lang={lang} projectId={projectId} version={resolvedVersion} />}
-
-          {activeTab === 'changes' &&
-            (changesState.loading ? (
-              <EmptyPanel icon={<Loader2 size={22} className="animate-spin" />} title={t(lang, 'sending')} />
-            ) : changesState.error ? (
-              <EmptyPanel icon={<RefreshCw size={22} />} title={t(lang, 'couldNotLoad')} />
-            ) : changesState.data && changesState.data.length > 0 ? (
-              <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-[#111827] sm:p-8">
-                <h2 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">{t(lang, 'whatChangedTitle')}</h2>
-                <p className="mt-2 text-sm text-slate-500 dark:text-slate-300/70">{t(lang, 'whatChangedSubtitle')}</p>
-                <div className="mt-8 space-y-4">
-                  {changesState.data.map((task) => (
-                    <div key={task.id} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-5 py-4 dark:border-white/10 dark:bg-white/5">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="text-sm font-semibold text-slate-950 dark:text-white">{task.filename}</div>
-                        <div className="text-xs text-slate-400 dark:text-slate-300/60">{formatTimestamp(task.timestamp)}</div>
-                      </div>
-                      <div className="mt-2 text-sm text-slate-600 dark:text-slate-200/80">{task.description}</div>
+                  {messages.length > 0 ? (
+                    messages.map((message, index) => <ChatBubble key={`${message.role}-${index}-${message.content}`} message={message} />)
+                  ) : (
+                    <div className="rounded-[1.4rem] border border-dashed border-white/10 p-4 text-sm text-white/44">
+                      {t(lang, 'emptyConversation')}
                     </div>
+                  )}
+
+                  {project.status === 'COMPLETED' && (
+                    <div className="rounded-[1.4rem] border border-emerald-400/20 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+                      {t(lang, 'buildReady')}
+                    </div>
+                  )}
+                  {project.status === 'FAILED' && (
+                    <div className="rounded-[1.4rem] border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+                      {t(lang, 'buildFailed')}
+                    </div>
+                  )}
+                  <div ref={endRef} />
+                </div>
+              </div>
+
+              <div className="border-t border-white/10 px-5 py-4">
+                {composerError && (
+                  <div className="mb-3 rounded-[1.2rem] border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+                    {composerError}
+                  </div>
+                )}
+                <form onSubmit={handleSendMessage}>
+                  <div className="composer-shell rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-3 transition">
+                    <textarea
+                      ref={chatTextareaRef}
+                      value={chatInput}
+                      onChange={(event) => {
+                        setChatInput(event.target.value);
+                        if (composerError) setComposerError(null);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key !== 'Enter' || event.shiftKey) return;
+                        event.preventDefault();
+                        event.currentTarget.form?.requestSubmit();
+                      }}
+                      disabled={chatLoading || project.status === 'RUNNING'}
+                      placeholder={project.status === 'RUNNING' ? t(lang, 'buildInProgress') : t(lang, 'chatComposerPlaceholder')}
+                      className="min-h-[92px] w-full resize-none border-0 bg-transparent px-1 py-1 text-sm leading-6 text-white outline-none placeholder:text-white/28"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!chatInput.trim() || chatLoading || project.status === 'RUNNING'}
+                      className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#4f46e5,#7c3aed,#0891b2)] px-4 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(79,70,229,0.28)] transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {chatLoading ? <Loader2 size={16} className="animate-spin" /> : <SendHorizontal size={16} />}
+                      {chatLoading ? t(lang, 'thinking') : t(lang, 'askForChanges')}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <div className="absolute right-0 top-[84px] hidden -translate-x-3 lg:block">
+                <div className="flex flex-col gap-2 rounded-full border border-white/10 bg-[#060b19]/92 p-2 backdrop-blur-xl">
+                  {tabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      title={tab.label}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`group relative flex h-10 w-10 items-center justify-center rounded-full transition ${
+                        activeTab === tab.id
+                          ? 'bg-[linear-gradient(135deg,#4f46e5,#7c3aed)] text-white shadow-[0_12px_30px_rgba(79,70,229,0.35)]'
+                          : 'bg-white/[0.04] text-white/56 hover:bg-white/[0.08] hover:text-white'
+                      }`}
+                    >
+                      <tab.icon size={16} />
+                      <span className="pointer-events-none absolute right-[calc(100%+10px)] whitespace-nowrap rounded-full border border-white/10 bg-[#09101f] px-3 py-1.5 text-xs font-medium text-white/80 opacity-0 transition group-hover:opacity-100">
+                        {tab.label}
+                      </span>
+                    </button>
                   ))}
                 </div>
               </div>
-            ) : (
-              <EmptyPanel icon={<History size={22} />} title={t(lang, 'noChangesYet')} />
-            ))}
+            </div>
+          </aside>
 
-          {activeTab === 'versions' &&
-            (versionsState.loading ? (
-              <EmptyPanel icon={<Loader2 size={22} className="animate-spin" />} title={t(lang, 'loadingVersions')} />
-            ) : versionsState.error ? (
-              <EmptyPanel icon={<RefreshCw size={22} />} title={t(lang, 'couldNotLoad')} />
-            ) : versionsState.versions.length === 0 ? (
-              <EmptyPanel icon={<Clock3 size={22} />} title={t(lang, 'noVersionsYet')} />
-            ) : (
-              <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#111827]">
-                <div className="grid min-h-[560px] lg:grid-cols-[320px_minmax(0,1fr)]">
-                  <aside className="border-b border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-slate-950/30 lg:border-b-0 lg:border-r">
-                    <div className="mb-4">
-                      <div className="text-sm font-semibold text-slate-950 dark:text-white">{t(lang, 'versionHistory')}</div>
-                      <div className="mt-1 text-sm text-slate-500 dark:text-slate-300/70">{t(lang, 'savedVersionsHint')}</div>
-                    </div>
-                    <div className="space-y-2">
-                      {versionsState.versions.map((item) => {
-                        const promptPreview =
-                          item.prompt_history?.filter((entry) => entry.role === 'user').slice(-1)[0]?.content ||
-                          t(lang, 'promptVersionFallback');
-                        return (
-                          <button
-                            key={item.id}
-                            type="button"
-                            onClick={() => setVersionsState((current) => ({ ...current, selectedId: item.id }))}
-                            className={`block w-full rounded-[1.5rem] border px-4 py-3 text-left transition ${
-                              versionsState.selectedId === item.id
-                                ? 'border-slate-950 bg-slate-950 text-white dark:border-white dark:bg-white dark:text-slate-950'
-                                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:hover:bg-white/10'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="text-sm font-semibold">v{item.version}</div>
-                              <div className="text-xs opacity-70">{formatTimestamp(item.created_at)}</div>
-                            </div>
-                            <div className="mt-2 line-clamp-2 text-sm opacity-80">{promptPreview}</div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </aside>
-                  <div className="min-w-0 p-4 sm:p-6">
-                    {selectedVersion ? (
-                      <div className="flex h-full flex-col gap-5">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div>
-                            <div className="text-lg font-semibold text-slate-950 dark:text-white">v{selectedVersion.version}</div>
-                            <div className="mt-1 text-sm text-slate-500 dark:text-slate-300/70">{formatTimestamp(selectedVersion.created_at)}</div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleRestore}
-                            disabled={versionsState.restoringId === selectedVersion.id}
-                            className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
-                          >
-                            {versionsState.restoringId === selectedVersion.id ? <Loader2 size={16} className="animate-spin" /> : <RotateCcw size={16} />}
-                            {versionsState.restoringId === selectedVersion.id ? t(lang, 'restoring') : t(lang, 'restoreVersion')}
-                          </button>
-                        </div>
-                        <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/5">
-                          <div className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400 dark:text-slate-300/60">{t(lang, 'askForChanges')}</div>
-                          <div className="mt-3 text-sm leading-6 text-slate-700 dark:text-slate-100">
-                            {selectedVersion.prompt_history?.filter((entry) => entry.role === 'user').slice(-1)[0]?.content || t(lang, 'promptVersionFallback')}
-                          </div>
-                        </div>
-                        <div className="flex-1 rounded-[1.5rem] border border-slate-200 bg-slate-100 p-4 dark:border-white/10 dark:bg-slate-950/40">
-                          <iframe
-                            title={`Version ${selectedVersion.version} preview`}
-                            src={getPreviewUrl(projectId, selectedVersion.version)}
-                            className="h-[55vh] w-full rounded-[1.25rem] border-0 bg-white"
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <EmptyPanel icon={<Clock3 size={22} />} title={t(lang, 'selectVersion')} />
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-
-          {insightsState.version != null && insightsState.insights.length > 0 && (
-            <BuildInsightsCard
-              key={`${projectId}-${insightsState.version}`}
-              lang={lang}
-              version={insightsState.version}
-              insights={insightsState.insights}
-              promptScore={insightsState.promptScore}
-              collapsed={insightsCollapsed}
-              onToggleCollapse={() => setInsightsCollapsed((current) => !current)}
-              onApplySuggestion={handleApplySuggestion}
-            />
-          )}
-        </section>
+          <section className="custom-scrollbar min-h-0 overflow-y-auto pr-1">
+            <div key={`${activeTab}-${resolvedVersion ?? 'none'}-${project.status}`} className="content-panel-enter space-y-4">
+              {activePanel}
+              {insightsState.version != null && insightsState.insights.length > 0 && (
+                <BuildInsightsCard
+                  key={`${projectId}-${insightsState.version}`}
+                  lang={lang}
+                  version={insightsState.version}
+                  insights={insightsState.insights}
+                  promptScore={insightsState.promptScore}
+                  collapsed={insightsCollapsed}
+                  onToggleCollapse={() => setInsightsCollapsed((current) => !current)}
+                  onApplySuggestion={handleApplySuggestion}
+                />
+              )}
+            </div>
+          </section>
+        </div>
       </div>
 
       {showRegisterPrompt && !hasSession && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/30 p-4 backdrop-blur-sm sm:items-center">
-          <div className="w-full max-w-lg rounded-[2rem] border border-white/80 bg-white p-6 shadow-[0_30px_80px_rgba(15,23,42,0.16)] sm:p-7">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-emerald-700">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/50 p-4 backdrop-blur-sm sm:items-center">
+          <div className="w-full max-w-lg rounded-[2rem] border border-white/10 bg-[#09101f] p-6 text-white shadow-[0_30px_80px_rgba(2,6,23,0.55)] sm:p-7">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-emerald-200">
               <Sparkles size={14} />
               Build Ready
             </div>
-            <h3 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950">
+            <h3 className="mt-4 text-2xl font-semibold tracking-tight text-white">
               Your app is ready! Create a free account to save it and keep building.
             </h3>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
+            <p className="mt-3 text-sm leading-6 text-white/58">
               You can keep reviewing this version right now. Create an account whenever you want to save this project and keep iterating from it.
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <button
                 type="button"
                 onClick={() => onNavigate(`/register?guest_project_id=${encodeURIComponent(projectId)}`)}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-[1.25rem] bg-slate-950 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-[1.25rem] bg-[linear-gradient(135deg,#4f46e5,#7c3aed,#0891b2)] px-4 py-3 text-sm font-semibold text-white transition hover:scale-[1.01]"
               >
                 Create Account
                 <ExternalLink size={16} />
@@ -1486,7 +1487,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               <button
                 type="button"
                 onClick={() => setShowRegisterPrompt(false)}
-                className="inline-flex flex-1 items-center justify-center rounded-[1.25rem] border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                className="inline-flex flex-1 items-center justify-center rounded-[1.25rem] border border-white/10 px-4 py-3 text-sm font-medium text-white/68 transition hover:bg-white/[0.05] hover:text-white"
               >
                 Maybe Later
               </button>
