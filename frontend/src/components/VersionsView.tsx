@@ -7,6 +7,7 @@ import { fetchVersions } from "@/services/api";
 interface Version {
   id: number;
   executionId: number;
+  parentVersion?: number;
   label: string;
   status: "completed" | "failed";
   description: string;
@@ -42,8 +43,11 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
   const [isProjectBuilding, setIsProjectBuilding] = useState(false);
   const [iframeKey, setIframeKey] = useState(0);
   const [restoring, setRestoring] = useState(false);
+  const [restoreConfirmedExecutionId, setRestoreConfirmedExecutionId] = useState<number | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const wasBuilding = useRef(false);
+  const prevVersionCount = useRef(0);
+  const restoreConfirmationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { t } = useLanguage();
 
   const handleRestore = async (executionId: number) => {
@@ -53,6 +57,13 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
         method: "POST",
         headers: { Authorization: `Bearer ${localStorage.getItem("archon_token")}` },
       });
+      setRestoreConfirmedExecutionId(executionId);
+      if (restoreConfirmationTimeoutRef.current) {
+        clearTimeout(restoreConfirmationTimeoutRef.current);
+      }
+      restoreConfirmationTimeoutRef.current = setTimeout(() => {
+        setRestoreConfirmedExecutionId(null);
+      }, 2000);
       setIframeKey((k) => k + 1);
     } catch (e) {
       console.error("Restore failed:", e);
@@ -84,6 +95,9 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
     try {
       const raw = await fetchVersions(projectId);
       if (cancelled.value) return;
+      const parentVersionByExecutionId = new Map(
+        raw.map((v) => [Number(v.id), v.version])
+      );
       const mapped: Version[] = raw.map((v) => {
         const lastUserMsg = v.prompt_history?.filter(m => m.role === "user").pop()?.content || "";
         const isSuccess = v.status === "success" || v.status === "completed";
@@ -94,7 +108,8 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
         if (imageCount > 0) parts.push(`${imageCount} image${imageCount !== 1 ? "s" : ""}`);
         return {
           id: v.version,
-          executionId: v.id,
+          executionId: Number(v.id),
+          parentVersion: v.parent_execution_id != null ? parentVersionByExecutionId.get(Number(v.parent_execution_id)) : undefined,
           label: "v" + v.version,
           status: isSuccess ? "completed" as const : "failed" as const,
           description: lastUserMsg.length > 40 ? lastUserMsg.slice(0, 40) + "…" : lastUserMsg,
@@ -113,9 +128,11 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
       });
       mapped.sort((a, b) => b.id - a.id);
       setVersions(mapped);
-      if (mapped.length > 0 && (selectedVersion === null || !mapped.find(m => m.id === selectedVersion))) {
+      const hasNewBuild = mapped.length > prevVersionCount.current;
+      if (mapped.length > 0 && (hasNewBuild || selectedVersion === null || !mapped.find(m => m.id === selectedVersion))) {
         onVersionSelect(mapped[0].id);
       }
+      prevVersionCount.current = mapped.length;
       setLoadingVersions(false);
     } catch {}
   };
@@ -123,12 +140,17 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
   useEffect(() => {
     if (!projectId) { setVersions([]); return; }
     const cancelled = { value: false };
+    prevVersionCount.current = 0;
     setLoadingVersions(true);
     loadVersionData(projectId, cancelled);
     pollRef.current = setInterval(() => loadVersionData(projectId, cancelled), 3000);
     return () => {
       cancelled.value = true;
       if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+      if (restoreConfirmationTimeoutRef.current) {
+        clearTimeout(restoreConfirmationTimeoutRef.current);
+        restoreConfirmationTimeoutRef.current = null;
+      }
     };
   }, [projectId]);
 
@@ -210,6 +232,9 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
                   </div>
                   <p className="text-xs text-foreground mt-1.5 truncate leading-tight">{v.description}</p>
                   <p className="text-[11px] text-muted-foreground mt-1">{v.filesChanged} {t("filesChanged")}</p>
+                  {typeof v.parentVersion === "number" && v.parentVersion < v.id - 1 && (
+                    <p className="text-[11px] text-muted-foreground mt-1">↩ branched from v{v.parentVersion}</p>
+                  )}
                   {v.qualityTier === "high" && (
                     <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 border border-blue-400/40 shadow-[0_0_6px_rgba(59,130,246,0.4)]">High Quality</span>
                   )}
@@ -257,9 +282,10 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
               <button
                 onClick={() => handleRestore(version.executionId)}
                 disabled={restoring}
+                title="Future builds will continue from this version"
                 className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5 disabled:opacity-50"
               >
-                {restoring ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />} {t("restoreToThisVersion")}
+                {restoring ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />} {restoreConfirmedExecutionId === version.executionId ? "Set ✓" : "Set as iteration base"}
               </button>
             )}
           </div>

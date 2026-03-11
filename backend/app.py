@@ -684,35 +684,6 @@ def run_full_pipeline_async(
                 print(f"DesignAgent failed (non-fatal): {design_err}")
                 add_log("Design Agent: Skipped, continuing with build...", project_id=project_id)
 
-        # Query Watson Discovery for best archetype-matched build (initial build only)
-        reference_code = None
-        if not is_iteration:
-            detected_archetype = get_plan_ui_archetype(plan) or locked_ui_archetype
-            if detected_archetype:
-                canonical_archetype = DESIGN_KIT_ALIASES.get(detected_archetype, detected_archetype)
-                try:
-                    best_build = discovery_client.query_best_build(canonical_archetype)
-                    if best_build:
-                        reference_code = {
-                            "html": best_build.get("html_code", ""),
-                            "css": best_build.get("css_code", ""),
-                            "score": best_build.get("eval_score", "N/A"),
-                        }
-                        msg = (
-                            f"[Discovery] Found reference build for '{canonical_archetype}' "
-                            f"(score: {reference_code['score']})"
-                        )
-                        print(msg)
-                    else:
-                        msg = f"[Discovery] No reference build found for '{canonical_archetype}'"
-                        print(msg)
-                except Exception as disc_err:
-                    print(f"[Discovery] Query failed (non-fatal): {disc_err}")
-            else:
-                print("[Discovery] Skipping query: no archetype detected from plan or project lock")
-
-        add_log("Build Agent: Writing your code...", project_id=project_id)
-
         engineer_task = None
         fallback_task = None
         ui_keywords = ["html", "ui", "frontend", "scaffold", "interface", "web", "page", "app", "component"]
@@ -731,6 +702,51 @@ def run_full_pipeline_async(
             engineer_task = fallback_task
         if not engineer_task:
             raise ValueError("No engineer tasks found in plan")
+
+        # Query Watson Discovery for best archetype-matched build (initial build only)
+        reference_code = None
+        if not is_iteration:
+            detected_archetype = get_plan_ui_archetype(plan) or locked_ui_archetype
+            engineer_kit_archetype = DESIGN_KIT_ALIASES.get(engineer_task.ui_archetype, engineer_task.ui_archetype)
+            if detected_archetype:
+                canonical_archetype = DESIGN_KIT_ALIASES.get(detected_archetype, detected_archetype)
+                try:
+                    best_build = discovery_client.query_best_build(canonical_archetype)
+                    if best_build and canonical_archetype == engineer_kit_archetype:
+                        reference_code = {
+                            "html": best_build.get("html_code", ""),
+                            "css": best_build.get("css_code", ""),
+                            "score": best_build.get("eval_score", "N/A"),
+                            "archetype": canonical_archetype,
+                        }
+                        msg = (
+                            f"[Discovery] Found reference build for '{canonical_archetype}' "
+                            f"(score: {reference_code['score']})"
+                        )
+                        print(msg)
+                    elif best_build:
+                        print(
+                            "[Discovery] Skipping reference build injection due to archetype mismatch: "
+                            f"discovery='{canonical_archetype}', engineer='{engineer_kit_archetype}'"
+                        )
+                    else:
+                        msg = f"[Discovery] No reference build found for '{canonical_archetype}'"
+                        print(msg)
+                except Exception as disc_err:
+                    print(f"[Discovery] Query failed (non-fatal): {disc_err}")
+            else:
+                print("[Discovery] Skipping query: no archetype detected from plan or project lock")
+
+        add_log("Build Agent: Writing your code...", project_id=project_id)
+
+        if is_iteration and ancestor_version_dir:
+            ancestor_base_css = ancestor_version_dir / "code" / "src" / "base.css"
+            current_src_dir = version_dir / "code" / "src"
+            current_base_css = current_src_dir / "base.css"
+            if ancestor_base_css.exists() and not current_base_css.exists():
+                current_src_dir.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(ancestor_base_css, current_base_css)
+                add_log("Build Agent: Copied base.css from previous version.", project_id=project_id)
 
         from agents.engineer_agent import EngineerAgent
         engineer = EngineerAgent(genai_client)

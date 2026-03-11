@@ -262,6 +262,7 @@ export interface Version {
   version: number;
   status: string;
   created_at: string;
+  parent_execution_id?: string | number | null;
   prompt_history?: Array<{ role: string; content: string }>;
   artifacts?: { brief?: any; plan?: any };
   tokens_used?: number | null;
