@@ -86,6 +86,7 @@ export function VersionTimeline() {
   const [restoring, setRestoring] = useState(false)
   const [restoreConfirmedExecutionId, setRestoreConfirmedExecutionId] = useState<number | null>(null)
   const [isProjectBuilding, setIsProjectBuilding] = useState(false)
+  const prevVersionCount = useRef(0)
   const restoreConfirmationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -97,6 +98,7 @@ export function VersionTimeline() {
 
   useEffect(() => {
     if (!projectId) { setLoading(false); return }
+    prevVersionCount.current = 0
     fetchVersions()
   }, [projectId])
 
@@ -117,12 +119,14 @@ export function VersionTimeline() {
       const data = await res.json()
       const parsed = parseVersions(data.versions || [])
       setVersions(parsed)
-      if (parsed.length > 0 && (selectedVersionId === null || !parsed.find((v) => v.id === selectedVersionId))) {
+      const hasNewBuild = parsed.length > prevVersionCount.current
+      if (parsed.length > 0 && (hasNewBuild || selectedVersionId === null || !parsed.find((v) => v.id === selectedVersionId))) {
         setSelectedVersionId(parsed[0].id)
         // Also fire the event for the default selection so navbar + artifacts sync
         sessionStorage.setItem("archon_selected_version", String(parsed[0].version))
         window.dispatchEvent(new CustomEvent("archon:version-change", { detail: { version: parsed[0].version } }))
       }
+      prevVersionCount.current = parsed.length
     } catch (e) { console.error("Failed to load versions:", e) }
     finally { setLoading(false) }
   }

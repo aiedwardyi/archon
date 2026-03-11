@@ -46,6 +46,7 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
   const [restoreConfirmedExecutionId, setRestoreConfirmedExecutionId] = useState<number | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const wasBuilding = useRef(false);
+  const prevVersionCount = useRef(0);
   const restoreConfirmationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { t } = useLanguage();
 
@@ -127,9 +128,11 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
       });
       mapped.sort((a, b) => b.id - a.id);
       setVersions(mapped);
-      if (mapped.length > 0 && (selectedVersion === null || !mapped.find(m => m.id === selectedVersion))) {
+      const hasNewBuild = mapped.length > prevVersionCount.current;
+      if (mapped.length > 0 && (hasNewBuild || selectedVersion === null || !mapped.find(m => m.id === selectedVersion))) {
         onVersionSelect(mapped[0].id);
       }
+      prevVersionCount.current = mapped.length;
       setLoadingVersions(false);
     } catch {}
   };
@@ -137,6 +140,7 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
   useEffect(() => {
     if (!projectId) { setVersions([]); return; }
     const cancelled = { value: false };
+    prevVersionCount.current = 0;
     setLoadingVersions(true);
     loadVersionData(projectId, cancelled);
     pollRef.current = setInterval(() => loadVersionData(projectId, cancelled), 3000);
