@@ -377,14 +377,50 @@ During initial builds (no preview yet), the consumer preview panel now shows a f
 - 🔴 Generated dashboard CSS has overlapping/broken text on bottom of page (pre-existing quality issue, unrelated to skeleton)
 - 🔴 Build Insights returns 401 for guest users — insights endpoint needs optional-auth like preview endpoint
 
+## Phase 22.H — Consumer V3 Animated Redesign (✅ Complete Mar 11, 2026)
+
+Full animated reimagination of consumer frontend (port 3002). Three design branches created, v3 selected and merged to main.
+
+- ✅ Animated gradient mesh background — 3 drifting orbs (indigo, violet, cyan), CSS @keyframes
+- ✅ Headline gradient text shimmer animation (4s sweep)
+- ✅ Inspiration cards with lift/glow hover animations (replaced suggestion pills)
+- ✅ Prompt textarea glowing border pulse on focus
+- ✅ Icon-only navigation rail on project detail (6 icons: Preview, Brief, Plan, Code, History, Versions)
+- ✅ Neural network loading animation during builds (animated dots + lines)
+- ✅ Version cards with scaled iframe thumbnails
+- ✅ Live preview fills right panel as hero
+- ✅ Sidebar: "WORLDS IN PROGRESS" branding, pulsing backend status dot, gradient Start Building button
+- ✅ Branch: design/v3-reimagined → merged to main Mar 11
+
+**Known polish items (queued for 22.I):**
+- 🔴 Remove light/dark toggle from SettingsModal (dark-only app)
+- 🔴 SettingsModal UI too bright — needs dark theme match
+- 🔴 Language switch bug back — requires settings reopen to take effect
+- 🔴 Enter = submit prompt, Shift+Enter = newline (landing textarea)
+- 🔴 Menu icon overlaps chat on mobile/narrow layouts
+- 🔴 Sign In button (top right) too bright white — needs dark theme treatment
+- 🔴 "Could not load" shown during active build for non-preview tabs — needs friendlier message
+- 🔴 Switching tabs starts from mid-page scroll position — should scroll to top
+- 🔴 Versions page: hide "Restore" button when only 1 version or current version selected
+- 🔴 Recent projects on landing page should show live iframe preview thumbnail
+- 🔴 Sign In page is bright white split-modal design — needs dark theme redesign to match v3
+
+**Deferred (bigger features, separate phases):**
+- Credit/token system (Phase 25)
+- Deploy to GitHub / one-click repo (Phase 26)
+- Host on Archon server / "Publish" feature (Phase 27)
+
 ## Up Next
 
 | Phase | Description |
 |-------|-------------|
+| 22.I | Consumer V3 Polish Pass (11 items above) |
 | 22.D | Consumer Versions page (THE MOAT — timeline + preview + narrative) |
 | 22.F | Consumer mobile polish pass |
+| 25 | Credit / token system |
+| 26 | GitHub deployment — one-click repo + auto-commit on iterate |
+| 27 | Publish to Archon hosting — "Publish" button, hosted preview link |
 | — | Fix Build Insights for guest users (insights endpoint → optional-auth) |
-| — | Consumer UX Declutter Pass (high priority — too dense for new users) |
 | — | Quality Regression Investigation (compare Feb 19-27 peak vs current) |
 | 8.3 | Client shareable read-only links (primary moat feature) |
 | 18 | Unified Auth + Plan-Based UI Routing |
