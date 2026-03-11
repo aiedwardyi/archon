@@ -1198,6 +1198,11 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                     setComposerError(null);
                   }
                 }}
+                onKeyDown={(event) => {
+                  if (event.key !== 'Enter' || event.shiftKey) return;
+                  event.preventDefault();
+                  event.currentTarget.form?.requestSubmit();
+                }}
                 disabled={chatLoading || project.status === 'RUNNING'}
                 placeholder={
                   project.status === 'RUNNING'
