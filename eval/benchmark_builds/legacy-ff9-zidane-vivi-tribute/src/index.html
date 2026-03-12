@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zidane Tribal & Vivi Ornitier — Final Fantasy IX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div id="toast" class="toast" aria-live="polite"></div>
+
+<div id="modal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Media viewer">
+  <div class="modal-box">
+    <button class="modal-close" id="modal-close" aria-label="Close">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <img id="modal-img" src="" alt="" class="modal-image">
+    <div class="modal-caption">
+      <span id="modal-title" class="modal-title"></span>
+      <span id="modal-desc" class="modal-desc"></span>
+    </div>
+  </div>
+</div>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-name">ZT<span class="topbar-dot">.</span></div>
+    <nav class="topbar-nav">
+      <a href="#about" class="nav-link">About</a>
+      <a href="#skills" class="nav-link">Skills</a>
+      <a href="#vivi" class="nav-link">Vivi</a>
+      <a href="#gallery" class="nav-link">Gallery</a>
+      <a href="#assets" class="nav-link">Assets</a>
+    </nav>
+    <a href="#contact" class="topbar-cta">Contact</a>
+    <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mobile-nav" id="mobile-nav">
+    <a href="#about" class="nav-link">About</a>
+    <a href="#skills" class="nav-link">Skills</a>
+    <a href="#vivi" class="nav-link">Vivi</a>
+    <a href="#gallery" class="nav-link">Gallery</a>
+    <a href="#assets" class="nav-link">Assets</a>
+    <a href="#contact" class="nav-link cta-mobile">Contact</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero-band" id="hero">
+    <div class="hero-bg" style="background-image: url('/api/assets/87/1/hero_background.png')"></div>
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <div class="hero-eyebrow">Final Fantasy IX — Fan Tribute</div>
+      <h1 class="hero-heading">Zidane<br><em>Tribal</em></h1>
+      <p class="hero-sub">Thief. Hero. The one who connects everything. A journey from Tantalus to the throne of Gaia — and back.</p>
+      <div class="hero-actions">
+        <a href="#about" class="btn-primary">Explore the Story</a>
+        <a href="#gallery" class="btn-secondary">View Gallery</a>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat"><span class="hero-stat-val" data-count="9999">0</span><span class="hero-stat-label">Max HP</span></div>
+        <div class="hero-stat"><span class="hero-stat-val" data-count="255">0</span><span class="hero-stat-label">Speed</span></div>
+        <div class="hero-stat"><span class="hero-stat-val" data-count="47">0</span><span class="hero-stat-label">Trance Abilities</span></div>
+        <div class="hero-stat"><span class="hero-stat-val" data-count="2000">0</span><span class="hero-stat-label">Release Year</span></div>
+      </div>
+    </div>
+    <div class="hero-scroll-cue">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 3v12M4 11l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+  </section>
+
+  <section class="about-section" id="about">
+    <div class="container">
+      <div class="about-grid">
+        <div class="about-portrait">
+          <div class="portrait-frame">
+            <img src="/api/assets/87/1/character_portrait.png" alt="Zidane Tribal character portrait" class="portrait-img">
+            <div class="portrait-glow"></div>
+          </div>
+          <div class="portrait-badge">Genome — Gaia</div>
+        </div>
+        <div class="about-content">
+          <div class="section-label">Character Biography</div>
+          <h2 class="section-heading">The Tail-Bearing Thief from Tantalus</h2>
+          <p class="about-text">Zidane Tribal is the protagonist of Final Fantasy IX. Unlike the brooding heroes of earlier installments, Zidane approaches the world with irreverent charm and a genuine care for those around him. As a member of Tantalus Theatre Troupe — a group of actors doubling as thieves — he stumbles into the greatest adventure of his life.</p>
+          <p class="about-text">Born on Terra and sent to Gaia as part of Kuja's grand design, Zidane grapples with questions of identity and purpose. His philosophy is simple: "You don't need a reason to help people." It's this selfless worldview that makes him one of gaming's most beloved protagonists.</p>
+          <div class="about-tags">
+            <span class="tag">Thief</span>
+            <span class="tag">Trance</span>
+            <span class="tag accent-tag">Genome</span>
+            <span class="tag">Dual Blades</span>
+            <span class="tag">Swallow</span>
+          </div>
+          <div class="about-quote">
+            <span class="quote-mark">&ldquo;</span>
+            You don't need a reason to help people.
+            <span class="quote-mark">&rdquo;</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="skills-section" id="skills">
+    <div class="container">
+      <div class="section-label centered">Combat Abilities</div>
+      <h2 class="section-heading centered">Zidane's Skill Arsenal</h2>
+      <div class="skills-grid">
+        <div class="card skill-card">
+          <div class="skill-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2L8 8H2l4.5 4-1.5 6L12 15l7 3-1.5-6L22 8h-6L12 2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="skill-name">Steal</div>
+          <div class="skill-bar-track"><div class="skill-bar" style="--bar-w:92%"></div></div>
+          <div class="skill-desc">Master pickpocket technique. Can steal rare items from any enemy. Core ability of the Thief class.</div>
+        </div>
+        <div class="card skill-card">
+          <div class="skill-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="skill-name">Soul Blade</div>
+          <div class="skill-bar-track"><div class="skill-bar" style="--bar-w:78%"></div></div>
+          <div class="skill-desc">Channels the power of equipped weapons to inflict special status effects on enemies.</div>
+        </div>
+        <div class="card skill-card">
+          <div class="skill-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <div class="skill-name">Trance</div>
+          <div class="skill-bar-track"><div class="skill-bar" style="--bar-w:95%"></div></div>
+          <div class="skill-desc">Dyne abilities unleashed in Trance. Soulblade's most devastating form. Ultima Sword included.</div>
+        </div>
+        <div class="card skill-card">
+          <div class="skill-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 12h18M12 3l9 9-9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="skill-name">Flee</div>
+          <div class="skill-bar-track"><div class="skill-bar" style="--bar-w:65%"></div></div>
+          <div class="skill-desc">Tactical retreat for the entire party. Essential for low-level runs and resource management.</div>
+        </div>
+        <div class="card skill-card">
+          <div class="skill-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" stroke="currentColor" stroke-width="1.8"/><path d="M8 12l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <div class="skill-name">Detect</div>
+          <div class="skill-bar-track"><div class="skill-bar" style="--bar-w:70%"></div></div>
+          <div class="skill-desc">Reveals enemy weaknesses and hidden stealable items before engaging in combat.</div>
+        </div>
+        <div class="card skill-card">
+          <div class="skill-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="skill-name">Lucky Seven</div>
+          <div class="skill-bar-track"><div class="skill-bar" style="--bar-w:55%"></div></div>
+          <div class="skill-desc">A gamble attack dealing massive damage when HP ends in 7. High risk, high reward.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="vivi-section" id="vivi">
+    <div class="vivi-bg-accent"></div>
+    <div class="container">
+      <div class="vivi-header">
+        <div class="section-label centered">Character Profile</div>
+        <h2 class="section-heading centered">Vivi <em class="vivi-name-em">Ornitier</em></h2>
+        <p class="vivi-intro">The little black mage who discovers what it means to truly live. One of Final Fantasy IX's most iconic and emotionally resonant characters.</p>
+      </div>
+      <div class="vivi-grid">
+        <div class="vivi-portrait-col">
+          <div class="vivi-portrait-frame">
+            <img src="/api/assets/87/1/gallery_image.png" alt="Vivi Ornitier — Black Mage" class="vivi-portrait-img">
+            <div class="vivi-portrait-glow"></div>
+            <div class="vivi-magic-ring"></div>
+          </div>
+          <div class="vivi-badge-row">
+            <span class="vivi-badge">Black Mage</span>
+            <span class="vivi-badge vivi-badge-accent">Terra Origin</span>
+          </div>
+          <div class="vivi-stat-block">
+            <div class="vivi-stat-item">
+              <span class="vivi-stat-label">Class</span>
+              <span class="vivi-stat-val">Black Mage</span>
+            </div>
+            <div class="vivi-stat-item">
+              <span class="vivi-stat-label">Weapon</span>
+              <span class="vivi-stat-val">Staves</span>
+            </div>
+            <div class="vivi-stat-item">
+              <span class="vivi-stat-label">Origin</span>
+              <span class="vivi-stat-val">Unknown / Terra</span>
+            </div>
+            <div class="vivi-stat-item">
+              <span class="vivi-stat-label">Element</span>
+              <span class="vivi-stat-val">All Magic</span>
+            </div>
+          </div>
+        </div>
+        <div class="vivi-bio-col">
+          <div class="section-label">Biography</div>
+          <h3 class="vivi-bio-heading">The Black Mage Who Asked "What Am I?"</h3>
+          <p class="about-text">Vivi Ornitier is a young black mage who joins Zidane's party after a chance encounter in Alexandria. With his oversized hat, glowing yellow eyes, and tiny trembling frame, Vivi quickly became one of gaming's most beloved characters — an unlikely hero grappling with the deepest of existential questions.</p>
+          <p class="about-text">Discovering that he is a manufactured weapon — one of thousands of Black Mage soldiers created by Kuja — Vivi must confront questions of life, death, identity, and what it means to exist. Yet through his journey, he finds friendship, courage, and a reason to live that transcends his origins.</p>
+          <p class="about-text">In battle, Vivi is a powerhouse of elemental destruction. His Black Magic repertoire spans every element — Fire, Blizzard, Thunder, Water, Flare, and Doomsday — making him the party's premier offensive spellcaster. His Trance form, Double Black, allows him to cast two spells simultaneously at devastating effect.</p>
+          <div class="about-tags">
+            <span class="tag">Black Magic</span>
+            <span class="tag accent-tag">Double Black</span>
+            <span class="tag">Trance</span>
+            <span class="tag">Staves</span>
+            <span class="tag">Genome</span>
+            <span class="tag">Existential Hero</span>
+          </div>
+          <div class="vivi-quote">
+            <span class="quote-mark">&ldquo;</span>
+            I'm still unable to sleep. A lot of things have happened... but I'm glad I'm alive.
+            <span class="quote-mark">&rdquo;</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="vivi-skills-header">
+        <div class="section-label centered">Black Magic Arsenal</div>
+        <h3 class="vivi-skills-title centered">Vivi's Spellbook</h3>
+      </div>
+      <div class="vivi-spells-grid">
+        <div class="card vivi-spell-card" data-spell="Fire">
+          <div class="vivi-spell-icon fire-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 2c0 0-1 4-3 6-1.5 1.5-3 3-3 5a6 6 0 0012 0c0-2.5-2-4.5-3-6-1-1.5-1-3-3-5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 14c0 0-.5 2 0 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <div class="vivi-spell-name">Fire / Fira / Firaga</div>
+          <div class="vivi-spell-element fire-element">Fire</div>
+          <div class="skill-bar-track"><div class="skill-bar vivi-fire-bar" style="--bar-w:90%"></div></div>
+          <div class="skill-desc">Summons pillars of flame to engulf enemies. Firaga is the strongest tier, devastating to ice-weak foes.</div>
+        </div>
+        <div class="card vivi-spell-card" data-spell="Blizzard">
+          <div class="vivi-spell-icon blizzard-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M2 12h20M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <div class="vivi-spell-name">Blizzard / Blizzara / Blizzaga</div>
+          <div class="vivi-spell-element blizzard-element">Ice</div>
+          <div class="skill-bar-track"><div class="skill-bar vivi-blizzard-bar" style="--bar-w:88%"></div></div>
+          <div class="skill-desc">Summons a frozen tempest to encase foes. Essential against desert and fire-type enemies.</div>
+        </div>
+        <div class="card vivi-spell-card" data-spell="Thunder">
+          <div class="vivi-spell-icon thunder-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="vivi-spell-name">Thunder / Thundara / Thundaga</div>
+          <div class="vivi-spell-element thunder-element">Lightning</div>
+          <div class="skill-bar-track"><div class="skill-bar vivi-thunder-bar" style="--bar-w:87%"></div></div>
+          <div class="skill-desc">Calls lightning from the heavens. Particularly effective against mechanical and water enemies.</div>
+        </div>
+        <div class="card vivi-spell-card" data-spell="Flare">
+          <div class="vivi-spell-icon flare-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5.64 5.64l2.12 2.12M16.24 16.24l2.12 2.12M5.64 18.36l2.12-2.12M16.24 7.76l2.12-2.12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <div class="vivi-spell-name">Flare</div>
+          <div class="vivi-spell-element flare-element">Non-Elemental</div>
+          <div class="skill-bar-track"><div class="skill-bar vivi-flare-bar" style="--bar-w:95%"></div></div>
+          <div class="skill-desc">Ultimate non-elemental blast. Ignores magic defense for pure devastating damage output.</div>
+        </div>
+        <div class="card vivi-spell-card" data-spell="Doomsday">
+          <div class="vivi-spell-icon doomsday-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" stroke="currentColor" stroke-width="1.8"/><path d="M8 12l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 6v2M12 16v2M6 12h2M16 12h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div class="vivi-spell-name">Doomsday</div>
+          <div class="vivi-spell-element doomsday-element">Shadow/Dark</div>
+          <div class="skill-bar-track"><div class="skill-bar vivi-doomsday-bar" style="--bar-w:99%"></div></div>
+          <div class="skill-desc">The most powerful spell in Vivi's arsenal. Dark elemental damage to all enemies — and allies. Use with extreme care.</div>
+        </div>
+        <div class="card vivi-spell-card" data-spell="Double Black">
+          <div class="vivi-spell-icon double-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="vivi-spell-name">Double Black (Trance)</div>
+          <div class="vivi-spell-element trance-element">Trance Exclusive</div>
+          <div class="skill-bar-track"><div class="skill-bar vivi-double-bar" style="--bar-w:100%"></div></div>
+          <div class="skill-desc">Vivi's ultimate Trance ability — casts two black magic spells simultaneously in a single turn.</div>
+        </div>
+      </div>
+
+      <div class="vivi-story-band">
+        <div class="vivi-story-content">
+          <div class="section-label">Story Arc</div>
+          <h3 class="vivi-story-heading">A Journey of Becoming</h3>
+          <div class="vivi-timeline">
+            <div class="vivi-timeline-item">
+              <div class="vivi-timeline-dot"></div>
+              <div class="card vivi-timeline-card">
+                <span class="timeline-chapter">Act I — Alexandria</span>
+                <div class="timeline-title">An Accidental Hero</div>
+                <p class="timeline-text">A shy black mage traveling alone to see his first play in Alexandria. A chance encounter with Zidane sets him on a path far beyond anything he imagined.</p>
+              </div>
+            </div>
+            <div class="vivi-timeline-item">
+              <div class="vivi-timeline-dot"></div>
+              <div class="card vivi-timeline-card">
+                <span class="timeline-chapter">Act II — Black Mage Village</span>
+                <div class="timeline-title">The Truth of His Existence</div>
+                <p class="timeline-text">Discovering a village of fellow Black Mages — manufactured soldiers fighting for Kuja — Vivi confronts the horrifying truth of what he is and how long he has left to live.</p>
+              </div>
+            </div>
+            <div class="vivi-timeline-item">
+              <div class="vivi-timeline-dot"></div>
+              <div class="card vivi-timeline-card">
+                <span class="timeline-chapter">Act III — Terra</span>
+                <div class="timeline-title">The Weight of a Soul</div>
+                <p class="timeline-text">On the dying world of Terra, Vivi discovers the full scope of Kuja's plan and his own place in it. With his friends by his side, he chooses to fight — not for revenge, but for the time he has.</p>
+              </div>
+            </div>
+            <div class="vivi-timeline-item">
+              <div class="vivi-timeline-dot accent-dot"></div>
+              <div class="card vivi-timeline-card featured-card">
+                <span class="timeline-chapter">Epilogue — A Letter Never Forgotten</span>
+                <div class="timeline-title">"I'm Glad I Was Born"</div>
+                <p class="timeline-text">Vivi's final letter, read in the game's epilogue, stands as one of the most poignant farewells in gaming history. A meditation on mortality, love, and what it means to have truly lived.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="gallery-section" id="gallery">
+    <div class="container">
+      <div class="section-label centered">Game Gallery</div>
+      <h2 class="section-heading centered">Scenes from Gaia</h2>
+      <div class="gallery-grid">
+        <div class="gallery-card featured-gallery card" data-title="Zidane & Vivi — Alexandria" data-desc="The chance encounter that began everything. Two unlikely souls whose friendship would help save the world.">
+          <img src="/api/assets/87/1/hero_background.png" alt="Zidane and Vivi in Alexandria" class="gallery-img">
+          <div class="gallery-overlay">
+            <span class="gallery-label">Zidane & Vivi — Alexandria</span>
+            <button class="gallery-view-btn">View</button>
+          </div>
+        </div>
+        <div class="gallery-card card" data-title="Vivi Ornitier" data-desc="The little black mage whose glowing eyes hide a profound soul searching for its place in the world.">
+          <img src="/api/assets/87/1/gallery_image.png" alt="Vivi Ornitier Black Mage" class="gallery-img">
+          <div class="gallery-overlay">
+            <span class="gallery-label">Vivi Ornitier</span>
+            <button class="gallery-view-btn">View</button>
+          </div>
+        </div>
+        <div class="gallery-card card" data-title="Zidane Tribal" data-desc="The tail-bearing thief from Tantalus whose heart is bigger than any treasure he ever stole.">
+          <img src="/api/assets/87/1/character_portrait.png" alt="Zidane Tribal character portrait" class="gallery-img">
+          <div class="gallery-overlay">
+            <span class="gallery-label">Zidane Tribal</span>
+            <button class="gallery-view-btn">View</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="assets-section" id="assets">
+    <div class="container">
+      <div class="section-label centered">Game Assets Reference</div>
+      <h2 class="section-heading centered">Characters & Media</h2>
+      <div class="table-wrap">
+        <table class="assets-table">
+          <thead>
+            <tr>
+              <th>Character</th>
+              <th>Class</th>
+              <th>Description</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody id="assets-tbody">
+            <tr style="animation-delay:0.05s">
+              <td><span class="asset-name">Zidane Tribal</span></td>
+              <td><span class="source-badge">Thief</span></td>
+              <td>Protagonist. Genome from Terra. Member of Tantalus Theatre Troupe.</td>
+              <td><span class="type-badge">Main Hero</span></td>
+            </tr>
+            <tr style="animation-delay:0.1s">
+              <td><span class="asset-name">Vivi Ornitier</span></td>
+              <td><span class="source-badge">Black Mage</span></td>
+              <td>A manufactured Black Mage soldier who discovers the meaning of life.</td>
+              <td><span class="type-badge">Party Member</span></td>
+            </tr>
+            <tr style="animation-delay:0.15s">
+              <td><span class="asset-name">Garnet til Alexandros</span></td>
+              <td><span class="source-badge">Summoner</span></td>
+              <td>Princess of Alexandria. Seeks to protect her kingdom from her mother's madness.</td>
+              <td><span class="type-badge">Party Member</span></td>
+            </tr>
+            <tr style="animation-delay:0.2s">
+              <td><span class="asset-name">Steiner</span></td>
+              <td><span class="source-badge">Knight</span></td>
+              <td>Captain of Alexandria's Knights of Pluto. Loyal protector of Princess Garnet.</td>
+              <td><span class="type-badge">Party Member</span></td>
+            </tr>
+            <tr style="animation-delay:0.25s">
+              <td><span class="asset-name">Freya Crescent</span></td>
+              <td><span class="source-badge">Dragoon</span></td>
+              <td>Burmecian warrior searching for her lost love, Sir Fratley.</td>
+              <td><span class="type-badge">Party Member</span></td>
+            </tr>
+            <tr style="animation-delay:0.3s">
+              <td><span class="asset-name">Kuja</span></td>
+              <td><span class="source-badge">Genome</span></td>
+              <td>The enigmatic silver-haired angel of death. Architect of Gaia's destruction.</td>
+              <td><span class="type-badge">Antagonist</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="experience-section" id="experience">
+    <div class="container">
+      <div class="section-label centered">Story Chapters</div>
+      <h2 class="section-heading centered">The Road to Crystal World</h2>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="card timeline-content">
+            <span class="timeline-chapter">Chapter I</span>
+            <div class="timeline-title">Alexandria — A Fateful Performance</div>
+            <p class="timeline-text">Tantalus attempts to kidnap Princess Garnet during a theatrical performance. The plan goes sideways when Garnet herself wants to be kidnapped, and a masked black mage named Vivi wanders into the chaos.</p>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="card timeline-content">
+            <span class="timeline-chapter">Chapter II</span>
+            <div class="timeline-title">Lindblum & the Mist Continent</div>
+            <p class="timeline-text">The party escapes to Lindblum where they meet Regent Cid and learn of the threat posed by Alexandria. The Festival of the Hunt and Vivi's growing magical power mark the beginning of his true journey.</p>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="card timeline-content">
+            <span class="timeline-chapter">Chapter III</span>
+            <div class="timeline-title">Terra & the Iifa Tree</div>
+            <p class="timeline-text">The truth of both Zidane and Vivi's origins are revealed. Kuja's plan to use the Iifa Tree to destroy Gaia comes to light, and the party races to stop him before all life on the planet is extinguished.</p>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot accent-dot"></div>
+          <div class="card timeline-content featured-card">
+            <span class="timeline-chapter">Final Chapter</span>
+            <div class="timeline-title">Crystal World — The Final Stand</div>
+            <p class="timeline-text">Necron emerges as the ultimate threat to existence itself. Zidane leads his friends into the heart of nothingness — driven by love, courage, and the unshakeable belief that life is worth living and fighting for.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="contact-section" id="contact">
+    <div class="container">
+      <div class="contact-card card">
+        <div class="contact-glow"></div>
+        <div class="section-label centered">Get in Touch</div>
+        <h2 class="section-heading centered">Send a Message</h2>
+        <p class="contact-sub">A fan of FFIX? Want to collaborate on a tribute project or just share your love for Vivi and Zidane? Reach out.</p>
+        <form class="contact-form" id="contact-form" novalidate>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="fname">First Name</label>
+              <input class="form-input" type="text" id="fname" name="fname" placeholder="Terra" autocomplete="given-name">
+              <span class="form-error" id="fname-error"></span>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="lname">Last Name</label>
+              <input class="form-input" type="text" id="lname" name="lname" placeholder="Branford" autocomplete="family-name">
+              <span class="form-error" id="lname-error"></span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="email">Email Address</label>
+            <input class="form-input" type="email" id="email" name="email" placeholder="vivi@blackmage.gaia" autocomplete="email">
+            <span class="form-error" id="email-error"></span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="message">Message</label>
+            <textarea class="form-input form-textarea" id="message" name="message" placeholder="Share your favorite FFIX memory..."></textarea>
+            <span class="form-error" id="message-error"></span>
+          </div>
+          <button type="submit" class="btn-primary form-submit">Send Message</button>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-brand">ZT<span style="color:var(--accent)">.</span></div>
+      <p class="footer-copy">&copy; 2024 Final Fantasy IX Fan Tribute. Not affiliated with Square Enix.</p>
+      <div class="footer-links">
+        <a href="#about" class="footer-link">Zidane</a>
+        <a href="#vivi" class="footer-link">Vivi</a>
+        <a href="#gallery" class="footer-link">Gallery</a>
+        <a href="#contact" class="footer-link">Contact</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+function countUp(el,target,duration){duration=duration||1200;var start=performance.now();var update=function(now){var p=Math.min((now-start)/duration,1);el.textContent=Math.floor(p*target).toLocaleString();if(p<1)requestAnimationFrame(update);};requestAnimationFrame(update);}
+
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('[data-count]').forEach(function(el){countUp(el,+el.dataset.count);});
+
+  var topbar=document.querySelector('.topbar');
+  window.addEventListener('scroll',function(){
+    topbar.classList.toggle('scrolled',window.scrollY>40);
+  });
+
+  var hamburger=document.getElementById('hamburger');
+  var mobileNav=document.getElementById('mobile-nav');
+  hamburger.addEventListener('click',function(){
+    hamburger.classList.toggle('active');
+    mobileNav.classList.toggle('open');
+  });
+  mobileNav.querySelectorAll('.nav-link').forEach(function(link){
+    link.addEventListener('click',function(){
+      hamburger.classList.remove('active');
+      mobileNav.classList.remove('open');
+    });
+  });
+
+  var modal=document.getElementById('modal');
+  var modalImg=document.getElementById('modal-img');
+  var modalTitle=document.getElementById('modal-title');
+  var modalDesc=document.getElementById('modal-desc');
+  var modalClose=document.getElementById('modal-close');
+
+  function openModal(src,title,desc){
+    modalImg.src=src;
+    modalImg.alt=title;
+    modalTitle.textContent=title;
+    modalDesc.textContent=desc;
+    modal.classList.add('active');
+    document.body.style.overflow='hidden';
+  }
+  function closeModal(){
+    modal.classList.remove('active');
+    document.body.style.overflow='';
+  }
+
+  document.querySelectorAll('.gallery-card').forEach(function(card){
+    var btn=card.querySelector('.gallery-view-btn');
+    var img=card.querySelector('.gallery-img');
+    var title=card.dataset.title||'';
+    var desc=card.dataset.desc||'';
+    function trigger(){openModal(img.src,title,desc);}
+    card.addEventListener('click',trigger);
+    if(btn)btn.addEventListener('click',function(e){e.stopPropagation();trigger();});
+  });
+
+  modalClose.addEventListener('click',closeModal);
+  modal.addEventListener('click',function(e){if(e.target===modal)closeModal();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
+
+  var toast=document.getElementById('toast');
+  function showToast(msg,type){
+    toast.textContent=msg;
+    toast.className='toast toast-'+(type||'success')+' toast-visible';
+    setTimeout(function(){toast.className='toast';},3500);
+  }
+
+  var form=document.getElementById('contact-form');
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    var valid=true;
+    var fname=document.getElementById('fname');
+    var lname=document.getElementById('lname');
+    var email=document.getElementById('email');
+    var message=document.getElementById('message');
+    document.querySelectorAll('.form-error').forEach(function(el){el.textContent='';});
+    document.querySelectorAll('.form-input').forEach(function(el){el.classList.remove('input-error');});
+    if(!fname.value.trim()){document.getElementById('fname-error').textContent='First name is required.';fname.classList.add('input-error');valid=false;}
+    if(!lname.value.trim()){document.getElementById('lname-error').textContent='Last name is required.';lname.classList.add('input-error');valid=false;}
+    if(!email.value.trim()||!/^[^@]+@[^@]+\.[^@]+$/.test(email.value)){document.getElementById('email-error').textContent='A valid email is required.';email.classList.add('input-error');valid=false;}
+    if(!message.value.trim()){document.getElementById('message-error').textContent='Please write a message.';message.classList.add('input-error');valid=false;}
+    if(valid){showToast('Message sent! I\'ll reply from Lindblum shortly.','success');form.reset();}
+    else{showToast('Please fix the errors above.','error');}
+  });
+
+  var observer=new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){
+        entry.target.style.animationPlayState='running';
+        observer.unobserve(entry.target);
+      }
+    });
+  },{threshold:0.1});
+  document.querySelectorAll('.skill-card,.timeline-item,.vivi-spell-card,.vivi-timeline-item,.assets-table tbody tr').forEach(function(el){
+    el.style.animationPlayState='paused';
+    observer.observe(el);
+  });
+});
+</script>
+</body>
+</html>

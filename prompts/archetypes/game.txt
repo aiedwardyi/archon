@@ -46,6 +46,35 @@ Override --accent and --accent-rgb in style.css :root {} based on the game's ide
 NEVER use generic purple or SaaS blue. Derive from the game's world.
 
 ═══════════════════════════════════════
+PREMIUM FAN-PAGE TRAITS (required for ANY game/franchise)
+═══════════════════════════════════════
+
+The strongest legacy fan pages all feel PREMIUM, COLLECTIBLE, and INTERACTIVE.
+This is NOT optional polish. Any game site should inherit these traits even if the
+franchise is not Pokemon, Digimon, or Final Fantasy.
+
+You MUST include:
+- Character/content cards that feel layered and premium, not flat rectangles
+- Franchise-colored glow or aura treatment behind key cards/portraits
+- At least one click-triggered interaction on the cards (modal, expanded details,
+  loadout reveal, evolution panel, lore state, spotlight mode, etc.)
+- Meaningful animation when cards are hovered or clicked (scale/tilt/lift/reveal)
+- Distinct visual states so the page feels alive: idle, hover, active/open
+- Smooth card radii and refined shadows instead of harsh boxy edges
+- Premium icon treatment: clean SVG or design-system style icons only, never emoji or low-grade pictograms
+- Strong visual feedback moments such as count-up stats, shimmering hover highlights,
+  glowing outlines, and animated stat bars that fill with intent
+- High-quality imagery or design-agent art that feels franchise-specific and polished,
+  never muddy low-detail placeholders
+
+Avoid generic agency/SaaS treatment:
+- No plain white cards on flat backgrounds
+- No dead static grids with zero motion
+- No mismatched colors unrelated to the franchise world
+- No placeholder interactions that only change opacity by a few pixels
+- No emoji-as-icons or cheap clip-art style symbols
+
+═══════════════════════════════════════
 REFERENCE LAYOUT (study this carefully)
 ═══════════════════════════════════════
 
@@ -69,6 +98,12 @@ SECTION 2 — CHARACTERS ("Choose Your Party" / "The Heroes")
     * Weapon name in accent color (e.g. "Weapon: Buster Sword")
     * 2-3 sentence character description
     * 4 stat bars: STR, DEF, MAG, SPD — with VARIED widths (60%-95%) and numeric values
+   * A visible glow/aura layer behind the portrait or card body that matches that
+      character, faction, element, or franchise color system
+    * A click-triggered premium interaction: modal, expand state, lore reveal,
+      loadout drawer, evolution state, or spotlight animation
+    * At least one animated status/detail treatment inside the reveal state such as
+      stat bars filling, glowing meters, role chips, or battle-profile information
 
 SECTION 3 — WEAPONS ("Legendary Weapons" / "Arsenal")
   - Eyebrow text + section title
@@ -108,6 +143,7 @@ REQUIRED 4 SECTIONS (in this order)
    - Stat values: show numeric value (e.g. "85", "70", "92") — never "0"
    - Use REAL character names and descriptions from the game
    - Every character card must include one explicit interactive control (e.g. "View Loadout" button) with class `.btn-primary` or `.weapon-cta`
+   - Cards must feel premium: add glow/aura treatment, layered depth, and a clear hover + click animation state
 
 4. WEAPONS — eyebrow "ARSENAL" or similar + section title. Must include:
    - .weapons-showcase container
@@ -167,6 +203,10 @@ CONTENT RULES
 
 - Use REAL game character names, weapon names, location names from the user's prompt
 - All stat bar widths must be varied (never all same %)
+- Character cards must include franchise-colored glow or aura treatment and a visible active/open state
+- Include at least one click-triggered reveal interaction on the page; hover alone is not enough
+- Use premium SVG-style icons only; never use emoji as UI icons
+- Include at least one animated quantitative UI detail such as count-up numbers, filling stat bars, or glowing meter states
 - Character descriptions: 2-3 sentences of actual character lore
 - Weapon descriptions: 1-2 sentences about the weapon's lore and capabilities
 - Location descriptions: 1-2 sentences about the place
@@ -185,6 +225,8 @@ SELF-CHECK BEFORE OUTPUT
 □ All 3 nav links have data-section attributes
 □ Smooth scroll JS is at bottom of <body>
 □ 3 character cards with ROLE badge, weapon name, and varied stat bars (4 stats each)
+□ Character cards have premium glow/aura treatment tied to the franchise palette
+□ At least one click-triggered card interaction exists and has a meaningful active/open animation
 □ Weapons section has LARGE banner image + 3 weapon cards with ATK/MAG numbers
 □ World map section has LARGE map image + 3-4 location cards
 □ All content uses REAL game names (not "Character 1")

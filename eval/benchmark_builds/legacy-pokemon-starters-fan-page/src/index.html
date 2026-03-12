@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pokémon Starters Fan Page | Charmander, Bulbasaur & Squirtle</title>
+<link rel="stylesheet" href="./style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+<header class="header">
+<div class="header-container">
+<div class="logo">
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+<circle cx="16" cy="16" r="14" fill="url(#logo-gradient)"/>
+<circle cx="16" cy="16" r="8" fill="white"/>
+<circle cx="16" cy="16" r="5" fill="#1a1a2e"/>
+<defs>
+<linearGradient id="logo-gradient" x1="0" y1="0" x2="32" y2="32">
+<stop offset="0%" stop-color="#ef4444"/>
+<stop offset="100%" stop-color="#f59e0b"/>
+</linearGradient>
+</defs>
+</svg>
+<span class="logo-text">PokéStarters</span>
+</div>
+<nav class="nav">
+<a href="#home" class="nav-link active">Home</a>
+<a href="#starters" class="nav-link">Starters</a>
+<a href="#about" class="nav-link">About</a>
+<a href="#contact" class="nav-link">Contact</a>
+</nav>
+<button class="cta-button" id="headerCta">Join Community</button>
+</div>
+</header>
+
+<main>
+<section class="hero" id="home">
+<div class="hero-background-overlay"></div>
+<div class="hero-content">
+<div class="hero-text">
+<h1 class="hero-title">Meet the Legendary Kanto Starters</h1>
+<p class="hero-subtitle">Discover the fire, water, and grass-type Pokémon that started it all. Explore their origins, abilities, and evolutions in this ultimate fan tribute.</p>
+<div class="hero-actions">
+<button class="button-primary" id="heroPrimaryCta">Explore Starters</button>
+<button class="button-secondary" id="heroSecondaryCta">Watch Video</button>
+</div>
+</div>
+</div>
+</section>
+
+<section class="features" id="starters">
+<div class="container">
+<div class="section-header">
+<h2 class="section-title">Choose Your Starter</h2>
+<p class="section-subtitle">Three legendary Pokémon, each with unique abilities and personalities</p>
+</div>
+<div class="feature-grid">
+<div class="feature-card fire" data-type="fire">
+<div class="feature-icon">
+<img src="/api/assets/43/1/character_charmander.png" alt="Charmander" class="character-image">
+</div>
+<div class="feature-content">
+<h3 class="feature-title">Charmander</h3>
+<span class="type-badge fire-type">Fire Type</span>
+<p class="feature-description">The flame on its tail indicates Charmander's life force. If it goes out, the Pokémon will die. When healthy, its tail burns intensely.</p>
+<div class="stats">
+<div class="stat">
+<span class="stat-label">HP</span>
+<div class="stat-bar">
+<div class="stat-fill" style="width: 78%"></div>
+</div>
+<span class="stat-value">39</span>
+</div>
+<div class="stat">
+<span class="stat-label">Attack</span>
+<div class="stat-bar">
+<div class="stat-fill" style="width: 104%"></div>
+</div>
+<span class="stat-value">52</span>
+</div>
+</div>
+<button class="feature-button" data-pokemon="charmander">View Details</button>
+</div>
+</div>
+
+<div class="feature-card water" data-type="water">
+<div class="feature-icon">
+<img src="/api/assets/43/1/character_squirtle.png" alt="Squirtle" class="character-image">
+</div>
+<div class="feature-content">
+<h3 class="feature-title">Squirtle</h3>
+<span class="type-badge water-type">Water Type</span>
+<p class="feature-description">Squirtle's shell is not just for protection. Its rounded shape and grooves on its surface minimize resistance in water, enabling high-speed swimming.</p>
+<div class="stats">
+<div class="stat">
+<span class="stat-label">HP</span>
+<div class="stat-bar">
+<div class="stat-fill" style="width: 88%"></div>
+</div>
+<span class="stat-value">44</span>
+</div>
+<div class="stat">
+<span class="stat-label">Defense</span>
+<div class="stat-bar">
+<div class="stat-fill" style="width: 130%"></div>
+</div>
+<span class="stat-value">65</span>
+</div>
+</div>
+<button class="feature-button" data-pokemon="squirtle">View Details</button>
+</div>
+</div>
+
+<div class="feature-card grass" data-type="grass">
+<div class="feature-icon">
+<img src="/api/assets/43/1/character_bulbasaur.png" alt="Bulbasaur" class="character-image">
+</div>
+<div class="feature-content">
+<h3 class="feature-title">Bulbasaur</h3>
+<span class="type-badge grass-type">Grass Type</span>
+<p class="feature-description">There is a plant seed on its back right from the day this Pokémon is born. The seed slowly grows larger as Bulbasaur gets more sunlight.</p>
+<div class="stats">
+<div class="stat">
+<span class="stat-label">HP</span>
+<div class="stat-bar">
+<div class="stat-fill" style="width: 90%"></div>
+</div>
+<span class="stat-value">45</span>
+</div>
+<div class="stat">
+<span class="stat-label">Sp. Def</span>
+<div class="stat-bar">
+<div class="stat-fill" style="width: 130%"></div>
+</div>
+<span class="stat-value">65</span>
+</div>
+</div>
+<button class="feature-button" data-pokemon="bulbasaur">View Details</button>
+</div>
+</div>
+
+<div class="feature-card info" data-type="info">
+<div class="info-content">
+<svg class="info-icon" width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+<circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="2"/>
+<path d="M24 14V26M24 32V34" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+</svg>
+<h3 class="info-title">Evolution Paths</h3>
+<p class="info-description">Each starter Pokémon has two evolution stages. Charmander evolves into Charmeleon at level 16, then Charizard at 36. Squirtle becomes Wartortle at 16, then Blastoise at 36. Bulbasaur evolves into Ivysaur at 16, then Venusaur at 32.</p>
+<a href="#" class="info-link">Learn More →</a>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<section class="social-proof" id="about">
+<div class="container">
+<div class="section-header">
+<h2 class="section-title">What Trainers Say</h2>
+<p class="section-subtitle">Join thousands of trainers celebrating their favorite starters</p>
+</div>
+<div class="testimonials-grid">
+<div class="testimonial-card">
+<div class="testimonial-header">
+<img src="https://api.dicebear.com/9.x/initials/svg?seed=Ash" alt="Ash" class="testimonial-avatar">
+<div class="testimonial-author">
+<div class="author-name">Ash Ketchum</div>
+<div class="author-title">Pokémon Master</div>
+</div>
+<div class="testimonial-stars">
+★★★★★
+</div>
+</div>
+<p class="testimonial-text">"Charmander was my very first Pokémon. The bond we formed from the beginning shaped my entire journey as a trainer. There's nothing like the loyalty of a fire-type starter!"</p>
+</div>
+
+<div class="testimonial-card">
+<div class="testimonial-header">
+<img src="https://api.dicebear.com/9.x/initials/svg?seed=Misty" alt="Misty" class="testimonial-avatar">
+<div class="testimonial-author">
+<div class="author-name">Misty Waters</div>
+<div class="author-title">Gym Leader</div>
+</div>
+<div class="testimonial-stars">
+★★★★★
+</div>
+</div>
+<p class="testimonial-text">"Squirtle's adaptability in battle is unmatched. From Hydro Pump to Rapid Spin, this water-type can handle any situation. Best starter choice hands down!"</p>
+</div>
+
+<div class="testimonial-card">
+<div class="testimonial-header">
+<img src="https://api.dicebear.com/9.x/initials/svg?seed=Brock" alt="Brock" class="testimonial-avatar">
+<div class="testimonial-author">
+<div class="author-name">Brock Harrison</div>
+<div class="author-title">Pokémon Breeder</div>
+</div>
+<div class="testimonial-stars">
+★★★★★
+</div>
+</div>
+<p class="testimonial-text">"Bulbasaur has the perfect balance of offense and defense. The grass/poison type combination makes it incredibly versatile for new trainers learning the ropes."</p>
+</div>
+</div>
+
+<div class="stats-banner">
+<div class="stat-item">
+<div class="stat-number" data-count="150000">0</div>
+<div class="stat-label">Active Trainers</div>
+</div>
+<div class="stat-item">
+<div class="stat-number" data-count="3">0</div>
+<div class="stat-label">Starter Pokémon</div>
+</div>
+<div class="stat-item">
+<div class="stat-number" data-count="25">0</div>
+<div class="stat-label">Years of Legacy</div>
+</div>
+<div class="stat-item">
+<div class="stat-number" data-count="9">0</div>
+<div class="stat-label">Evolution Stages</div>
+</div>
+</div>
+</div>
+</section>
+
+<section class="cta-section" id="contact">
+<div class="container">
+<div class="cta-content">
+<h2 class="cta-title">Start Your Journey Today</h2>
+<p class="cta-description">Join our community of Pokémon trainers and share your starter stories. Get exclusive content, evolution guides, and connect with fellow fans.</p>
+<form class="cta-form" id="contactForm">
+<div class="form-row">
+<input type="text" placeholder="Trainer Name" class="form-input" id="trainerName" required>
+<input type="email" placeholder="Email Address" class="form-input" id="trainerEmail" required>
+</div>
+<div class="form-row">
+<select class="form-select" id="starterChoice" required>
+<option value="">Choose Your Starter</option>
+<option value="charmander">🔥 Charmander</option>
+<option value="squirtle">💧 Squirtle</option>
+<option value="bulbasaur">🌱 Bulbasaur</option>
+<option value="all">❤️ I love them all!</option>
+</select>
+<button type="submit" class="form-submit">Join Now</button>
+</div>
+</form>
+</div>
+</div>
+</section>
+
+<footer class="footer">
+<div class="container">
+<div class="footer-content">
+<div class="footer-brand">
+<div class="logo">
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+<circle cx="16" cy="16" r="14" fill="url(#footer-logo-gradient)"/>
+<circle cx="16" cy="16" r="8" fill="white"/>
+<circle cx="16" cy="16" r="5" fill="#1a1a2e"/>
+<defs>
+<linearGradient id="footer-logo-gradient" x1="0" y1="0" x2="32" y2="32">
+<stop offset="0%" stop-color="#ef4444"/>
+<stop offset="100%" stop-color="#f59e0b"/>
+</linearGradient>
+</defs>
+</svg>
+<span class="logo-text">PokéStarters</span>
+</div>
+<p class="footer-description">A fan-made tribute to the legendary Kanto starter Pokémon. Not affiliated with Nintendo or Game Freak.</p>
+</div>
+<div class="footer-links">
+<div class="footer-column">
+<h4 class="footer-heading">Starters</h4>
+<a href="#" class="footer-link">Charmander</a>
+<a href="#" class="footer-link">Squirtle</a>
+<a href="#" class="footer-link">Bulbasaur</a>
+<a href="#" class="footer-link">Evolutions</a>
+</div>
+<div class="footer-column">
+<h4 class="footer-heading">Community</h4>
+<a href="#" class="footer-link">Forums</a>
+<a href="#" class="footer-link">Fan Art</a>
+<a href="#" class="footer-link">Events</a>
+<a href="#" class="footer-link">Discord</a>
+</div>
+<div class="footer-column">
+<h4 class="footer-heading">Resources</h4>
+<a href="#" class="footer-link">Evolution Guide</a>
+<a href="#" class="footer-link">Battle Stats</a>
+<a href="#" class="footer-link">Move Sets</a>
+<a href="#" class="footer-link">Type Chart</a>
+</div>
+</div>
+</div>
+<div class="footer-bottom">
+<p class="footer-copyright">© 2024 PokéStarters Fan Page. Pokémon © Nintendo/Game Freak.</p>
+<div class="footer-social">
+<a href="#" class="social-link" aria-label="Twitter">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+<path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"/>
+</svg>
+</a>
+<a href="#" class="social-link" aria-label="Discord">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+<path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515a.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0a12.64 12.64 0 00-.617-1.25a.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057a19.9 19.9 0 005.993 3.03a.078.078 0 00.084-.028a14.09 14.09 0 001.226-1.994a.076.076 0 00-.041-.106a13.107 13.107 0 01-1.872-.892a.077.077 0 01-.008-.128a10.2 10.2 0 00.372-.292a.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127a12.299 12.299 0 01-1.873.892a.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028a19.839 19.839 0 006.002-3.03a.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03z"/>
+</svg>
+</a>
+<a href="#" class="social-link" aria-label="GitHub">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+<path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
+</svg>
+</a>
+</div>
+</div>
+</div>
+</footer>
+</main>
+
+<div class="modal" id="detailModal">
+<div class="modal-overlay" id="modalOverlay"></div>
+<div class="modal-content">
+<button class="modal-close" id="modalClose">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+<path d="M18 6L6 18M6 6l12 12"/>
+</svg>
+</button>
+<div class="modal-body" id="modalBody"></div>
+</div>
+</div>
+
+<div class="toast" id="toast">
+<div class="toast-content">
+<svg class="toast-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+<polyline points="22 4 12 14.01 9 11.01"></polyline>
+</svg>
+<span class="toast-message" id="toastMessage"></span>
+</div>
+</div>
+
+<script>
+const pokemonData = {
+charmander: {
+name: 'Charmander',
+type: 'Fire',
+number: '004',
+height: '0.6 m',
+weight: '8.5 kg',
+ability: 'Blaze',
+description: 'From the time it is born, a flame burns at the tip of its tail. Its life would end if the flame were to go out.',
+evolutions: ['Charmander (Lv 1)', 'Charmeleon (Lv 16)', 'Charizard (Lv 36)'],
+moves: ['Scratch', 'Growl', 'Ember', 'Smokescreen', 'Dragon Rage', 'Slash', 'Flamethrower', 'Fire Spin'],
+stats: { hp: 39, attack: 52, defense: 43, spAtk: 60, spDef: 50, speed: 65 }
+},
+squirtle: {
+name: 'Squirtle',
+type: 'Water',
+number: '007',
+height: '0.5 m',
+weight: '9.0 kg',
+ability: 'Torrent',
+description: 'When it retracts its long neck into its shell, it squirts out water with vigorous force.',
+evolutions: ['Squirtle (Lv 1)', 'Wartortle (Lv 16)', 'Blastoise (Lv 36)'],
+moves: ['Tackle', 'Tail Whip', 'Water Gun', 'Withdraw', 'Bite', 'Rapid Spin', 'Hydro Pump', 'Skull Bash'],
+stats: { hp: 44, attack: 48, defense: 65, spAtk: 50, spDef: 64, speed: 43 }
+},
+bulbasaur: {
+name: 'Bulbasaur',
+type: 'Grass/Poison',
+number: '001',
+height: '0.7 m',
+weight: '6.9 kg',
+ability: 'Overgrow',
+description: 'A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.',
+evolutions: ['Bulbasaur (Lv 1)', 'Ivysaur (Lv 16)', 'Venusaur (Lv 32)'],
+moves: ['Tackle', 'Growl', 'Vine Whip', 'Poison Powder', 'Sleep Powder', 'Razor Leaf', 'Solar Beam', 'Synthesis'],
+stats: { hp: 45, attack: 49, defense: 49, spAtk: 65, spDef: 65, speed: 45 }
+}
+};
+
+function showToast(message) {
+const toast = document.getElementById('toast');
+const toastMessage = document.getElementById('toastMessage');
+toastMessage.textContent = message;
+toast.classList.add('show');
+setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function showModal(pokemon) {
+const modal = document.getElementById('detailModal');
+const modalBody = document.getElementById('modalBody');
+const data = pokemonData[pokemon];
+
+modalBody.innerHTML = `
+<div class="modal-header">
+<div class="modal-pokemon-number">#${data.number}</div>
+<h2 class="modal-pokemon-name">${data.name}</h2>
+<span class="type-badge ${data.type.toLowerCase()}-type">${data.type}</span>
+</div>
+<div class="modal-stats-grid">
+<div class="modal-stat-item"><span>Height</span><strong>${data.height}</strong></div>
+<div class="modal-stat-item"><span>Weight</span><strong>${data.weight}</strong></div>
+<div class="modal-stat-item"><span>Ability</span><strong>${data.ability}</strong></div>
+</div>
+<p class="modal-description">${data.description}</p>
+<div class="modal-section">
+<h3 class="modal-section-title">Base Stats</h3>
+<div class="modal-stats">
+<div class="modal-stat"><span>HP</span><div class="stat-bar"><div class="stat-fill" style="width: ${(data.stats.hp/100)*100}%"></div></div><span>${data.stats.hp}</span></div>
+<div class="modal-stat"><span>Attack</span><div class="stat-bar"><div class="stat-fill" style="width: ${(data.stats.attack/100)*100}%"></div></div><span>${data.stats.attack}</span></div>
+<div class="modal-stat"><span>Defense</span><div class="stat-bar"><div class="stat-fill" style="width: ${(data.stats.defense/100)*100}%"></div></div><span>${data.stats.defense}</span></div>
+<div class="modal-stat"><span>Sp. Atk</span><div class="stat-bar"><div class="stat-fill" style="width: ${(data.stats.spAtk/100)*100}%"></div></div><span>${data.stats.spAtk}</span></div>
+<div class="modal-stat"><span>Sp. Def</span><div class="stat-bar"><div class="stat-fill" style="width: ${(data.stats.spDef/100)*100}%"></div></div><span>${data.stats.spDef}</span></div>
+<div class="modal-stat"><span>Speed</span><div class="stat-bar"><div class="stat-fill" style="width: ${(data.stats.speed/100)*100}%"></div></div><span>${data.stats.speed}</span></div>
+</div>
+</div>
+<div class="modal-section">
+<h3 class="modal-section-title">Evolution Chain</h3>
+<div class="evolution-chain">${data.evolutions.map(e => `<div class="evolution-stage">${e}</div>`).join('<span class="evolution-arrow">→</span>')}</div>
+</div>
+<div class="modal-section">
+<h3 class="modal-section-title">Key Moves</h3>
+<div class="moves-grid">${data.moves.map(m => `<span class="move-badge">${m}</span>`).join('')}</div>
+</div>
+`;
+
+modal.classList.add('show');
+document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+const modal = document.getElementById('detailModal');
+modal.classList.remove('show');
+document.body.style.overflow = '';
+}
+
+function countUp(el, target, duration = 1200) {
+const start = performance.now();
+const update = (now) => {
+const p = Math.min((now - start) / duration, 1);
+el.textContent = Math.floor(p * target).toLocaleString();
+if (p < 1) requestAnimationFrame(update);
+};
+requestAnimationFrame(update);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+document.querySelectorAll('[data-count]').forEach(el => countUp(el, +el.dataset.count));
+
+const navLinks = document.querySelectorAll('.nav-link');
+navLinks.forEach(link => {
+link.addEventListener('click', (e) => {
+e.preventDefault();
+navLinks.forEach(l => l.classList.remove('active'));
+link.classList.add('active');
+const target = link.getAttribute('href');
+if (target && target !== '#') {
+document.querySelector(target)?.scrollIntoView({ behavior: 'smooth' });
+}
+});
+});
+
+const featureButtons = document.querySelectorAll('.feature-button');
+featureButtons.forEach(btn => {
+btn.addEventListener('click', () => {
+const pokemon = btn.dataset.pokemon;
+if (pokemon) showModal(pokemon);
+});
+});
+
+document.getElementById('modalClose').addEventListener('click', closeModal);
+document.getElementById('modalOverlay').addEventListener('click', closeModal);
+
+document.addEventListener('keydown', (e) => {
+if (e.key === 'Escape') closeModal();
+});
+
+const ctaButtons = document.querySelectorAll('#headerCta, #heroPrimaryCta');
+ctaButtons.forEach(btn => {
+btn.addEventListener('click', () => {
+document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
+});
+});
+
+document.getElementById('heroSecondaryCta').addEventListener('click', () => {
+showToast('Video feature coming soon!');
+});
+
+const contactForm = document.getElementById('contactForm');
+contactForm.addEventListener('submit', (e) => {
+e.preventDefault();
+const name = document.getElementById('trainerName').value;
+const email = document.getElementById('trainerEmail').value;
+const starter = document.getElementById('starterChoice').value;
+
+if (name && email && starter) {
+showToast(`Welcome, ${name}! Your journey begins with ${starter.charAt(0).toUpperCase() + starter.slice(1)}!`);
+contactForm.reset();
+}
+});
+});
+</script>
+</body>
+</html>

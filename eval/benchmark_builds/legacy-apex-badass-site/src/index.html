@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apex — Build Something Badass</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- HEADER / NAV                            -->
+  <!-- ═══════════════════════════════════════ -->
+  <header class="nav" id="top">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">
+        <span class="nav-logo-mark"></span>
+        <span class="nav-logo-text">Apex</span>
+      </a>
+      <nav class="nav-links">
+        <a href="#features" class="nav-link active">Features</a>
+        <a href="#social-proof" class="nav-link">Reviews</a>
+        <a href="#pricing" class="nav-link">Pricing</a>
+        <a href="#faq" class="nav-link">FAQ</a>
+      </nav>
+      <div class="nav-actions">
+        <a href="#" class="btn-ghost">Sign In</a>
+        <a href="#" class="btn-primary-pill" onclick="showToast('Welcome! Starting your free trial...')">Start Free Trial</a>
+      </div>
+      <button class="nav-hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile Nav Overlay -->
+  <div class="mobile-nav" id="mobileNav">
+    <a href="#features" class="mobile-nav-link" onclick="closeMobileNav()">Features</a>
+    <a href="#social-proof" class="mobile-nav-link" onclick="closeMobileNav()">Reviews</a>
+    <a href="#pricing" class="mobile-nav-link" onclick="closeMobileNav()">Pricing</a>
+    <a href="#faq" class="mobile-nav-link" onclick="closeMobileNav()">FAQ</a>
+    <a href="#" class="btn-primary-pill" style="margin-top:16px;text-align:center">Start Free Trial</a>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- HERO                                    -->
+  <!-- ═══════════════════════════════════════ -->
+  <section class="hero" id="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-grid-overlay"></div>
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="hero-badge-dot"></span>
+        <span>Now powered by GPT-4o &amp; Claude 3.5 Sonnet</span>
+      </div>
+      <h1 class="hero-headline">
+        Build Products<br>
+        <span class="hero-headline-accent">10× Faster</span>
+      </h1>
+      <p class="hero-sub">
+        Apex is the all-in-one platform that turns raw ideas into shipped products. Design, prototype, collaborate, and launch — without switching tools.
+      </p>
+      <div class="hero-social-proof">
+        <div class="avatar-stack">
+          <div class="avatar av1">S</div>
+          <div class="avatar av2">M</div>
+          <div class="avatar av3">R</div>
+          <div class="avatar av4">K</div>
+          <div class="avatar av5">J</div>
+        </div>
+        <span class="hero-social-text">Join <strong>18,400+</strong> product teams shipping faster</span>
+      </div>
+      <div class="hero-capture">
+        <input type="email" class="hero-email-input" placeholder="you@company.com">
+        <button class="hero-cta-btn" onclick="showToast('🚀 You&apos;re on the list! Check your inbox.')">Get Early Access</button>
+      </div>
+      <p class="hero-trust">No credit card required &nbsp;·&nbsp; 14-day free trial &nbsp;·&nbsp; Cancel anytime</p>
+      <!-- Browser Mockup -->
+      <div class="hero-mockup">
+        <div class="mockup-chrome">
+          <div class="mockup-dots">
+            <span class="dot dot-red"></span>
+            <span class="dot dot-yellow"></span>
+            <span class="dot dot-green"></span>
+          </div>
+          <div class="mockup-url-bar">apex.app/dashboard</div>
+        </div>
+        <div class="mockup-body">
+          <div class="mockup-sidebar">
+            <div class="mockup-sidebar-label">PROJECTS</div>
+            <div class="mockup-sidebar-item active">&#9632; Dashboard</div>
+            <div class="mockup-sidebar-item">&#9632; Campaigns</div>
+            <div class="mockup-sidebar-item">&#9632; Analytics</div>
+            <div class="mockup-sidebar-item">&#9632; Settings</div>
+          </div>
+          <div class="mockup-main">
+            <div class="mockup-main-title">Project Overview</div>
+            <div class="mockup-stat-row">
+              <div class="mockup-stat">
+                <span class="mockup-stat-val" data-count="9420">0</span>
+                <span class="mockup-stat-lbl">Users</span>
+              </div>
+              <div class="mockup-stat">
+                <span class="mockup-stat-val" data-count="312">0</span>
+                <span class="mockup-stat-lbl">Projects</span>
+              </div>
+              <div class="mockup-stat">
+                <span class="mockup-stat-val" data-count="98">0</span>
+                <span class="mockup-stat-lbl">Uptime %</span>
+              </div>
+            </div>
+            <div class="mockup-chart">
+              <svg viewBox="0 0 400 80" preserveAspectRatio="none" width="100%" height="80">
+                <defs>
+                  <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.3"/>
+                    <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <path d="M0,60 C40,55 60,40 100,38 C140,36 160,48 200,30 C240,12 260,20 300,14 C340,8 370,18 400,10" fill="none" stroke="#7c3aed" stroke-width="2" class="chart-path"/>
+                <path d="M0,60 C40,55 60,40 100,38 C140,36 160,48 200,30 C240,12 260,20 300,14 C340,8 370,18 400,10 L400,80 L0,80 Z" fill="url(#chartGrad)"/>
+              </svg>
+            </div>
+            <div class="mockup-ai-card">
+              <span class="mockup-ai-label">&#10022; AI Insight</span>
+              <span class="mockup-ai-text">Your team velocity is up 34% this sprint. Consider expanding to 2 new markets.</span>
+            </div>
+          </div>
+          <div class="mockup-right">
+            <div class="mockup-sidebar-label">ACTIVITY</div>
+            <div class="mockup-activity-item">Sarah merged PR #281</div>
+            <div class="mockup-activity-item">Design review passed</div>
+            <div class="mockup-activity-item">v2.4.1 deployed ✓</div>
+            <div class="mockup-activity-item">3 bugs resolved</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-scroll-indicator">
+      <svg width="20" height="28" viewBox="0 0 20 28" fill="none">
+        <rect x="1" y="1" width="18" height="26" rx="9" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+        <circle class="scroll-dot" cx="10" cy="8" r="3" fill="rgba(255,255,255,0.6)"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- LOGO CLOUD                              -->
+  <!-- ═══════════════════════════════════════ -->
+  <section class="logo-cloud" id="social-proof">
+    <p class="logo-cloud-label">Trusted by teams at</p>
+    <div class="logo-cloud-row">
+      <span class="logo-name">Stripe</span>
+      <span class="logo-name">Notion</span>
+      <span class="logo-name">Vercel</span>
+      <span class="logo-name">Linear</span>
+      <span class="logo-name">Figma</span>
+      <span class="logo-name">Shopify</span>
+      <span class="logo-name">Loom</span>
+      <span class="logo-name">Intercom</span>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- FEATURE GRID                            -->
+  <!-- ═══════════════════════════════════════ -->
+  <section class="features" id="features">
+    <div class="section-inner">
+      <p class="section-eyebrow">Features</p>
+      <h2 class="section-heading">Everything you need.<br>Nothing you don't.</h2>
+      <p class="section-sub">One platform to design, build, ship, and scale — from first commit to production.</p>
+      <div class="bento-grid">
+        <!-- Card A: Large -->
+        <div class="bento-card bento-a">
+          <div class="bento-card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+          <h3 class="bento-title">AI-Powered Workflows</h3>
+          <p class="bento-desc">Let Apex's AI draft specs, generate boilerplate code, and write test cases so your team focuses on decisions that matter.</p>
+          <div class="bento-compare">
+            <div class="bento-compare-col">
+              <span class="compare-label bad">Without Apex</span>
+              <div class="compare-line"></div>
+              <div class="compare-line short"></div>
+              <div class="compare-line medium"></div>
+            </div>
+            <div class="bento-compare-arrow">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+            <div class="bento-compare-col">
+              <span class="compare-label good">With Apex</span>
+              <div class="compare-line accent"></div>
+              <div class="compare-line accent short"></div>
+              <div class="compare-line accent"></div>
+            </div>
+          </div>
+          <span class="bento-badge">↑ 10× velocity</span>
+        </div>
+        <!-- Card B -->
+        <div class="bento-card bento-b">
+          <div class="bento-card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <h3 class="bento-title">Real-time Collaboration</h3>
+          <p class="bento-desc">Multiplayer cursors, live comments, and instant sync across your entire team.</p>
+          <div class="bento-avatars">
+            <div class="b-av" style="background:#7c3aed">S</div>
+            <div class="b-av" style="background:#3b82f6">M</div>
+            <div class="b-av" style="background:#10b981">R</div>
+            <div class="b-av" style="background:#f59e0b">K</div>
+            <div class="b-av" style="background:#ef4444">J</div>
+          </div>
+          <span class="bento-badge emerald">5 editing now</span>
+        </div>
+        <!-- Card C -->
+        <div class="bento-card bento-c">
+          <div class="bento-card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <h3 class="bento-title">Live Analytics</h3>
+          <p class="bento-desc">Track every metric that matters. Beautiful charts, zero setup.</p>
+          <div class="bento-sparkline">
+            <svg viewBox="0 0 200 60" width="100%" height="60">
+              <defs>
+                <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.25"/>
+                  <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <polyline points="0,50 18,45 36,38 54,42 72,28 90,32 108,20 126,24 144,12 162,16 180,8 200,4" fill="none" stroke="#7c3aed" stroke-width="2" class="chart-path"/>
+              <polygon points="0,50 18,45 36,38 54,42 72,28 90,32 108,20 126,24 144,12 162,16 180,8 200,4 200,60 0,60" fill="url(#sparkGrad)"/>
+            </svg>
+          </div>
+          <span class="bento-badge emerald">↑ 47% this month</span>
+        </div>
+        <!-- Card D: Wide -->
+        <div class="bento-card bento-d">
+          <div class="bento-card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+          <h3 class="bento-title">100+ Integrations</h3>
+          <p class="bento-desc">Connect the tools your team already loves. One-click setup, zero friction.</p>
+          <div class="bento-pills">
+            <span class="int-pill">Slack</span>
+            <span class="int-pill">Notion</span>
+            <span class="int-pill">GitHub</span>
+            <span class="int-pill">Linear</span>
+            <span class="int-pill">Figma</span>
+            <span class="int-pill">Jira</span>
+            <span class="int-pill">Zapier</span>
+            <span class="int-pill">HubSpot</span>
+            <span class="int-pill">Webflow</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- TESTIMONIALS                            -->
+  <!-- ═══════════════════════════════════════ -->
+  <section class="testimonials" id="reviews">
+    <div class="section-inner">
+      <p class="section-eyebrow">Reviews</p>
+      <h2 class="section-heading">Teams who ship with Apex</h2>
+      <p class="section-sub">Don't take our word for it. Here's what real teams are saying.</p>
+      <div class="testimonials-grid">
+        <div class="testi-card featured-testi">
+          <div class="testi-stars">★★★★★</div>
+          <p class="testi-quote">"Apex cut our time-to-ship from 6 weeks to 4 days. I don't know how we ever managed without it. The AI workflow alone is worth 10× the price."</p>
+          <div class="testi-author">
+            <div class="testi-avatar" style="background:#7c3aed">S</div>
+            <div>
+              <div class="testi-name">Sarah Chen</div>
+              <div class="testi-role">VP of Product, Vercel</div>
+            </div>
+          </div>
+        </div>
+        <div class="testi-card">
+          <div class="testi-stars">★★★★★</div>
+          <p class="testi-quote">"Finally, a tool that respects how engineers actually think. The collab features are unmatched."</p>
+          <div class="testi-author">
+            <div class="testi-avatar" style="background:#3b82f6">M</div>
+            <div>
+              <div class="testi-name">Marcus Rivera</div>
+              <div class="testi-role">CTO, Linear</div>
+            </div>
+          </div>
+        </div>
+        <div class="testi-card">
+          <div class="testi-stars">★★★★★</div>
+          <p class="testi-quote">"We replaced 4 separate tools with Apex. The savings alone paid for 3 years of subscription in the first month."</p>
+          <div class="testi-author">
+            <div class="testi-avatar" style="background:#10b981">R</div>
+            <div>
+              <div class="testi-name">Riya Patel</div>
+              <div class="testi-role">Head of Eng, Shopify</div>
+            </div>
+          </div>
+        </div>
+        <div class="testi-card">
+          <div class="testi-stars">★★★★★</div>
+          <p class="testi-quote">"The analytics dashboard gives us insight we were paying a data engineer $180k to produce manually. Wild."</p>
+          <div class="testi-author">
+            <div class="testi-avatar" style="background:#f59e0b">K</div>
+            <div>
+              <div class="testi-name">Kyle Noonan</div>
+              <div class="testi-role">Data Lead, Stripe</div>
+            </div>
+          </div>
+        </div>
+        <div class="testi-card">
+          <div class="testi-stars">★★★★★</div>
+          <p class="testi-quote">"Onboarded our 80-person team in two hours. That's never happened with any tool in my 12 years in tech."</p>
+          <div class="testi-author">
+            <div class="testi-avatar" style="background:#ef4444">J</div>
+            <div>
+              <div class="testi-name">Jana Müller</div>
+              <div class="testi-role">COO, Loom</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- PRICING                                 -->
+  <!-- ═══════════════════════════════════════ -->
+  <section class="pricing" id="pricing">
+    <div class="section-inner">
+      <p class="section-eyebrow">Pricing</p>
+      <h2 class="section-heading">Simple, transparent pricing</h2>
+      <p class="section-sub">Start free. Scale when you're ready. No hidden fees, ever.</p>
+
+      <!-- Toggle -->
+      <div class="pricing-toggle-wrap">
+        <span class="toggle-label" id="toggleMonthLabel" style="color:#fff">Monthly</span>
+        <button class="toggle-switch" id="billingToggle" aria-pressed="false" onclick="toggleBilling()">
+          <span class="toggle-thumb" id="toggleThumb"></span>
+        </button>
+        <span class="toggle-label" id="toggleAnnualLabel">Annual <span class="toggle-save">Save 20%</span></span>
+      </div>
+
+      <div class="pricing-grid">
+        <!-- Starter -->
+        <div class="pricing-card">
+          <div class="pricing-plan-name">Starter</div>
+          <div class="pricing-price-wrap">
+            <span class="pricing-currency">$</span>
+            <span class="pricing-amount" id="starterPrice">0</span>
+            <span class="pricing-period">/mo</span>
+          </div>
+          <p class="pricing-desc">For solo builders and side projects. Everything you need to get started.</p>
+          <ul class="pricing-features">
+            <li class="pf-item"><span class="pf-check">✓</span> 3 active projects</li>
+            <li class="pf-item"><span class="pf-check">✓</span> 5 team members</li>
+            <li class="pf-item"><span class="pf-check">✓</span> 10GB storage</li>
+            <li class="pf-item"><span class="pf-check">✓</span> Basic analytics</li>
+            <li class="pf-item pf-muted"><span class="pf-cross">✗</span> AI workflows</li>
+            <li class="pf-item pf-muted"><span class="pf-cross">✗</span> Priority support</li>
+          </ul>
+          <button class="pricing-cta-ghost" onclick="showToast('Starting your free Starter plan!')">Get Started Free</button>
+        </div>
+
+        <!-- Pro (Featured) -->
+        <div class="pricing-card pricing-card-featured">
+          <div class="pricing-popular-badge">Most Popular</div>
+          <div class="pricing-plan-name">Pro</div>
+          <div class="pricing-price-wrap">
+            <span class="pricing-currency">$</span>
+            <span class="pricing-amount" id="proPrice">49</span>
+            <span class="pricing-period">/mo</span>
+          </div>
+          <p class="pricing-desc">For growing teams that need AI power and advanced collaboration.</p>
+          <ul class="pricing-features">
+            <li class="pf-item"><span class="pf-check">✓</span> Unlimited projects</li>
+            <li class="pf-item"><span class="pf-check">✓</span> 25 team members</li>
+            <li class="pf-item"><span class="pf-check">✓</span> 100GB storage</li>
+            <li class="pf-item"><span class="pf-check">✓</span> Advanced analytics</li>
+            <li class="pf-item"><span class="pf-check">✓</span> AI workflows (full)</li>
+            <li class="pf-item"><span class="pf-check">✓</span> Priority support</li>
+          </ul>
+          <button class="pricing-cta-primary" onclick="showToast('🚀 Starting Pro trial — 14 days free!')">Start 14-Day Trial</button>
+        </div>
+
+        <!-- Enterprise -->
+        <div class="pricing-card">
+          <div class="pricing-plan-name">Enterprise</div>
+          <div class="pricing-price-wrap">
+            <span class="pricing-currency">$</span>
+            <span class="pricing-amount" id="enterprisePrice">199</span>
+            <span class="pricing-period">/mo</span>
+          </div>
+          <p class="pricing-desc">For large orgs needing SSO, SLAs, dedicated infrastructure and compliance.</p>
+          <ul class="pricing-features">
+            <li class="pf-item"><span class="pf-check">✓</span> Unlimited everything</li>
+            <li class="pf-item"><span class="pf-check">✓</span> Unlimited members</li>
+            <li class="pf-item"><span class="pf-check">✓</span> 1TB+ storage</li>
+            <li class="pf-item"><span class="pf-check">✓</span> Custom analytics</li>
+            <li class="pf-item"><span class="pf-check">✓</span> SSO + SAML + RBAC</li>
+            <li class="pf-item"><span class="pf-check">✓</span> Dedicated SLA &amp; support</li>
+          </ul>
+          <button class="pricing-cta-ghost" onclick="showToast('Connecting you with our Enterprise team!')">Contact Sales</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- FAQ                                     -->
+  <!-- ═══════════════════════════════════════ -->
+  <section class="faq-section" id="faq">
+    <div class="section-inner">
+      <p class="section-eyebrow">FAQ</p>
+      <h2 class="section-heading">Questions? Answered.</h2>
+      <div class="faq-list">
+        <div class="faq-item" id="faq-0">
+          <button class="faq-q" onclick="toggleFaq(0)">
+            <span>How does the 14-day trial work?</span>
+            <svg class="faq-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="faq-a" id="faq-a-0">You get full access to all Pro features for 14 days with no credit card required. At the end of your trial, you can choose to subscribe or your account automatically moves to the Starter free plan — nothing is deleted.</div>
+        </div>
+        <div class="faq-item" id="faq-1">
+          <button class="faq-q" onclick="toggleFaq(1)">
+            <span>Can I switch plans at any time?</span>
+            <svg class="faq-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="faq-a" id="faq-a-1">Yes, absolutely. Upgrade, downgrade, or cancel at any time from your account settings. Prorated credits are applied automatically when switching mid-cycle.</div>
+        </div>
+        <div class="faq-item" id="faq-2">
+          <button class="faq-q" onclick="toggleFaq(2)">
+            <span>What AI models does Apex use?</span>
+            <svg class="faq-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="faq-a" id="faq-a-2">Apex uses a mixture of frontier models including GPT-4o, Claude 3.5 Sonnet, and our own fine-tuned models specialized for code generation, spec writing, and test automation.</div>
+        </div>
+        <div class="faq-item" id="faq-3">
+          <button class="faq-q" onclick="toggleFaq(3)">
+            <span>Is my data secure?</span>
+            <svg class="faq-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="faq-a" id="faq-a-3">Apex is SOC 2 Type II certified and GDPR compliant. All data is encrypted in transit (TLS 1.3) and at rest (AES-256). Enterprise plans include dedicated infrastructure and data residency options.</div>
+        </div>
+        <div class="faq-item" id="faq-4">
+          <button class="faq-q" onclick="toggleFaq(4)">
+            <span>Do you offer nonprofit or startup discounts?</span>
+            <svg class="faq-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="faq-a" id="faq-a-4">Yes! We offer 50% off for verified nonprofits and early-stage startups (under $1M ARR). Email startups@apex.app with proof of eligibility and we'll set you up within 24 hours.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- CTA BAND                                -->
+  <!-- ═══════════════════════════════════════ -->
+  <section class="cta-band">
+    <div class="cta-band-glow"></div>
+    <div class="cta-band-content">
+      <h2 class="cta-band-heading">Ready to build something<br><span class="cta-band-accent">genuinely badass?</span></h2>
+      <p class="cta-band-sub">Join 18,400+ teams already shipping faster. No credit card. No BS. Just results.</p>
+      <div class="cta-band-actions">
+        <button class="btn-primary-lg" onclick="showToast('🚀 Let&apos;s build! Redirecting...')">Start Building Free</button>
+        <button class="btn-secondary-lg" onclick="showToast('Opening demo...')">Watch 2-min Demo</button>
+      </div>
+      <p class="cta-band-trust">Free forever plan &nbsp;·&nbsp; Setup in 2 minutes &nbsp;·&nbsp; Cancel anytime</p>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- FOOTER                                  -->
+  <!-- ═══════════════════════════════════════ -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <div class="footer-logo">
+          <span class="nav-logo-mark"></span>
+          <span class="nav-logo-text">Apex</span>
+        </div>
+        <p class="footer-tagline">The platform for teams who refuse to ship slow.</p>
+        <div class="footer-socials">
+          <a href="#" class="social-link" aria-label="Twitter">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/></svg>
+          </a>
+          <a href="#" class="social-link" aria-label="GitHub">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+          </a>
+          <a href="#" class="social-link" aria-label="LinkedIn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
+          </a>
+        </div>
+      </div>
+      <div class="footer-links-group">
+        <h4 class="footer-group-title">Product</h4>
+        <a href="#" class="footer-link">Features</a>
+        <a href="#" class="footer-link">Integrations</a>
+        <a href="#" class="footer-link">Changelog</a>
+        <a href="#" class="footer-link">Roadmap</a>
+        <a href="#" class="footer-link">Status</a>
+      </div>
+      <div class="footer-links-group">
+        <h4 class="footer-group-title">Company</h4>
+        <a href="#" class="footer-link">About</a>
+        <a href="#" class="footer-link">Blog</a>
+        <a href="#" class="footer-link">Careers</a>
+        <a href="#" class="footer-link">Press</a>
+        <a href="#" class="footer-link">Contact</a>
+      </div>
+      <div class="footer-links-group">
+        <h4 class="footer-group-title">Legal</h4>
+        <a href="#" class="footer-link">Privacy Policy</a>
+        <a href="#" class="footer-link">Terms of Service</a>
+        <a href="#" class="footer-link">Cookie Policy</a>
+        <a href="#" class="footer-link">GDPR</a>
+        <a href="#" class="footer-link">SOC 2</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2025 Apex Technologies, Inc. All rights reserved.</span>
+      <span>Built with ♥ for teams who ship.</span>
+    </div>
+  </footer>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ── Count-up animation ──────────────────────────
+    function countUp(el, target, duration) {
+      duration = duration || 1400;
+      var start = performance.now();
+      function update(now) {
+        var p = Math.min((now - start) / duration, 1);
+        var ease = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.floor(ease * target).toLocaleString();
+        if (p < 1) requestAnimationFrame(update);
+      }
+      requestAnimationFrame(update);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('[data-count]').forEach(function(el) {
+        countUp(el, +el.dataset.count);
+      });
+    });
+
+    // ── Pricing toggle ──────────────────────────────
+    var isAnnual = false;
+    var prices = { starter: [0, 0], pro: [49, 39], enterprise: [199, 159] };
+
+    function toggleBilling() {
+      isAnnual = !isAnnual;
+      var thumb = document.getElementById('toggleThumb');
+      var btn = document.getElementById('billingToggle');
+      var monthLabel = document.getElementById('toggleMonthLabel');
+      var annualLabel = document.getElementById('toggleAnnualLabel');
+
+      btn.setAttribute('aria-pressed', isAnnual);
+      thumb.classList.toggle('active', isAnnual);
+      monthLabel.style.color = isAnnual ? 'rgba(255,255,255,0.4)' : '#fff';
+      annualLabel.style.color = isAnnual ? '#fff' : 'rgba(255,255,255,0.4)';
+
+      document.getElementById('starterPrice').textContent = prices.starter[isAnnual ? 1 : 0];
+      document.getElementById('proPrice').textContent = prices.pro[isAnnual ? 1 : 0];
+      document.getElementById('enterprisePrice').textContent = prices.enterprise[isAnnual ? 1 : 0];
+    }
+
+    // ── FAQ accordion ───────────────────────────────
+    var openFaq = null;
+    function toggleFaq(idx) {
+      if (openFaq !== null && openFaq !== idx) {
+        closeFaqItem(openFaq);
+      }
+      if (openFaq === idx) {
+        closeFaqItem(idx);
+        openFaq = null;
+      } else {
+        openFaqItem(idx);
+        openFaq = idx;
+      }
+    }
+    function openFaqItem(idx) {
+      var a = document.getElementById('faq-a-' + idx);
+      var item = document.getElementById('faq-' + idx);
+      a.style.maxHeight = a.scrollHeight + 'px';
+      a.style.opacity = '1';
+      item.classList.add('open');
+    }
+    function closeFaqItem(idx) {
+      var a = document.getElementById('faq-a-' + idx);
+      var item = document.getElementById('faq-' + idx);
+      a.style.maxHeight = '0';
+      a.style.opacity = '0';
+      item.classList.remove('open');
+    }
+
+    // ── Toast ───────────────────────────────────────
+    var toastTimer = null;
+    function showToast(msg) {
+      var t = document.getElementById('toast');
+      t.innerHTML = msg;
+      t.classList.add('show');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(function() { t.classList.remove('show'); }, 3000);
+    }
+
+    // ── Mobile nav ──────────────────────────────────
+    document.getElementById('hamburger').addEventListener('click', function() {
+      document.getElementById('mobileNav').classList.toggle('open');
+      this.classList.toggle('active');
+    });
+    function closeMobileNav() {
+      document.getElementById('mobileNav').classList.remove('open');
+      document.getElementById('hamburger').classList.remove('active');
+    }
+
+    // ── Scroll-spy nav links ────────────────────────
+    var sections = ['hero','features','social-proof','pricing','faq'];
+    var navLinks = document.querySelectorAll('.nav-link');
+    window.addEventListener('scroll', function() {
+      var scrollY = window.scrollY + 80;
+      var current = 'hero';
+      sections.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el && el.offsetTop <= scrollY) current = id;
+      });
+      navLinks.forEach(function(link) {
+        link.classList.remove('active');
+        var href = link.getAttribute('href').replace('#','');
+        if (href === current ||
+            (current === 'social-proof' && href === 'social-proof') ||
+            (current === 'reviews' && href === 'reviews')) {
+          link.classList.add('active');
+        }
+      });
+    });
+
+    // ── Intersection observer for stagger ──────────
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.bento-card, .testi-card, .pricing-card').forEach(function(el) {
+      observer.observe(el);
+    });
+  </script>
+</body>
+</html>

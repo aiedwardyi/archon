@@ -1,0 +1,250 @@
+{
+  "benchmarks": [
+    {
+      "project_id": 163,
+      "version": 1,
+      "archetype": "ecommerce",
+      "benchmark_path": "eval/benchmark_builds/eval-best-ecommerce",
+      "priority": 90,
+      "label": "eval-best-ecommerce",
+      "eval_score": 88.5,
+      "discovery_ingest": true
+    },
+    {
+      "project_id": 161,
+      "version": 1,
+      "archetype": "game",
+      "benchmark_path": "eval/benchmark_builds/eval-best-game",
+      "priority": 90,
+      "label": "eval-best-game",
+      "eval_score": 84.5,
+      "discovery_ingest": true
+    },
+    {
+      "project_id": 169,
+      "version": 1,
+      "archetype": "portfolio",
+      "benchmark_path": "eval/benchmark_builds/eval-best-portfolio",
+      "priority": 90,
+      "label": "eval-best-portfolio",
+      "eval_score": 83.5,
+      "discovery_ingest": true
+    },
+    {
+      "project_id": 148,
+      "version": 1,
+      "published_slug": "test-alpha-v1-t43j",
+      "archetype": "portfolio",
+      "benchmark_path": "eval/benchmark_builds/legacy-alex-mercer-portfolio",
+      "priority": 72,
+      "label": "legacy-alex-mercer-portfolio",
+      "prompt_summary": "Build a creative developer profile site with hero band, skills section, project showcase, experience, and contact CTA.",
+      "prompt_hints": [
+        "creative developer portfolio",
+        "developer profile site",
+        "alex mercer"
+      ],
+      "notes": "Decent portfolio reference. Key traits: strong hero atmosphere, clean typography pairing, polished dark portfolio framing, and a usable project/skills rhythm, but it should stay below the stronger portfolio benchmarks.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 164,
+      "version": 1,
+      "published_slug": "test-delta-v1-emy1",
+      "archetype": "portfolio",
+      "benchmark_path": "eval/benchmark_builds/legacy-alex-mercer-neon-portfolio",
+      "priority": 71,
+      "label": "legacy-alex-mercer-neon-portfolio",
+      "prompt_summary": "Build a modern software engineer portfolio with punchy hero copy, skill highlights, project cards, experience timeline, and strong call-to-action sections.",
+      "prompt_hints": [
+        "modern software engineer portfolio",
+        "neon portfolio",
+        "alex mercer"
+      ],
+      "notes": "Okay portfolio reference. Key traits: punchier uppercase hero treatment, neon-lime accent contrast, animated stat chips and skill bars, and a more assertive dev-brand tone, but it should remain below the stronger portfolio benchmarks.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 155,
+      "version": 1,
+      "archetype": "dashboard",
+      "benchmark_path": "eval/benchmark_builds/eval-best-dashboard",
+      "priority": 90,
+      "label": "eval-best-dashboard",
+      "eval_score": 81.0,
+      "discovery_ingest": true
+    },
+    {
+      "project_id": 162,
+      "version": 1,
+      "archetype": "saas_landing",
+      "benchmark_path": "eval/benchmark_builds/eval-best-saas-landing",
+      "priority": 80,
+      "label": "eval-best-saas-landing",
+      "eval_score": 76.0,
+      "discovery_ingest": true
+    },
+    {
+      "project_id": 149,
+      "version": 1,
+      "published_slug": "test-theta-v1-k8nd",
+      "archetype": "saas_landing",
+      "benchmark_path": "eval/benchmark_builds/legacy-apex-badass-site",
+      "priority": 100,
+      "label": "legacy-apex-badass-site",
+      "notes": "Legacy strong result for the vague prompt 'bbuild me a badass site'. Use as a local reference build when Discovery is unavailable or empty.",
+      "prompt_hints": [
+        "badass site",
+        "bbuild me a badass site"
+      ],
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 147,
+      "version": 1,
+      "published_slug": "test-v1-9a3c",
+      "archetype": "saas_landing",
+      "benchmark_path": "eval/benchmark_builds/legacy-pysimple-cli-saas",
+      "priority": 96,
+      "label": "legacy-pysimple-cli-saas",
+      "prompt_summary": "Build a premium SaaS/dev-tool landing page for a simple Python CLI tool with install tabs, code examples, API reference, integrations, pricing, and polished copy-to-clipboard interactions.",
+      "prompt_hints": [
+        "python cli tool",
+        "dev tool landing page",
+        "pysimple",
+        "api reference"
+      ],
+      "notes": "Strong SaaS/dev-tool reference. Key traits: polished install-tab interaction, premium code-block presentation, docs-product hybrid structure, clean command-copy UX, and a restrained dark technical aesthetic that still feels premium.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 43,
+      "version": 1,
+      "published_slug": "pokemon-v1-yw3q",
+      "archetype": "game",
+      "benchmark_path": "eval/benchmark_builds/legacy-pokemon-starters-fan-page",
+      "priority": 100,
+      "label": "legacy-pokemon-starters-fan-page",
+      "prompt_summary": "can you build me a pokemon fan page website with charmander, bulbasaur, and squirtle characters? make the site look modern with pokemon graphics and design.",
+      "prompt_hints": [
+        "pokemon fan page",
+        "charmander",
+        "bulbasaur",
+        "squirtle"
+      ],
+      "notes": "Strong legacy Pokemon fan page. Key reference traits: click-triggered card animations, premium-feeling transitions, and type-colored glow halos behind each starter card.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 52,
+      "version": 2,
+      "published_slug": "digimon-v2-tlun",
+      "archetype": "game",
+      "benchmark_path": "eval/benchmark_builds/legacy-digimon-agumon-fan-page",
+      "priority": 95,
+      "label": "legacy-digimon-agumon-fan-page",
+      "prompt_summary": "build a Digimon fan page centered on Agumon with modern graphics, evolution showcase, and community sections.",
+      "prompt_hints": [
+        "digimon fan page",
+        "agumon",
+        "digital world"
+      ],
+      "notes": "Strong Digimon fan page reference. Notable traits: oversized hero typography, warm orange glow system, animated mascot presentation, and a premium evolution timeline that makes the page feel like an interactive franchise tribute.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 71,
+      "version": 1,
+      "published_slug": "ff7-v2-v1-9ykk",
+      "archetype": "game",
+      "benchmark_path": "eval/benchmark_builds/legacy-ff7-avalanche-archive",
+      "priority": 94,
+      "label": "legacy-ff7-avalanche-archive",
+      "prompt_summary": "create me a final fantasy 7 fan page website with cloud and barret and tifa characters. use generated ai images to make it look as close to the characters as possible. also showcase some weapons and a game map. have midgar in the background kind of transparent/blurred. make the website look very aesthetic",
+      "prompt_hints": [
+        "final fantasy 7 fan page",
+        "cloud and barret and tifa",
+        "midgar background"
+      ],
+      "notes": "Strong seeded FF7 fan-page reference. Key traits: cinematic worldbuilding hero, premium character cards with layered depth, atmospheric blurred-environment treatment, count-up hero stats, smooth-radius cards, polished iconography, and polished section transitions that make the page feel collector-edition rather than generic fandom content.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 38,
+      "version": 1,
+      "archetype": "game",
+      "benchmark_path": "eval/benchmark_builds/legacy-ff7-midgar-archives",
+      "priority": 93,
+      "label": "legacy-ff7-midgar-archives",
+      "prompt_summary": "Create me a Final Fantasy 7 theme fan page site. Include characters like cloud, barrett, and tifa. Include a section for weapons and a map that shows the game map",
+      "prompt_hints": [
+        "final fantasy 7 theme fan page",
+        "cloud, barrett, and tifa",
+        "ff7 fan page"
+      ],
+      "notes": "Strong seeded FF7 archive reference. Key traits: interactive browsing density, archive-style card system, and franchise-specific navigation states that make the fan page feel explorable rather than static.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 76,
+      "version": 1,
+      "published_slug": "ff7-v2-v1-mvqt",
+      "archetype": "game",
+      "benchmark_path": "eval/benchmark_builds/legacy-ff7-legends-of-midgar",
+      "priority": 96,
+      "label": "legacy-ff7-legends-of-midgar",
+      "prompt_summary": "Build a premium Final Fantasy VII fan page with Cloud, Tifa, and Barret, cinematic Midgar atmosphere, glowing cards, weapons, world map, and animated lore interactions.",
+      "prompt_hints": [
+        "legends of midgar",
+        "premium final fantasy vii fan page",
+        "glowing ff7 cards"
+      ],
+      "notes": "Strong FF7 cinematic fan-page reference. Key traits: premium gold-accent editorial typography, color-coded glow halos behind character cards, count-up hero stats, polished modal reveals with animated stat bars, and a high-end collector-edition feel.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 87,
+      "version": 1,
+      "published_slug": "ff9-v2-eehh",
+      "archetype": "game",
+      "benchmark_path": "eval/benchmark_builds/legacy-ff9-zidane-vivi-tribute",
+      "priority": 97,
+      "label": "legacy-ff9-zidane-vivi-tribute",
+      "prompt_summary": "Build a premium Final Fantasy IX fan tribute for Zidane Tribal and Vivi Ornitier with cinematic hero art, character biography, animated skill bars, gallery interactions, and polished modal media viewing.",
+      "prompt_hints": [
+        "final fantasy ix fan page",
+        "zidane tribal",
+        "vivi ornitier",
+        "ff9 fan tribute"
+      ],
+      "notes": "Strong FF9 tribute reference. Key traits: polished editorial hero composition, premium modal media viewing, animated stat and skill-bar fills, differentiated character glow systems, and a refined fantasy-tech aesthetic that still feels modern.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 144,
+      "version": 1,
+      "published_slug": "gamma-beta-v1-n4np",
+      "archetype": "editor",
+      "benchmark_path": "eval/benchmark_builds/legacy-precision-calculator-ui",
+      "priority": 98,
+      "label": "legacy-precision-calculator-ui",
+      "prompt_summary": "Build a premium precision calculator app with cinematic launch screen, responsive keypad interactions, HUD stats, animated history panel, and polished error/toast feedback.",
+      "notes": "Global interaction benchmark. Key traits: cinematic entry transition, tactile button press feedback, polished HUD/status treatment, animated side-panel reveal, premium error/toast states, and a strong sense of motion without feeling gimmicky.",
+      "global_guidance": true,
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 153,
+      "version": 1,
+      "published_slug": "alpha-v1-wj5m",
+      "archetype": "form",
+      "benchmark_path": "eval/benchmark_builds/legacy-alpha-launch-wizard",
+      "priority": 97,
+      "label": "legacy-alpha-launch-wizard",
+      "prompt_summary": "Build a premium multi-step launch wizard for a Python application with typed confirmation, animated validation logs, progress feedback, and polished success/error execution states.",
+      "notes": "Global interaction benchmark. Key traits: premium multi-step progression, typed confirmation gating, animated validating log sequence, convincing run-state simulation, and polished success/error transitions that make a utility flow feel alive.",
+      "global_guidance": true,
+      "discovery_ingest": false
+    }
+  ]
+}

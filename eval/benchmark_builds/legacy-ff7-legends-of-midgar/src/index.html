@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Final Fantasy VII — Legends of Midgar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+<div class="noise-overlay"></div>
+
+<div class="midgar-bg">
+  <img src="/api/assets/76/1/midgar_background.png" alt="Midgar" class="midgar-bg-img">
+  <div class="midgar-bg-overlay"></div>
+</div>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="logo">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <polygon points="14,2 26,22 2,22" stroke="#e2b04a" stroke-width="1.5" fill="none"/>
+        <polygon points="14,8 21,20 7,20" fill="#e2b04a" opacity="0.3"/>
+        <line x1="14" y1="2" x2="14" y2="26" stroke="#e2b04a" stroke-width="1"/>
+      </svg>
+      <span class="logo-text">FF<span class="logo-accent">VII</span></span>
+    </div>
+    <nav class="topnav">
+      <a href="#characters" class="nav-link">Characters</a>
+      <a href="#weapons" class="nav-link">Weapons</a>
+      <a href="#map" class="nav-link">World Map</a>
+      <a href="#lore" class="nav-link">Lore</a>
+    </nav>
+    <a href="#characters" class="btn-primary btn-sm">Explore Now</a>
+    <button class="hamburger" id="hamburgerBtn" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mobile-nav" id="mobileNav">
+    <a href="#characters" class="mobile-nav-link">Characters</a>
+    <a href="#weapons" class="mobile-nav-link">Weapons</a>
+    <a href="#map" class="mobile-nav-link">World Map</a>
+    <a href="#lore" class="mobile-nav-link">Lore</a>
+  </div>
+</header>
+
+<section class="hero" id="hero">
+  <div class="hero-content">
+    <div class="hero-eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>Square Enix — 1997 / Remake 2020</span>
+    </div>
+    <h1 class="hero-title">
+      <span class="hero-title-line">Legends of</span>
+      <span class="hero-title-accent">Midgar</span>
+    </h1>
+    <p class="hero-subtitle">A world on the edge of destruction. A planet crying out in pain. Three warriors stand between Shinra's ambition and the lifestream itself.</p>
+    <div class="hero-cta">
+      <a href="#characters" class="btn-primary">Meet the Heroes</a>
+      <a href="#weapons" class="btn-ghost">View Weapons</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <span class="stat-number" data-count="3">0</span>
+        <span class="stat-label">Main Heroes</span>
+      </div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat">
+        <span class="stat-number" data-count="12">0</span>
+        <span class="stat-label">Iconic Weapons</span>
+      </div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat">
+        <span class="stat-number" data-count="1997">0</span>
+        <span class="stat-label">Year Released</span>
+      </div>
+    </div>
+  </div>
+  <div class="hero-scroll-hint">
+    <span>Scroll</span>
+    <svg width="16" height="24" viewBox="0 0 16 24" fill="none">
+      <rect x="1" y="1" width="14" height="22" rx="7" stroke="rgba(226,176,74,0.5)" stroke-width="1"/>
+      <circle class="scroll-dot" cx="8" cy="6" r="2" fill="#e2b04a"/>
+    </svg>
+  </div>
+</section>
+
+<section class="section" id="characters">
+  <div class="section-inner">
+    <div class="section-header">
+      <div class="section-tag">The Warriors</div>
+      <h2 class="section-title">Choose Your <span class="text-accent">Champion</span></h2>
+      <p class="section-subtitle">Former SOLDIER, freedom fighter, and martial artist — together they are AVALANCHE's last hope against the Shinra Corporation.</p>
+    </div>
+    <div class="characters-grid">
+      <div class="char-card" data-char="cloud" onclick="openModal('cloud')">
+        <div class="char-card-glow glow-blue"></div>
+        <div class="char-image-wrap">
+          <img src="/api/assets/76/1/cloud_character_portrait.png" alt="Cloud Strife" class="char-image">
+          <div class="char-image-overlay">
+            <span class="view-label">View Profile</span>
+          </div>
+        </div>
+        <div class="char-info">
+          <div class="char-class">1st Class SOLDIER</div>
+          <h3 class="char-name">Cloud Strife</h3>
+          <p class="char-desc">A mercenary with a haunted past and unmatched combat skill. Wields the legendary Buster Sword with devastating force.</p>
+          <div class="char-stats-row">
+            <div class="char-stat"><span class="cs-label">STR</span><div class="cs-bar"><div class="cs-fill" style="width:95%"></div></div></div>
+            <div class="char-stat"><span class="cs-label">MAG</span><div class="cs-bar"><div class="cs-fill" style="width:70%"></div></div></div>
+            <div class="char-stat"><span class="cs-label">SPD</span><div class="cs-bar"><div class="cs-fill" style="width:85%"></div></div></div>
+          </div>
+          <div class="char-tags">
+            <span class="tag tag-blue">Sword</span>
+            <span class="tag tag-gold">Limit Break</span>
+            <span class="tag">Mercenary</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="char-card" data-char="barret" onclick="openModal('barret')">
+        <div class="char-card-glow glow-orange"></div>
+        <div class="char-image-wrap">
+          <img src="/api/assets/76/1/barret_character_portrait.png" alt="Barret Wallace" class="char-image">
+          <div class="char-image-overlay">
+            <span class="view-label">View Profile</span>
+          </div>
+        </div>
+        <div class="char-info">
+          <div class="char-class">AVALANCHE Leader</div>
+          <h3 class="char-name">Barret Wallace</h3>
+          <p class="char-desc">Leader of AVALANCHE and devoted father. His gun-arm fires with unstoppable force and his heart burns for the planet's survival.</p>
+          <div class="char-stats-row">
+            <div class="char-stat"><span class="cs-label">STR</span><div class="cs-bar"><div class="cs-fill cs-orange" style="width:88%"></div></div></div>
+            <div class="char-stat"><span class="cs-label">MAG</span><div class="cs-bar"><div class="cs-fill cs-orange" style="width:45%"></div></div></div>
+            <div class="char-stat"><span class="cs-label">VIT</span><div class="cs-bar"><div class="cs-fill cs-orange" style="width:98%"></div></div></div>
+          </div>
+          <div class="char-tags">
+            <span class="tag tag-orange">Gun-Arm</span>
+            <span class="tag tag-gold">Limit Break</span>
+            <span class="tag">Resistance</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="char-card" data-char="tifa" onclick="openModal('tifa')">
+        <div class="char-card-glow glow-red"></div>
+        <div class="char-image-wrap">
+          <img src="/api/assets/76/1/tifa_character_portrait.png" alt="Tifa Lockhart" class="char-image">
+          <div class="char-image-overlay">
+            <span class="view-label">View Profile</span>
+          </div>
+        </div>
+        <div class="char-info">
+          <div class="char-class">Martial Artist</div>
+          <h3 class="char-name">Tifa Lockhart</h3>
+          <p class="char-desc">Childhood friend of Cloud and fierce hand-to-hand combatant. Her Premium Heart gloves amplify her devastating martial arts.</p>
+          <div class="char-stats-row">
+            <div class="char-stat"><span class="cs-label">STR</span><div class="cs-bar"><div class="cs-fill cs-red" style="width:82%"></div></div></div>
+            <div class="char-stat"><span class="cs-label">MAG</span><div class="cs-bar"><div class="cs-fill cs-red" style="width:60%"></div></div></div>
+            <div class="char-stat"><span class="cs-label">SPD</span><div class="cs-bar"><div class="cs-fill cs-red" style="width:92%"></div></div></div>
+          </div>
+          <div class="char-tags">
+            <span class="tag tag-red">Gauntlets</span>
+            <span class="tag tag-gold">Limit Break</span>
+            <span class="tag">7th Heaven</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-alt" id="weapons">
+  <div class="section-inner">
+    <div class="section-header">
+      <div class="section-tag">Arsenal</div>
+      <h2 class="section-title">Iconic <span class="text-accent">Weapons</span></h2>
+      <p class="section-subtitle">From Cloud's massive Buster Sword to Barret's devastating gun-arm — the weapons of FF7 are as legendary as the characters who wield them.</p>
+    </div>
+    <div class="weapons-layout">
+      <div class="weapons-image-wrap gradient-border-card">
+        <img src="/api/assets/76/1/weapons_art.png" alt="FF7 Iconic Weapons" class="weapons-image">
+        <div class="weapons-image-overlay"></div>
+      </div>
+      <div class="weapons-table-wrap">
+        <div class="weapons-table-header">Weapon Registry</div>
+        <table class="weapons-table">
+          <thead>
+            <tr>
+              <th>Character</th>
+              <th>Weapon</th>
+              <th>Location</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody id="weaponsTableBody">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="map">
+  <div class="section-inner">
+    <div class="section-header">
+      <div class="section-tag">World</div>
+      <h2 class="section-title">The Planet <span class="text-accent">Gaia</span></h2>
+      <p class="section-subtitle">From the slums beneath Midgar's plates to the Northern Crater — the world of FF7 spans vast continents teeming with secrets.</p>
+    </div>
+    <div class="map-section">
+      <div class="map-container">
+        <div class="map-bg">
+          <img src="/api/assets/76/1/midgar_background.png" alt="Midgar Map" class="map-bg-img">
+          <div class="map-grid-overlay"></div>
+        </div>
+        <div class="map-pins" id="mapPins"></div>
+        <div class="map-legend">
+          <div class="legend-item"><span class="legend-dot ld-gold"></span>Major City</div>
+          <div class="legend-item"><span class="legend-dot ld-blue"></span>Dungeon</div>
+          <div class="legend-item"><span class="legend-dot ld-red"></span>Boss Zone</div>
+        </div>
+      </div>
+      <div class="map-locations" id="mapLocations"></div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-alt" id="lore">
+  <div class="section-inner">
+    <div class="section-header">
+      <div class="section-tag">Mythology</div>
+      <h2 class="section-title">The <span class="text-accent">Lifestream</span></h2>
+    </div>
+    <div class="lore-grid">
+      <div class="lore-card card-fadeup" style="animation-delay:0.05s">
+        <div class="lore-icon">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <circle cx="16" cy="16" r="12" stroke="#e2b04a" stroke-width="1.5"/>
+            <circle cx="16" cy="16" r="6" fill="#e2b04a" opacity="0.2"/>
+            <path d="M16 8 L16 24 M8 16 L24 16" stroke="#e2b04a" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <h4 class="lore-title">The Lifestream</h4>
+        <p class="lore-text">The spiritual energy of the Planet — a flowing river of life essence that connects all living things. Shinra drains it using Mako reactors to power their empire.</p>
+      </div>
+      <div class="lore-card card-fadeup" style="animation-delay:0.1s">
+        <div class="lore-icon">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <polygon points="16,4 28,24 4,24" stroke="#6ee7b7" stroke-width="1.5" fill="none"/>
+            <circle cx="16" cy="17" r="3" fill="#6ee7b7" opacity="0.5"/>
+          </svg>
+        </div>
+        <h4 class="lore-title">Materia</h4>
+        <p class="lore-text">Crystallized Lifestream energy that grants magical abilities. Found in the Planet's veins, materia allows wielders to cast spells, summon monsters, and bend reality.</p>
+      </div>
+      <div class="lore-card card-fadeup" style="animation-delay:0.15s">
+        <div class="lore-icon">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <rect x="4" y="4" width="24" height="24" rx="2" stroke="#f87171" stroke-width="1.5" fill="none"/>
+            <path d="M10 16 L22 16 M16 10 L16 22" stroke="#f87171" stroke-width="1.5"/>
+            <circle cx="16" cy="16" r="3" fill="#f87171" opacity="0.3"/>
+          </svg>
+        </div>
+        <h4 class="lore-title">Jenova</h4>
+        <p class="lore-text">An ancient extraterrestrial calamity that fell from the sky 2,000 years ago. Its cells were used to create SOLDIER, and its influence corrupts Cloud's very memories.</p>
+      </div>
+      <div class="lore-card card-fadeup" style="animation-delay:0.2s">
+        <div class="lore-icon">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <circle cx="16" cy="16" r="12" stroke="#818cf8" stroke-width="1.5" fill="none"/>
+            <path d="M12 12 Q16 8 20 12 Q22 16 16 20 Q10 16 12 12" stroke="#818cf8" stroke-width="1.5" fill="none"/>
+          </svg>
+        </div>
+        <h4 class="lore-title">The Promised Land</h4>
+        <p class="lore-text">A mythical destination promised by the Cetra — the Ancients who could commune with the Planet. Shinra believes it holds limitless Mako energy and will stop at nothing to find it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-logo">
+      <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+        <polygon points="14,2 26,22 2,22" stroke="#e2b04a" stroke-width="1.5" fill="none"/>
+        <line x1="14" y1="2" x2="14" y2="26" stroke="#e2b04a" stroke-width="1"/>
+      </svg>
+      <span>Final Fantasy <span class="logo-accent">VII</span></span>
+    </div>
+    <p class="footer-copy">Fan-made tribute. Final Fantasy VII is a trademark of Square Enix Co., Ltd. All rights reserved.</p>
+    <div class="footer-links">
+      <a href="#hero">Back to Top</a>
+      <a href="#characters">Characters</a>
+      <a href="#weapons">Weapons</a>
+      <a href="#map">Map</a>
+    </div>
+  </div>
+</footer>
+
+<div class="modal-backdrop" id="modalBackdrop" onclick="closeModal()"></div>
+<div class="modal" id="charModal">
+  <button class="modal-close" onclick="closeModal()">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M5 5L15 15M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  </button>
+  <div class="modal-content" id="modalContent"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const characters = {
+  cloud: {
+    name: 'Cloud Strife',
+    class: '1st Class SOLDIER',
+    age: 21,
+    origin: 'Nibelheim',
+    weapon: 'Buster Sword',
+    limit: 'Omnislash',
+    portrait: '/api/assets/76/1/cloud_character_portrait.png',
+    color: '#60a5fa',
+    bio: 'Cloud Strife is a former member of SOLDIER, Shinra\'s elite military unit. After the destruction of Nibelheim by Sephiroth, Cloud\'s memories were altered by Hojo\'s experiments. He joins AVALANCHE believing himself to be a 1st Class SOLDIER, only to discover the truth about his past is far more complex. His Buster Sword belonged to his fallen comrade Zack Fair.',
+    stats: { STR: 95, MAG: 70, SPD: 85, VIT: 75, LCK: 65 }
+  },
+  barret: {
+    name: 'Barret Wallace',
+    class: 'AVALANCHE Leader',
+    age: 35,
+    origin: 'Corel',
+    weapon: 'Missing Score (Gun-Arm)',
+    limit: 'Catastrophe',
+    portrait: '/api/assets/76/1/barret_character_portrait.png',
+    color: '#fb923c',
+    bio: 'Barret Wallace is the passionate leader of AVALANCHE, a group dedicated to fighting against Shinra\'s exploitation of the Planet\'s Lifestream. His right arm was replaced with a powerful gun-arm after the destruction of his hometown Corel. He fights for his adopted daughter Marlene and for a future where the Planet can heal.',
+    stats: { STR: 88, MAG: 45, SPD: 55, VIT: 98, LCK: 40 }
+  },
+  tifa: {
+    name: 'Tifa Lockhart',
+    class: 'Martial Artist',
+    age: 20,
+    origin: 'Nibelheim',
+    weapon: 'Premium Heart Gloves',
+    limit: 'Final Heaven',
+    portrait: '/api/assets/76/1/tifa_character_portrait.png',
+    color: '#f87171',
+    bio: 'Tifa Lockhart grew up alongside Cloud in Nibelheim. After Sephiroth burned their hometown, she rebuilt her life in Midgar\'s slums, running the 7th Heaven bar as a front for AVALANCHE. A master of Zangan-style martial arts, Tifa is the emotional heart of the group — fierce in combat but gentle in spirit.',
+    stats: { STR: 82, MAG: 60, SPD: 92, VIT: 78, LCK: 80 }
+  }
+};
+
+const weaponRows = [
+  { character: 'Cloud Strife', weapon: 'Buster Sword', location: 'Sector 7 Slums', description: 'Iconic oversized blade passed from Angeal to Zack to Cloud. Symbol of a promise kept.' },
+  { character: 'Cloud Strife', weapon: 'Ultima Weapon', location: 'Ultimate WEAPON', description: 'Power scales with Cloud\'s HP. The strongest blade in his arsenal, glowing with Lifestream.' },
+  { character: 'Barret Wallace', weapon: 'Missing Score', location: 'Midgar Raid', description: 'Barret\'s final gun-arm. Powered by materia — the more AP equipped, the greater its damage.' },
+  { character: 'Tifa Lockhart', weapon: 'Premium Heart', location: 'Gold Saucer Area', description: 'Tifa\'s ultimate gloves. Deals massive damage when Limit gauge is full — her signature weapon.' }
+];
+
+const mapLocations = [
+  { id: 1, name: 'Midgar', type: 'city', x: 48, y: 52, desc: 'The massive plate city powered by Mako reactors. Headquarters of the Shinra Corporation and starting point of Cloud\'s journey.', color: '#e2b04a' },
+  { id: 2, name: 'Kalm', type: 'city', x: 58, y: 40, desc: 'A peaceful town east of Midgar where Cloud recounts his memories of the Nibelheim incident — though not all is as he remembers.', color: '#e2b04a' },
+  { id: 3, name: 'Nibelheim', type: 'dungeon', x: 28, y: 45, desc: 'Cloud and Tifa\'s hometown, destroyed by Sephiroth five years ago. Now rebuilt by Shinra as a cover-up, populated by actors.', color: '#60a5fa' },
+  { id: 4, name: 'Northern Crater', type: 'boss', x: 52, y: 15, desc: 'Sephiroth\'s resting place — the impact crater where Jenova fell 2,000 years ago. Site of the final confrontation.', color: '#f87171' },
+  { id: 5, name: 'Gold Saucer', type: 'city', x: 40, y: 65, desc: 'A glittering amusement park floating above the desert. Home to Chocobo races, the Battle Arena, and countless distractions.', color: '#e2b04a' },
+  { id: 6, name: 'Cosmo Canyon', type: 'dungeon', x: 30, y: 62, desc: 'Red XIII\'s homeland and a center of planetary study. The Cosmo Candle burns eternally as tribute to the Planet\'s wisdom.', color: '#60a5fa' }
+];
+
+function buildWeaponsTable() {
+  const tbody = document.getElementById('weaponsTableBody');
+  weaponRows.forEach((row, i) => {
+    const tr = document.createElement('tr');
+    tr.style.animationDelay = (i * 0.08) + 's';
+    tr.innerHTML = `
+      <td><span class="table-char">${row.character}</span></td>
+      <td><span class="table-weapon">${row.weapon}</span></td>
+      <td><span class="table-location">${row.location}</span></td>
+      <td>${row.description}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function buildMap() {
+  const pinsContainer = document.getElementById('mapPins');
+  const locContainer = document.getElementById('mapLocations');
+  mapLocations.forEach((loc, i) => {
+    const pin = document.createElement('div');
+    pin.className = 'map-pin';
+    pin.style.left = loc.x + '%';
+    pin.style.top = loc.y + '%';
+    pin.style.setProperty('--pin-color', loc.color);
+    pin.style.animationDelay = (i * 0.15) + 's';
+    pin.innerHTML = `
+      <div class="pin-dot"></div>
+      <div class="pin-pulse"></div>
+      <div class="pin-label">${loc.name}</div>
+    `;
+    pin.onclick = () => selectLocation(loc.id);
+    pinsContainer.appendChild(pin);
+
+    const card = document.createElement('div');
+    card.className = 'loc-card';
+    card.id = 'loc-' + loc.id;
+    card.innerHTML = `
+      <div class="loc-header">
+        <span class="loc-dot" style="background:${loc.color}"></span>
+        <span class="loc-name">${loc.name}</span>
+        <span class="loc-type">${loc.type}</span>
+      </div>
+      <p class="loc-desc">${loc.desc}</p>
+    `;
+    card.onclick = () => selectLocation(loc.id);
+    locContainer.appendChild(card);
+  });
+}
+
+function selectLocation(id) {
+  document.querySelectorAll('.loc-card').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.map-pin').forEach(p => p.classList.remove('active'));
+  const card = document.getElementById('loc-' + id);
+  if (card) card.classList.add('active');
+  const pins = document.querySelectorAll('.map-pin');
+  const loc = mapLocations.find(l => l.id === id);
+  const idx = mapLocations.indexOf(loc);
+  if (pins[idx]) pins[idx].classList.add('active');
+  showToast('Navigating to ' + loc.name + '...');
+}
+
+function openModal(charKey) {
+  const char = characters[charKey];
+  const content = document.getElementById('modalContent');
+  const statsBars = Object.entries(char.stats).map(([k, v]) => `
+    <div class="modal-stat">
+      <span class="mstat-label">${k}</span>
+      <div class="mstat-bar"><div class="mstat-fill" style="width:${v}%;background:${char.color}"></div></div>
+      <span class="mstat-val">${v}</span>
+    </div>
+  `).join('');
+  content.innerHTML = `
+    <div class="modal-portrait-wrap">
+      <img src="${char.portrait}" alt="${char.name}" class="modal-portrait">
+      <div class="modal-portrait-glow" style="background:radial-gradient(circle at center, ${char.color}22 0%, transparent 70%)"></div>
+    </div>
+    <div class="modal-details">
+      <div class="modal-class" style="color:${char.color}">${char.class}</div>
+      <h2 class="modal-name">${char.name}</h2>
+      <div class="modal-meta">
+        <div class="meta-item"><span class="meta-key">Age</span><span class="meta-val">${char.age}</span></div>
+        <div class="meta-item"><span class="meta-key">Origin</span><span class="meta-val">${char.origin}</span></div>
+        <div class="meta-item"><span class="meta-key">Weapon</span><span class="meta-val">${char.weapon}</span></div>
+        <div class="meta-item"><span class="meta-key">Limit</span><span class="meta-val" style="color:${char.color}">${char.limit}</span></div>
+      </div>
+      <p class="modal-bio">${char.bio}</p>
+      <div class="modal-stats">${statsBars}</div>
+    </div>
+  `;
+  document.getElementById('charModal').classList.add('open');
+  document.getElementById('modalBackdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('charModal').classList.remove('open');
+  document.getElementById('modalBackdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('visible');
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => toast.classList.remove('visible'), 3000);
+}
+
+function countUp(el, target, duration) {
+  const start = performance.now();
+  const update = (now) => {
+    const p = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.floor(ease * target).toLocaleString();
+    if (p < 1) requestAnimationFrame(update);
+  };
+  requestAnimationFrame(update);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  buildWeaponsTable();
+  buildMap();
+
+  document.querySelectorAll('[data-count]').forEach(el => {
+    countUp(el, +el.dataset.count, 1800);
+  });
+
+  const hamburger = document.getElementById('hamburgerBtn');
+  const mobileNav = document.getElementById('mobileNav');
+  hamburger.addEventListener('click', () => {
+    mobileNav.classList.toggle('open');
+    hamburger.classList.toggle('active');
+  });
+
+  document.querySelectorAll('.mobile-nav-link').forEach(link => {
+    link.addEventListener('click', () => {
+      mobileNav.classList.remove('open');
+      hamburger.classList.remove('active');
+    });
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+  });
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.animationPlayState = 'running';
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.char-card, .lore-card').forEach(el => {
+    el.style.animationPlayState = 'paused';
+    observer.observe(el);
+  });
+});
+</script>
+</body>
+</html>

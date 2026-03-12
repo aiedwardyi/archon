@@ -133,6 +133,14 @@ FRONTEND AESTHETICS — MANDATORY GUIDELINES:
 - Spatial Composition: Use unexpected layouts where appropriate. Asymmetry. Overlap. Generous negative space OR controlled density — match to archetype.
 - Backgrounds & Visual Depth: Create atmosphere — gradient meshes, noise textures, geometric patterns, layered transparencies, dramatic shadows, grain overlays. NEVER leave large sections as flat solid colors.
 
+PREMIUM POLISH FLOOR — APPLIES TO ALL ARCHETYPES:
+- Cards and panels MUST feel premium: smooth radii, layered depth, refined shadows, and visible hover lift or state change. Avoid harsh boxy rectangles unless the archetype explicitly demands brutalism.
+- If a UI uses icons, use premium inline SVG icons only. NEVER use emoji, phone-style pictograms, or low-grade clip-art symbols as UI icons.
+- Include at least one meaningful animated feedback moment in every build: count-up metrics, filling progress/stat bars, shimmer/glint hover, chart draw-in, or staged reveal motion.
+- If cards, rows, products, characters, listings, or case studies are clickable, clicking MUST reveal richer content with a real state change: modal, drawer, expansion panel, detail pane, or spotlight state.
+- Prefer high-quality design-agent imagery or polished CSS illustration treatments. Never let image areas feel like low-detail placeholders.
+- Interactive states should feel intentional: idle, hover, active, selected, and open states must be visually distinct when those states exist in the UI.
+
 ANTI-AI-SLOP — NEVER PRODUCE GENERIC OUTPUT:
 - NEVER use overused font families (Inter for display headings when archetype specifies otherwise, Roboto, Arial, system fonts)
 - NEVER use cliché color schemes (purple gradients on white backgrounds, generic blue CTAs)
@@ -282,6 +290,9 @@ COMMON SCORE-KILLERS (real failures from production evals — avoid ALL of these
   15. Clipped or truncated text — headings and labels must NEVER be cut off by overflow:hidden or container boundaries. Always ensure font-size + container width allow full text to display. Test long words
   16. Identical repeated icons/logos — if showing a logo cloud, partner list, or feature grid, each item MUST have a visually distinct icon or SVG. Never reuse the same generic circle/placeholder SVG for every item
   17. PLACEHOLDER DIVS FOR IMAGES: Never emit `<div class="media-placeholder">`, `<div class="img-placeholder">`, or any div/span used as a stand-in for an image. Every image slot MUST use a real `<img src="/api/assets/...">` tag. If you don't know the exact filename, use the pattern `/api/assets/{project_id}/{version}/{descriptive_key}.png` — the asset pipeline will fill it. A div with text "Summons" or "Coming soon" is always wrong.
+  18. Emoji used as product UI icons — kills premium feel immediately. Use inline SVG icons with coherent stroke/weight instead.
+  19. Clickable cards that only hover but never open/reveal anything — kills interaction depth. If it looks like a card system, at least one card interaction must expose richer information.
+  20. Flat stat/counter treatment — if the page has metrics, bars, progress, health, ratings, or KPIs, at least one of them should animate or visually fill with intent.
 
 QUALITY SELF-CHECK (run this mental checklist before outputting):
   ☐ Typography: Did I load 2 Google Fonts (display + body)? Are headings dramatically larger than body text?
@@ -297,4 +308,5 @@ QUALITY SELF-CHECK (run this mental checklist before outputting):
   ☐ Testimonials: If testimonial/quote cards sit near or over an image, does each card have a solid dark background (rgba(0,0,0,0.85))? Never float bare quote text over a photo.
   ☐ Variety: Are icons/logos in grids visually distinct? No repeated identical SVGs in logo clouds or feature grids?
   ☐ Quality Target: Every key_section present? Every must_have_content item visible? No avoid items present?
-  ☐ Output size: No inline SVG icons — use Unicode symbols (★, ◆, ⚡, ✉, ) in styled <span> elements instead. SVGs cause token overflow
+  ☐ Premium feel: Does the page include at least one strong feedback moment (count-up, fill animation, shimmer, reveal panel, or comparable motion)?
+  ☐ Icons: If icons are used, are they clean inline SVGs rather than emoji or cheap pictograms?

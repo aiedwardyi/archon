@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CALC — Precision Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+  <!-- START SCREEN -->
+  <div class="start-screen" id="startScreen">
+    <div class="start-glow"></div>
+    <div class="start-content">
+      <div class="start-badge">
+        <span class="badge-dot"></span>
+        <span>PRECISION CALCULATOR v2.0</span>
+      </div>
+      <h1 class="start-title">CALC<span class="accent-text">.</span></h1>
+      <p class="start-tagline">Advanced arithmetic at your fingertips. Clean, fast, and precise — built for those who demand more from every calculation.</p>
+      <button class="start-btn" id="startBtn">LAUNCH CALCULATOR</button>
+      <div class="start-meta">
+        <span>ARITHMETIC</span>
+        <span class="meta-divider"></span>
+        <span>KEYBOARD SUPPORT</span>
+        <span class="meta-divider"></span>
+        <span>HISTORY LOG</span>
+        <span class="meta-divider"></span>
+        <span>PRECISION MODE</span>
+      </div>
+    </div>
+    <div class="start-filmgrain"></div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div class="app-wrapper hidden" id="appWrapper">
+
+    <!-- HUD / TOP BAR -->
+    <div class="hud" id="hud">
+      <div class="hud-left">
+        <div class="hud-logo">CALC<span class="accent-text">.</span></div>
+        <div class="hud-subtitle">PRECISION MODE</div>
+      </div>
+      <div class="hud-stats">
+        <div class="hud-stat">
+          <span class="hud-stat-label">CURRENT VALUE</span>
+          <span class="hud-stat-value" id="hudCurrentValue">0</span>
+        </div>
+        <div class="hud-divider"></div>
+        <div class="hud-stat">
+          <span class="hud-stat-label">LAST OPERATION</span>
+          <span class="hud-stat-value" id="hudLastOperation">—</span>
+        </div>
+        <div class="hud-divider"></div>
+        <div class="hud-stat">
+          <span class="hud-stat-label">HISTORY COUNT</span>
+          <span class="hud-stat-value" id="hudHistoryCount">0</span>
+        </div>
+      </div>
+      <div class="hud-right">
+        <button class="hud-history-btn" id="toggleHistory" title="Toggle History">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 1 0 .49-4.95"/>
+          </svg>
+          HISTORY
+        </button>
+      </div>
+    </div>
+
+    <!-- GAME CANVAS (Calculator) -->
+    <div class="game-canvas" id="gameCanvas">
+
+      <div class="calc-container">
+        <!-- DISPLAY -->
+        <div class="calc-display" id="calcDisplay">
+          <div class="display-filmgrain"></div>
+          <div class="display-expression" id="displayExpression"></div>
+          <div class="display-main">
+            <div class="display-value" id="displayValue">0</div>
+          </div>
+          <div class="display-mode" id="displayMode">IDLE</div>
+          <div class="display-corner tl"></div>
+          <div class="display-corner tr"></div>
+          <div class="display-corner bl"></div>
+          <div class="display-corner br"></div>
+        </div>
+
+        <!-- KEYPAD -->
+        <div class="keypad">
+          <!-- Row 1: Functions -->
+          <button class="key key-fn" data-action="clear">AC</button>
+          <button class="key key-fn" data-action="sign">+/−</button>
+          <button class="key key-fn" data-action="percent">%</button>
+          <button class="key key-op" data-action="operator" data-value="/">÷</button>
+
+          <!-- Row 2 -->
+          <button class="key key-num" data-action="digit" data-value="7">7</button>
+          <button class="key key-num" data-action="digit" data-value="8">8</button>
+          <button class="key key-num" data-action="digit" data-value="9">9</button>
+          <button class="key key-op" data-action="operator" data-value="*">×</button>
+
+          <!-- Row 3 -->
+          <button class="key key-num" data-action="digit" data-value="4">4</button>
+          <button class="key key-num" data-action="digit" data-value="5">5</button>
+          <button class="key key-num" data-action="digit" data-value="6">6</button>
+          <button class="key key-op" data-action="operator" data-value="-">−</button>
+
+          <!-- Row 4 -->
+          <button class="key key-num" data-action="digit" data-value="1">1</button>
+          <button class="key key-num" data-action="digit" data-value="2">2</button>
+          <button class="key key-num" data-action="digit" data-value="3">3</button>
+          <button class="key key-op" data-action="operator" data-value="+">+</button>
+
+          <!-- Row 5 -->
+          <button class="key key-num key-zero" data-action="digit" data-value="0">0</button>
+          <button class="key key-num" data-action="decimal">.</button>
+          <button class="key key-equals" data-action="equals">=</button>
+        </div>
+      </div>
+
+      <!-- HISTORY PANEL -->
+      <div class="history-panel" id="historyPanel">
+        <div class="history-header">
+          <span class="history-title">CALCULATION LOG</span>
+          <button class="history-clear-btn" id="clearHistory">CLEAR ALL</button>
+        </div>
+        <div class="history-list" id="historyList">
+          <div class="history-empty" id="historyEmpty">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <span>No calculations yet</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- GAME OVER / ERROR STATE -->
+    <div class="game-over hidden" id="gameOver">
+      <div class="game-over-content">
+        <div class="error-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <div class="game-over-title">COMPUTATION ERROR</div>
+        <div class="game-over-msg" id="errorMsg">Cannot divide by zero</div>
+        <button class="game-over-btn" id="dismissError">DISMISS</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ─── STATE ───────────────────────────────────────────────────────
+    const state = {
+      currentValue: '0',
+      previousValue: null,
+      operator: null,
+      waitingForOperand: false,
+      expression: '',
+      history: [],
+      mode: 'idle'  // idle | calculating | error | result_displayed
+    };
+
+    // ─── ELEMENTS ────────────────────────────────────────────────────
+    const startScreen    = document.getElementById('startScreen');
+    const startBtn       = document.getElementById('startBtn');
+    const appWrapper     = document.getElementById('appWrapper');
+    const displayValue   = document.getElementById('displayValue');
+    const displayExpr    = document.getElementById('displayExpression');
+    const displayMode    = document.getElementById('displayMode');
+    const hudCurrentVal  = document.getElementById('hudCurrentValue');
+    const hudLastOp      = document.getElementById('hudLastOperation');
+    const hudHistCount   = document.getElementById('hudHistoryCount');
+    const historyPanel   = document.getElementById('historyPanel');
+    const historyList    = document.getElementById('historyList');
+    const historyEmpty   = document.getElementById('historyEmpty');
+    const toggleHistory  = document.getElementById('toggleHistory');
+    const clearHistory   = document.getElementById('clearHistory');
+    const gameOver       = document.getElementById('gameOver');
+    const errorMsg       = document.getElementById('errorMsg');
+    const dismissError   = document.getElementById('dismissError');
+    const toast          = document.getElementById('toast');
+    const allKeys        = document.querySelectorAll('.key');
+
+    // ─── START SCREEN ───────────────────────────────────────────────
+    startBtn.addEventListener('click', () => {
+      startScreen.classList.add('fade-out');
+      setTimeout(() => {
+        startScreen.classList.add('hidden');
+        appWrapper.classList.remove('hidden');
+        appWrapper.classList.add('fade-in');
+      }, 600);
+    });
+
+    // ─── DISPLAY UPDATE ─────────────────────────────────────────────
+    function updateDisplay() {
+      const val = state.currentValue;
+      // Format large numbers
+      let formatted = val;
+      if (!isNaN(parseFloat(val)) && val !== 'Error') {
+        const num = parseFloat(val);
+        if (Math.abs(num) >= 1e12) {
+          formatted = num.toExponential(4);
+        } else if (val.indexOf('.') === -1) {
+          formatted = parseFloat(val).toLocaleString('en-US', { maximumFractionDigits: 10 });
+          if (formatted === 'NaN') formatted = val;
+        } else {
+          formatted = val;
+        }
+      }
+
+      // Shrink font for long values
+      displayValue.textContent = formatted;
+      const len = formatted.length;
+      if (len > 12) displayValue.style.fontSize = '1.6rem';
+      else if (len > 9) displayValue.style.fontSize = '2.2rem';
+      else if (len > 6) displayValue.style.fontSize = '2.8rem';
+      else displayValue.style.fontSize = '';
+
+      displayExpr.textContent = state.expression;
+      displayMode.textContent = state.mode.toUpperCase().replace('_', ' ');
+      displayMode.className = 'display-mode mode-' + state.mode;
+
+      // HUD update
+      hudCurrentVal.textContent = formatted.length > 10 ? formatted.slice(0, 10) + '…' : formatted;
+      hudHistCount.textContent = state.history.length;
+
+      // Highlight active operator buttons
+      document.querySelectorAll('.key-op').forEach(k => k.classList.remove('active'));
+      if (state.operator && state.waitingForOperand) {
+        const opMap = { '+': '+', '-': '−', '*': '×', '/': '÷' };
+        document.querySelectorAll('.key-op').forEach(k => {
+          if (k.textContent === opMap[state.operator]) k.classList.add('active');
+        });
+      }
+    }
+
+    // ─── INPUT HANDLERS ─────────────────────────────────────────────
+    function inputDigit(digit) {
+      if (state.mode === 'error') return;
+      if (state.waitingForOperand) {
+        state.currentValue = digit;
+        state.waitingForOperand = false;
+        state.mode = 'calculating';
+      } else {
+        state.currentValue = state.currentValue === '0' ? digit : state.currentValue + digit;
+        state.mode = 'calculating';
+      }
+      updateDisplay();
+    }
+
+    function inputDecimal() {
+      if (state.mode === 'error') return;
+      if (state.waitingForOperand) {
+        state.currentValue = '0.';
+        state.waitingForOperand = false;
+        return updateDisplay();
+      }
+      if (!state.currentValue.includes('.')) {
+        state.currentValue += '.';
+      }
+      updateDisplay();
+    }
+
+    function handleOperator(nextOp) {
+      if (state.mode === 'error') return;
+      const inputVal = parseFloat(state.currentValue);
+
+      if (state.operator && !state.waitingForOperand) {
+        const result = calculate(parseFloat(state.previousValue), inputVal, state.operator);
+        if (result === null) return;
+        state.expression = formatNum(result) + ' ' + opSymbol(nextOp);
+        state.previousValue = String(result);
+        state.currentValue = String(result);
+      } else {
+        state.previousValue = state.currentValue;
+        state.expression = formatNum(inputVal) + ' ' + opSymbol(nextOp);
+      }
+
+      state.operator = nextOp;
+      state.waitingForOperand = true;
+      state.mode = 'calculating';
+
+      const opNames = { '+': 'ADD', '-': 'SUBTRACT', '*': 'MULTIPLY', '/': 'DIVIDE' };
+      hudLastOp.textContent = opNames[nextOp] || nextOp;
+      updateDisplay();
+    }
+
+    function calculate(a, b, op) {
+      let result;
+      switch (op) {
+        case '+': result = a + b; break;
+        case '-': result = a - b; break;
+        case '*': result = a * b; break;
+        case '/':
+          if (b === 0) {
+            showError('Cannot divide by zero');
+            return null;
+          }
+          result = a / b;
+          break;
+        default: return b;
+      }
+      // Guard against Infinity / NaN
+      if (!isFinite(result)) {
+        showError('Result out of bounds');
+        return null;
+      }
+      return parseFloat(result.toPrecision(12));
+    }
+
+    function handleEquals() {
+      if (state.mode === 'error') return;
+      if (!state.operator || state.waitingForOperand) return;
+
+      const a = parseFloat(state.previousValue);
+      const b = parseFloat(state.currentValue);
+      const exprText = state.expression + ' ' + formatNum(b);
+      const result = calculate(a, b, state.operator);
+      if (result === null) return;
+
+      // Add to history
+      addToHistory(exprText + ' = ' + formatNum(result));
+
+      state.expression = exprText + ' =';
+      state.currentValue = String(result);
+      state.previousValue = null;
+      state.operator = null;
+      state.waitingForOperand = true;
+      state.mode = 'result_displayed';
+      hudLastOp.textContent = '= ' + formatNum(result).slice(0, 8);
+
+      // Flash result
+      displayValue.classList.add('flash-result');
+      setTimeout(() => displayValue.classList.remove('flash-result'), 400);
+
+      updateDisplay();
+    }
+
+    function handleClear() {
+      state.currentValue = '0';
+      state.previousValue = null;
+      state.operator = null;
+      state.waitingForOperand = false;
+      state.expression = '';
+      state.mode = 'idle';
+      hudLastOp.textContent = '—';
+      updateDisplay();
+    }
+
+    function handleSign() {
+      if (state.mode === 'error') return;
+      const val = parseFloat(state.currentValue);
+      if (val === 0) return;
+      state.currentValue = String(-val);
+      updateDisplay();
+    }
+
+    function handlePercent() {
+      if (state.mode === 'error') return;
+      const val = parseFloat(state.currentValue);
+      state.currentValue = String(val / 100);
+      updateDisplay();
+    }
+
+    // ─── HISTORY ────────────────────────────────────────────────────
+    function addToHistory(entry) {
+      state.history.unshift({ text: entry, time: new Date().toLocaleTimeString() });
+      renderHistory();
+    }
+
+    function renderHistory() {
+      historyEmpty.style.display = state.history.length === 0 ? 'flex' : 'none';
+      // Remove old entries (keep empty msg)
+      const existingEntries = historyList.querySelectorAll('.history-entry');
+      existingEntries.forEach(e => e.remove());
+
+      state.history.slice(0, 20).forEach((item, i) => {
+        const el = document.createElement('div');
+        el.className = 'history-entry';
+        el.style.animationDelay = (i * 0.04) + 's';
+        el.innerHTML = `
+          <span class="history-text">${item.text}</span>
+          <span class="history-time">${item.time}</span>
+        `;
+        el.addEventListener('click', () => {
+          const result = item.text.split('=').pop().trim();
+          const num = parseFloat(result);
+          if (!isNaN(num)) {
+            state.currentValue = String(num);
+            state.mode = 'result_displayed';
+            updateDisplay();
+            showToast('Value loaded from history');
+          }
+        });
+        historyList.appendChild(el);
+      });
+      hudHistCount.textContent = state.history.length;
+    }
+
+    toggleHistory.addEventListener('click', () => {
+      historyPanel.classList.toggle('open');
+      toggleHistory.classList.toggle('active');
+    });
+
+    clearHistory.addEventListener('click', () => {
+      state.history = [];
+      renderHistory();
+      showToast('History cleared');
+    });
+
+    // ─── ERROR STATE ────────────────────────────────────────────────
+    function showError(msg) {
+      state.mode = 'error';
+      state.currentValue = 'Error';
+      state.operator = null;
+      state.waitingForOperand = false;
+      errorMsg.textContent = msg;
+      gameOver.classList.remove('hidden');
+      gameOver.classList.add('show');
+      updateDisplay();
+    }
+
+    dismissError.addEventListener('click', () => {
+      gameOver.classList.remove('show');
+      setTimeout(() => gameOver.classList.add('hidden'), 300);
+      handleClear();
+    });
+
+    // ─── TOAST ──────────────────────────────────────────────────────
+    let toastTimer;
+    function showToast(msg) {
+      clearTimeout(toastTimer);
+      toast.textContent = msg;
+      toast.classList.add('show');
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    // ─── BUTTON CLICKS ──────────────────────────────────────────────
+    document.querySelector('.keypad').addEventListener('click', e => {
+      const key = e.target.closest('.key');
+      if (!key) return;
+
+      // Ripple effect
+      const ripple = document.createElement('span');
+      ripple.className = 'ripple';
+      const rect = key.getBoundingClientRect();
+      ripple.style.left = (e.clientX - rect.left) + 'px';
+      ripple.style.top  = (e.clientY - rect.top) + 'px';
+      key.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 600);
+
+      const action = key.dataset.action;
+      const value  = key.dataset.value;
+
+      switch (action) {
+        case 'digit':    inputDigit(value); break;
+        case 'decimal':  inputDecimal();    break;
+        case 'operator': handleOperator(value); break;
+        case 'equals':   handleEquals();   break;
+        case 'clear':    handleClear();    break;
+        case 'sign':     handleSign();     break;
+        case 'percent':  handlePercent();  break;
+      }
+    });
+
+    // ─── KEYBOARD SUPPORT ───────────────────────────────────────────
+    document.addEventListener('keydown', e => {
+      if (startScreen && !startScreen.classList.contains('hidden')) {
+        if (e.key === 'Enter' || e.key === ' ') startBtn.click();
+        return;
+      }
+
+      const keyMap = {
+        '0':'0','1':'1','2':'2','3':'3','4':'4',
+        '5':'5','6':'6','7':'7','8':'8','9':'9'
+      };
+
+      if (keyMap[e.key])      { highlightKey(`[data-value="${e.key}"]`); inputDigit(e.key); }
+      else if (e.key === '.') { highlightKey('[data-action="decimal"]'); inputDecimal(); }
+      else if (e.key === '+') { highlightKey('[data-value="+"]'); handleOperator('+'); }
+      else if (e.key === '-') { highlightKey('[data-value="-"]'); handleOperator('-'); }
+      else if (e.key === '*') { highlightKey('[data-value="*"]'); handleOperator('*'); }
+      else if (e.key === '/') { e.preventDefault(); highlightKey('[data-value="/"]'); handleOperator('/'); }
+      else if (e.key === 'Enter' || e.key === '=') { highlightKey('[data-action="equals"]'); handleEquals(); }
+      else if (e.key === 'Escape' || e.key === 'c' || e.key === 'C') { highlightKey('[data-action="clear"]'); handleClear(); }
+      else if (e.key === 'Backspace') { handleBackspace(); }
+      else if (e.key === '%') { highlightKey('[data-action="percent"]'); handlePercent(); }
+    });
+
+    function handleBackspace() {
+      if (state.mode === 'error' || state.waitingForOperand) return;
+      if (state.currentValue.length > 1) {
+        state.currentValue = state.currentValue.slice(0, -1);
+      } else {
+        state.currentValue = '0';
+      }
+      updateDisplay();
+    }
+
+    function highlightKey(selector) {
+      const key = document.querySelector(selector);
+      if (!key) return;
+      key.classList.add('keyboard-press');
+      setTimeout(() => key.classList.remove('keyboard-press'), 150);
+    }
+
+    // ─── HELPERS ─────────────────────────────────────────────────────
+    function formatNum(n) {
+      if (typeof n === 'string') n = parseFloat(n);
+      if (isNaN(n)) return '0';
+      if (Math.abs(n) >= 1e10) return n.toExponential(4);
+      const s = parseFloat(n.toPrecision(10)).toString();
+      return s;
+    }
+
+    function opSymbol(op) {
+      return { '+': '+', '-': '−', '*': '×', '/': '÷' }[op] || op;
+    }
+
+    // ─── INIT ────────────────────────────────────────────────────────
+    renderHistory();
+    updateDisplay();
+  </script>
+</body>
+</html>

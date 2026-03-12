@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alpha — Python Application</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="logo">
+        <div class="logo-mark" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <polygon points="10,2 18,16 2,16" fill="var(--accent)" opacity="0.9"/>
+            <polygon points="10,6 15,15 5,15" fill="var(--bg-card)" />
+          </svg>
+        </div>
+        <span class="logo-name">Alpha</span>
+        <span class="logo-badge">v1.0</span>
+      </div>
+      <div class="topbar-step-indicator" id="topbar-steps" role="navigation" aria-label="Form steps">
+        <div class="step-pill active" data-step="1">1</div>
+        <div class="step-connector"></div>
+        <div class="step-pill" data-step="2">2</div>
+        <div class="step-connector"></div>
+        <div class="step-pill" data-step="3">3</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WRAPPER -->
+  <main class="main-wrapper">
+
+    <!-- STEP INDICATOR BAR -->
+    <section class="step-indicator-bar" aria-label="Progress">
+      <div class="step-indicator-inner">
+        <div class="step" id="step-item-1">
+          <div class="step-circle active" aria-current="step">1</div>
+          <div class="step-meta">
+            <span class="step-label">Configuration</span>
+            <span class="step-sub">App settings</span>
+          </div>
+        </div>
+        <div class="step-line" id="step-line-1"></div>
+        <div class="step" id="step-item-2">
+          <div class="step-circle" >2</div>
+          <div class="step-meta">
+            <span class="step-label">Parameters</span>
+            <span class="step-sub">Runtime options</span>
+          </div>
+        </div>
+        <div class="step-line" id="step-line-2"></div>
+        <div class="step" id="step-item-3">
+          <div class="step-circle">3</div>
+          <div class="step-meta">
+            <span class="step-label">Review &amp; Run</span>
+            <span class="step-sub">Confirm &amp; execute</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FORM BODY -->
+    <div class="form-card-wrapper">
+
+      <!-- TOAST CONTAINER -->
+      <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+      <!-- ============= STEP 1 ============= -->
+      <section class="form-card" id="form-step-1" aria-labelledby="step1-heading">
+        <div class="form-card-header">
+          <h1 class="form-title" id="step1-heading">Application Configuration</h1>
+          <p class="form-desc">Set up the core settings for your Alpha Python application instance.</p>
+        </div>
+
+        <div class="form-body">
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label" for="app-name">
+                Application Name
+                <span class="required" aria-label="required">*</span>
+              </label>
+              <div class="input-wrap">
+                <span class="input-icon">
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="2" rx="1" fill="currentColor"/><rect x="2" y="7" width="8" height="2" rx="1" fill="currentColor"/><rect x="2" y="11" width="10" height="2" rx="1" fill="currentColor"/></svg>
+                </span>
+                <input
+                  class="field-input"
+                  type="text"
+                  id="app-name"
+                  name="app-name"
+                  placeholder="e.g. my-alpha-app"
+                  autocomplete="off"
+                  value="my-alpha-app"
+                  aria-required="true"
+                />
+              </div>
+              <span class="field-error" id="app-name-err" role="alert"></span>
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="python-version">
+                Python Version
+                <span class="required" aria-label="required">*</span>
+              </label>
+              <div class="input-wrap select-wrap">
+                <span class="input-icon">
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 2C5.2 2 4 3.6 4 5v1H3a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-1V5c0-1.4-1.2-3-4-3Z" stroke="currentColor" stroke-width="1.2" fill="none"/><circle cx="8" cy="9.5" r="1" fill="currentColor"/></svg>
+                </span>
+                <select class="field-input field-select" id="python-version" name="python-version" aria-required="true">
+                  <option value="">Select version...</option>
+                  <option value="3.12" selected>Python 3.12 (Latest)</option>
+                  <option value="3.11">Python 3.11 (Stable)</option>
+                  <option value="3.10">Python 3.10</option>
+                  <option value="3.9">Python 3.9 (LTS)</option>
+                </select>
+                <span class="select-arrow" aria-hidden="true">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </span>
+              </div>
+              <span class="field-error" id="python-version-err" role="alert"></span>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label" for="entry-point">
+                Entry Point
+                <span class="required" aria-label="required">*</span>
+              </label>
+              <div class="input-wrap">
+                <span class="input-icon">
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M4 3h8a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M6 6.5 9 8l-3 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+                <input
+                  class="field-input mono"
+                  type="text"
+                  id="entry-point"
+                  name="entry-point"
+                  placeholder="main.py"
+                  value="main.py"
+                  aria-required="true"
+                />
+              </div>
+              <span class="field-hint">The Python file that starts your application.</span>
+              <span class="field-error" id="entry-point-err" role="alert"></span>
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="environment">
+                Environment
+              </label>
+              <div class="input-wrap select-wrap">
+                <span class="input-icon">
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="8" r="2" fill="currentColor" opacity="0.5"/></svg>
+                </span>
+                <select class="field-input field-select" id="environment" name="environment">
+                  <option value="development" selected>Development</option>
+                  <option value="staging">Staging</option>
+                  <option value="production">Production</option>
+                </select>
+                <span class="select-arrow" aria-hidden="true">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="description">Description</label>
+            <div class="input-wrap textarea-wrap">
+              <textarea
+                class="field-input field-textarea"
+                id="description"
+                name="description"
+                rows="3"
+                placeholder="Briefly describe what this application does..."
+              >A lightweight Python application built with the Alpha framework for rapid prototyping and deployment.</textarea>
+            </div>
+          </div>
+
+          <div class="toggle-row">
+            <label class="toggle-label" for="venv-toggle">
+              <span class="toggle-wrap">
+                <input type="checkbox" id="venv-toggle" name="venv" class="toggle-input" checked />
+                <span class="toggle-track">
+                  <span class="toggle-thumb"></span>
+                </span>
+              </span>
+              <span>
+                <strong>Create virtual environment</strong>
+                <small>Isolate dependencies using <code>venv</code></small>
+              </span>
+            </label>
+
+            <label class="toggle-label" for="git-toggle">
+              <span class="toggle-wrap">
+                <input type="checkbox" id="git-toggle" name="git" class="toggle-input" checked />
+                <span class="toggle-track">
+                  <span class="toggle-thumb"></span>
+                </span>
+              </span>
+              <span>
+                <strong>Initialize Git repository</strong>
+                <small>Run <code>git init</code> in the project root</small>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <span class="step-counter">Step 1 of 3</span>
+          <div class="actions-right">
+            <button class="btn btn-primary" id="next-step-1" type="button">
+              Continue
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============= STEP 2 ============= -->
+      <section class="form-card hidden" id="form-step-2" aria-labelledby="step2-heading">
+        <div class="form-card-header">
+          <h2 class="form-title" id="step2-heading">Runtime Parameters</h2>
+          <p class="form-desc">Configure execution options, dependencies, and environment variables.</p>
+        </div>
+
+        <div class="form-body">
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label" for="host">
+                Host
+                <span class="required" aria-label="required">*</span>
+              </label>
+              <div class="input-wrap">
+                <span class="input-icon">
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="2" y="5" width="12" height="7" rx="1" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M5 5V4a3 3 0 0 1 6 0v1" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+                </span>
+                <input class="field-input mono" type="text" id="host" name="host" placeholder="0.0.0.0" value="0.0.0.0" aria-required="true" />
+              </div>
+              <span class="field-error" id="host-err" role="alert"></span>
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="port">
+                Port
+                <span class="required" aria-label="required">*</span>
+              </label>
+              <div class="input-wrap">
+                <span class="input-icon">
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M8 5v3l2 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+                </span>
+                <input class="field-input mono" type="number" id="port" name="port" placeholder="8000" value="8000" min="1" max="65535" aria-required="true" />
+              </div>
+              <span class="field-error" id="port-err" role="alert"></span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="requirements">Requirements (one per line)</label>
+            <div class="input-wrap textarea-wrap">
+              <textarea class="field-input field-textarea mono" id="requirements" name="requirements" rows="5" placeholder="e.g. fastapi==0.115.0">fastapi==0.115.0
+uvicorn[standard]==0.32.0
+pydantic==2.10.0
+httpx==0.28.0
+python-dotenv==1.0.1</textarea>
+            </div>
+            <span class="field-hint">These will be written to <code>requirements.txt</code></span>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="env-vars">Environment Variables</label>
+            <div class="env-table" id="env-table">
+              <div class="env-header">
+                <span>KEY</span>
+                <span>VALUE</span>
+                <span></span>
+              </div>
+              <div class="env-row" data-env-row>
+                <input class="field-input mono env-key" type="text" placeholder="DEBUG" value="DEBUG" />
+                <input class="field-input mono env-val" type="text" placeholder="true" value="true" />
+                <button class="env-remove" type="button" aria-label="Remove row" onclick="removeEnvRow(this)">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2 2 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+              <div class="env-row" data-env-row>
+                <input class="field-input mono env-key" type="text" placeholder="LOG_LEVEL" value="LOG_LEVEL" />
+                <input class="field-input mono env-val" type="text" placeholder="info" value="info" />
+                <button class="env-remove" type="button" aria-label="Remove row" onclick="removeEnvRow(this)">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2 2 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+              <div class="env-row" data-env-row>
+                <input class="field-input mono env-key" type="text" placeholder="SECRET_KEY" value="SECRET_KEY" />
+                <input class="field-input mono env-val" type="text" placeholder="change-me" value="change-me" />
+                <button class="env-remove" type="button" aria-label="Remove row" onclick="removeEnvRow(this)">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2 2 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+            </div>
+            <button class="btn btn-ghost btn-sm" type="button" id="add-env-row" style="margin-top:8px;">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              Add Variable
+            </button>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label" for="workers">Workers</label>
+              <div class="input-wrap">
+                <span class="input-icon">
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="2" stroke="currentColor" stroke-width="1.2" fill="none"/><circle cx="11" cy="5" r="2" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M2 13c0-2.2 1.8-4 4-4h4c2.2 0 4 1.8 4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" fill="none"/></svg>
+                </span>
+                <input class="field-input mono" type="number" id="workers" name="workers" value="4" min="1" max="32" />
+              </div>
+              <span class="field-hint">Number of parallel worker processes.</span>
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="log-format">Log Format</label>
+              <div class="input-wrap select-wrap">
+                <span class="input-icon">
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M5 7h6M5 10h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+                </span>
+                <select class="field-input field-select" id="log-format" name="log-format">
+                  <option value="json" selected>JSON (structured)</option>
+                  <option value="plain">Plain text</option>
+                  <option value="colored">Colored (dev)</option>
+                </select>
+                <span class="select-arrow" aria-hidden="true">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="toggle-row">
+            <label class="toggle-label" for="reload-toggle">
+              <span class="toggle-wrap">
+                <input type="checkbox" id="reload-toggle" name="reload" class="toggle-input" checked />
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </span>
+              <span>
+                <strong>Auto-reload on change</strong>
+                <small>Enable hot-reload for development workflow</small>
+              </span>
+            </label>
+
+            <label class="toggle-label" for="debug-toggle">
+              <span class="toggle-wrap">
+                <input type="checkbox" id="debug-toggle" name="debug" class="toggle-input" />
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </span>
+              <span>
+                <strong>Debug mode</strong>
+                <small>Enable verbose error output and stack traces</small>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <span class="step-counter">Step 2 of 3</span>
+          <div class="actions-right">
+            <button class="btn btn-ghost" id="back-step-2" type="button">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Back
+            </button>
+            <button class="btn btn-primary" id="next-step-2" type="button">
+              Continue
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============= STEP 3 ============= -->
+      <section class="form-card hidden" id="form-step-3" aria-labelledby="step3-heading">
+        <div class="form-card-header">
+          <h2 class="form-title" id="step3-heading">Review &amp; Run</h2>
+          <p class="form-desc">Confirm your configuration before launching the Alpha application.</p>
+        </div>
+
+        <div class="form-body">
+          <div class="review-grid" id="review-grid"><!-- populated by JS --></div>
+
+          <div class="field" style="margin-top:24px;">
+            <label class="field-label" for="confirm-name">
+              Confirm application name
+              <span class="required" aria-label="required">*</span>
+            </label>
+            <div class="input-wrap">
+              <span class="input-icon">
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+              <input class="field-input" type="text" id="confirm-name" name="confirm-name" placeholder="Type the application name to confirm" aria-required="true" />
+            </div>
+            <span class="field-hint">Type <code id="confirm-hint">my-alpha-app</code> to proceed.</span>
+            <span class="field-error" id="confirm-name-err" role="alert"></span>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <span class="step-counter">Step 3 of 3</span>
+          <div class="actions-right">
+            <button class="btn btn-ghost" id="back-step-3" type="button">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Back
+            </button>
+            <button class="btn btn-success" id="submit-btn" type="button">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Run Alpha
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============= VALIDATING STATE ============= -->
+      <section class="form-card hidden" id="form-validating" aria-live="polite">
+        <div class="state-center">
+          <div class="spinner" aria-hidden="true"></div>
+          <h2 class="state-title">Validating Configuration</h2>
+          <p class="state-desc">Checking parameters and initializing runtime environment&hellip;</p>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar" id="progress-bar"></div>
+          </div>
+          <div class="validating-steps" id="validating-log">
+            <div class="vlog-item skeleton" style="width:70%"></div>
+            <div class="vlog-item skeleton" style="width:55%"></div>
+            <div class="vlog-item skeleton" style="width:80%"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============= SUCCESS STATE ============= -->
+      <section class="form-card hidden" id="form-success" aria-live="polite">
+        <div class="state-center">
+          <div class="success-icon" aria-hidden="true">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+              <circle cx="20" cy="20" r="19" stroke="var(--success)" stroke-width="2"/>
+              <path class="check-path" d="M10 20l8 8 12-14" stroke="var(--success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+          </div>
+          <h2 class="state-title">Alpha is Running!</h2>
+          <p class="state-desc">Your application has been initialized and is now live.</p>
+
+          <div class="success-url" id="success-url">
+            <span class="mono" id="success-url-text">http://0.0.0.0:8000</span>
+            <button class="btn btn-ghost btn-sm" type="button" onclick="copyUrl()" id="copy-btn" title="Copy URL">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="1" stroke="currentColor" stroke-width="1.4"/><path d="M3 11V3h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+              Copy
+            </button>
+          </div>
+
+          <div class="success-details" id="success-details"><!-- populated by JS --></div>
+
+          <div class="actions-center">
+            <button class="btn btn-primary" type="button" onclick="resetForm()">
+              Create Another
+            </button>
+            <button class="btn btn-ghost" type="button" onclick="showLogs()">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M5 7h6M5 10h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+              View Logs
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============= ERROR STATE ============= -->
+      <section class="form-card hidden" id="form-error" aria-live="assertive">
+        <div class="state-center">
+          <div class="error-icon" aria-hidden="true">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+              <circle cx="20" cy="20" r="19" stroke="var(--error)" stroke-width="2"/>
+              <path d="M20 12v10" stroke="var(--error)" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="20" cy="27" r="1.5" fill="var(--error)"/>
+            </svg>
+          </div>
+          <h2 class="state-title">Initialization Failed</h2>
+          <p class="state-desc" id="error-message">An unexpected error occurred while starting Alpha.</p>
+          <div class="error-code" id="error-code">
+            <span class="mono">Error: PORT_IN_USE — Port 8000 is already bound to another process.</span>
+          </div>
+          <div class="actions-center">
+            <button class="btn btn-primary" type="button" onclick="retryFromError()">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13 3v4H9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 7A6 6 0 1 1 9 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>
+              Retry
+            </button>
+            <button class="btn btn-ghost" type="button" onclick="resetForm()">
+              Start Over
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+    <!-- /form-card-wrapper -->
+  </main>
+
+  <!-- LOGS MODAL -->
+  <div class="modal-backdrop hidden" id="logs-modal" role="dialog" aria-modal="true" aria-labelledby="logs-title">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="logs-title">Application Logs</h3>
+        <button class="modal-close" type="button" onclick="hideLogs()" aria-label="Close modal">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 2l12 12M14 2 2 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <pre class="log-output" id="log-output"></pre>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost btn-sm" type="button" onclick="hideLogs()">Close</button>
+        <button class="btn btn-ghost btn-sm" type="button" onclick="copyLogs()" id="copy-logs-btn">Copy Logs</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ─── STATE ───────────────────────────────────────────────────────────────
+    let currentStep = 1;
+    const TOTAL_STEPS = 3;
+
+    // ─── UTILS ───────────────────────────────────────────────────────────────
+    function $(id) { return document.getElementById(id); }
+    function show(id) { $(id).classList.remove('hidden'); }
+    function hide(id) { $(id).classList.add('hidden'); }
+
+    function showToast(msg, type = 'info') {
+      const container = $('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      const icons = {
+        success: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        error:   '<svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 4v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="8" cy="12" r="1" fill="currentColor"/></svg>',
+        info:    '<svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M8 7v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="8" cy="5" r="0.8" fill="currentColor"/></svg>'
+      };
+      toast.innerHTML = `<span class="toast-icon">${icons[type] || icons.info}</span><span>${msg}</span><button class="toast-close" onclick="this.parentElement.remove()" aria-label="Dismiss">&times;</button>`;
+      container.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.add('visible'));
+      setTimeout(() => { toast.classList.remove('visible'); setTimeout(() => toast.remove(), 350); }, 4500);
+    }
+
+    // ─── STEP NAVIGATION ────────────────────────────────────────────────────
+    function goToStep(step) {
+      for (let i = 1; i <= TOTAL_STEPS; i++) {
+        const el = $(`form-step-${i}`);
+        if (el) { i === step ? show(`form-step-${i}`) : hide(`form-step-${i}`); }
+        const circle = document.querySelector(`.step-circle[data-step="${i}"]`);
+        const item = $(`step-item-${i}`);
+        const pill  = document.querySelector(`.step-pill[data-step="${i}"]`);
+        if (item) {
+          item.querySelector('.step-circle').classList.toggle('active', i === step);
+          item.querySelector('.step-circle').classList.toggle('completed', i < step);
+        }
+        if (pill) {
+          pill.classList.toggle('active', i === step);
+          pill.classList.toggle('completed', i < step);
+        }
+        const line = $(`step-line-${i}`);
+        if (line) line.classList.toggle('completed', i < step);
+      }
+      currentStep = step;
+    }
+
+    // ─── VALIDATION ─────────────────────────────────────────────────────────
+    function clearErrors() {
+      document.querySelectorAll('.field-error').forEach(el => { el.textContent = ''; });
+      document.querySelectorAll('.field-input').forEach(el => el.classList.remove('is-error'));
+    }
+
+    function setError(inputId, errId, msg) {
+      const input = $(inputId);
+      const err   = $(errId);
+      if (input) input.classList.add('is-error');
+      if (err)   err.textContent = msg;
+    }
+
+    function validateStep1() {
+      clearErrors();
+      let valid = true;
+      const name = $('app-name').value.trim();
+      const ver  = $('python-version').value;
+      const ep   = $('entry-point').value.trim();
+
+      if (!name) {
+        setError('app-name', 'app-name-err', 'Application name is required.');
+        valid = false;
+      } else if (!/^[a-z0-9][a-z0-9\-_]*$/.test(name)) {
+        setError('app-name', 'app-name-err', 'Use lowercase letters, numbers, hyphens, or underscores.');
+        valid = false;
+      }
+      if (!ver) {
+        setError('python-version', 'python-version-err', 'Please select a Python version.');
+        valid = false;
+      }
+      if (!ep) {
+        setError('entry-point', 'entry-point-err', 'Entry point file is required.');
+        valid = false;
+      } else if (!ep.endsWith('.py')) {
+        setError('entry-point', 'entry-point-err', 'Entry point must be a .py file.');
+        valid = false;
+      }
+      return valid;
+    }
+
+    function validateStep2() {
+      clearErrors();
+      let valid = true;
+      const host = $('host').value.trim();
+      const port = parseInt($('port').value, 10);
+
+      if (!host) {
+        setError('host', 'host-err', 'Host address is required.');
+        valid = false;
+      }
+      if (!$('port').value || isNaN(port) || port < 1 || port > 65535) {
+        setError('port', 'port-err', 'Enter a valid port between 1 and 65535.');
+        valid = false;
+      }
+      return valid;
+    }
+
+    function validateStep3() {
+      clearErrors();
+      const expected = $('app-name').value.trim();
+      const entered  = $('confirm-name').value.trim();
+      if (!entered) {
+        setError('confirm-name', 'confirm-name-err', 'Please type the application name to confirm.');
+        return false;
+      }
+      if (entered !== expected) {
+        setError('confirm-name', 'confirm-name-err', `Name must match exactly: "${expected}"`);
+        return false;
+      }
+      return true;
+    }
+
+    // ─── STEP BUTTONS ────────────────────────────────────────────────────────
+    $('next-step-1').addEventListener('click', () => {
+      if (validateStep1()) {
+        goToStep(2);
+        showToast('Step 1 complete!', 'success');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        showToast('Please fix the errors before continuing.', 'error');
+      }
+    });
+
+    $('back-step-2').addEventListener('click', () => { goToStep(1); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    $('next-step-2').addEventListener('click', () => {
+      if (validateStep2()) {
+        buildReview();
+        goToStep(3);
+        $('confirm-hint').textContent = $('app-name').value.trim();
+        showToast('Step 2 complete!', 'success');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        showToast('Please fix the errors before continuing.', 'error');
+      }
+    });
+
+    $('back-step-3').addEventListener('click', () => { goToStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+
+    $('submit-btn').addEventListener('click', () => {
+      if (validateStep3()) {
+        startValidating();
+      } else {
+        showToast('Please confirm the application name.', 'error');
+      }
+    });
+
+    // ─── REVIEW BUILD ────────────────────────────────────────────────────────
+    function buildReview() {
+      const data = [
+        { label: 'App Name',       value: $('app-name').value.trim() },
+        { label: 'Python',         value: $('python-version').options[$('python-version').selectedIndex].text },
+        { label: 'Entry Point',    value: $('entry-point').value.trim() },
+        { label: 'Environment',    value: $('environment').value },
+        { label: 'Host',           value: $('host').value.trim() },
+        { label: 'Port',           value: $('port').value },
+        { label: 'Workers',        value: $('workers').value },
+        { label: 'Log Format',     value: $('log-format').value },
+        { label: 'Virtual Env',    value: $('venv-toggle').checked ? 'Enabled' : 'Disabled' },
+        { label: 'Git Init',       value: $('git-toggle').checked  ? 'Enabled' : 'Disabled' },
+        { label: 'Auto-reload',    value: $('reload-toggle').checked ? 'Enabled' : 'Disabled' },
+        { label: 'Debug Mode',     value: $('debug-toggle').checked  ? 'Enabled' : 'Disabled' },
+      ];
+      const grid = $('review-grid');
+      grid.innerHTML = data.map(d => `
+        <div class="review-item">
+          <span class="review-label">${d.label}</span>
+          <span class="review-value mono">${d.value}</span>
+        </div>`).join('');
+    }
+
+    // ─── SUBMIT / VALIDATING ────────────────────────────────────────────────
+    const LOG_LINES = [
+      '✓ Checking Python 3.12 availability…',
+      '✓ Resolving requirements.txt dependencies…',
+      '✓ Creating virtual environment (.venv)…',
+      '✓ Installing packages via pip…',
+      '✓ Writing .env configuration…',
+      '✓ Initializing git repository…',
+      '✓ Binding to 0.0.0.0:8000…',
+      '✓ Starting Uvicorn workers (×4)…',
+      '✓ Application is live.',
+    ];
+
+    function startValidating() {
+      for (let i = 1; i <= TOTAL_STEPS; i++) hide(`form-step-${i}`);
+      hide('form-success');
+      hide('form-error');
+      show('form-validating');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      const logContainer = $('validating-log');
+      logContainer.innerHTML = '';
+      const bar = $('progress-bar');
+      bar.style.width = '0%';
+
+      let step = 0;
+      const total = LOG_LINES.length;
+
+      function nextLog() {
+        if (step < total) {
+          const div = document.createElement('div');
+          div.className = 'vlog-item vlog-in';
+          div.textContent = LOG_LINES[step];
+          logContainer.appendChild(div);
+          logContainer.scrollTop = logContainer.scrollHeight;
+          step++;
+          const pct = Math.round((step / total) * 100);
+          bar.style.width = pct + '%';
+          setTimeout(nextLog, 300 + Math.random() * 350);
+        } else {
+          // decide success or random error for demo
+          const fail = Math.random() < 0.15; // 15% chance of demo error
+          setTimeout(() => {
+            hide('form-validating');
+            if (fail) {
+              showError();
+            } else {
+              showSuccess();
+            }
+          }, 600);
+        }
+      }
+      nextLog();
+    }
+
+    function showSuccess() {
+      const host = $('host').value.trim() || '0.0.0.0';
+      const port = $('port').value || '8000';
+      $('success-url-text').textContent = `http://${host}:${port}`;
+
+      const details = [
+        { k: 'App',      v: $('app-name').value.trim() },
+        { k: 'Runtime',  v: $('python-version').options[$('python-version').selectedIndex].text },
+        { k: 'PID',      v: Math.floor(Math.random() * 30000 + 1000) },
+        { k: 'Workers',  v: $('workers').value },
+        { k: 'Mode',     v: $('environment').value },
+      ];
+      $('success-details').innerHTML = details.map(d =>
+        `<div class="sd-row"><span class="sd-key">${d.k}</span><span class="sd-val mono">${d.v}</span></div>`
+      ).join('');
+      show('form-success');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showError() {
+      show('form-error');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function retryFromError() {
+      hide('form-error');
+      startValidating();
+    }
+
+    function resetForm() {
+      hide('form-success');
+      hide('form-error');
+      hide('form-validating');
+      clearErrors();
+      goToStep(1);
+      show('form-step-1');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ─── ENV ROWS ────────────────────────────────────────────────────────────
+    function removeEnvRow(btn) {
+      const row = btn.closest('[data-env-row]');
+      if ($('env-table').querySelectorAll('[data-env-row]').length > 1) {
+        row.style.opacity = '0';
+        row.style.transform = 'translateX(8px)';
+        setTimeout(() => row.remove(), 200);
+      } else {
+        showToast('At least one environment variable row is required.', 'info');
+      }
+    }
+
+    $('add-env-row').addEventListener('click', () => {
+      const table = $('env-table');
+      const row = document.createElement('div');
+      row.className = 'env-row env-row-in';
+      row.setAttribute('data-env-row', '');
+      row.innerHTML = `
+        <input class="field-input mono env-key" type="text" placeholder="KEY" />
+        <input class="field-input mono env-val" type="text" placeholder="value" />
+        <button class="env-remove" type="button" aria-label="Remove row" onclick="removeEnvRow(this)">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2 2 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>`;
+      table.appendChild(row);
+      requestAnimationFrame(() => row.classList.remove('env-row-in'));
+    });
+
+    // ─── COPY URL ────────────────────────────────────────────────────────────
+    function copyUrl() {
+      const url = $('success-url-text').textContent;
+      navigator.clipboard.writeText(url).then(() => showToast('URL copied to clipboard!', 'success'));
+    }
+
+    // ─── LOGS MODAL ──────────────────────────────────────────────────────────
+    function showLogs() {
+      const host = $('host').value.trim() || '0.0.0.0';
+      const port = $('port').value || '8000';
+      const app  = $('app-name').value.trim();
+      const ts   = new Date().toISOString();
+      const pid  = Math.floor(Math.random() * 30000 + 1000);
+      $('log-output').textContent = [
+        `INFO:     ${ts}`,
+        `INFO:     Alpha v1.0 — application startup`,
+        `INFO:     app=${app}  pid=${pid}`,
+        `INFO:     Uvicorn running on http://${host}:${port} (Press CTRL+C to quit)`,
+        `INFO:     Started reloader process [${pid}] using WatchFiles`,
+        `INFO:     Started server process [${pid + 1}]`,
+        `INFO:     Waiting for application startup.`,
+        `INFO:     Application startup complete.`,
+        `INFO:     GET / HTTP/1.1 200 OK — 1.24ms`,
+        `INFO:     GET /health HTTP/1.1 200 OK — 0.38ms`,
+      ].join('\n');
+      show('logs-modal');
+    }
+
+    function hideLogs() { hide('logs-modal'); }
+
+    function copyLogs() {
+      navigator.clipboard.writeText($('log-output').textContent).then(() => {
+        const btn = $('copy-logs-btn');
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy Logs', 1800);
+      });
+    }
+
+    // close modal on backdrop click
+    $('logs-modal').addEventListener('click', e => { if (e.target === $('logs-modal')) hideLogs(); });
+
+    // close modal on Escape
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') hideLogs(); });
+
+    // ─── INIT ────────────────────────────────────────────────────────────────
+    goToStep(1);
+  </script>
+</body>
+</html>

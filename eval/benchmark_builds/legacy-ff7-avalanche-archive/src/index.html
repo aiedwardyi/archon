@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Final Fantasy VII - Avalanche Archive</title>
+<link rel="stylesheet" href="./style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="noise-overlay"></div>
+
+<header class="header">
+<div class="container">
+<div class="header-content">
+<div class="logo">
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+<path d="M16 4L4 28h8l4-8 4 8h8L16 4z" fill="currentColor"/>
+</svg>
+<span>AVALANCHE</span>
+</div>
+<nav class="nav">
+<a href="#characters" class="nav-link">Characters</a>
+<a href="#weapons" class="nav-link">Arsenal</a>
+<a href="#map" class="nav-link">World Map</a>
+<a href="#about" class="nav-link">Lore</a>
+</nav>
+<button class="menu-toggle" aria-label="Toggle menu">
+<span></span>
+<span></span>
+<span></span>
+</button>
+</div>
+</div>
+</header>
+
+<section class="hero">
+<div class="hero-bg"></div>
+<div class="container">
+<div class="hero-content">
+<div class="hero-badge">
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+<circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2"/>
+<circle cx="8" cy="8" r="2" fill="currentColor"/>
+</svg>
+<span>Remake Saga Continues</span>
+</div>
+<h1 class="hero-title">Return to<br>Midgar</h1>
+<p class="hero-subtitle">Experience the legendary story of Cloud Strife and Avalanche as they fight against the Shinra Corporation to save the planet from destruction.</p>
+<div class="hero-actions">
+<button class="btn btn-primary">Explore the Archive</button>
+<button class="btn btn-secondary">Watch Trailer</button>
+</div>
+<div class="hero-stats">
+<div class="stat-item">
+<div class="stat-value" data-count="25">0</div>
+<div class="stat-label">Years Legacy</div>
+</div>
+<div class="stat-item">
+<div class="stat-value" data-count="50">0</div>
+<div class="stat-label">Playable Characters</div>
+</div>
+<div class="stat-item">
+<div class="stat-value" data-count="100">0</div>
+<div class="stat-label">Unique Weapons</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<section id="characters" class="characters">
+<div class="container">
+<div class="section-header">
+<h2 class="section-title">The Resistance</h2>
+<p class="section-subtitle">Meet the heroes fighting for the planet's future</p>
+</div>
+<div class="character-grid">
+<article class="character-card">
+<div class="character-image-wrapper">
+<img src="/api/assets/71/1/character_cloud.png" alt="Cloud Strife" class="character-image">
+<div class="character-glow"></div>
+</div>
+<div class="character-info">
+<div class="character-header">
+<h3 class="character-name">Cloud Strife</h3>
+<span class="character-role">Ex-SOLDIER</span>
+</div>
+<p class="character-desc">A former member of Shinra's elite SOLDIER unit, now a mercenary hired by the eco-terrorist group AVALANCHE. Wields the massive Buster Sword with deadly precision.</p>
+<div class="character-stats">
+<div class="stat-bar">
+<div class="stat-bar-label">
+<span>Strength</span>
+<span>95</span>
+</div>
+<div class="stat-bar-track">
+<div class="stat-bar-fill" style="width: 95%;"></div>
+</div>
+</div>
+<div class="stat-bar">
+<div class="stat-bar-label">
+<span>Magic</span>
+<span>78</span>
+</div>
+<div class="stat-bar-track">
+<div class="stat-bar-fill" style="width: 78%;"></div>
+</div>
+</div>
+<div class="stat-bar">
+<div class="stat-bar-label">
+<span>Speed</span>
+<span>88</span>
+</div>
+<div class="stat-bar-track">
+<div class="stat-bar-fill" style="width: 88%;"></div>
+</div>
+</div>
+</div>
+<div class="character-tags">
+<span class="tag">Omnislash</span>
+<span class="tag">Limit Break</span>
+<span class="tag">Materia Master</span>
+</div>
+</div>
+</article>
+
+<article class="character-card">
+<div class="character-image-wrapper">
+<img src="/api/assets/71/1/character_barret.png" alt="Barret Wallace" class="character-image">
+<div class="character-glow"></div>
+</div>
+<div class="character-info">
+<div class="character-header">
+<h3 class="character-name">Barret Wallace</h3>
+<span class="character-role">AVALANCHE Leader</span>
+</div>
+<p class="character-desc">The fierce leader of the anti-Shinra resistance group AVALANCHE. His gun-arm prosthetic makes him a formidable ranged combatant in the fight to save the planet.</p>
+<div class="character-stats">
+<div class="stat-bar">
+<div class="stat-bar-label">
+<span>Strength</span>
+<span>92</span>
+</div>
+<div class="stat-bar-track">
+<div class="stat-bar-fill" style="width: 92%;"></div>
+</div>
+</div>
+<div class="stat-bar">
+<div class="stat-bar-label">
+<span>Magic</span>
+<span>65</span>
+</div>
+<div class="stat-bar-track">
+<div class="stat-bar-fill" style="width: 65%;"></div>
+</div>
+</div>
+<div class="stat-bar">
+<div class="stat-bar-label">
+<span>Speed</span>
+<span>70</span>
+</div>
+<div class="stat-bar-track">
+<div class="stat-bar-fill" style="width: 70%;"></div>
+</div>
+</div>
+</div>
+<div class="character-tags">
+<span class="tag">Catastrophe</span>
+<span class="tag">Heavy Artillery</span>
+<span class="tag">Tank</span>
+</div>
+</div>
+</article>
+
+<article class="character-card">
+<div class="character-image-wrapper">
+<img src="/api/assets/71/1/character_tifa.png" alt="Tifa Lockhart" class="character-image">
+<div class="character-glow"></div>
+</div>
+<div class="character-info">
+<div class="character-header">
+<h3 class="character-name">Tifa Lockhart</h3>
+<span class="character-role">Martial Artist</span>
+</div>
+<p class="character-desc">Cloud's childhood friend and member of AVALANCHE. A master of hand-to-hand combat who runs the 7th Heaven bar as a cover for resistance operations.</p>
+<div class="character-stats">
+<div class="stat-bar">
+<div class="stat-bar-label">
+<span>Strength</span>
+<span>89</span>
+</div>
+<div class="stat-bar-track">
+<div class="stat-bar-fill" style="width: 89%;"></div>
+</div>
+</div>
+<div class="stat-bar">
+<div class="stat-bar-label">
+<span>Magic</span>
+<span>82</span>
+</div>
+<div class="stat-bar-track">
+<div class="stat-bar-fill" style="width: 82%;"></div>
+</div>
+</div>
+<div class="stat-bar">
+<div class="stat-bar-label">
+<span>Speed</span>
+<span>96</span>
+</div>
+<div class="stat-bar-track">
+<div class="stat-bar-fill" style="width: 96%;"></div>
+</div>
+</div>
+</div>
+<div class="character-tags">
+<span class="tag">Final Heaven</span>
+<span class="tag">Combo Master</span>
+<span class="tag">Support</span>
+</div>
+</div>
+</article>
+</div>
+</div>
+</section>
+
+<section id="weapons" class="weapons">
+<div class="container">
+<div class="section-header">
+<h2 class="section-title">Legendary Arsenal</h2>
+<p class="section-subtitle">Iconic weapons forged in the fires of battle</p>
+</div>
+<div class="weapons-showcase">
+<div class="weapons-featured">
+<img src="/api/assets/71/1/weapons_gallery.png" alt="Weapons Collection" class="weapons-image">
+<div class="weapons-overlay"></div>
+</div>
+<div class="weapons-grid">
+<div class="weapon-card">
+<div class="weapon-icon">
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+<path d="M8 32L12 8h16l4 24M14 16h12M16 24h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+</svg>
+</div>
+<h3 class="weapon-name">Buster Sword</h3>
+<p class="weapon-desc">Cloud's iconic massive blade, inherited from Zack Fair. A symbol of honor and sacrifice.</p>
+<div class="weapon-stats">
+<span class="weapon-stat">ATK +98</span>
+<span class="weapon-stat">Materia x2</span>
+</div>
+</div>
+
+<div class="weapon-card">
+<div class="weapon-icon">
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+<circle cx="20" cy="20" r="8" stroke="currentColor" stroke-width="2"/>
+<path d="M20 4v8M20 28v8M4 20h8M28 20h8" stroke="currentColor" stroke-width="2"/>
+</svg>
+</div>
+<h3 class="weapon-name">Missing Score</h3>
+<p class="weapon-desc">Barret's ultimate gun-arm. Damage increases based on collected AP.</p>
+<div class="weapon-stats">
+<span class="weapon-stat">ATK +97</span>
+<span class="weapon-stat">Materia x8</span>
+</div>
+</div>
+
+<div class="weapon-card">
+<div class="weapon-icon">
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+<path d="M10 30l10-20 10 20M15 24h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+</svg>
+</div>
+<h3 class="weapon-name">Premium Heart</h3>
+<p class="weapon-desc">Tifa's ultimate weapon. Power increases when her Limit gauge is full.</p>
+<div class="weapon-stats">
+<span class="weapon-stat">ATK +99</span>
+<span class="weapon-stat">Materia x8</span>
+</div>
+</div>
+
+<div class="weapon-card">
+<div class="weapon-icon">
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+<path d="M20 8l-8 24h16l-8-24zM12 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+</svg>
+</div>
+<h3 class="weapon-name">Ultima Weapon</h3>
+<p class="weapon-desc">The legendary sword. Power increases when HP is at maximum.</p>
+<div class="weapon-stats">
+<span class="weapon-stat">ATK +100</span>
+<span class="weapon-stat">Materia x8</span>
+</div>
+</div>
+
+<div class="weapon-card">
+<div class="weapon-icon">
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+<path d="M20 6v28M12 12l16 16M28 12L12 28" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+</svg>
+</div>
+<h3 class="weapon-name">Apocalypse</h3>
+<p class="weapon-desc">Vincent's ultimate weapon. Triple growth for materia attached to it.</p>
+<div class="weapon-stats">
+<span class="weapon-stat">ATK +88</span>
+<span class="weapon-stat">Materia x6</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<section id="map" class="map-section">
+<div class="container">
+<div class="section-header">
+<h2 class="section-title">World Map</h2>
+<p class="section-subtitle">Explore the vast planet and uncover its secrets</p>
+</div>
+<div class="map-container">
+<div class="map-viewer">
+<div class="map-background"></div>
+<div class="map-overlay">
+<div class="map-location" style="top: 30%; left: 35%;" data-location="midgar">
+<div class="location-pulse"></div>
+<div class="location-marker">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="currentColor" stroke-width="2" fill="currentColor"/>
+</svg>
+</div>
+<div class="location-tooltip">
+<h4>Midgar</h4>
+<p>The sprawling metropolis powered by Mako energy</p>
+</div>
+</div>
+
+<div class="map-location" style="top: 55%; left: 25%;" data-location="junon">
+<div class="location-pulse"></div>
+<div class="location-marker">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="currentColor" stroke-width="2" fill="currentColor"/>
+</svg>
+</div>
+<div class="location-tooltip">
+<h4>Junon</h4>
+<p>Massive military fortress and Shinra stronghold</p>
+</div>
+</div>
+
+<div class="map-location" style="top: 45%; left: 60%;" data-location="cosmo">
+<div class="location-pulse"></div>
+<div class="location-marker">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="currentColor" stroke-width="2" fill="currentColor"/>
+</svg>
+</div>
+<div class="location-tooltip">
+<h4>Cosmo Canyon</h4>
+<p>Sacred land of the Cetra and study of the Lifestream</p>
+</div>
+</div>
+
+<div class="map-location" style="top: 70%; left: 45%;" data-location="gold">
+<div class="location-pulse"></div>
+<div class="location-marker">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="currentColor" stroke-width="2" fill="currentColor"/>
+</svg>
+</div>
+<div class="location-tooltip">
+<h4>Gold Saucer</h4>
+<p>Entertainment theme park in the desert</p>
+</div>
+</div>
+
+<div class="map-location" style="top: 25%; left: 70%;" data-location="crater">
+<div class="location-pulse"></div>
+<div class="location-marker active">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="currentColor" stroke-width="2" fill="currentColor"/>
+</svg>
+</div>
+<div class="location-tooltip">
+<h4>Northern Crater</h4>
+<p>Site of the final confrontation with Sephiroth</p>
+</div>
+</div>
+</div>
+</div>
+<div class="map-controls">
+<button class="map-btn" aria-label="Zoom in">
+<svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+<path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+</svg>
+</button>
+<button class="map-btn" aria-label="Zoom out">
+<svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+<path d="M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+</svg>
+</button>
+<button class="map-btn" aria-label="Reset view">
+<svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+<path d="M16 10A6 6 0 1 0 4 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+<path d="M4 6v4h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+</button>
+</div>
+</div>
+</div>
+</section>
+
+<section id="about" class="lore">
+<div class="container">
+<div class="lore-content">
+<div class="lore-text">
+<h2 class="section-title">The Planet's Cry</h2>
+<p class="lore-paragraph">The world is poisoned by the Shinra Electric Power Company, a mega-corporation that drains the very life energy of the planet—Mako—to fuel its insatiable greed. As the planet dies, a small resistance group called AVALANCHE rises to fight back.</p>
+<p class="lore-paragraph">Led by Barret Wallace and aided by the enigmatic Cloud Strife, AVALANCHE launches a desperate campaign of sabotage against Shinra's Mako reactors. But their fight awakens something far more dangerous—the legendary SOLDIER Sephiroth, thought dead, returns with a plan to become a god.</p>
+<p class="lore-paragraph">Caught between Shinra's corporate tyranny and Sephiroth's apocalyptic ambitions, Cloud and his allies must uncover the truth about their pasts, the ancient Cetra, and the Lifestream itself. The fate of the entire planet rests on their shoulders.</p>
+<div class="lore-quote">
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" class="quote-icon">
+<path d="M8 20c0-4 2-8 6-10v4c-2 1-3 3-3 6h3v8H8v-8zM18 20c0-4 2-8 6-10v4c-2 1-3 3-3 6h3v8h-6v-8z" fill="currentColor"/>
+</svg>
+<p>The planet's greatest legacy... should not be the world's end.</p>
+<cite>— Aerith Gainsborough</cite>
+</div>
+</div>
+<div class="lore-image">
+<div class="lore-image-wrapper">
+<div class="lore-image-glow"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<footer class="footer">
+<div class="container">
+<div class="footer-content">
+<div class="footer-brand">
+<div class="logo">
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+<path d="M16 4L4 28h8l4-8 4 8h8L16 4z" fill="currentColor"/>
+</svg>
+<span>AVALANCHE</span>
+</div>
+<p class="footer-desc">An unofficial tribute to the legendary RPG that defined a generation. All rights belong to Square Enix.</p>
+</div>
+<div class="footer-links">
+<div class="footer-column">
+<h4 class="footer-heading">Archive</h4>
+<a href="#characters" class="footer-link">Characters</a>
+<a href="#weapons" class="footer-link">Arsenal</a>
+<a href="#map" class="footer-link">World Map</a>
+<a href="#about" class="footer-link">Lore</a>
+</div>
+<div class="footer-column">
+<h4 class="footer-heading">Resources</h4>
+<a href="#" class="footer-link">Game Guide</a>
+<a href="#" class="footer-link">Materia Database</a>
+<a href="#" class="footer-link">Limit Breaks</a>
+<a href="#" class="footer-link">Enemy Intel</a>
+</div>
+<div class="footer-column">
+<h4 class="footer-heading">Community</h4>
+<a href="#" class="footer-link">Discord</a>
+<a href="#" class="footer-link">Reddit</a>
+<a href="#" class="footer-link">Twitter</a>
+<a href="#" class="footer-link">Fan Art</a>
+</div>
+</div>
+</div>
+<div class="footer-bottom">
+<p>&copy; 2024 Avalanche Archive. Final Fantasy VII is a registered trademark of Square Enix.</p>
+</div>
+</div>
+</footer>
+
+<div class="toast" id="toast">
+<svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+<path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zm1 12H9v-2h2v2zm0-4H9V6h2v4z" fill="currentColor"/>
+</svg>
+<span id="toast-message">Action completed</span>
+</div>
+
+<script>
+function countUp(el,target,duration=1200){const start=performance.now();const update=(now)=>{const p=Math.min((now-start)/duration,1);el.textContent=Math.floor(p*target).toLocaleString();if(p<1)requestAnimationFrame(update);};requestAnimationFrame(update);}
+
+document.addEventListener('DOMContentLoaded',()=>{
+document.querySelectorAll('[data-count]').forEach(el=>countUp(el,+el.dataset.count));
+
+const menuToggle=document.querySelector('.menu-toggle');
+const nav=document.querySelector('.nav');
+menuToggle.addEventListener('click',()=>nav.classList.toggle('active'));
+
+const navLinks=document.querySelectorAll('.nav-link');
+navLinks.forEach(link=>{
+link.addEventListener('click',e=>{
+e.preventDefault();
+const target=document.querySelector(link.getAttribute('href'));
+target.scrollIntoView({behavior:'smooth'});
+nav.classList.remove('active');
+});
+});
+
+const buttons=document.querySelectorAll('.btn-primary, .btn-secondary');
+buttons.forEach(btn=>{
+btn.addEventListener('click',()=>showToast('Feature coming soon in Remake Part 3!'));
+});
+
+const mapLocations=document.querySelectorAll('.map-location');
+mapLocations.forEach(location=>{
+location.addEventListener('click',()=>{
+mapLocations.forEach(l=>l.querySelector('.location-marker').classList.remove('active'));
+location.querySelector('.location-marker').classList.add('active');
+const name=location.querySelector('h4').textContent;
+showToast(`Selected: ${name}`);
+});
+});
+
+const mapBtns=document.querySelectorAll('.map-btn');
+mapBtns.forEach((btn,i)=>{
+btn.addEventListener('click',()=>{
+const actions=['Zoomed in','Zoomed out','View reset'];
+showToast(actions[i]);
+});
+});
+
+const statBars=document.querySelectorAll('.stat-bar-fill');
+const observer=new IntersectionObserver(entries=>{
+entries.forEach(entry=>{
+if(entry.isIntersecting){
+entry.target.style.animation='fillBar 1s ease forwards';
+}
+});
+},{threshold:0.5});
+statBars.forEach(bar=>observer.observe(bar));
+});
+
+function showToast(message){
+const toast=document.getElementById('toast');
+const toastMessage=document.getElementById('toast-message');
+toastMessage.textContent=message;
+toast.classList.add('show');
+setTimeout(()=>toast.classList.remove('show'),3000);
+}
+</script>
+</body>
+</html>
