@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Web Design Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="noise-overlay"></div>
+    <div id="app" class="dark-theme">
+        <header id="toolbar">
+            <div class="toolbar-section toolbar-left">
+                <span class="app-logo">DesignAI</span>
+                <span id="project-name" class="project-name">My Startup Landing Page</span>
+                <span id="unsaved-indicator" class="unsaved-indicator hidden">*</span>
+            </div>
+            <div class="toolbar-section toolbar-center">
+                <button class="toolbar-btn" onclick="app.undo()"><span>&#x21B6;</span> Undo</button>
+                <button class="toolbar-btn" onclick="app.redo()"><span>&#x21B7;</span> Redo</button>
+                <span class="divider"></span>
+                <button class="toolbar-btn" onclick="app.zoomIn()"><span>&#x2795;</span></button>
+                <span class="zoom-level">100%</span>
+                <button class="toolbar-btn" onclick="app.zoomOut()"><span>&#x2796;</span></button>
+                <span class="divider"></span>
+                <button class="toolbar-btn" onclick="app.setPreviewMode(false)" id="editor-mode-btn">Editor</button>
+                <button class="toolbar-btn" onclick="app.setPreviewMode(true)" id="preview-mode-btn">Preview</button>
+            </div>
+            <div class="toolbar-section toolbar-right">
+                <button class="btn btn-secondary" onclick="app.saveProject()">Save</button>
+                <button class="btn btn-primary" onclick="app.exportProject()">Export</button>
+                <button class="btn btn-icon" onclick="app.showSettings()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.44.25a2 2 0 0 0-2 0l-.18-.1a2 2 0 0 0-1.73 1L4 9.38a2 2 0 0 0 0 2.24l.1.18a2 2 0 0 0 1 1.73l.25.44a2 2 0 0 0 0 2l-.1.18a2 2 0 0 0-1.73 1L2 19.62a2 2 0 0 0 0 2.24l.18.1a2 2 0 0 0 1.73 1L6.38 22a2 2 0 0 0 2 0l.44-.25a2 2 0 0 0 1-1.73L12 19.82a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.44-.25a2 2 0 0 0 2 0l.18.1a2 2 0 0 0 1.73-1L20 14.62a2 2 0 0 0 0-2.24l-.1-.18a2 2 0 0 0-1-1.73l-.25-.44a2 2 0 0 0 0-2l.1-.18a2 2 0 0 0 1.73-1L22 4.38a2 2 0 0 0 0-2.24l-.18-.1a2 2 0 0 0-1.73-1L17.62 2a2 2 0 0 0-2 0l-.44.25a2 2 0 0 0-1 1.73L12.22 2z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+                <div class="avatar">SC</div>
+            </div>
+        </header>
+
+        <main id="main-content-wrapper">
+            <!-- Onboarding View -->
+            <section id="onboarding-view" class="view">
+                <div class="onboarding-card glass-panel">
+                    <h2 class="onboarding-title">Welcome to DesignAI!</h2>
+                    <div class="onboarding-progress">
+                        <span class="progress-step active">1</span>
+                        <span class="progress-line"></span>
+                        <span class="progress-step">2</span>
+                        <span class="progress-line"></span>
+                        <span class="progress-step">3</span>
+                    </div>
+                    <form id="onboarding-form" onsubmit="event.preventDefault();">
+                        <div class="form-step step-1">
+                            <label for="company-name">Company Name</label>
+                            <input type="text" id="company-name" placeholder="e.g., InnovateTech" required>
+                            <label for="industry">Industry</label>
+                            <input type="text" id="industry" placeholder="e.g., SaaS, E-commerce, FinTech" required>
+                        </div>
+                        <div class="form-step step-2 hidden">
+                            <label>What are your primary goals?</label>
+                            <div class="checkbox-group">
+                                <label><input type="checkbox" value="Lead Generation"> Lead Generation</label>
+                                <label><input type="checkbox" value="Brand Awareness"> Brand Awareness</label>
+                                <label><input type="checkbox" value="Sales Conversion"> Sales Conversion</label>
+                                <label><input type="checkbox" value="User Engagement"> User Engagement</label>
+                            </div>
+                            <label for="target-audience">Describe your target audience</label>
+                            <textarea id="target-audience" rows="3" placeholder="e.g., Small business owners, young professionals, gamers"></textarea>
+                        </div>
+                        <div class="form-step step-3 hidden">
+                            <h3>All set!</h3>
+                            <p>You're ready to start building amazing websites with AI assistance.</p>
+                            <p class="insight-text">Watson Discovery Insight: "Competitors in FinTech use personalized onboarding heavily."</p>
+                        </div>
+                        <div class="onboarding-actions">
+                            <button type="button" class="btn btn-secondary prev-btn hidden" onclick="app.prevStep()">Previous</button>
+                            <button type="button" class="btn btn-primary next-btn" onclick="app.nextStep()">Next</button>
+                            <button type="submit" class="btn btn-primary start-building-btn hidden" onclick="app.completeOnboarding()">Start Building</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Editor View -->
+            <section id="editor-view" class="view hidden">
+                <aside id="left-sidebar" class="glass-panel">
+                    <div class="sidebar-section">
+                        <h3>Components</h3>
+                        <div class="component-list">
+                            <div class="component-item" draggable="true"><span>&#9776;</span> Hero Section</div>
+                            <div class="component-item" draggable="true"><span>&#9776;</span> Feature Grid</div>
+                            <div class="component-item" draggable="true"><span>&#9776;</span> Call to Action</div>
+                            <div class="component-item" draggable="true"><span>&#9776;</span> Testimonials</div>
+                            <div class="component-item" draggable="true"><span>&#9776;</span> Pricing Table</div>
+                            <div class="component-item" draggable="true"><span>&#9776;</span> Contact Form</div>
+                        </div>
+                    </div>
+                    <div class="sidebar-section">
+                        <h3>AI Suggestions</h3>
+                        <div class="ai-suggestion-card">
+                            <p id="ai-suggestion-text">Add a strong call-to-action in hero section</p>
+                            <button class="btn btn-small btn-secondary">Apply</button>
+                        </div>
+                    </div>
+                    <div class="sidebar-section">
+                        <h3>Pages</h3>
+                        <ul class="page-list">
+                            <li class="page-item active">Home</li>
+                            <li class="page-item">About Us</li>
+                            <li class="page-item">Contact</li>
+                            <li class="page-item">Pricing</li>
+                        </ul>
+                    </div>
+                </aside>
+
+                <div id="main-canvas">
+                    <div class="canvas-content">
+                        <div class="editor-section hero-section">
+                            <h1 class="ai-headline">Launch Your Vision, Faster.</h1>
+                            <p>Build stunning, high-converting websites with AI-powered design tools.</p>
+                            <button class="btn btn-primary">Get Started</button>
+                        </div>
+                        <div class="editor-section features-section">
+                            <h2>Key Features</h2>
+                            <div class="feature-grid">
+                                <div class="feature-item"><span>&#9733;</span> AI-Powered Layouts</div>
+                                <div class="feature-item"><span>&#9733;</span> Smart Content Generation</div>
+                                <div class="feature-item"><span>&#9733;</span> One-Click Publishing</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <aside id="right-sidebar" class="glass-panel">
+                    <div class="sidebar-section">
+                        <h3>Element Properties</h3>
+                        <div class="property-group">
+                            <label for="bg-color">Background Color</label>
+                            <input type="color" id="bg-color" value="#1A1B26">
+                        </div>
+                        <div class="property-group">
+                            <label for="text-color">Text Color</label>
+                            <input type="color" id="text-color" value="#E0E0E0">
+                        </div>
+                        <div class="property-group">
+                            <label for="font-size">Font Size (px)</label>
+                            <input type="number" id="font-size" value="16">
+                        </div>
+                        <div class="property-group">
+                            <label for="padding">Padding (px)</label>
+                            <input type="number" id="padding" value="24">
+                        </div>
+                    </div>
+                    <div class="sidebar-section">
+                        <h3>Content Editor</h3>
+                        <textarea rows="6">Launch Your Vision, Faster. Build stunning, high-converting websites with AI-powered design tools.</textarea>
+                        <div class="content-editor-actions">
+                            <button class="btn btn-small btn-secondary">Bold</button>
+                            <button class="btn btn-small btn-secondary">Italic</button>
+                            <button class="btn btn-small btn-secondary">Link</button>
+                        </div>
+                    </div>
+                </aside>
+            </section>
+
+            <!-- Dashboard View -->
+            <section id="dashboard-view" class="view hidden">
+                <div class="dashboard-header">
+                    <h2 class="dashboard-title">Analytics Dashboard</h2>
+                    <p class="dashboard-subtitle">Overview of your project performance.</p>
+                </div>
+                <div class="kpi-grid">
+                    <div class="kpi-card glass-panel card-stagger-1">
+                        <span class="kpi-label">Page Views</span>
+                        <span class="kpi-value" data-count="1234">0</span>
+                        <span class="kpi-change positive">+12%</span>
+                    </div>
+                    <div class="kpi-card glass-panel card-stagger-2">
+                        <span class="kpi-label">Unique Visitors</span>
+                        <span class="kpi-value" data-count="876">0</span>
+                        <span class="kpi-change positive">+8%</span>
+                    </div>
+                    <div class="kpi-card glass-panel card-stagger-3">
+                        <span class="kpi-label">Conversion Rate</span>
+                        <span class="kpi-value" data-count="2.5">0</span><span class="kpi-value-suffix">%</span>
+                        <span class="kpi-change positive">+0.3%</span>
+                    </div>
+                    <div class="kpi-card glass-panel card-stagger-4">
+                        <span class="kpi-label">Bounce Rate</span>
+                        <span class="kpi-value" data-count="45">0</span><span class="kpi-value-suffix">%</span>
+                        <span class="kpi-change negative">-2%</span>
+                    </div>
+                </div>
+
+                <div class="dashboard-section glass-panel chart-card">
+                    <h3>Page Views Over Time</h3>
+                    <div class="chart-container">
+                        <svg class="line-chart" viewBox="0 0 800 300">
+                            <g class="grid x-grid" id="xGrid"><line x1="80" x2="80" y1="0" y2="260"></line></g>
+                            <g class="grid y-grid" id="yGrid"><line x1="80" x2="780" y1="260" y2="260"></line></g>
+                            <g class="labels x-labels">
+                                <text x="100" y="280">Jan</text>
+                                <text x="160" y="280">Feb</text>
+                                <text x="220" y="280">Mar</text>
+                                <text x="280" y="280">Apr</text>
+                                <text x="340" y="280">May</text>
+                                <text x="400" y="280">Jun</text>
+                                <text x="460" y="280">Jul</text>
+                                <text x="520" y="280">Aug</text>
+                                <text x="580" y="280">Sep</text>
+                                <text x="640" y="280">Oct</text>
+                                <text x="700" y="280">Nov</text>
+                                <text x="760" y="280">Dec</text>
+                            </g>
+                            <g class="labels y-labels">
+                                <text x="60" y="260">0</text>
+                                <text x="60" y="200">100</text>
+                                <text x="60" y="140">200</text>
+                                <text x="60" y="80">300</text>
+                                <text x="60" y="20">400</text>
+                            </g>
+                            <path class="chart-line" fill="none" stroke="var(--accent)" stroke-width="2" d="M90,250 C110,230 130,220 150,210 C170,200 190,190 210,180 C230,170 250,160 270,150 C290,140 310,130 330,120 C350,110 370,100 390,90 C410,80 430,70 450,60 C470,50 490,40 510,30 C530,40 550,50 570,60 C590,70 610,80 630,90 C650,100 670,110 690,120 C710,130 730,140 750,150 C770,160 790,170 810,180"></path>
+                            <path class="chart-area" fill="url(#chartGradient)" d="M90,260 L90,250 C110,230 130,220 150,210 C170,200 190,190 210,180 C230,170 250,160 270,150 C290,140 310,130 330,120 C350,110 370,100 390,90 C410,80 430,70 450,60 C470,50 490,40 510,30 C530,40 550,50 570,60 C590,70 610,80 630,90 C650,100 670,110 690,120 C710,130 730,140 750,150 C770,160 790,170 810,180 L810,260 Z"></path>
+                            <linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
+                                <stop offset="0%" stop-color="rgba(var(--accent-rgb), 0.3)" />
+                                <stop offset="100%" stop-color="rgba(var(--accent-rgb), 0)" />
+                            </linearGradient>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="project-list-section glass-panel">
+                    <h3>Your Projects</h3>
+                    <table class="project-table">
+                        <thead>
+                            <tr>
+                                <th>Project Name</th>
+                                <th>Status</th>
+                                <th>Page Views</th>
+                                <th>Unique Visitors</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="card-stagger-5">
+                                <td>My Startup Landing Page</td>
+                                <td><span class="status-badge published">Published</span></td>
+                                <td>1,234</td>
+                                <td>876</td>
+                                <td><button class="btn btn-small btn-secondary">View Editor</button></td>
+                            </tr>
+                            <tr class="card-stagger-6">
+                                <td>Marketing Campaign Page</td>
+                                <td><span class="status-badge draft">Draft</span></td>
+                                <td>0</td>
+                                <td>0</td>
+                                <td><button class="btn btn-small btn-secondary">View Editor</button></td>
+                            </tr>
+                            <tr class="card-stagger-7">
+                                <td>Product Launch Site</td>
+                                <td><span class="status-badge published">Published</span></td>
+                                <td>5,678</td>
+                                <td>3,456</td>
+                                <td><button class="btn btn-small btn-secondary">View Editor</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="ai-insight-card glass-panel">
+                    <h3>AI Insights</h3>
+                    <p id="watson-insight-text">Watson Discovery Insight: "Competitors in FinTech use personalized onboarding heavily."</p>
+                </div>
+            </section>
+
+            <!-- Loading Overlay -->
+            <div id="loading-overlay" class="loading-overlay hidden">
+                <div class="spinner"></div>
+                <div class="loading-message">Loading...</div>
+            </div>
+        </main>
+
+        <footer id="status-bar">
+            <div class="status-item">
+                <span id="ai-status-indicator" class="ai-status-indicator"></span>
+                <span id="ai-status-text">AI Idle</span>
+            </div>
+            <div class="status-item">
+                <span>Last saved: <span id="last-saved-time">Just now</span></span>
+            </div>
+            <div class="status-item">
+                <button class="btn btn-ghost" onclick="app.switchView('editor')" id="editor-view-toggle">Editor View</button>
+                <button class="btn btn-ghost" onclick="app.switchView('dashboard')" id="dashboard-view-toggle">Dashboard View</button>
+            </div>
+        </footer>
+
+        <!-- Toast Notification -->
+        <div id="toast-notification" class="toast hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span id="toast-message"></span>
+        </div>
+    </div>
+
+    <script>
+        const app = {
+            state: {
+                view: 'onboarding', // 'onboarding', 'editor', 'dashboard'
+                editor: {
+                    projectName: 'My Startup Landing Page',
+                    status: 'saved', // 'loading', 'saved', 'unsaved', 'ai_generating', 'preview_mode'
+                    lastSaved: new Date().toLocaleTimeString(),
+                    aiSuggestion: 'Add a strong call-to-action in hero section',
+                    openaiHeadline: 'Launch Your Vision, Faster.',
+                    watsonInsight: 'Competitors in FinTech use personalized onboarding heavily.',
+                },
+                dashboard: {
+                    pageViews: 1234,
+                    uniqueVisitors: 876,
+                    chartData: [100, 120, 150, 130, 180, 200, 190, 220, 250, 230, 280, 300], // Sample data for 12 months
+                    projectList: [
+                        { id: 1, name: 'My Startup Landing Page', status: 'Published', views: 1234, visitors: 876 },
+                        { id: 2, name: 'Marketing Campaign Page', status: 'Draft', views: 0, visitors: 0 },
+                        { id: 3, name: 'Product Launch Site', status: 'Published', views: 5678, visitors: 3456 },
+                    ]
+                },
+                onboarding: {
+                    step: 1,
+                    totalSteps: 3,
+                    formData: {
+                        companyName: '',
+                        industry: '',
+                        goals: [],
+                        targetAudience: ''
+                    }
+                }
+            },
+
+            init() {
+                this.render();
+                document.addEventListener('DOMContentLoaded', () => {
+                    this.render();
+                    this.applyKpiCountUp();
+                    this.drawChart();
+                });
+            },
+
+            render() {
+                // Update view visibility
+                document.querySelectorAll('.view').forEach(view => {
+                    view.classList.add('hidden');
+                });
+                document.getElementById(`${this.state.view}-view`).classList.remove('hidden');
+
+                // Update toolbar
+                document.getElementById('project-name').textContent = this.state.editor.projectName;
+
+                // Update status bar
+                document.getElementById('ai-status-text').textContent = `AI ${this.state.editor.status === 'ai_generating' ? 'Generating...' : 'Idle'}`;
+                document.getElementById('ai-status-indicator').className = `ai-status-indicator status-${this.state.editor.status}`;
+                document.getElementById('last-saved-time').textContent = this.state.editor.lastSaved;
+                document.getElementById('unsaved-indicator').classList.toggle('hidden', this.state.editor.status !== 'unsaved');
+
+                // Editor specific updates
+                if (this.state.view === 'editor') {
+                    document.getElementById('left-sidebar').classList.remove('hidden');
+                    document.getElementById('right-sidebar').classList.remove('hidden');
+                    document.getElementById('ai-suggestion-text').textContent = this.state.editor.aiSuggestion;
+                    document.querySelector('.ai-headline').textContent = this.state.editor.openaiHeadline;
+                } else {
+                    document.getElementById('left-sidebar').classList.add('hidden');
+                    document.getElementById('right-sidebar').classList.add('hidden');
+                }
+
+                // Dashboard specific updates
+                if (this.state.view === 'dashboard') {
+                    document.getElementById('watson-insight-text').textContent = this.state.editor.watsonInsight;
+                }
+
+                // Onboarding specific updates
+                if (this.state.view === 'onboarding') {
+                    document.querySelectorAll('.onboarding-progress .progress-step').forEach((stepEl, index) => {
+                        stepEl.classList.toggle('active', index + 1 <= this.state.onboarding.step);
+                    });
+                    document.querySelectorAll('.form-step').forEach((stepEl, index) => {
+                        stepEl.classList.toggle('hidden', index + 1 !== this.state.onboarding.step);
+                    });
+                    document.querySelector('.prev-btn').classList.toggle('hidden', this.state.onboarding.step === 1);
+                    document.querySelector('.next-btn').classList.toggle('hidden', this.state.onboarding.step === this.state.onboarding.totalSteps);
+                    document.querySelector('.start-building-btn').classList.toggle('hidden', this.state.onboarding.step !== this.state.onboarding.totalSteps);
+                }
+
+                // Preview mode toggle
+                document.getElementById('app').classList.toggle('preview-mode', this.state.editor.status === 'preview_mode');
+
+                // Update toolbar buttons for preview mode
+                document.getElementById('editor-mode-btn').classList.toggle('active', this.state.editor.status !== 'preview_mode');
+                document.getElementById('preview-mode-btn').classList.toggle('active', this.state.editor.status === 'preview_mode');
+            },
+
+            switchView(viewName) {
+                if (this.state.editor.status === 'preview_mode') {
+                    this.setPreviewMode(false); // Exit preview mode first
+                }
+                this.state.view = viewName;
+                this.render();
+                // Re-apply animations/charts when switching to dashboard
+                if (viewName === 'dashboard') {
+                    this.applyKpiCountUp();
+                    this.drawChart();
+                }
+            },
+
+            setEditorStatus(status) {
+                this.state.editor.status = status;
+                if (status === 'saved') {
+                    this.state.editor.lastSaved = new Date().toLocaleTimeString();
+                    this.showToast('Project saved successfully!');
+                }
+                if (status === 'ai_generating') {
+                    this.showToast('AI is generating suggestions...');
+                }
+                this.render();
+            },
+
+            saveProject() {
+                this.setEditorStatus('loading');
+                setTimeout(() => {
+                    this.setEditorStatus('saved');
+                }, 1500);
+            },
+
+            exportProject() {
+                this.showToast('Exporting project...');
+                // Simulate export logic
+                setTimeout(() => {
+                    this.showToast('Project exported as HTML!');
+                }, 2000);
+            },
+
+            setPreviewMode(isPreview) {
+                this.setEditorStatus(isPreview ? 'preview_mode' : 'saved');
+            },
+
+            showSettings() {
+                this.showToast('Settings panel not yet implemented.');
+            },
+
+            undo() { this.showToast('Undo action'); this.setEditorStatus('unsaved'); },
+            redo() { this.showToast('Redo action'); this.setEditorStatus('unsaved'); },
+            zoomIn() { this.showToast('Zoom In'); },
+            zoomOut() { this.showToast('Zoom Out'); },
+
+            showToast(message) {
+                const toast = document.getElementById('toast-notification');
+                document.getElementById('toast-message').textContent = message;
+                toast.classList.remove('hidden');
+                toast.classList.add('fade-in-out');
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                    toast.classList.remove('fade-in-out');
+                }, 3000);
+            },
+
+            // Onboarding methods
+            nextStep() {
+                if (this.state.onboarding.step < this.state.onboarding.totalSteps) {
+                    this.state.onboarding.step++;
+                    this.render();
+                }
+            },
+            prevStep() {
+                if (this.state.onboarding.step > 1) {
+                    this.state.onboarding.step--;
+                    this.render();
+                }
+            },
+            completeOnboarding() {
+                // Save form data (not implemented for this task)
+                this.switchView('editor');
+                this.showToast('Onboarding complete! Start building.');
+                this.setEditorStatus('unsaved'); // Initial state after onboarding
+            },
+
+            // KPI Count-up animation
+            applyKpiCountUp() {
+                function countUp(el, target, duration = 1200) {
+                    const start = performance.now();
+                    const isPercentage = el.classList.contains('kpi-value-suffix');
+                    const update = (now) => {
+                        const p = Math.min((now - start) / duration, 1);
+                        const value = p * target;
+                        el.textContent = isPercentage ? value.toFixed(1) : Math.floor(value).toLocaleString();
+                        if (p < 1) requestAnimationFrame(update);
+                    };
+                    requestAnimationFrame(update);
+                }
+                document.querySelectorAll('.kpi-value').forEach(el => {
+                    if (el.dataset.count) {
+                        countUp(el, +el.dataset.count);
+                    }
+                });
+            },
+
+            // Chart Drawing
+            drawChart() {
+                const chartLine = document.querySelector('.chart-line');
+                if (chartLine) {
+                    const pathLength = chartLine.getTotalLength();
+                    chartLine.style.strokeDasharray = pathLength;
+                    chartLine.style.strokeDashoffset = pathLength;
+                    chartLine.style.animation = 'draw 1.5s ease forwards';
+                }
+                const chartArea = document.querySelector('.chart-area');
+                if (chartArea) {
+                    const pathLength = chartArea.getTotalLength();
+                    chartArea.style.strokeDasharray = pathLength;
+                    chartArea.style.strokeDashoffset = pathLength;
+                    chartArea.style.animation = 'draw 1.5s ease forwards';
+                }
+            }
+        };
+        app.init();
+    </script>
+</body>
+</html>

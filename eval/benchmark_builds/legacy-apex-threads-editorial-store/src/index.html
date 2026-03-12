@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apex Threads - Premium Streetwear</title>
+    <link rel="stylesheet" href="./base.css">
+    <link rel="stylesheet" href="./style.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body>
+    <div x-data="{ cartOpen: false, activeFilter: 'All', cartItems: [{id: 1, name: 'Apex Hoodie', size: 'M', price: 89.00, qty: 1, image: '/api/assets/158/1/product_hoodie_hero.png'}, {id: 2, name: 'Urban Tee', size: 'L', price: 45.00, qty: 1, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80'}], get cartTotal() { return this.cartItems.reduce((sum, item) => sum + (item.price * item.qty), 0).toFixed(2); }, get cartCount() { return this.cartItems.reduce((sum, item) => sum + item.qty, 0); } }" class="app-wrapper">
+        <!-- NAVBAR -->
+        <header class="store-nav">
+            <div class="nav-brand">APEX THREADS</div>
+            <nav class="nav-links">
+                <a href="#" class="nav-link">New Arrivals</a>
+                <a href="#" class="nav-link">Collections</a>
+                <a href="#" class="nav-link">Men</a>
+                <a href="#" class="nav-link">Women</a>
+                <a href="#" class="nav-link">Sale</a>
+            </nav>
+            <div class="nav-actions">
+                <button class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></button>
+                <button class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></button>
+                <button class="nav-icon" @click="cartOpen = true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                    <span class="cart-badge" x-text="cartCount"></span>
+                </button>
+            </div>
+        </header>
+
+        <!-- HERO BANNER -->
+        <section class="hero-banner">
+            <div class="hero-bg" style="background-image: url('/api/assets/158/1/homepage_hero_background.png');" onerror="this.style.background='linear-gradient(135deg,#1a1a1f,#222228)'"></div>
+            <div class="hero-overlay"></div>
+            <div class="hero-content">
+                <p class="hero-eyebrow">NEW COLLECTION</p>
+                <h1 class="hero-title">Unleash Your Edge</h1>
+                <p class="hero-subtitle">Discover the latest drops in premium streetwear, blending comfort with cutting-edge design.</p>
+                <button class="btn-shop">Shop the Collection</button>
+            </div>
+        </section>
+
+        <!-- FEATURED COLLECTIONS -->
+        <section class="section-wrapper">
+            <div class="section-header">
+                <p class="section-eyebrow">Curated Selection</p>
+                <h2>Featured Collections</h2>
+            </div>
+            <div class="collection-grid">
+                <a href="#" class="collection-card">
+                    <img src="/api/assets/158/1/lifestyle_urban_backdrop.png" alt="Urban Essentials Collection" class="collection-image" loading="eager" onerror="this.src='https://images.unsplash.com/photo-1554562477-991757827e69?w=600&q=80'">
+                    <div class="collection-overlay">
+                        <h3 class="collection-title">Urban Essentials</h3>
+                        <p class="collection-count">12 Items</p>
+                    </div>
+                </a>
+                <a href="#" class="collection-card">
+                    <img src="/api/assets/158/1/lifestyle_studio_backdrop.png" alt="Limited Edition Drops" class="collection-image" loading="eager" onerror="this.src='https://images.unsplash.com/photo-1554562477-991757827e69?w=600&q=80'">
+                    <div class="collection-overlay">
+                        <h3 class="collection-title">Limited Edition</h3>
+                        <p class="collection-count">8 Items</p>
+                    </div>
+                </a>
+                <a href="#" class="collection-card">
+                    <img src="https://images.unsplash.com/photo-1554562477-991757827e69?w=600&q=80" alt="Seasonal Outerwear" class="collection-image" loading="eager" onerror="this.src='https://images.unsplash.com/photo-1554562477-991757827e69?w=600&q=80'">
+                    <div class="collection-overlay">
+                        <h3 class="collection-title">Seasonal Outerwear</h3>
+                        <p class="collection-count">15 Items</p>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- PRODUCT GRID -->
+        <section class="section-wrapper">
+            <div class="section-header">
+                <p class="section-eyebrow">Discover</p>
+                <h2>Our Latest Products</h2>
+            </div>
+            <div class="filter-bar">
+                <button class="filter-pill" :class="{'active': activeFilter === 'All'}" @click="activeFilter = 'All'">All</button>
+                <button class="filter-pill" :class="{'active': activeFilter === 'Jackets'}" @click="activeFilter = 'Jackets'">Jackets</button>
+                <button class="filter-pill" :class="{'active': activeFilter === 'Sneakers'}" @click="activeFilter = 'Sneakers'">Sneakers</button>
+                <button class="filter-pill" :class="{'active': activeFilter === 'Accessories'}" @click="activeFilter = 'Accessories'">Accessories</button>
+                <button class="filter-pill" :class="{'active': activeFilter === 'Sale'}" @click="activeFilter = 'Sale'">Sale</button>
+            </div>
+            <div class="product-grid">
+                <!-- Product 1 -->
+                <div class="product-card">
+                    <div class="product-image-wrapper">
+                        <img src="/api/assets/158/1/product_hoodie_hero.png" alt="Apex Hoodie" class="product-image" loading="eager" onerror="this.src='https://images.unsplash.com/photo-1556906781-9a412961c28c?w=600&q=80'">
+                        <span class="product-badge">NEW</span>
+                        <button class="product-wishlist"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></button>
+                        <div class="quick-add">
+                            <button class="quick-add-btn" @click="cartItems.push({id: 1, name: 'Apex Hoodie', size: 'M', price: 89.00, qty: 1, image: '/api/assets/158/1/product_hoodie_hero.png'})">QUICK ADD</button>
+                        </div>
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-name">Apex Hoodie</h3>
+                        <p class="product-category">Outerwear</p>
+                        <div class="star-rating">
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-empty"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <span class="rating-count">(128)</span>
+                        </div>
+                        <p class="product-price">$89.00</p>
+                    </div>
+                </div>
+                <!-- Product 2 -->
+                <div class="product-card">
+                    <div class="product-image-wrapper">
+                        <img src="/api/assets/158/1/product_sneakers_hero.png" alt="Limited Sneakers" class="product-image" loading="eager" onerror="this.src='https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&q=80'">
+                        <span class="product-badge">LIMITED</span>
+                        <button class="product-wishlist"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></button>
+                        <div class="quick-add">
+                            <button class="quick-add-btn" @click="cartItems.push({id: 2, name: 'Limited Sneakers', size: 'US 10', price: 220.00, qty: 1, image: '/api/assets/158/1/product_sneakers_hero.png'})">QUICK ADD</button>
+                        </div>
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-name">Limited Sneakers</h3>
+                        <p class="product-category">Footwear</p>
+                        <div class="star-rating">
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <span class="rating-count">(94)</span>
+                        </div>
+                        <p class="product-price">$220.00</p>
+                    </div>
+                </div>
+                <!-- Product 3 -->
+                <div class="product-card">
+                    <div class="product-image-wrapper">
+                        <img src="https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600&q=80" alt="Street Joggers" class="product-image" loading="eager" onerror="this.src='https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600&q=80'">
+                        <button class="product-wishlist"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></button>
+                        <div class="quick-add">
+                            <button class="quick-add-btn" @click="cartItems.push({id: 3, name: 'Street Joggers', size: 'M', price: 65.00, qty: 1, image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600&q=80'})">QUICK ADD</button>
+                        </div>
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-name">Street Joggers</h3>
+                        <p class="product-category">Bottoms</p>
+                        <div class="star-rating">
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-empty"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-empty"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <span class="rating-count">(76)</span>
+                        </div>
+                        <p class="product-price">$65.00</p>
+                    </div>
+                </div>
+                <!-- Product 4 -->
+                <div class="product-card">
+                    <div class="product-image-wrapper">
+                        <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80" alt="Urban Tee" class="product-image" loading="eager" onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80'">
+                        <span class="product-badge">BEST SELLER</span>
+                        <button class="product-wishlist"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></button>
+                        <div class="quick-add">
+                            <button class="quick-add-btn" @click="cartItems.push({id: 4, name: 'Urban Tee', size: 'L', price: 45.00, qty: 1, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80'})">QUICK ADD</button>
+                        </div>
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-name">Urban Tee</h3>
+                        <p class="product-category">Tops</p>
+                        <div class="star-rating">
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-empty"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <span class="rating-count">(201)</span>
+                        </div>
+                        <p class="product-price">$45.00</p>
+                    </div>
+                </div>
+                <!-- Product 5 -->
+                <div class="product-card">
+                    <div class="product-image-wrapper">
+                        <img src="https://images.unsplash.com/photo-1556906781-9a412961c28c?w=600&q=80" alt="Retro Jacket" class="product-image" loading="eager" onerror="this.src='https://images.unsplash.com/photo-1556906781-9a412961c28c?w=600&q=80'">
+                        <button class="product-wishlist"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></button>
+                        <div class="quick-add">
+                            <button class="quick-add-btn" @click="cartItems.push({id: 5, name: 'Retro Jacket', size: 'XL', price: 149.00, qty: 1, image: 'https://images.unsplash.com/photo-1556906781-9a412961c28c?w=600&q=80'})">QUICK ADD</button>
+                        </div>
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-name">Retro Jacket</h3>
+                        <p class="product-category">Outerwear</p>
+                        <div class="star-rating">
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-empty"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-empty"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <span class="rating-count">(55)</span>
+                        </div>
+                        <p class="product-price">$149.00</p>
+                    </div>
+                </div>
+                <!-- Product 6 -->
+                <div class="product-card">
+                    <div class="product-image-wrapper">
+                        <img src="https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=600&q=80" alt="Sport Socks" class="product-image" loading="eager" onerror="this.src='https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=600&q=80'">
+                        <span class="product-badge">SALE</span>
+                        <button class="product-wishlist"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></button>
+                        <div class="quick-add">
+                            <button class="quick-add-btn" @click="cartItems.push({id: 6, name: 'Sport Socks', size: 'One Size', price: 25.00, qty: 1, image: 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=600&q=80'})">QUICK ADD</button>
+                        </div>
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-name">Sport Socks</h3>
+                        <p class="product-category">Accessories</p>
+                        <div class="star-rating">
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" class="star-filled"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <span class="rating-count">(320)</span>
+                        </div>
+                        <p class="product-price">$25.00</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- BRAND STORY SECTION -->
+        <section class="section-wrapper brand-story-section">
+            <div class="section-header">
+                <p class="section-eyebrow">Our Philosophy</p>
+                <h2>Crafted for the Urban Explorer</h2>
+            </div>
+            <div class="brand-story-content">
+                <img src="/api/assets/158/1/lifestyle_urban_backdrop.png" alt="Urban Explorer" class="brand-story-image" loading="eager" onerror="this.src='https://images.unsplash.com/photo-1554562477-991757827e69?w=600&q=80'">
+                <p class="brand-story-text">Apex Threads redefines streetwear with a focus on quality, comfort, and bold aesthetics. Each piece is meticulously designed to empower your journey through the urban landscape, reflecting a spirit of individuality and relentless pursuit of excellence. We believe in clothing that speaks volumes without saying a word.</p>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="store-footer">
+            <div class="footer-grid">
+                <div class="footer-col footer-brand">
+                    <h3 class="footer-logo">APEX THREADS</h3>
+                    <p class="footer-tagline">Unleash Your Edge</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Shop</h4>
+                    <ul>
+                        <li><a href="#">New Arrivals</a></li>
+                        <li><a href="#">Men's</a></li>
+                        <li><a href="#">Women's</a></li>
+                        <li><a href="#">Accessories</a></li>
+                        <li><a href="#">Sale</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Company</h4>
+                    <ul>
+                        <li><a href="#">About Us</a></li>
+                        <li><a href="#">Careers</a></li>
+                        <li><a href="#">Press</a></li>
+                        <li><a href="#">Blog</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Support</h4>
+                    <ul>
+                        <li><a href="#">Contact Us</a></li>
+                        <li><a href="#">Shipping & Returns</a></li>
+                        <li><a href="#">FAQ</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Apex Threads. All rights reserved.</p>
+            </div>
+        </footer>
+
+        <!-- CART DRAWER -->
+        <div class="cart-drawer" :class="{'cart-drawer-open': cartOpen}">
+            <div class="cart-header">
+                <h3 class="cart-title">Your Cart (<span x-text="cartCount"></span>)</h3>
+                <button class="cart-close" @click="cartOpen = false">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <div x-show="cartItems.length === 0" class="cart-empty-state">
+                <p>Your cart is empty. Start shopping!</p>
+                <button class="btn-shop" @click="cartOpen = false">Continue Shopping</button>
+            </div>
+            <div x-show="cartItems.length > 0" class="cart-items">
+                <template x-for="item in cartItems" :key="item.id">
+                    <div class="cart-item">
+                        <img :src="item.image" :alt="item.name" class="item-image" loading="eager" onerror="this.src='https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600&q=80'">
+                        <div class="item-details">
+                            <h4 class="item-name" x-text="item.name"></h4>
+                            <p class="item-size">Size: <span x-text="item.size"></span></p>
+                            <div class="item-actions">
+                                <span class="item-price" x-text="'$' + (item.price * item.qty).toFixed(2)"></span>
+                                <div class="item-quantity">
+                                    <button @click="item.qty > 1 ? item.qty-- : cartItems = cartItems.filter(i => i.id !== item.id)">-</button>
+                                    <span x-text="item.qty"></span>
+                                    <button @click="item.qty++">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+            <div x-show="cartItems.length > 0" class="cart-footer">
+                <div class="cart-total">
+                    <span>Subtotal:</span>
+                    <span x-text="'$' + cartTotal"></span>
+                </div>
+                <button class="btn-checkout">Proceed to Checkout</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

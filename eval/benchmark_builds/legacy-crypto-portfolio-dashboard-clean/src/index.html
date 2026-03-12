@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Portfolio Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* Global Resets */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-base: #0A0E1A;
+            --card-bg: #111827;
+            --surface-bg: #1E2536;
+            --border-color: #2A3348;
+            --text-primary: #F1F5F9;
+            --text-muted: #94A3B8;
+            --text-subtle: #6B7280;
+
+            --accent-primary: #10B981; /* emerald-500 */
+            --accent-primary-rgb: 16, 185, 129;
+            --accent-danger: #EF4444; /* red-500 */
+            --accent-danger-rgb: 239, 68, 68;
+            --accent-warning: #F59E0B; /* amber-500 */
+            --accent-secondary: #81A6ED; /* desaturated blue */
+            --accent-secondary-rgb: 129, 166, 237;
+
+            --space-xs: 8px;
+            --space-sm: 12px;
+            --space-md: 16px;
+            --space-lg: 20px;
+            --space-xl: 24px;
+
+            --border-radius-sm: 6px;
+            --border-radius-md: 8px;
+            --border-radius-lg: 12px;
+        }
+
+        body {
+            background: var(--bg-base);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-size: 14px;
+        }
+
+        /* Global Noise Texture */
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.045;
+            background-image: url('data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'><filter id=\'n\'><feTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/><feColorMatrix type=\'saturate\' values=\'0\'/></filter><rect width=\'200\' height=\'200\' filter=\'url(%23n)\'/></svg>');
+            background-repeat: repeat;
+            mix-blend-mode: overlay;
+        }
+
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Space Grotesk', sans-serif;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Utility Classes */
+        .flex {
+            display: flex;
+        }
+        .flex-col {
+            flex-direction: column;
+        }
+        .flex-row {
+            flex-direction: row;
+        }
+        .items-center {
+            align-items: center;
+        }
+        .justify-between {
+            justify-content: space-between;
+        }
+        .justify-center {
+            justify-content: center;
+        }
+        .gap-sm {
+            gap: var(--space-sm);
+        }
+        .gap-md {
+            gap: var(--space-md);
+        }
+        .gap-lg {
+            gap: var(--space-lg);
+        }
+        .p-sm {
+            padding: var(--space-sm);
+        }
+        .p-md {
+            padding: var(--space-md);
+        }
+        .p-lg {
+            padding: var(--space-lg);
+        }
+        .px-lg {
+            padding-left: var(--space-lg);
+            padding-right: var(--space-lg);
+        }
+        .py-md {
+            padding-top: var(--space-md);
+            padding-bottom: var(--space-md);
+        }
+
+        .text-sm {
+            font-size: 12px;
+        }
+        .text-md {
+            font-size: 14px;
+        }
+        .text-lg {
+            font-size: 16px;
+        }
+        .text-xl {
+            font-size: 18px;
+        }
+        .text-2xl {
+            font-size: 24px;
+        }
+        .text-3xl {
+            font-size: 30px;
+        }
+
+        .font-semibold {
+            font-weight: 600;
+        }
+        .font-bold {
+            font-weight: 700;
+        }
+
+        .text-primary {
+            color: var(--text-primary);
+        }
+        .text-muted {
+            color: var(--text-muted);
+        }
+        .text-subtle {
+            color: var(--text-subtle);
+        }
+        .text-accent-primary {
+            color: var(--accent-primary);
+        }
+        .text-accent-danger {
+            color: var(--accent-danger);
+        }
+
+        /* Layout */
+        .main-layout {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: var(--space-xl);
+            gap: var(--space-xl);
+        }
+
+        .grid-layout {
+            display: grid;
+            gap: var(--space-lg);
+        }
+
+        /* Topbar */
+        .topbar {
+            height: 64px;
+            background: var(--card-bg);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--space-xl);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .topbar-logo {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .ticker-strip {
+            display: flex;
+            align-items: center;
+            gap: var(--space-lg);
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .ticker-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+        .ticker-change.positive {
+            color: var(--accent-primary);
+        }
+        .ticker-change.negative {
+            color: var(--accent-danger);
+        }
+
+        .portfolio-value {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .portfolio-value .value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 18px;
+            color: var(--accent-primary);
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--accent-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border-color 0.2s ease;
+        }
+        .avatar:hover {
+            border-color: var(--accent-secondary);
+        }
+
+        /* Card Styling */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-lg);
+            padding: var(--space-lg);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.2s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+        .card:hover {
+            box-shadow: 0 0 0 1px var(--accent-secondary), 0 8px 20px rgba(0,0,0,0.3);
+            transform: translateY(-2px);
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+        .kpi-card {
+            padding: var(--space-lg);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+        }
+        .kpi-card.primary {
+            border-top: 3px solid var(--accent-primary);
+        }
+        .kpi-card.gain {
+            border-top: 3px solid var(--accent-primary);
+        }
+        .kpi-card.loss {
+            border-top: 3px solid var(--accent-danger);
+        }
+        .kpi-card.total {
+            border-top: 3px solid var(--accent-secondary);
+        }
+        .kpi-label {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .kpi-value {
+            font-size: 28px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: -0.02em;
+        }
+        .kpi-sub-value {
+            font-size: 12px;
+            color: var(--text-subtle);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .kpi-change {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 13px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .kpi-change.positive {
+            color: var(--accent-primary);
+        }
+        .kpi-change.negative {
+            color: var(--accent-danger);
+        }
+
+        /* Chart Section */
+        .chart-container {
+            aspect-ratio: 16 / 5;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .time-toggles {
+            display: flex;
+            gap: 4px;
+            background: var(--surface-bg);
+            border-radius: var(--border-radius-sm);
+            padding: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .time-toggle {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: var(--border-radius-sm);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .time-toggle:hover {
+            background: rgba(255,255,255,0.08);
+            color: var(--text-primary);
+        }
+        .time-toggle.active {
+            background: var(--accent-primary);
+            color: #fff;
+            box-shadow: 0 2px 6px rgba(var(--accent-primary-rgb), 0.4);
+            font-weight: 500;
+        }
+
+        .chart-svg-wrapper {
+            flex: 1;
+            position: relative;
+        }
+        .chart-svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+        .chart-grid-line {
+            stroke: rgba(48, 54, 61, 0.5);
+            stroke-width: 1px;
+        }
+        .chart-path {
+            stroke: var(--accent-primary);
+            stroke-width: 2;
+            fill: url(#chartGradient);
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: draw 1.5s ease forwards;
+        }
+        .chart-axis-label {
+            font-size: 11px;
+            fill: var(--text-subtle);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Split Layout */
+        .split-layout {
+            display: grid;
+            grid-template-columns: 65% 35%; /* Ratio 65:35 */
+            gap: var(--space-xl);
+        }
+
+        /* Asset Table */
+        .table-container {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+        .table-header {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .holdings-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+        .holdings-table th,
+        .holdings-table td {
+            padding: var(--space-sm) var(--space-md);
+            border-bottom: 1px solid rgba(var(--border-color), 0.5);
+        }
+        .holdings-table th {
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.05em;
+            background: rgba(255,255,255,0.03);
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        .holdings-table th:hover {
+            background: rgba(255,255,255,0.06);
+        }
+        .holdings-table tbody tr {
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        .holdings-table tbody tr:hover {
+            background: rgba(255,255,255,0.03);
+        }
+        .holdings-table td {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-primary);
+        }
+        .holdings-table td.asset-name {
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        .holdings-table td .asset-symbol {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .holdings-table td .asset-logo {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 8px;
+            object-fit: cover;
+            vertical-align: middle;
+        }
+        .holdings-table .change.positive {
+            color: var(--accent-primary);
+        }
+        .holdings-table .change.negative {
+            color: var(--accent-danger);
+        }
+        .add-watchlist-btn {
+            background: rgba(var(--accent-secondary-rgb), 0.1);
+            color: var(--accent-secondary);
+            border: 1px solid rgba(var(--accent-secondary-rgb), 0.3);
+            padding: 6px 12px;
+            border-radius: var(--border-radius-sm);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .add-watchlist-btn:hover {
+            background: rgba(var(--accent-secondary-rgb), 0.2);
+            border-color: var(--accent-secondary);
+        }
+
+        /* Watchlist */
+        .watchlist-container {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+        .watchlist-header {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .watchlist-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-sm) var(--space-md);
+            border-bottom: 1px solid rgba(var(--border-color), 0.5);
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        .watchlist-item:hover {
+            background: rgba(255,255,255,0.03);
+        }
+        .watchlist-item:last-child {
+            border-bottom: none;
+        }
+        .watchlist-info {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+        .watchlist-symbol {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .watchlist-price {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .watchlist-change {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .watchlist-sparkline-wrapper {
+            width: 80px;
+            height: 24px;
+            margin-left: var(--space-md);
+        }
+        .watchlist-sparkline {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+        .sparkline-path.positive {
+            stroke: var(--accent-primary);
+        }
+        .sparkline-path.negative {
+            stroke: var(--accent-danger);
+        }
+        .sparkline-fill.positive {
+            fill: url(#sparklineGradientPositive);
+        }
+        .sparkline-fill.negative {
+            fill: url(#sparklineGradientNegative);
+        }
+
+        /* News Feed */
+        .news-feed-container {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+        .news-header {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .news-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+        }
+        .news-item a {
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s ease;
+            font-size: 15px;
+        }
+        .news-item a:hover {
+            color: var(--accent-primary);
+            text-decoration: underline;
+        }
+        .news-meta {
+            font-size: 11px;
+            color: var(--text-subtle);
+        }
+
+        /* Animations */
+        @keyframes shimmer {
+            from { background-position: -200% 0; }
+            to { background-position: 200% 0; }
+        }
+        .skeleton {
+            background: linear-gradient(90deg, var(--card-bg) 25%, var(--surface-bg) 50%, var(--card-bg) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: var(--border-radius-sm);
+        }
+
+        @keyframes draw {
+            to { stroke-dashoffset: 0; }
+        }
+
+        @keyframes fadeUp {
+            from { opacity:0; transform:translateY(16px); }
+            to { opacity:1; transform:translateY(0); }
+        }
+
+        .animated-card {
+            animation: fadeUp 0.4s ease forwards;
+            opacity:0;
+        }
+        .animated-card:nth-child(1){animation-delay:0.05s}
+        .animated-card:nth-child(2){animation-delay:0.1s}
+        .animated-card:nth-child(3){animation-delay:0.15s}
+        .animated-card:nth-child(4){animation-delay:0.2s}
+        .animated-card:nth-child(5){animation-delay:0.25s}
+        .animated-card:nth-child(6){animation-delay:0.3s}
+        .animated-card:nth-child(7){animation-delay:0.35s}
+        .animated-card:nth-child(8){animation-delay:0.4s}
+        .animated-card:nth-child(9){animation-delay:0.45s}
+
+        @keyframes price-flash-green {
+            0% { background-color: rgba(var(--accent-primary-rgb), 0.3); }
+            100% { background-color: transparent; }
+        }
+        @keyframes price-flash-red {
+            0% { background-color: rgba(var(--accent-danger-rgb), 0.3); }
+            100% { background-color: transparent; }
+        }
+
+        .price-flash-positive {
+            animation: price-flash-green 0.5s ease-out;
+        }
+        .price-flash-negative {
+            animation: price-flash-red 0.5s ease-out;
+        }
+
+        /* Error State (simulated) */
+        .error-message {
+            background: rgba(var(--accent-danger-rgb), 0.1);
+            border: 1px solid var(--accent-danger);
+            color: var(--accent-danger);
+            padding: var(--space-md);
+            border-radius: var(--border-radius-md);
+            font-size: 13px;
+            text-align: center;
+            margin-top: var(--space-lg);
+        }
+    </style>
+</head>
+<body>
+    <div class="noise-overlay"></div>
+
+    <div class="topbar">
+        <div class="topbar-logo">FinTrack</div>
+        <div class="ticker-strip font-mono">
+            <div class="ticker-item">
+                <span>BTC</span>
+                <span class="price-flash-positive">$67,432</span>
+                <span class="ticker-change positive">+1.2%</span>
+            </div>
+            <div class="ticker-item">
+                <span>ETH</span>
+                <span class="price-flash-positive">$3,891</span>
+                <span class="ticker-change positive">+0.8%</span>
+            </div>
+            <div class="ticker-item">
+                <span>SOL</span>
+                <span class="price-flash-negative">$142</span>
+                <span class="ticker-change negative">-2.5%</span>
+            </div>
+            <div class="ticker-item">
+                <span>ADA</span>
+                <span class="price-flash-positive">$0.48</span>
+                <span class="ticker-change positive">+0.5%</span>
+            </div>
+            <div class="ticker-item">
+                <span>XRP</span>
+                <span class="price-flash-negative">$0.52</span>
+                <span class="ticker-change negative">-1.1%</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-lg">
+            <div class="portfolio-value">
+                <span class="text-muted">Portfolio:</span>
+                <span class="value font-mono animated-card" data-count="124832">$124,832</span>
+            </div>
+            <div class="avatar">JC</div>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <!-- KPI Cards Row -->
+        <div class="grid-layout kpi-grid">
+            <div class="card kpi-card primary animated-card">
+                <span class="kpi-label">Portfolio Value</span>
+                <span class="kpi-value font-mono" data-count="124832">$124,832</span>
+                <span class="kpi-sub-value">Current Balance</span>
+            </div>
+            <div class="card kpi-card gain animated-card">
+                <span class="kpi-label">Daily Change</span>
+                <span class="kpi-value kpi-change positive font-mono">+$6,110 <span class="text-md">(+5.2%)</span></span>
+                <span class="kpi-sub-value">Last 24 hours</span>
+            </div>
+            <div class="card kpi-card total animated-card">
+                <span class="kpi-label">Total Return</span>
+                <span class="kpi-value kpi-change positive font-mono">+$34,521 <span class="text-md">(+38.7%)</span></span>
+                <span class="kpi-sub-value">Since inception</span>
+            </div>
+            <div class="card kpi-card total animated-card">
+                <span class="kpi-label">Best Performer</span>
+                <span class="kpi-value font-mono">SOL</span>
+                <span class="kpi-sub-value kpi-change positive">+12.3% (7D)</span>
+            </div>
+        </div>
+
+        <!-- Chart Section -->
+        <div class="card chart-container animated-card">
+            <div class="chart-header">
+                <h2 class="chart-title">Portfolio Performance</h2>
+                <div class="time-toggles">
+                    <button class="time-toggle">1D</button>
+                    <button class="time-toggle">1W</button>
+                    <button class="time-toggle active">1M</button>
+                    <button class="time-toggle">1Y</button>
+                    <button class="time-toggle">ALL</button>
+                </div>
+            </div>
+            <div class="chart-svg-wrapper">
+                <svg class="chart-svg" viewBox="0 0 800 250" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="rgba(var(--accent-primary-rgb), 0.2)" />
+                            <stop offset="100%" stop-color="rgba(var(--accent-primary-rgb), 0)" />
+                        </linearGradient>
+                        <linearGradient id="sparklineGradientPositive" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="rgba(var(--accent-primary-rgb), 0.1)" />
+                            <stop offset="100%" stop-color="rgba(var(--accent-primary-rgb), 0)" />
+                        </linearGradient>
+                        <linearGradient id="sparklineGradientNegative" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="rgba(var(--accent-danger-rgb), 0.1)" />
+                            <stop offset="100%" stop-color="rgba(var(--accent-danger-rgb), 0)" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Grid Lines -->
+                    <line x1="0" y1="50" x2="800" y2="50" class="chart-grid-line" />
+                    <line x1="0" y1="100" x2="800" y2="100" class="chart-grid-line" />
+                    <line x1="0" y1="150" x2="800" y2="150" class="chart-grid-line" />
+                    <line x1="0" y1="200" x2="800" y2="200" class="chart-grid-line" />
+                    
+                    <line x1="100" y1="0" x2="100" y2="250" class="chart-grid-line" opacity="0.3" />
+                    <line x1="200" y1="0" x2="200" y2="250" class="chart-grid-line" opacity="0.3" />
+                    <line x1="300" y1="0" x2="300" y2="250" class="chart-grid-line" opacity="0.3" />
+                    <line x1="400" y1="0" x2="400" y2="250" class="chart-grid-line" opacity="0.3" />
+                    <line x1="500" y1="0" x2="500" y2="250" class="chart-grid-line" opacity="0.3" />
+                    <line x1="600" y1="0" x2="600" y2="250" class="chart-grid-line" opacity="0.3" />
+                    <line x1="700" y1="0" x2="700" y2="250" class="chart-grid-line" opacity="0.3" />
+
+                    <!-- Data Path (hardcoded for demonstration) -->
+                    <path class="chart-path"
+                          d="M0,200 C66,180 133,120 200,100 C266,80 333,70 400,90 C466,110 533,140 600,120 C666,100 733,80 800,60"
+                          fill="none" />
+                    <path class="chart-path"
+                          d="M0,200 C66,180 133,120 200,100 C266,80 333,70 400,90 C466,110 533,140 600,120 C666,100 733,80 800,60 L800,250 L0,250 Z"
+                          stroke="none" />
+
+                    <!-- Y-Axis Labels -->
+                    <text x="-5" y="205" text-anchor="end" class="chart-axis-label">$100k</text>
+                    <text x="-5" y="155" text-anchor="end" class="chart-axis-label">$125k</text>
+                    <text x="-5" y="105" text-anchor="end" class="chart-axis-label">$150k</text>
+                    <text x="-5" y="55" text-anchor="end" class="chart-axis-label">$175k</text>
+                    
+                    <!-- X-Axis Labels -->
+                    <text x="30" y="240" text-anchor="middle" class="chart-axis-label">Jan</text>
+                    <text x="100" y="240" text-anchor="middle" class="chart-axis-label">Feb</text>
+                    <text x="170" y="240" text-anchor="middle" class="chart-axis-label">Mar</text>
+                    <text x="240" y="240" text-anchor="middle" class="chart-axis-label">Apr</text>
+                    <text x="310" y="240" text-anchor="middle" class="chart-axis-label">May</text>
+                    <text x="380" y="240" text-anchor="middle" class="chart-axis-label">Jun</text>
+                    <text x="450" y="240" text-anchor="middle" class="chart-axis-label">Jul</text>
+                    <text x="520" y="240" text-anchor="middle" class="chart-axis-label">Aug</text>
+                    <text x="590" y="240" text-anchor="middle" class="chart-axis-label">Sep</text>
+                    <text x="660" y="240" text-anchor="middle" class="chart-axis-label">Oct</text>
+                    <text x="730" y="240" text-anchor="middle" class="chart-axis-label">Nov</text>
+                    <text x="790" y="240" text-anchor="middle" class="chart-axis-label">Dec</text>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Holdings Table & Watchlist Split -->
+        <div class="split-layout">
+            <!-- Holdings Table -->
+            <div class="card table-container animated-card">
+                <h2 class="table-header">Your Holdings</h2>
+                <table class="holdings-table">
+                    <thead>
+                        <tr>
+                            <th>Asset</th>
+                            <th>Price</th>
+                            <th>Change (24h)</th>
+                            <th>Holdings</th>
+                            <th>Value</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="animated-card" style="animation-delay: 0.25s;">
+                            <td>
+                                <img src="https://cryptologos.cc/logos/bitcoin-btc-logo.svg?v=025" alt="BTC Logo" class="asset-logo">
+                                <span class="asset-symbol">BTC</span>
+                                <span class="asset-name text-muted">Bitcoin</span>
+                            </td>
+                            <td class="price-flash-positive">$67,432</td>
+                            <td class="change positive">+3.1%</td>
+                            <td>0.50</td>
+                            <td>$33,716</td>
+                            <td>
+                                <button class="add-watchlist-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                                    Add
+                                </button>
+                            </td>
+                        </tr>
+                        <tr class="animated-card" style="animation-delay: 0.3s;">
+                            <td>
+                                <img src="https://cryptologos.cc/logos/ethereum-eth-logo.svg?v=025" alt="ETH Logo" class="asset-logo">
+                                <span class="asset-symbol">ETH</span>
+                                <span class="asset-name text-muted">Ethereum</span>
+                            </td>
+                            <td class="price-flash-positive">$3,891</td>
+                            <td class="change positive">+2.5%</td>
+                            <td>8.00</td>
+                            <td>$31,128</td>
+                            <td>
+                                <button class="add-watchlist-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                                    Add
+                                </button>
+                            </td>
+                        </tr>
+                        <tr class="animated-card" style="animation-delay: 0.35s;">
+                            <td>
+                                <img src="https://cryptologos.cc/logos/solana-sol-logo.svg?v=025" alt="SOL Logo" class="asset-logo">
+                                <span class="asset-symbol">SOL</span>
+                                <span class="asset-name text-muted">Solana</span>
+                            </td>
+                            <td class="price-flash-negative">$142</td>
+                            <td class="change negative">-1.8%</td>
+                            <td>150.00</td>
+                            <td>$21,300</td>
+                            <td>
+                                <button class="add-watchlist-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                                    Add
+                                </button>
+                            </td>
+                        </tr>
+                        <tr class="animated-card" style="animation-delay: 0.4s;">
+                            <td>
+                                <img src="https://cryptologos.cc/logos/cardano-ada-logo.svg?v=025" alt="ADA Logo" class="asset-logo">
+                                <span class="asset-symbol">ADA</span>
+                                <span class="asset-name text-muted">Cardano</span>
+                            </td>
+                            <td class="price-flash-positive">$0.48</td>
+                            <td class="change positive">+0.5%</td>
+                            <td>5000.00</td>
+                            <td>$2,400</td>
+                            <td>
+                                <button class="add-watchlist-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                                    Add
+                                </button>
+                            </td>
+                        </tr>
+                        <tr class="animated-card" style="animation-delay: 0.45s;">
+                            <td>
+                                <img src="https://cryptologos.cc/logos/xrp-xrp-logo.svg?v=025" alt="XRP Logo" class="asset-logo">
+                                <span class="asset-symbol">XRP</span>
+                                <span class="asset-name text-muted">XRP</span>
+                            </td>
+                            <td class="price-flash-negative">$0.52</td>
+                            <td class="change negative">-1.1%</td>
+                            <td>10000.00</td>
+                            <td>$5,200</td>
+                            <td>
+                                <button class="add-watchlist-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                                    Add
+                                </button>
+                            </td>
+                        </tr>
+                        <tr class="animated-card" style="animation-delay: 0.5s;">
+                            <td>
+                                <img src="https://cryptologos.cc/logos/polkadot-dot-logo.svg?v=025" alt="DOT Logo" class="asset-logo">
+                                <span class="asset-symbol">DOT</span>
+                                <span class="asset-name text-muted">Polkadot</span>
+                            </td>
+                            <td class="price-flash-positive">$7.20</td>
+                            <td class="change positive">+0.7%</td>
+                            <td>500.00</td>
+                            <td>$3,600</td>
+                            <td>
+                                <button class="add-watchlist-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                                    Add
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Watchlist -->
+            <div class="card watchlist-container animated-card">
+                <h2 class="watchlist-header">Watchlist</h2>
+                <div class="watchlist-items">
+                    <div class="watchlist-item animated-card" style="animation-delay: 0.3s;">
+                        <div class="watchlist-info">
+                            <img src="https://cryptologos.cc/logos/binance-coin-bnb-logo.svg?v=025" alt="BNB Logo" class="asset-logo">
+                            <span class="watchlist-symbol text-md font-semibold">BNB</span>
+                        </div>
+                        <div class="flex items-center gap-sm">
+                            <span class="watchlist-price font-mono price-flash-positive">$590</span>
+                            <span class="watchlist-change positive font-mono">+0.9%</span>
+                            <div class="watchlist-sparkline-wrapper">
+                                <svg class="watchlist-sparkline" viewBox="0 0 80 24" preserveAspectRatio="none">
+                                    <path class="sparkline-path positive" fill="none" stroke-width="1.5" d="M0,18 L10,16 L20,17 L30,15 L40,14 L50,16 L60,15 L70,14 L80,12"/>
+                                    <path class="sparkline-fill positive" d="M0,18 L10,16 L20,17 L30,15 L40,14 L50,16 L60,15 L70,14 L80,12 L80,24 L0,24 Z" stroke="none"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="watchlist-item animated-card" style="animation-delay: 0.35s;">
+                        <div class="watchlist-info">
+                            <img src="https://cryptologos.cc/logos/dogecoin-doge-logo.svg?v=025" alt="DOGE Logo" class="asset-logo">
+                            <span class="watchlist-symbol text-md font-semibold">DOGE</span>
+                        </div>
+                        <div class="flex items-center gap-sm">
+                            <span class="watchlist-price font-mono price-flash-negative">$0.15</span>
+                            <span class="watchlist-change negative font-mono">-1.5%</span>
+                            <div class="watchlist-sparkline-wrapper">
+                                <svg class="watchlist-sparkline" viewBox="0 0 80 24" preserveAspectRatio="none">
+                                    <path class="sparkline-path negative" fill="none" stroke-width="1.5" d="M0,10 L10,12 L20,11 L30,13 L40,14 L50,12 L60,11 L70,10 L80,9"/>
+                                    <path class="sparkline-fill negative" d="M0,10 L10,12 L20,11 L30,13 L40,14 L50,12 L60,11 L70,10 L80,9 L80,24 L0,24 Z" stroke="none"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="watchlist-item animated-card" style="animation-delay: 0.4s;">
+                        <div class="watchlist-info">
+                            <img src="https://cryptologos.cc/logos/litecoin-ltc-logo.svg?v=025" alt="LTC Logo" class="asset-logo">
+                            <span class="watchlist-symbol text-md font-semibold">LTC</span>
+                        </div>
+                        <div class="flex items-center gap-sm">
+                            <span class="watchlist-price font-mono price-flash-positive">$78</span>
+                            <span class="watchlist-change positive font-mono">+0.3%</span>
+                            <div class="watchlist-sparkline-wrapper">
+                                <svg class="watchlist-sparkline" viewBox="0 0 80 24" preserveAspectRatio="none">
+                                    <path class="sparkline-path positive" fill="none" stroke-width="1.5" d="M0,16 L10,15 L20,16 L30,14 L40,13 L50,15 L60,14 L70,13 L80,11"/>
+                                    <path class="sparkline-fill positive" d="M0,16 L10,15 L20,16 L30,14 L40,13 L50,15 L60,14 L70,13 L80,11 L80,24 L0,24 Z" stroke="none"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="watchlist-item animated-card" style="animation-delay: 0.45s;">
+                        <div class="watchlist-info">
+                            <img src="https://cryptologos.cc/logos/chainlink-link-logo.svg?v=025" alt="LINK Logo" class="asset-logo">
+                            <span class="watchlist-symbol text-md font-semibold">LINK</span>
+                        </div>
+                        <div class="flex items-center gap-sm">
+                            <span class="watchlist-price font-mono price-flash-positive">$14.50</span>
+                            <span class="watchlist-change positive font-mono">+2.1%</span>
+                            <div class="watchlist-sparkline-wrapper">
+                                <svg class="watchlist-sparkline" viewBox="0 0 80 24" preserveAspectRatio="none">
+                                    <path class="sparkline-path positive" fill="none" stroke-width="1.5" d="M0,12 L10,10 L20,9 L30,11 L40,13 L50,15 L60,14 L70,16 L80,18"/>
+                                    <path class="sparkline-fill positive" d="M0,12 L10,10 L20,9 L30,11 L40,13 L50,15 L60,14 L70,16 L80,18 L80,24 L0,24 Z" stroke="none"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="watchlist-item animated-card" style="animation-delay: 0.5s;">
+                        <div class="watchlist-info">
+                            <img src="https://cryptologos.cc/logos/uniswap-uni-logo.svg?v=025" alt="UNI Logo" class="asset-logo">
+                            <span class="watchlist-symbol text-md font-semibold">UNI</span>
+                        </div>
+                        <div class="flex items-center gap-sm">
+                            <span class="watchlist-price font-mono price-flash-negative">$10.20</span>
+                            <span class="watchlist-change negative font-mono">-0.7%</span>
+                            <div class="watchlist-sparkline-wrapper">
+                                <svg class="watchlist-sparkline" viewBox="0 0 80 24" preserveAspectRatio="none">
+                                    <path class="sparkline-path negative" fill="none" stroke-width="1.5" d="M0,14 L10,15 L20,13 L30,12 L40,10 L50,11 L60,9 L70,8 L80,7"/>
+                                    <path class="sparkline-fill negative" d="M0,14 L10,15 L20,13 L30,12 L40,10 L50,11 L60,9 L70,8 L80,7 L80,24 L0,24 Z" stroke="none"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- News Feed -->
+        <div class="card news-feed-container animated-card">
+            <h2 class="news-header">Market News</h2>
+            <div class="news-items">
+                <div class="news-item animated-card" style="animation-delay: 0.55s;">
+                    <a href="#">Bitcoin surges past $67,000 as institutional adoption grows</a>
+                    <span class="news-meta">CoinDesk · 2 hours ago</span>
+                </div>
+                <div class="news-item animated-card" style="animation-delay: 0.6s;">
+                    <a href="#">Ethereum's Dencun upgrade sees record low gas fees</a>
+                    <span class="news-meta">Decrypt · 4 hours ago</span>
+                </div>
+                <div class="news-item animated-card" style="animation-delay: 0.65s;">
+                    <a href="#">Solana ecosystem experiences temporary network congestion</a>
+                    <span class="news-meta">The Block · 1 day ago</span>
+                </div>
+                <div class="news-item animated-card" style="animation-delay: 0.7s;">
+                    <a href="#">Cardano founder discusses new scaling solutions at summit</a>
+                    <span class="news-meta">Crypto News · 2 days ago</span>
+                </div>
+                <div class="news-item animated-card" style="animation-delay: 0.75s;">
+                    <a href="#">Major exchange lists new altcoin, sparking rally</a>
+                    <span class="news-meta">Bloomberg · 3 days ago</span>
+                </div>
+            </div>
+
+            <!-- Simulated Loading/Error States -->
+            <!-- <div class="skeleton" style="height: 20px; width: 80%; margin-bottom: 8px;"></div> -->
+            <!-- <div class="skeleton" style="height: 15px; width: 60%;"></div> -->
+            <!-- <div class="error-message">Failed to load news feed. Please try again later.</div> -->
+        </div>
+    </div>
+
+    <script>
+        // KPI Count-Up Animation
+        function countUp(el, target, duration = 1200) {
+            const start = performance.now();
+            const initial = parseFloat(el.textContent.replace(/[^0-9.-]+/g, "")) || 0;
+            const update = (now) => {
+                const p = Math.min((now - start) / duration, 1);
+                const currentValue = initial + p * (target - initial);
+                el.textContent = '$' + Math.floor(currentValue).toLocaleString();
+                if (p < 1) requestAnimationFrame(update);
+            };
+            requestAnimationFrame(update);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('[data-count]').forEach(el => {
+                const target = +el.dataset.count;
+                countUp(el, target);
+            });
+
+            // Simulate price flashing for ticker strip
+            setInterval(() => {
+                document.querySelectorAll('.ticker-strip .ticker-item span:nth-child(2)').forEach(span => {
+                    const isPositive = Math.random() > 0.5;
+                    span.classList.remove('price-flash-positive', 'price-flash-negative');
+                    void span.offsetWidth; // Trigger reflow
+                    span.classList.add(isPositive ? 'price-flash-positive' : 'price-flash-negative');
+                });
+                document.querySelectorAll('.holdings-table tbody tr td:nth-child(2)').forEach(td => {
+                    const isPositive = Math.random() > 0.5;
+                    td.classList.remove('price-flash-positive', 'price-flash-negative');
+                    void td.offsetWidth; // Trigger reflow
+                    td.classList.add(isPositive ? 'price-flash-positive' : 'price-flash-negative');
+                });
+                 document.querySelectorAll('.watchlist-price').forEach(span => {
+                    const isPositive = Math.random() > 0.5;
+                    span.classList.remove('price-flash-positive', 'price-flash-negative');
+                    void span.offsetWidth; // Trigger reflow
+                    span.classList.add(isPositive ? 'price-flash-positive' : 'price-flash-negative');
+                });
+            }, 5000); // Flash every 5 seconds
+
+            // Time toggle active state
+            document.querySelectorAll('.time-toggle').forEach(button => {
+                button.addEventListener('click', () => {
+                    document.querySelectorAll('.time-toggle').forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

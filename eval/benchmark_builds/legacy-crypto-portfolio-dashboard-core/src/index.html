@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Portfolio Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;opacity:0.045;background-image:url('data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'><filter id=\'n\'><feTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/><feColorMatrix type=\'saturate\' values=\'0\'/></filter><rect width=\'200\' height=\'200\' filter=\'url(%23n)\'/></svg>');background-repeat:repeat;mix-blend-mode:overlay"></div>
+
+    <div class="app-container">
+        <header class="topbar">
+            <div class="topbar-left">
+                <div class="logo">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="2" y="2" width="20" height="20" rx="6" fill="var(--accent)"/>
+                        <path d="M8 10L12 14L16 10" stroke="#F1F5F9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span class="logo-text">FinTrack</span>
+                </div>
+                <div class="ticker-strip">
+                    <div class="ticker-item">
+                        <span class="ticker-symbol">BTC</span>
+                        <span class="ticker-price">$67,432.12</span>
+                        <span class="ticker-change green">+1.8% <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg></span>
+                    </div>
+                    <div class="ticker-item">
+                        <span class="ticker-symbol">ETH</span>
+                        <span class="ticker-price">$3,891.45</span>
+                        <span class="ticker-change green">+3.2% <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg></span>
+                    </div>
+                    <div class="ticker-item">
+                        <span class="ticker-symbol">SOL</span>
+                        <span class="ticker-price">$142.78</span>
+                        <span class="ticker-change red">-0.5% <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+                    </div>
+                    <div class="ticker-item">
+                        <span class="ticker-symbol">XRP</span>
+                        <span class="ticker-price">$0.5234</span>
+                        <span class="ticker-change green">+0.2% <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg></span>
+                    </div>
+                    <div class="ticker-item">
+                        <span class="ticker-symbol">ADA</span>
+                        <span class="ticker-price">$0.3987</span>
+                        <span class="ticker-change red">-1.1% <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+                    </div>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <div class="portfolio-value-display">
+                    <span class="value-label">Portfolio</span>
+                    <span class="value-amount" data-count="124832">$124,832</span>
+                </div>
+                <div class="user-avatar">
+                    <img src="https://api.dicebear.com/9.x/initials/svg?seed=JD" alt="User Avatar">
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="kpi-cards-grid">
+                <div class="kpi-card" style="border-top-color: var(--accent);">
+                    <span class="kpi-label">Portfolio Value</span>
+                    <span class="kpi-value" data-count="124832">$124,832.18</span>
+                    <span class="kpi-change green">+5.2% (24h)</span>
+                </div>
+                <div class="kpi-card" style="border-top-color: var(--accent-secondary);">
+                    <span class="kpi-label">Daily Change</span>
+                    <span class="kpi-value green" data-count="6141">+$6,141.67</span>
+                    <span class="kpi-change green">+5.2% today</span>
+                </div>
+                <div class="kpi-card" style="border-top-color: var(--accent);">
+                    <span class="kpi-label">Best Performer</span>
+                    <span class="kpi-value">ETH</span>
+                    <span class="kpi-change green">+12.3%</span>
+                </div>
+                <div class="kpi-card" style="border-top-color: var(--accent-secondary);">
+                    <span class="kpi-label">Total Return</span>
+                    <span class="kpi-value green" data-count="34521">+$34,521.90</span>
+                    <span class="kpi-change green">+38.1% overall</span>
+                </div>
+            </div>
+
+            <div class="chart-section card">
+                <div class="chart-header">
+                    <h2 class="section-title">Portfolio Performance</h2>
+                    <div class="time-range-toggles">
+                        <button class="time-toggle">1D</button>
+                        <button class="time-toggle">1W</button>
+                        <button class="time-toggle active">1M</button>
+                        <button class="time-toggle">1Y</button>
+                        <button class="time-toggle">ALL</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <svg viewBox="0 0 1000 300" preserveAspectRatio="none" class="candlestick-chart">
+                        <defs>
+                            <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="rgba(16, 185, 129, 0.2)"/>
+                                <stop offset="100%" stop-color="rgba(16, 185, 129, 0)"/>
+                            </linearGradient>
+                        </defs>
+
+                        <!-- Y-axis grid lines and labels -->
+                        <line x1="50" y1="250" x2="950" y2="250" stroke="var(--border-color)"/>
+                        <text x="30" y="255" fill="var(--text-muted)" font-size="11">$0</text>
+                        <line x1="50" y1="200" x2="950" y2="200" stroke="var(--border-color)"/>
+                        <text x="30" y="205" fill="var(--text-muted)" font-size="11">$20k</text>
+                        <line x1="50" y1="150" x2="950" y2="150" stroke="var(--border-color)"/>
+                        <text x="30" y="155" fill="var(--text-muted)" font-size="11">$40k</text>
+                        <line x1="50" y1="100" x2="950" y2="100" stroke="var(--border-color)"/>
+                        <text x="30" y="105" fill="var(--text-muted)" font-size="11">$60k</text>
+                        <line x1="50" y1="50" x2="950" y2="50" stroke="var(--border-color)"/>
+                        <text x="30" y="55" fill="var(--text-muted)" font-size="11">$80k</text>
+
+                        <!-- Candlesticks (simplified for illustration) -->
+                        <!-- Green candles -->
+                        <rect x="70" y="180" width="10" height="40" fill="var(--green)" />
+                        <line x1="75" y1="160" x2="75" y2="220" stroke="var(--green)" stroke-width="1" />
+
+                        <rect x="130" y="150" width="10" height="60" fill="var(--green)" />
+                        <line x1="135" y1="140" x2="135" y2="220" stroke="var(--green)" stroke-width="1" />
+
+                        <rect x="190" y="120" width="10" height="70" fill="var(--green)" />
+                        <line x1="195" y1="110" x2="195" y2="200" stroke="var(--green)" stroke-width="1" />
+
+                        <rect x="250" y="100" width="10" height="80" fill="var(--green)" />
+                        <line x1="255" y1="90" x2="255" y2="190" stroke="var(--green)" stroke-width="1" />
+                        
+                        <!-- Red candles -->
+                        <rect x="310" y="130" width="10" height="50" fill="var(--red)" />
+                        <line x1="315" y1="120" x2="315" y2="190" stroke="var(--red)" stroke-width="1" />
+
+                        <rect x="370" y="160" width="10" height="40" fill="var(--red)" />
+                        <line x1="375" y1="150" x2="375" y2="210" stroke="var(--red)" stroke-width="1" />
+
+                        <!-- Green candles -->
+                        <rect x="430" y="140" width="10" height="50" fill="var(--green)" />
+                        <line x1="435" y1="130" x2="435" y2="200" stroke="var(--green)" stroke-width="1" />
+
+                        <rect x="490" y="110" width="10" height="70" fill="var(--green)" />
+                        <line x1="495" y1="100" x2="495" y2="190" stroke="var(--green)" stroke-width="1" />
+
+                        <rect x="550" y="80" width="10" height="80" fill="var(--green)" />
+                        <line x1="555" y1="70" x2="555" y2="170" stroke="var(--green)" stroke-width="1" />
+
+                        <rect x="610" y="60" width="10" height="90" fill="var(--green)" />
+                        <line x1="615" y1="50" x2="615" y2="160" stroke="var(--green)" stroke-width="1" />
+
+                        <!-- Red candles -->
+                        <rect x="670" y="90" width="10" height="70" fill="var(--red)" />
+                        <line x1="675" y1="80" x2="675" y2="180" stroke="var(--red)" stroke-width="1" />
+
+                        <rect x="730" y="120" width="10" height="60" fill="var(--red)" />
+                        <line x1="735" y1="110" x2="735" y2="190" stroke="var(--red)" stroke-width="1" />
+
+                        <!-- Green candles -->
+                        <rect x="790" y="100" width="10" height="80" fill="var(--green)" />
+                        <line x1="795" y1="90" x2="795" y2="190" stroke="var(--green)" stroke-width="1" />
+
+                        <rect x="850" y="70" width="10" height="90" fill="var(--green)" />
+                        <line x1="855" y1="60" x2="855" y2="170" stroke="var(--green)" stroke-width="1" />
+
+                        <rect x="910" y="50" width="10" height="100" fill="var(--green)" />
+                        <line x1="915" y1="40" x2="915" y2="160" stroke="var(--green)" stroke-width="1" />
+
+                        <!-- X-axis labels (simplified) -->
+                        <text x="75" y="270" fill="var(--text-muted)" font-size="11">Jan</text>
+                        <text x="195" y="270" fill="var(--text-muted)" font-size="11">Feb</text>
+                        <text x="315" y="270" fill="var(--text-muted)" font-size="11">Mar</text>
+                        <text x="435" y="270" fill="var(--text-muted)" font-size="11">Apr</text>
+                        <text x="555" y="270" fill="var(--text-muted)" font-size="11">May</text>
+                        <text x="675" y="270" fill="var(--text-muted)" font-size="11">Jun</text>
+                        <text x="795" y="270" fill="var(--text-muted)" font-size="11">Jul</text>
+                        <text x="915" y="270" fill="var(--text-muted)" font-size="11">Aug</text>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="split-section">
+                <div class="asset-table-panel card">
+                    <h2 class="section-title">Your Holdings</h2>
+                    <div class="table-controls">
+                        <input type="text" placeholder="Search assets..." class="search-input">
+                        <button class="filter-button">Filter <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg></button>
+                        <button class="sort-button">Sort <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg></button>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Asset</th>
+                                    <th>Price</th>
+                                    <th>Change (24h)</th>
+                                    <th>Holdings</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="price-flash-green">
+                                    <td><span class="asset-symbol">BTC</span> Bitcoin</td>
+                                    <td>$67,432.12</td>
+                                    <td class="green">+1.8%</td>
+                                    <td>0.5 BTC</td>
+                                    <td>$33,716.06</td>
+                                </tr>
+                                <tr class="price-flash-red">
+                                    <td><span class="asset-symbol">ETH</span> Ethereum</td>
+                                    <td>$3,891.45</td>
+                                    <td class="red">-0.5%</td>
+                                    <td>3.2 ETH</td>
+                                    <td>$12,452.64</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="asset-symbol">ADA</span> Cardano</td>
+                                    <td>$0.3987</td>
+                                    <td class="green">+2.1%</td>
+                                    <td>10,000 ADA</td>
+                                    <td>$3,987.00</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="asset-symbol">XRP</span> Ripple</td>
+                                    <td>$0.5234</td>
+                                    <td class="green">+0.2%</td>
+                                    <td>25,000 XRP</td>
+                                    <td>$13,085.00</td>
+                                </tr>
+                                <tr class="price-flash-green">
+                                    <td><span class="asset-symbol">DOT</span> Polkadot</td>
+                                    <td>$7.12</td>
+                                    <td class="green">+4.3%</td>
+                                    <td>1,500 DOT</td>
+                                    <td>$10,680.00</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="asset-symbol">BNB</span> Binance Coin</td>
+                                    <td>$598.15</td>
+                                    <td class="red">-1.2%</td>
+                                    <td>8.5 BNB</td>
+                                    <td>$5,084.28</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="watchlist-panel card">
+                    <h2 class="section-title">Watchlist</h2>
+                    <div class="watchlist-item">
+                        <div class="watchlist-info">
+                            <span class="watchlist-symbol">SOL</span>
+                            <span class="watchlist-name">Solana</span>
+                        </div>
+                        <div class="watchlist-data">
+                            <span class="watchlist-price">$142.78</span>
+                            <span class="watchlist-change red">-0.5%</span>
+                            <svg class="sparkline" viewBox="0 0 80 24" preserveAspectRatio="none">
+                                <defs>
+                                    <linearGradient id="sparklineRedGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="rgba(239, 68, 68, 0.1)"/>
+                                        <stop offset="100%" stop-color="rgba(239, 68, 68, 0)"/>
+                                    </linearGradient>
+                                </defs>
+                                <polyline fill="url(#sparklineRedGradient)" stroke="var(--red)" stroke-width="1" points="0,18 5,16 10,17 15,15 20,13 25,14 30,12 35,10 40,11 45,9 50,8 55,7 60,9 65,11 70,10 75,12 80,11"/>
+                            </svg>
+                            <button class="watchlist-action-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg></button>
+                        </div>
+                    </div>
+                    <div class="watchlist-item">
+                        <div class="watchlist-info">
+                            <span class="watchlist-symbol">LTC</span>
+                            <span class="watchlist-name">Litecoin</span>
+                        </div>
+                        <div class="watchlist-data">
+                            <span class="watchlist-price">$78.90</span>
+                            <span class="watchlist-change green">+1.2%</span>
+                            <svg class="sparkline" viewBox="0 0 80 24" preserveAspectRatio="none">
+                                <defs>
+                                    <linearGradient id="sparklineGreenGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="rgba(16, 185, 129, 0.1)"/>
+                                        <stop offset="100%" stop-color="rgba(16, 185, 129, 0)"/>
+                                    </linearGradient>
+                                </defs>
+                                <polyline fill="url(#sparklineGreenGradient)" stroke="var(--green)" stroke-width="1" points="0,12 5,13 10,11 15,12 20,10 25,9 30,8 35,6 40,7 45,5 50,4 55,3 60,5 65,7 70,6 75,8 80,7"/>
+                            </svg>
+                            <button class="watchlist-action-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg></button>
+                        </div>
+                    </div>
+                    <div class="watchlist-item">
+                        <div class="watchlist-info">
+                            <span class="watchlist-symbol">DOGE</span>
+                            <span class="watchlist-name">Dogecoin</span>
+                        </div>
+                        <div class="watchlist-data">
+                            <span class="watchlist-price">$0.1534</span>
+                            <span class="watchlist-change green">+0.8%</span>
+                            <svg class="sparkline" viewBox="0 0 80 24" preserveAspectRatio="none">
+                                <polyline fill="url(#sparklineGreenGradient)" stroke="var(--green)" stroke-width="1" points="0,15 5,14 10,16 15,15 20,13 25,12 30,11 35,10 40,9 45,8 50,7 55,6 60,7 65,8 70,7 75,9 80,8"/>
+                            </svg>
+                            <button class="watchlist-action-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg></button>
+                        </div>
+                    </div>
+                    <div class="watchlist-item">
+                        <div class="watchlist-info">
+                            <span class="watchlist-symbol">SHIB</span>
+                            <span class="watchlist-name">Shiba Inu</span>
+                        </div>
+                        <div class="watchlist-data">
+                            <span class="watchlist-price">$0.000028</span>
+                            <span class="watchlist-change red">-0.2%</span>
+                            <svg class="sparkline" viewBox="0 0 80 24" preserveAspectRatio="none">
+                                <polyline fill="url(#sparklineRedGradient)" stroke="var(--red)" stroke-width="1" points="0,10 5,11 10,9 15,10 20,8 25,9 30,7 35,6 40,5 45,7 50,6 55,8 60,7 65,9 70,8 75,10 80,9"/>
+                            </svg>
+                            <button class="watchlist-action-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg></button>
+                        </div>
+                    </div>
+                    <div class="watchlist-item">
+                        <div class="watchlist-info">
+                            <span class="watchlist-symbol">UNI</span>
+                            <span class="watchlist-name">Uniswap</span>
+                        </div>
+                        <div class="watchlist-data">
+                            <span class="watchlist-price">$11.23</span>
+                            <span class="watchlist-change green">+3.5%</span>
+                            <svg class="sparkline" viewBox="0 0 80 24" preserveAspectRatio="none">
+                                <polyline fill="url(#sparklineGreenGradient)" stroke="var(--green)" stroke-width="1" points="0,18 5,19 10,17 15,18 20,16 25,15 30,14 35,12 40,13 45,11 50,10 55,9 60,11 65,13 70,12 75,14 80,13"/>
+                            </svg>
+                            <button class="watchlist-action-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg></button>
+                        </div>
+                    </div>
+                    <div class="watchlist-item">
+                        <div class="watchlist-info">
+                            <span class="watchlist-symbol">LINK</span>
+                            <span class="watchlist-name">Chainlink</span>
+                        </div>
+                        <div class="watchlist-data">
+                            <span class="watchlist-price">$18.50</span>
+                            <span class="watchlist-change green">+2.1%</span>
+                            <svg class="sparkline" viewBox="0 0 80 24" preserveAspectRatio="none">
+                                <polyline fill="url(#sparklineGreenGradient)" stroke="var(--green)" stroke-width="1" points="0,16 5,17 10,15 15,16 20,14 25,13 30,12 35,10 40,11 45,9 50,8 55,7 60,9 65,11 70,10 75,12 80,11"/>
+                            </svg>
+                            <button class="watchlist-action-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="news-feed-section card">
+                <h2 class="section-title">Market News & Activity</h2>
+                <div class="news-item">
+                    <span class="news-source">CoinDesk</span>
+                    <a href="#" class="news-title">Bitcoin Price Surges Past $67,000 Amidst Spot ETF Inflows</a>
+                    <span class="news-time">2 hours ago</span>
+                </div>
+                <div class="news-item">
+                    <span class="news-source">Crypto Daily</span>
+                    <a href="#" class="news-title">Ethereum Prepares for Dencun Upgrade, ETH Price Holds Strong</a>
+                    <span class="news-time">4 hours ago</span>
+                </div>
+                <div class="news-item">
+                    <span class="news-source">Bloomberg</span>
+                    <a href="#" class="news-title">Solana Ecosystem Sees Renewed Interest from Institutional Investors</a>
+                    <span class="news-time">Yesterday</span>
+                </div>
+                <div class="news-item">
+                    <span class="news-source">The Block</span>
+                    <a href="#" class="news-title">Major Exchange Announces New Listings for Altcoins</a>
+                    <span class="news-time">2 days ago</span>
+                </div>
+                <div class="news-item">
+                    <span class="news-source">Crypto Twitter</span>
+                    <a href="#" class="news-title">Whale Alert: Large BTC Transfer Detected on Chain</a>
+                    <span class="news-time">3 days ago</span>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        function countUp(el, target, duration = 1200) {
+            const start = performance.now();
+            const initialText = el.textContent;
+            const isCurrency = initialText.startsWith('$');
+            const isPercentage = initialText.endsWith('%');
+            const isSigned = initialText.startsWith('+') || initialText.startsWith('-');
+
+            const update = (now) => {
+                const p = Math.min((now - start) / duration, 1);
+                let value = p * target;
+
+                let formattedValue;
+                if (isCurrency) {
+                    formattedValue = '$' + Math.floor(value).toLocaleString();
+                } else if (isPercentage) {
+                    formattedValue = (Math.round(value * 10) / 10).toFixed(1) + '%';
+                } else if (isSigned) {
+                    formattedValue = (value > 0 ? '+' : '') + Math.floor(value).toLocaleString();
+                } else {
+                    formattedValue = Math.floor(value).toLocaleString();
+                }
+                el.textContent = formattedValue;
+
+                if (p < 1) requestAnimationFrame(update);
+            };
+            requestAnimationFrame(update);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('[data-count]').forEach(el => {
+                const target = parseFloat(el.dataset.count);
+                if (!isNaN(target)) {
+                    countUp(el, target);
+                }
+            });
+
+            // Simulate price flash effect for table rows
+            setInterval(() => {
+                const rows = document.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    row.classList.remove('price-flash-green', 'price-flash-red');
+                });
+
+                const randomRowIndex = Math.floor(Math.random() * rows.length);
+                const randomRow = rows[randomRowIndex];
+                const isGain = Math.random() > 0.5;
+                if (isGain) {
+                    randomRow.classList.add('price-flash-green');
+                } else {
+                    randomRow.classList.add('price-flash-red');
+                }
+            }, 5000); // Flash every 5 seconds
+
+            // Smooth scroll for nav links (if any were present, not explicitly needed for this layout)
+            document.querySelectorAll('nav a[data-section]').forEach(a => {
+                a.addEventListener('click', e => {
+                    e.preventDefault();
+                    const targetId = a.dataset.section;
+                    const targetElement = document.getElementById(targetId);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

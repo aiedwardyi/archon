@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Street Cult - Premium Streetwear</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Cormorant+Garamond:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body>
+    <div class="noise-overlay"></div>
+
+    <div x-data="appState()" class="app-wrapper">
+        <!-- Announcement Bar -->
+        <div class="announcement-bar">
+            <p>FREE SHIPPING ON ALL ORDERS OVER $150</p>
+        </div>
+
+        <!-- Header -->
+        <header class="main-header">
+            <div class="header-left">
+                <a href="#" class="header-logo">STREET CULT.</a>
+                <nav class="main-nav">
+                    <a href="#" class="nav-link">Home</a>
+                    <a href="#products" class="nav-link">Shop</a>
+                    <a href="#collections" class="nav-link">Collections</a>
+                    <a href="#" class="nav-link">About</a>
+                </nav>
+            </div>
+            <div class="header-right">
+                <button class="icon-button">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </button>
+                <button @click="cartOpen = !cartOpen" class="icon-button cart-button">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                    <span class="cart-badge" x-text="cartItemCount" x-show="cartItemCount > 0"></span>
+                </button>
+            </div>
+        </header>
+
+        <main>
+            <!-- Hero Section -->
+            <section class="hero-section">
+                <div class="hero-content">
+                    <h1 class="hero-title">Redefine Your<br>Urban Style.</h1>
+                    <p class="hero-description">Discover exclusive drops and curated collections that push the boundaries of contemporary streetwear. Elevate your wardrobe.</p>
+                    <div class="hero-actions">
+                        <button class="btn btn-primary">Shop New Arrivals</button>
+                        <button class="btn btn-secondary">View Lookbook</button>
+                    </div>
+                </div>
+                <div class="hero-image-container">
+                    <img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&h=1000&fit=crop&crop=top" alt="Fashion model in urban setting" class="hero-image" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#1a1a1f 0%,#222228 50%,#2a2028 100%)'">
+                </div>
+            </section>
+
+            <!-- Featured Collections Section -->
+            <section id="collections" class="collections-section">
+                <div class="container">
+                    <h2 class="section-title">Curated Collections</h2>
+                    <div class="collections-grid">
+                        <div class="collection-card">
+                            <div class="collection-image-wrapper" style="background:linear-gradient(135deg,#1a1a1f 0%,#222228 50%,#2a2028 100%)">
+                                <img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&h=600&fit=crop&crop=top" alt="Fashion editorial" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#1a1a1f 0%,#222228 50%,#2a2028 100%)'">
+                                <div class="collection-overlay"></div>
+                                <div class="collection-info">
+                                    <h3 class="collection-name">The Essentials</h3>
+                                    <span class="collection-count">12 ITEMS</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="collection-card">
+                            <div class="collection-image-wrapper" style="background:linear-gradient(135deg,#1a1a1f 0%,#222228 50%,#2a2028 100%)">
+                                <img src="https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&h=600&fit=crop&crop=top" alt="Streetwear editorial" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#1a1a1f 0%,#222228 50%,#2a2028 100%)'">
+                                <div class="collection-overlay"></div>
+                                <div class="collection-info">
+                                    <h3 class="collection-name">Urban Explorer</h3>
+                                    <span class="collection-count">18 ITEMS</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="collection-card">
+                            <div class="collection-image-wrapper" style="background:linear-gradient(135deg,#1a1a1f 0%,#222228 50%,#2a2028 100%)">
+                                <img src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&h=600&fit=crop&crop=top" alt="Urban fashion" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#1a1a1f 0%,#222228 50%,#2a2028 100%)'">
+                                <div class="collection-overlay"></div>
+                                <div class="collection-info">
+                                    <h3 class="collection-name">Mono Drop</h3>
+                                    <span class="collection-count">10 ITEMS</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Products Section -->
+            <section id="products" class="products-section">
+                <div class="container">
+                    <h2 class="section-title">Our Latest Drops</h2>
+                    <div class="filter-bar">
+                        <div class="filter-pills">
+                            <button @click="activeCategory = 'all'" :class="{'active': activeCategory === 'all'}" class="filter-pill">All</button>
+                            <button @click="activeCategory = 'tops'" :class="{'active': activeCategory === 'tops'}" class="filter-pill">Tops</button>
+                            <button @click="activeCategory = 'bottoms'" :class="{'active': activeCategory === 'bottoms'}" class="filter-pill">Bottoms</button>
+                            <button @click="activeCategory = 'footwear'" :class="{'active': activeCategory === 'footwear'}" class="filter-pill">Footwear</button>
+                            <button @click="activeCategory = 'outerwear'" :class="{'active': activeCategory === 'outerwear'}" class="filter-pill">Outerwear</button>
+                        </div>
+                        <div class="sort-dropdown-wrapper">
+                            <select x-model="sortOrder" class="sort-dropdown">
+                                <option value="featured">Featured</option>
+                                <option value="price-asc">Price: Low to High</option>
+                                <option value="price-desc">Price: High to Low</option>
+                                <option value="rating-desc">Rating: High to Low</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Loading State (Skeleton) -->
+                    <div x-show="loadingProducts" class="product-grid">
+                        <template x-for="i in 6" :key="i">
+                            <div class="product-card skeleton-card">
+                                <div class="product-image-wrapper skeleton"></div>
+                                <div class="product-info">
+                                    <div class="skeleton-line skeleton" style="width: 70%;"></div>
+                                    <div class="skeleton-line skeleton" style="width: 90%;"></div>
+                                    <div class="skeleton-line skeleton" style="width: 50%;"></div>
+                                    <div class="skeleton-line skeleton" style="width: 60%;"></div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Product Grid -->
+                    <div x-show="!loadingProducts" class="product-grid" x-ref="productGrid">
+                        <template x-for="product in filteredProducts" :key="product.id">
+                            <div class="product-card" @click="openProductDetail(product)">
+                                <div class="product-image-wrapper" style="background:linear-gradient(135deg,#1a1a1f 0%,#222228 50%,#2a2028 100%)">
+                                    <img :src="product.image" :alt="product.name" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#1a1a1f 0%,#222228 50%,#2a2028 100%)'">
+                                </div>
+                                <div class="product-info">
+                                    <span class="product-brand" x-text="product.brand"></span>
+                                    <h3 class="product-name" x-text="product.name"></h3>
+                                    <div class="product-rating">
+                                        <template x-for="i in 5">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" :fill="product.rating >= i ? 'var(--accent-gold)' : 'none'" :stroke="product.rating >= i ? 'var(--accent-gold)' : 'var(--border)'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                        </template>
+                                        <span class="review-count" x-text="`(${product.reviews})`"></span>
+                                    </div>
+                                    <p class="product-price">$<span x-text="product.price.toFixed(2)"></span></p>
+                                    <button class="btn btn-add-to-cart" @click.stop="addToCart(product, product.sizes[0], product.colors[0], 1)">Add to Cart</button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Product Detail Modal -->
+        <div x-show="productDetailOpen" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="product-detail-modal-backdrop" @click.self="closeProductDetail()">
+            <div x-show="productDetailOpen" x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-200 transform" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="product-detail-modal-content">
+                <button @click="closeProductDetail()" class="modal-close-button">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+                <div class="product-detail-grid" x-if="selectedProduct">
+                    <div class="product-detail-images">
+                        <img :src="selectedProduct.image" :alt="selectedProduct.name" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#1a1a1f 0%,#222228 50%,#2a2028 100%)'">
+                        <!-- Additional images could go here -->
+                    </div>
+                    <div class="product-detail-info">
+                        <span class="product-brand" x-text="selectedProduct.brand"></span>
+                        <h2 class="product-name" x-text="selectedProduct.name"></h2>
+                        <p class="product-price">$<span x-text="selectedProduct.price.toFixed(2)"></span></p>
+                        <p class="product-description" x-text="selectedProduct.description"></p>
+
+                        <div class="option-group">
+                            <span class="option-label">Size:</span>
+                            <div class="size-selector">
+                                <template x-for="size in selectedProduct.sizes" :key="size">
+                                    <button @click="selectedSize = size" :class="{'active': selectedSize === size}" class="size-button" x-text="size"></button>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div class="option-group">
+                            <span class="option-label">Color:</span>
+                            <div class="color-selector">
+                                <template x-for="color in selectedProduct.colors" :key="color">
+                                    <button @click="selectedColor = color" :class="{'active': selectedColor === color}" class="color-button" :style="`background-color: ${color.toLowerCase()}; border-color: ${selectedColor === color ? 'var(--accent-gold)' : 'var(--border)'}`"></button>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div class="quantity-selector">
+                            <button @click="quantity = Math.max(1, quantity - 1)" class="qty-button">-</button>
+                            <input type="number" x-model.number="quantity" min="1" class="qty-input">
+                            <button @click="quantity++" class="qty-button">+</button>
+                        </div>
+
+                        <button class="btn btn-primary btn-add-to-cart-modal" @click="addToCart(selectedProduct, selectedSize, selectedColor, quantity)" :disabled="!selectedSize || !selectedColor">
+                            Add to Bag
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cart Drawer -->
+        <div x-show="cartOpen" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="transform translate-x-full" x-transition:enter-end="transform translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="transform translate-x-0" x-transition:leave-end="transform translate-x-full" class="cart-drawer-backdrop" @click.self="cartOpen = false">
+            <div class="cart-drawer-content">
+                <div class="cart-header">
+                    <h3>Your Bag (<span x-text="cartItemCount"></span>)</h3>
+                    <button @click="cartOpen = false" class="modal-close-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+
+                <div class="cart-items-list">
+                    <template x-if="productsInCart.length === 0">
+                        <div class="empty-cart-state">
+                            <p>Your bag is empty. Start shopping!</p>
+                            <button class="btn btn-primary" @click="cartOpen = false">Browse Products</button>
+                        </div>
+                    </template>
+                    <template x-for="item in productsInCart" :key="item.id + item.size + item.color">
+                        <div class="cart-item">
+                            <img :src="item.image" :alt="item.name" class="cart-item-image">
+                            <div class="cart-item-details">
+                                <h4 class="cart-item-name" x-text="item.name"></h4>
+                                <p class="cart-item-meta" x-text="`${item.size} / ${item.color}`"></p>
+                                <p class="cart-item-price">$<span x-text="item.price.toFixed(2)"></span> x <span x-text="item.qty"></span></p>
+                            </div>
+                            <button @click="removeFromCart(item.id, item.size, item.color)" class="remove-item-button">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                            </button>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="cart-summary" x-show="productsInCart.length > 0">
+                    <div class="cart-subtotal">
+                        <span>Subtotal:</span>
+                        <span class="subtotal-amount">$<span x-text="cartTotal"></span></span>
+                    </div>
+                    <button @click="checkout()" class="btn btn-primary btn-checkout">Proceed to Checkout</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div x-show="toastVisible" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-x-full" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 translate-x-full" class="toast-notification">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span x-text="toastMessage"></span>
+        </div>
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <div class="container">
+                <p>&copy; 2023 Street Cult. All rights reserved.</p>
+                <div class="footer-links">
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                    <a href="#">Contact Us</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        function appState() {
+            return {
+                cartOpen: false,
+                productDetailOpen: false,
+                selectedProduct: null,
+                selectedSize: '',
+                selectedColor: '',
+                quantity: 1,
+                toastVisible: false,
+                toastMessage: '',
+                productsInCart: [],
+                activeCategory: 'all',
+                sortOrder: 'featured',
+                loadingProducts: false, // For skeleton loading state demonstration
+                products: [
+                    {
+                        id: 1,
+                        brand: 'Apex Threads',
+                        name: 'Oversized Graphic Tee',
+                        price: 55.00,
+                        rating: 4.8,
+                        reviews: 42,
+                        image: 'https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=600&h=750&fit=crop&crop=top',
+                        description: 'Crafted from premium heavy cotton, this oversized tee features a unique graphic print and a relaxed fit. Perfect for a casual yet stylish look.',
+                        sizes: ['S', 'M', 'L', 'XL'],
+                        colors: ['Black', 'White', 'Grey'],
+                        category: 'tops'
+                    },
+                    {
+                        id: 2,
+                        brand: 'Urban Flux',
+                        name: 'Distressed Denim Jeans',
+                        price: 120.00,
+                        rating: 4.2,
+                        reviews: 31,
+                        image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=600&h=750&fit=crop&crop=top',
+                        description: 'These slim-fit distressed denim jeans offer a modern aesthetic with rugged details. Made from durable stretch denim for comfort and style.',
+                        sizes: ['22', '24', '26', '28', '30', '32', '34', '36'],
+                        colors: ['Blue', 'Black'],
+                        category: 'bottoms'
+                    },
+                    {
+                        id: 3,
+                        brand: 'Street Cult',
+                        name: 'High-Top Sneakers',
+                        price: 180.00,
+                        rating: 4.6,
+                        reviews: 87,
+                        image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600&h=750&fit=crop&crop=top',
+                        description: 'Elevate your stride with these iconic high-top sneakers. Featuring premium leather, a comfortable sole, and an urban-inspired design.',
+                        sizes: ['US 7', 'US 8', 'US 9', 'US 10', 'US 11', 'US 12'],
+                        colors: ['White', 'Black'],
+                        category: 'footwear'
+                    },
+                    {
+                        id: 4,
+                        brand: 'Apex Threads',
+                        name: 'Premium Knit Hoodie',
+                        price: 95.00,
+                        rating: 3.9,
+                        reviews: 19,
+                        image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600&h=750&fit=crop&crop=top',
+                        description: 'Luxuriously soft and comfortable, this knit hoodie is designed for ultimate warmth and style. Features a minimalist design with a relaxed fit.',
+                        sizes: ['S', 'M', 'L', 'XL'],
+                        colors: ['Grey', 'Navy', 'Black'],
+                        category: 'tops'
+                    },
+                    {
+                        id: 5,
+                        brand: 'Urban Flux',
+                        name: 'Utility Cargo Pants',
+                        price: 110.00,
+                        rating: 4.5,
+                        reviews: 56,
+                        image: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600&h=750&fit=crop&crop=top',
+                        description: 'Functional yet fashionable cargo pants crafted from durable ripstop fabric. Multiple pockets and an adjustable waist for a perfect utility look.',
+                        sizes: ['22', '24', '26', '28', '30', '32', '34', '36'],
+                        colors: ['Olive', 'Black', 'Khaki'],
+                        category: 'bottoms'
+                    },
+                    {
+                        id: 6,
+                        brand: 'Street Cult',
+                        name: 'Leather Moto Jacket',
+                        price: 350.00,
+                        rating: 5.0,
+                        reviews: 14,
+                        image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&h=750&fit=crop&crop=top',
+                        description: 'A timeless classic, this genuine leather moto jacket features an asymmetrical zip closure and a sleek, tailored fit. A must-have for any wardrobe.',
+                        sizes: ['S', 'M', 'L', 'XL'],
+                        colors: ['Black'],
+                        category: 'outerwear'
+                    }
+                ],
+
+                init() {
+                    // Simulate loading products for skeleton state demonstration
+                    // this.loadingProducts = true;
+                    // setTimeout(() => { this.loadingProducts = false; }, 1500);
+                    
+                    // Stagger animation for product cards on load
+                    this.$nextTick(() => {
+                        const cards = this.$refs.productGrid.querySelectorAll('.product-card');
+                        cards.forEach((card, index) => {
+                            card.style.animationDelay = `${index * 0.05}s`;
+                            card.classList.add('animate-fadeUp');
+                        });
+                    });
+                },
+
+                get filteredProducts() {
+                    let filtered = this.products;
+                    if (this.activeCategory !== 'all') {
+                        filtered = filtered.filter(p => p.category === this.activeCategory);
+                    }
+
+                    if (this.sortOrder === 'price-asc') {
+                        filtered.sort((a, b) => a.price - b.price);
+                    } else if (this.sortOrder === 'price-desc') {
+                        filtered.sort((a, b) => b.price - a.price);
+                    } else if (this.sortOrder === 'rating-desc') {
+                        filtered.sort((a, b) => b.rating - a.rating);
+                    }
+                    return filtered;
+                },
+
+                openProductDetail(product) {
+                    this.selectedProduct = product;
+                    this.selectedSize = product.sizes[0]; // Pre-select first size
+                    this.selectedColor = product.colors[0]; // Pre-select first color
+                    this.quantity = 1;
+                    this.productDetailOpen = true;
+                    document.body.style.overflow = 'hidden'; // Prevent scrolling body
+                },
+                closeProductDetail() {
+                    this.productDetailOpen = false;
+                    document.body.style.overflow = ''; // Restore scrolling body
+                },
+                addToCart(product, size, color, qty) {
+                    if (!size || !color) {
+                        this.showToast('Please select size and color.');
+                        return;
+                    }
+                    const existingItem = this.productsInCart.find(item => item.id === product.id && item.size === size && item.color === color);
+                    if (existingItem) {
+                        existingItem.qty += qty;
+                    } else {
+                        this.productsInCart.push({ ...product, size, color, qty });
+                    }
+                    this.showToast(`${qty}x ${product.name} added to bag!`);
+                    this.closeProductDetail();
+                },
+                removeFromCart(productId, size, color) {
+                    this.productsInCart = this.productsInCart.filter(item => !(item.id === productId && item.size === size && item.color === color));
+                },
+                get cartTotal() {
+                    return this.productsInCart.reduce((total, item) => total + (item.price * item.qty), 0);
+                },
+                get cartItemCount() {
+                    return this.productsInCart.reduce((total, item) => total + item.qty, 0);
+                },
+                showToast(message) {
+                    this.toastMessage = message;
+                    this.toastVisible = true;
+                    setTimeout(() => this.toastVisible = false, 2500);
+                },
+                checkout() {
+                    if (this.productsInCart.length === 0) {
+                        this.showToast('Your bag is empty!');
+                        return;
+                    }
+                    alert('Proceeding to checkout with total: $' + this.cartTotal.toFixed(2));
+                    this.productsInCart = []; // Clear cart after checkout
+                    this.cartOpen = false;
+                    this.showToast('Checkout successful!');
+                }
+            }
+        }
+    </script>
+</body>
+</html>

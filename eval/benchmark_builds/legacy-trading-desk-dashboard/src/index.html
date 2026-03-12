@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinTrack - Trading Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #0A0E1A;
+            --bg-card: #111827;
+            --bg-surface: #1E2536;
+            --border-color: #2A3348;
+            --accent-primary: #10B981; /* Emerald-500 */
+            --accent-primary-rgb: 16, 185, 129;
+            --accent-danger: #EF4444; /* Red-500 */
+            --accent-warning: #F59E0B; /* Amber-500 */
+            --accent-secondary: #81A6ED; /* Soft Blue */
+            --text-primary: #F1F5F9;
+            --text-muted: #94A3B8;
+            --text-subtle: #6B7280;
+
+            --font-heading: 'Space Grotesk', sans-serif;
+            --font-body: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--bg-base);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-size: 14px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Global Noise Texture */
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.045;
+            background-image: url('data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'><filter id=\'n\'><feTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/><feColorMatrix type=\'saturate\' values=\'0\'/></filter><rect width=\'200\' height=\'200\' filter=\'url(%23n)\'/></svg>');
+            background-repeat: repeat;
+            mix-blend-mode: overlay;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-heading);
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .font-mono {
+            font-family: var(--font-mono);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* CSS Design Seeds */
+        /* GLOW */
+        .glow-effect {
+            box-shadow: 0 0 20px rgba(var(--accent-primary-rgb), 0.3), 0 0 60px rgba(var(--accent-primary-rgb), 0.1);
+        }
+        /* GLASS PANEL */
+        .glass-panel {
+            background: rgba(255,255,255,0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        /* GRADIENT BORDER */
+        .gradient-border {
+            position: relative;
+        }
+        .gradient-border::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+        /* SHIMMER SKELETON */
+        @keyframes shimmer {
+            from { background-position: -200% 0; }
+            to { background-position: 200% 0; }
+        }
+        .skeleton {
+            background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-surface) 50%, var(--bg-card) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 4px;
+            opacity: 0.7;
+        }
+        /* CHART DRAW */
+        @keyframes draw {
+            to { stroke-dashoffset: 0; }
+        }
+        .chart-path {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: draw 1.5s ease forwards;
+        }
+        /* PAGE LOAD STAGGER */
+        @keyframes fadeUp {
+            from { opacity:0; transform:translateY(16px); }
+            to { opacity:1; transform:translateY(0); }
+        }
+        .stagger-item {
+            animation: fadeUp 0.4s ease forwards;
+            opacity:0;
+        }
+
+        /* Price Flash Animation */
+        @keyframes priceUp {
+            0% { background-color: rgba(var(--accent-primary-rgb), 0.2); }
+            100% { background-color: transparent; }
+        }
+        @keyframes priceDown {
+            0% { background-color: rgba(239, 68, 68, 0.2); }
+            100% { background-color: transparent; }
+        }
+        .price-flash-up {
+            animation: priceUp 0.8s ease-out;
+        }
+        .price-flash-down {
+            animation: priceDown 0.8s ease-out;
+        }
+
+        /* Layout */
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            height: 64px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            backdrop-filter: blur(8px);
+        }
+        .topbar-logo {
+            font-family: var(--font-heading);
+            font-weight: 700;
+            font-size: 20px;
+            color: var(--accent-primary);
+            letter-spacing: -0.02em;
+        }
+        .ticker-strip {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            overflow: hidden;
+            flex-grow: 1;
+            justify-content: center;
+        }
+        .ticker-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            color: var(--text-primary);
+            font-size: 13px;
+            font-family: var(--font-mono);
+        }
+        .ticker-item span:first-child {
+            font-weight: 500;
+        }
+        .ticker-change.positive {
+            color: var(--accent-primary);
+        }
+        .ticker-change.negative {
+            color: var(--accent-danger);
+        }
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .portfolio-value {
+            font-family: var(--font-mono);
+            font-weight: 500;
+            font-size: 16px;
+            color: var(--text-primary);
+        }
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--accent-secondary);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .main-content {
+            padding: 24px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            margin-top: 64px; /* Offset for fixed topbar */
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.2s ease-out;
+        }
+        .card:hover {
+            box-shadow: 0 0 0 1px var(--accent-secondary), 0 8px 20px rgba(0,0,0,0.3);
+            transform: translateY(-2px);
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+        }
+        .kpi-card h3 {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .kpi-card .value {
+            font-size: 28px;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+        .kpi-card .change {
+            font-size: 13px;
+            font-family: var(--font-mono);
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .kpi-card .change.positive {
+            color: var(--accent-primary);
+        }
+        .kpi-card .change.negative {
+            color: var(--accent-danger);
+        }
+        .kpi-card .change svg {
+            width: 12px;
+            height: 12px;
+            fill: currentColor;
+        }
+
+        .chart-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr; /* Chart takes 2/3, order panel 1/3 */
+            gap: 24px;
+        }
+        .chart-container {
+            width: 100%;
+            padding-top: calc(100% * 5 / 16); /* 16:5 aspect ratio */
+            position: relative;
+            overflow: hidden;
+        }
+        .chart-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .chart-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .chart-control-btn {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: var(--font-body);
+        }
+        .chart-control-btn:hover {
+            background: rgba(255,255,255,0.08);
+            color: var(--text-primary);
+        }
+        .chart-control-btn.active {
+            background: var(--accent-primary);
+            color: var(--text-primary);
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(var(--accent-primary-rgb), 0.2);
+        }
+
+        .order-panel h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        .order-panel-tabs {
+            display: flex;
+            margin-bottom: 16px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+        }
+        .order-tab-btn {
+            flex: 1;
+            padding: 10px 0;
+            text-align: center;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s ease-out, color 0.2s ease-out;
+            font-family: var(--font-body);
+            color: var(--text-muted);
+        }
+        .order-tab-btn.active.buy {
+            background: var(--accent-primary);
+            color: var(--text-primary);
+        }
+        .order-tab-btn.active.sell {
+            background: var(--accent-danger);
+            color: var(--text-primary);
+        }
+        .order-tab-btn:not(.active):hover {
+            background: rgba(255,255,255,0.05);
+            color: var(--text-primary);
+        }
+        .input-group {
+            margin-bottom: 12px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-subtle);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .input-group input, .input-group select {
+            width: 100%;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        .input-group input:focus, .input-group select:focus {
+            border-color: var(--accent-secondary);
+            box-shadow: 0 0 0 2px rgba(129, 166, 237, 0.2);
+        }
+        .input-group select {
+            padding-right: 30px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg>");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 16px;
+        }
+        .order-btn {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+            font-family: var(--font-heading);
+        }
+        .order-btn.buy {
+            background: var(--accent-primary);
+            box-shadow: 0 4px 15px rgba(var(--accent-primary-rgb), 0.3);
+        }
+        .order-btn.buy:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(var(--accent-primary-rgb), 0.4);
+        }
+        .order-btn.sell {
+            background: var(--accent-danger);
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+        .order-btn.sell:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+        }
+        .order-metrics {
+            margin-top: 20px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+        .order-metric-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        .order-metric-item span:first-child {
+            color: var(--text-subtle);
+        }
+        .order-metric-item span:last-child {
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+        }
+
+        .split-section {
+            display: grid;
+            grid-template-columns: 65% 35%;
+            gap: 24px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            font-family: var(--font-body);
+        }
+        .data-table th {
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.05em;
+            padding: 16px 10px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: left;
+        }
+        .data-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid rgba(var(--border-color), 0.5);
+            color: var(--text-primary);
+        }
+        .data-table tbody tr:hover {
+            background: rgba(255,255,255,0.03);
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        .data-table .asset-name {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        .data-table .sub-text {
+            font-size: 11px;
+            color: var(--text-subtle);
+        }
+        .data-table .price, .data-table .holdings, .data-table .value {
+            font-family: var(--font-mono);
+        }
+        .data-table .change.positive {
+            color: var(--accent-primary);
+        }
+        .data-table .change.negative {
+            color: var(--accent-danger);
+        }
+        .data-table .action-btn {
+            background: rgba(var(--accent-primary-rgb), 0.1);
+            color: var(--accent-primary);
+            border: 1px solid rgba(var(--accent-primary-rgb), 0.3);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: var(--font-body);
+        }
+        .data-table .action-btn:hover {
+            background: rgba(var(--accent-primary-rgb), 0.2);
+            border-color: var(--accent-primary);
+        }
+
+        .watchlist h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        .watchlist-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        .watchlist-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(var(--border-color), 0.5);
+            transition: background 0.2s ease;
+        }
+        .watchlist-item:last-child {
+            border-bottom: none;
+        }
+        .watchlist-item:hover {
+            background: rgba(255,255,255,0.03);
+            cursor: pointer;
+        }
+        .watchlist-item-info {
+            flex-grow: 1;
+        }
+        .watchlist-item-info .symbol {
+            font-family: var(--font-heading);
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        .watchlist-item-info .name {
+            font-size: 11px;
+            color: var(--text-subtle);
+        }
+        .watchlist-item-price {
+            text-align: right;
+            font-family: var(--font-mono);
+        }
+        .watchlist-item-price .current {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        .watchlist-item-price .change.positive {
+            color: var(--accent-primary);
+        }
+        .watchlist-item-price .change.negative {
+            color: var(--accent-danger);
+        }
+        .watchlist-sparkline {
+            width: 80px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .news-feed h3, .recent-trades h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        .news-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(var(--border-color), 0.5);
+        }
+        .news-item:last-child {
+            border-bottom: none;
+        }
+        .news-item-title {
+            font-weight: 500;
+            color: var(--accent-secondary);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+        .news-item-title:hover {
+            text-decoration: underline;
+            color: var(--text-primary);
+        }
+        .news-item-meta {
+            font-size: 11px;
+            color: var(--text-subtle);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .chart-section {
+                grid-template-columns: 1fr;
+            }
+            .split-section {
+                grid-template-columns: 1fr;
+            }
+            .topbar .ticker-strip {
+                display: none; /* Hide ticker strip on smaller screens */
+            }
+            .topbar {
+                justify-content: space-between;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+            .main-content {
+                padding: 16px;
+            }
+            .topbar {
+                padding: 0 16px;
+            }
+            .topbar-right {
+                gap: 12px;
+            }
+            .portfolio-value {
+                font-size: 14px;
+            }
+            .kpi-card .value {
+                font-size: 24px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="noise-overlay"></div>
+
+    <header class="topbar">
+        <div class="topbar-logo">FinTrack</div>
+        <div class="ticker-strip">
+            <div class="ticker-item stagger-item" style="animation-delay:0.05s">
+                <span>AAPL</span>
+                <span class="font-mono">$175.23</span>
+                <span class="ticker-change positive">+0.56%</span>
+            </div>
+            <div class="ticker-item stagger-item" style="animation-delay:0.1s">
+                <span>NVDA</span>
+                <span class="font-mono">$870.12</span>
+                <span class="ticker-change negative">-1.23%</span>
+            </div>
+            <div class="ticker-item stagger-item" style="animation-delay:0.15s">
+                <span>TSLA</span>
+                <span class="font-mono">$178.50</span>
+                <span class="ticker-change positive">+2.10%</span>
+            </div>
+            <div class="ticker-item stagger-item" style="animation-delay:0.2s">
+                <span>MSFT</span>
+                <span class="font-mono">$425.89</span>
+                <span class="ticker-change negative">-0.34%</span>
+            </div>
+            <div class="ticker-item stagger-item" style="animation-delay:0.25s">
+                <span>GOOGL</span>
+                <span class="font-mono">$155.67</span>
+                <span class="ticker-change positive">+0.88%</span>
+            </div>
+            <div class="ticker-item stagger-item" style="animation-delay:0.3s">
+                <span>AMZN</span>
+                <span class="font-mono">$180.45</span>
+                <span class="ticker-change negative">-0.67%</span>
+            </div>
+            <div class="ticker-item stagger-item" style="animation-delay:0.35s">
+                <span>BTC</span>
+                <span class="font-mono">$69,200</span>
+                <span class="ticker-change positive">+1.5%</span>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <div class="portfolio-value font-mono glow-effect" data-count="1234567.89">$0.00</div>
+            <div class="avatar">JC</div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <section class="kpi-grid">
+            <div class="card kpi-card stagger-item" style="animation-delay:0.4s">
+                <h3>Daily Change</h3>
+                <div class="value font-mono" data-count="12345.67">$0.00</div>
+                <div class="change positive">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 4l-8 8h6v8h4v-8h6z"/></svg>
+                    <span class="font-mono">+1.01%</span>
+                </div>
+            </div>
+            <div class="card kpi-card stagger-item" style="animation-delay:0.45s">
+                <h3>Best Performer</h3>
+                <div class="value font-mono">SOL</div>
+                <div class="change positive">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 4l-8 8h6v8h4v-8h6z"/></svg>
+                    <span class="font-mono">+8.23%</span>
+                </div>
+            </div>
+            <div class="card kpi-card stagger-item" style="animation-delay:0.5s">
+                <h3>Total Return</h3>
+                <div class="value font-mono" data-count="234567.89">$0.00</div>
+                <div class="change positive">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 4l-8 8h6v8h4v-8h6z"/></svg>
+                    <span class="font-mono">+23.45%</span>
+                </div>
+            </div>
+            <div class="card kpi-card stagger-item" style="animation-delay:0.55s">
+                <h3>Open Orders</h3>
+                <div class="value font-mono" data-count="7">0</div>
+                <div class="change">
+                    <span class="font-mono text-subtle">Pending</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="chart-section">
+            <div class="card">
+                <div class="chart-controls">
+                    <button class="chart-control-btn active">1D</button>
+                    <button class="chart-control-btn">1W</button>
+                    <button class="chart-control-btn">1M</button>
+                    <button class="chart-control-btn">1Y</button>
+                    <button class="chart-control-btn">ALL</button>
+                </div>
+                <div class="chart-container gradient-border">
+                    <svg class="chart-svg" viewBox="0 0 1000 312.5" preserveAspectRatio="none">
+                        <!-- Chart background grid -->
+                        <g stroke="rgba(48, 54, 61, 0.5)" stroke-width="1px">
+                            <line x1="0" y1="62.5" x2="1000" y2="62.5"/>
+                            <line x1="0" y1="125" x2="1000" y2="125"/>
+                            <line x1="0" y1="187.5" x2="1000" y2="187.5"/>
+                            <line x1="0" y1="250" x2="1000" y2="250"/>
+                            <line x1="125" y1="0" x2="125" y2="312.5"/>
+                            <line x1="250" y1="0" x2="250" y2="312.5"/>
+                            <line x1="375" y1="0" x2="375" y2="312.5"/>
+                            <line x1="500" y1="0" x2="500" y2="312.5"/>
+                            <line x1="625" y1="0" x2="625" y2="312.5"/>
+                            <line x1="750" y1="0" x2="750" y2="312.5"/>
+                            <line x1="875" y1="0" x2="875" y2="312.5"/>
+                        </g>
+                        <!-- Y-axis labels -->
+                        <text x="-5" y="255" text-anchor="end" fill="var(--text-subtle)" font-size="11" class="font-mono">$10K</text>
+                        <text x="-5" y="192.5" text-anchor="end" fill="var(--text-subtle)" font-size="11" class="font-mono">$20K</text>
+                        <text x="-5" y="130" text-anchor="end" fill="var(--text-subtle)" font-size="11" class="font-mono">$30K</text>
+                        <text x="-5" y="67.5" text-anchor="end" fill="var(--text-subtle)" font-size="11" class="font-mono">$40K</text>
+
+                        <!-- Sample Candlestick Data (simplified as rects for visual representation) -->
+                        <g class="chart-candles">
+                            <rect x="0" y="150" width="40" height="50" fill="var(--accent-danger)" rx="2" ry="2" class="stagger-item" style="animation-delay:0.6s"/>
+                            <rect x="50" y="100" width="40" height="70" fill="var(--accent-primary)" rx="2" ry="2" class="stagger-item" style="animation-delay:0.65s"/>
+                            <rect x="100" y="120" width="40" height="60" fill="var(--accent-danger)" rx="2" ry="2" class="stagger-item" style="animation-delay:0.7s"/>
+                            <rect x="150" y="80" width="40" height="80" fill="var(--accent-primary)" rx="2" ry="2" class="stagger-item" style="animation-delay:0.75s"/>
+                            <rect x="200" y="110" width="40" height="50" fill="var(--accent-primary)" rx="2" ry="2" class="stagger-item" style="animation-delay:0.8s"/>
+                            <rect x="250" y="130" width="40" height="40" fill="var(--accent-danger)" rx="2" ry="2" class="stagger-item" style="animation-delay:0.85s"/>
+                            <rect x="300" y="90" width="40" height="70" fill="var(--accent-primary)" rx="2" ry="2" class="stagger-item" style="animation-delay:0.9s"/>
+                            <rect x="350" y="100" width="40" height="60" fill="var(--accent-primary)" rx="2" ry="2" class="stagger-item" style="animation-delay:0.95s"/>
+                            <rect x="400" y="140" width="40" height="50" fill="var(--accent-danger)" rx="2" ry="2" class="stagger-item" style="animation-delay:1.0s"/>
+                            <rect x="450" y="70" width="40" height="90" fill="var(--accent-primary)" rx="2" ry="2" class="stagger-item" style="animation-delay:1.05s"/>
+                            <rect x="500" y="100" width="40" height="60" fill="var(--accent-primary)" rx="2" ry="2" class="stagger-item" style="animation-delay:1.1s"/>
+                            <rect x="550" y="120" width="40" height="50" fill="var(--accent-danger)" rx="2" ry="2" class="stagger-item" style="animation-delay:1.15s"/>
+                            <rect x="600" y="80" width="40" height="80" fill="var(--accent-primary)" rx="2" ry="2" class="stagger-item" style="animation-delay:1.2s"/>
+                            <rect x="650" y="110" width="40" height="70" fill="var(--accent-primary)" rx="2" ry="2" class="stagger-item" style="animation-delay:1.25s"/>
+                            <rect x="700" y="130" width="40" height="40" fill="var(--accent-danger)" rx="2" ry="2" class="stagger-item" style="animation-delay:1.3s"/>
+                            <rect x="750" y="90" width="40" height="70" fill="var(--accent-primary)" rx="2" ry="2" class="stagger-item" style="animation-delay:1.35s"/>
+                        </g>
+                        <!-- Volume Bars (simplified as rects) -->
+                        <g class="chart-volume" transform="translate(0, 260)">
+                            <rect x="0" y="0" width="40" height="30" fill="rgba(239, 68, 68, 0.5)" rx="1" ry="1" class="stagger-item" style="animation-delay:0.6s"/>
+                            <rect x="50" y="0" width="40" height="50" fill="rgba(16, 185, 129, 0.5)" rx="1" ry="1" class="stagger-item" style="animation-delay:0.65s"/>
+                            <rect x="100" y="0" width="40" height="40" fill="rgba(239, 68, 68, 0.5)" rx="1" ry="1" class="stagger-item" style="animation-delay:0.7s"/>
+                            <rect x="150" y="0" width="40" height="60" fill="rgba(16, 185, 129, 0.5)" rx="1" ry="1" class="stagger-item" style="animation-delay:0.75s"/>
+                            <rect x="200" y="0" width="40" height="35" fill="rgba(16, 185, 129, 0.5)" rx="1" ry="1" class="stagger-item" style="animation-delay:0.8s"/>
+                            <rect x="250" y="0" width="40" height="25" fill="rgba(239, 68, 68, 0.5)" rx="1" ry="1" class="stagger-item" style="animation-delay:0.85s"/>
+                            <rect x="300" y="0" width="40" height="45" fill="rgba(16, 185, 129, 0.5)" rx="1" ry="1" class="stagger-item" style="animation-delay:0.9s"/>
+                            <rect x="350" y="0" width="40" height="40" fill="rgba(16, 185, 129, 0.5)" rx="1" ry="1" class="stagger-item" style="animation-delay:0.95s"/>
+                            <rect x="400" y="0" width="40" height="30" fill="rgba(239, 68, 68, 0.5)" rx="1" ry="1" class="stagger-item" style="animation-delay:1.0s"/>
+                            <rect x="450" y="0" width="40" height="55" fill="rgba(16, 185, 129, 0.5)" rx="1" ry="1" class="stagger-item" style="animation-delay:1.05s"/>
+                            <rect x="500" y="0" width="40" height="45" fill="rgba(16, 185, 129, 0.5)" rx="1" ry="1" class="stagger-item" style="animation-delay:1.1s"/>
+                            <rect x="550" y="0" width="40" height="35" fill="rgba(239, 68, 68, 0.5)" rx="1" ry="1" class="stagger-item" style="animation-delay:1.15s"/>
+                            <rect x="600" y="0" width="40" height="50" fill="rgba(16, 185, 129, 0.5)" rx="1" ry="1" class="stagger-item" style="animation-delay:1.2s"/>
+                            <rect x="650" y="0" width="40" height="40" fill="rgba(16, 185, 129, 0.5)" rx="1" ry="1" class="stagger-item" style="animation-delay:1.25s"/>
+                            <rect x="700" y="0" width="40" height="28" fill="rgba(239, 68, 68, 0.5)" rx="1" ry="1" class="stagger-item" style="animation-delay:1.3s"/>
+                            <rect x="750" y="0" width="40" height="48" fill="rgba(16, 185, 129, 0.5)" rx="1" ry="1" class="stagger-item" style="animation-delay:1.35s"/>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+            <div class="card order-panel">
+                <h3>Trade BTC/USD</h3>
+                <div class="order-panel-tabs">
+                    <div class="order-tab-btn active buy" data-type="buy">Buy</div>
+                    <div class="order-tab-btn sell" data-type="sell">Sell</div>
+                </div>
+                <div class="input-group">
+                    <label for="order-type">Order Type</label>
+                    <select id="order-type">
+                        <option value="market">Market</option>
+                        <option value="limit">Limit</option>
+                        <option value="stop-limit">Stop-Limit</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="amount">Amount (BTC)</label>
+                    <input type="number" id="amount" placeholder="0.00000000" step="0.00000001">
+                </div>
+                <div class="input-group">
+                    <label for="price">Price (USD)</label>
+                    <input type="number" id="price" placeholder="69,200.50" step="0.01">
+                </div>
+                <div class="input-group">
+                    <label for="total">Total (USD)</label>
+                    <input type="number" id="total" placeholder="0.00" step="0.01" readonly>
+                </div>
+                <button class="order-btn buy">Buy BTC</button>
+                <div class="order-metrics">
+                    <div class="order-metric-item">
+                        <span>Available Balance</span>
+                        <span class="font-mono">$15,000.00</span>
+                    </div>
+                    <div class="order-metric-item">
+                        <span>Fee (0.1%)</span>
+                        <span class="font-mono">$0.00</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="split-section">
+            <div class="card">
+                <h3>Your Holdings</h3>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Asset</th>
+                                <th>Price</th>
+                                <th>24h Change</th>
+                                <th>Holdings</th>
+                                <th>Value</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="asset-name">BTC</div>
+                                    <div class="sub-text">Bitcoin</div>
+                                </td>
+                                <td class="price font-mono">$69,200.50</td>
+                                <td class="change positive font-mono">+1.50%</td>
+                                <td class="holdings font-mono">0.5</td>
+                                <td class="value font-mono">$34,600.25</td>
+                                <td><button class="action-btn">Trade</button></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="asset-name">ETH</div>
+                                    <div class="sub-text">Ethereum</div>
+                                </td>
+                                <td class="price font-mono">$3,500.20</td>
+                                <td class="change positive font-mono">+2.10%</td>
+                                <td class="holdings font-mono">10.2</td>
+                                <td class="value font-mono">$35,702.04</td>
+                                <td><button class="action-btn">Trade</button></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="asset-name">SOL</div>
+                                    <div class="sub-text">Solana</div>
+                                </td>
+                                <td class="price font-mono">$150.80</td>
+                                <td class="change positive font-mono">+8.23%</td>
+                                <td class="holdings font-mono">50.0</td>
+                                <td class="value font-mono">$7,540.00</td>
+                                <td><button class="action-btn">Trade</button></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="asset-name">ADA</div>
+                                    <div class="sub-text">Cardano</div>
+                                </td>
+                                <td class="price font-mono">$0.45</td>
+                                <td class="change negative font-mono">-0.75%</td>
+                                <td class="holdings font-mono">10,000.0</td>
+                                <td class="value font-mono">$4,500.00</td>
+                                <td><button class="action-btn">Trade</button></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="asset-name">XRP</div>
+                                    <div class="sub-text">Ripple</div>
+                                </td>
+                                <td class="price font-mono">$0.52</td>
+                                <td class="change positive font-mono">+0.30%</td>
+                                <td class="holdings font-mono">20,000.0</td>
+                                <td class="value font-mono">$10,400.00</td>
+                                <td><button class="action-btn">Trade</button></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="asset-name">DOGE</div>
+                                    <div class="sub-text">Dogecoin</div>
+                                </td>
+                                <td class="price font-mono">$0.15</td>
+                                <td class="change positive font-mono">+4.10%</td>
+                                <td class="value font-mono">50,000.0</td>
+                                <td class="value font-mono">$7,500.00</td>
+                                <td><button class="action-btn">Trade</button></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="asset-name">MSFT</div>
+                                    <div class="sub-text">Microsoft Corp.</div>
+                                </td>
+                                <td class="price font-mono">$425.89</td>
+                                <td class="change negative font-mono">-0.34%</td>
+                                <td class="holdings font-mono">15.0</td>
+                                <td class="value font-mono">$6,388.35</td>
+                                <td><button class="action-btn">Trade</button></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="asset-name">AAPL</div>
+                                    <div class="sub-text">Apple Inc.</div>
+                                </td>
+                                <td class="price font-mono">$175.23</td>
+                                <td class="change positive font-mono">+0.56%</td>
+                                <td class="holdings font-mono">30.0</td>
+                                <td class="value font-mono">$5,256.90</td>
+                                <td><button class="action-btn">Trade</button></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="asset-name">NVDA</div>
+                                    <div class="sub-text">NVIDIA Corp.</div>
+                                </td>
+                                <td class="price font-mono">$870.12</td>
+                                <td class="change negative font-mono">-1.23%</td>
+                                <td class="holdings font-mono">5.0</td>
+                                <td class="value font-mono">$4,350.60</td>
+                                <td><button class="action-btn">Trade</button></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="asset-name">TSLA</div>
+                                    <div class="sub-text">Tesla Inc.</div>
+                                </td>
+                                <td class="price font-mono">$178.50</td>
+                                <td class="change positive font-mono">+2.10%</td>
+                                <td class="holdings font-mono">10.0</td>
+                                <td class="value font-mono">$1,785.00</td>
+                                <td><button class="action-btn">Trade</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card watchlist">
+                <h3>Watchlist</h3>
+                <div class="watchlist-list">
+                    <div class="watchlist-item">
+                        <div class="watchlist-item-info">
+                            <div class="symbol">BTC</div>
+                            <div class="name">Bitcoin</div>
+                        </div>
+                        <svg class="watchlist-sparkline" viewBox="0 0 80 24" preserveAspectRatio="none">
+                            <defs>
+                                <linearGradient id="sparklineGradientBTC" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="rgba(var(--accent-primary-rgb), 0.2)" />
+                                    <stop offset="100%" stop-color="transparent" />
+                                </linearGradient>
+                            </defs>
+                            <polyline fill="url(#sparklineGradientBTC)" stroke="var(--accent-primary)" stroke-width="1" points="0,18 10,15 20,16 30,12 40,10 50,8 60,7 70,5 80,3" class="chart-path"/>
+                        </svg>
+                        <div class="watchlist-item-price">
+                            <div class="current font-mono">$69,200.50</div>
+                            <div class="change positive font-mono">+1.50%</div>
+                        </div>
+                    </div>
+                    <div class="watchlist-item">
+                        <div class="watchlist-item-info">
+                            <div class="symbol">ETH</div>
+                            <div class="name">Ethereum</div>
+                        </div>
+                        <svg class="watchlist-sparkline" viewBox="0 0 80 24" preserveAspectRatio="none">
+                            <defs>
+                                <linearGradient id="sparklineGradientETH" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="rgba(var(--accent-primary-rgb), 0.2)" />
+                                    <stop offset="100%" stop-color="transparent" />
+                                </linearGradient>
+                            </defs>
+                            <polyline fill="url(#sparklineGradientETH)" stroke="var(--accent-primary)" stroke-width="1" points="0,20 10,18 20,16 30,14 40,12 50,10 60,8 70,6 80,4" class="chart-path"/>
+                        </svg>
+                        <div class="watchlist-item-price">
+                            <div class="current font-mono">$3,500.20</div>
+                            <div class="change positive font-mono">+2.10%</div>
+                        </div>
+                    </div>
+                    <div class="watchlist-item">
+                        <div class="watchlist-item-info">
+                            <div class="symbol">SOL</div>
+                            <div class="name">Solana</div>
+                        </div>
+                        <svg class="watchlist-sparkline" viewBox="0 0 80 24" preserveAspectRatio="none">
+                            <defs>
+                                <linearGradient id="sparklineGradientSOL" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="rgba(var(--accent-primary-rgb), 0.2)" />
+                                    <stop offset="100%" stop-color="transparent" />
+                                </linearGradient>
+                            </defs>
+                            <polyline fill="url(#sparklineGradientSOL)" stroke="var(--accent-primary)" stroke-width="1" points="0,22 10,19 20,16 30,13 40,10 50,7 60,4 70,1 80,0" class="chart-path"/>
+                        </svg>
+                        <div class="watchlist-item-price">
+                            <div class="current font-mono">$150.80</div>
+                            <div class="change positive font-mono">+8.23%</div>
+                        </div>
+                    </div>
+                    <div class="watchlist-item">
+                        <div class="watchlist-item-info">
+                            <div class="symbol">ADA</div>
+                            <div class="name">Cardano</div>
+                        </div>
+                        <svg class="watchlist-sparkline" viewBox="0 0 80 24" preserveAspectRatio="none">
+                            <defs>
+                                <linearGradient id="sparklineGradientADA" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="rgba(239, 68, 68, 0.2)" />
+                                    <stop offset="100%" stop-color="transparent" />
+                                </linearGradient>
+                            </defs>
+                            <polyline fill="url(#sparklineGradientADA)" stroke="var(--accent-danger)" stroke-width="1" points="0,5 10,8 20,7 30,9 40,10 50,12 60,11 70,13 80,15" class="chart-path"/>
+                        </svg>
+                        <div class="watchlist-item-price">
+                            <div class="current font-mono">$0.45</div>
+                            <div class="change negative font-mono">-0.75%</div>
+                        </div>
+                    </div>
+                    <div class="watchlist-item">
+                        <div class="watchlist-item-info">
+                            <div class="symbol">XRP</div>
+                            <div class="name">Ripple</div>
+                        </div>
+                        <svg class="watchlist-sparkline" viewBox="0 0 80 24" preserveAspectRatio="none">
+                            <defs>
+                                <linearGradient id="sparklineGradientXRP" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="rgba(var(--accent-primary-rgb), 0.2)" />
+                                    <stop offset="100%" stop-color="transparent" />
+                                </linearGradient>
+                            </defs>
+                            <polyline fill="url(#sparklineGradientXRP)" stroke="var(--accent-primary)" stroke-width="1" points="0,10 10,11 20,9 30,12 40,13 50,11 60,14 70,15 80,16" class="chart-path"/>
+                        </svg>
+                        <div class="watchlist-item-price">
+                            <div class="current font-mono">$0.52</div>
+                            <div class="change positive font-mono">+0.30%</div>
+                        </div>
+                    </div>
+                    <div class="watchlist-item">
+                        <div class="watchlist-item-info">
+                            <div class="symbol">DOGE</div>
+                            <div class="name">Dogecoin</div>
+                        </div>
+                        <svg class="watchlist-sparkline" viewBox="0 0 80 24" preserveAspectRatio="none">
+                            <defs>
+                                <linearGradient id="sparklineGradientDOGE" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="rgba(var(--accent-primary-rgb), 0.2)" />
+                                    <stop offset="100%" stop-color="transparent" />
+                                </linearGradient>
+                            </defs>
+                            <polyline fill="url(#sparklineGradientDOGE)" stroke="var(--accent-primary)" stroke-width="1" points="0,15 10,13 20,16 30,14 40,17 50,16 60,19 70,18 80,21" class="chart-path"/>
+                        </svg>
+                        <div class="watchlist-item-price">
+                            <div class="current font-mono">$0.15</div>
+                            <div class="change positive font-mono">+4.10%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card recent-trades">
+            <h3>Recent Trades</h3>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Asset</th>
+                            <th>Type</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="font-mono">10:30 AM</td>
+                            <td>BTC</td>
+                            <td><span style="color:var(--accent-primary)">Buy</span></td>
+                            <td class="font-mono">0.1</td>
+                            <td class="font-mono">$69,000</td>
+                            <td>Completed</td>
+                        </tr>
+                        <tr>
+                            <td class="font-mono">10:25 AM</td>
+                            <td>ETH</td>
+                            <td><span style="color:var(--accent-danger)">Sell</span></td>
+                            <td class="font-mono">0.5</td>
+                            <td class="font-mono">$3,450</td>
+                            <td>Completed</td>
+                        </tr>
+                        <tr>
+                            <td class="font-mono">10:15 AM</td>
+                            <td>SOL</td>
+                            <td><span style="color:var(--accent-primary)">Buy</span></td>
+                            <td class="font-mono">10.0</td>
+                            <td class="font-mono">$145</td>
+                            <td>Completed</td>
+                        </tr>
+                        <tr>
+                            <td class="font-mono">09:45 AM</td>
+                            <td>AAPL</td>
+                            <td><span style="color:var(--accent-primary)">Buy</span></td>
+                            <td class="font-mono">5.0</td>
+                            <td class="font-mono">$174.50</td>
+                            <td>Completed</td>
+                        </tr>
+                        <tr>
+                            <td class="font-mono">09:30 AM</td>
+                            <td>NVDA</td>
+                            <td><span style="color:var(--accent-danger)">Sell</span></td>
+                            <td class="font-mono">2.0</td>
+                            <td class="font-mono">$880.00</td>
+                            <td>Completed</td>
+                        </tr>
+                        <tr>
+                            <td class="font-mono">09:10 AM</td>
+                            <td>BTC</td>
+                            <td><span style="color:var(--accent-primary)">Buy</span></td>
+                            <td class="font-mono">0.05</td>
+                            <td class="font-mono">$68,800</td>
+                            <td>Completed</td>
+                        </tr>
+                        <tr>
+                            <td class="font-mono">08:55 AM</td>
+                            <td>XRP</td>
+                            <td><span style="color:var(--accent-primary)">Buy</span></td>
+                            <td class="font-mono">1000.0</td>
+                            <td class="font-mono">$0.51</td>
+                            <td>Completed</td>
+                        </tr>
+                        <tr>
+                            <td class="font-mono">08:30 AM</td>
+                            <td>DOGE</td>
+                            <td><span style="color:var(--accent-primary)">Buy</span></td>
+                            <td class="font-mono">5000.0</td>
+                            <td class="font-mono">$0.14</td>
+                            <td>Completed</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="card news-feed">
+            <h3>Market News</h3>
+            <div class="news-list">
+                <a href="#" class="news-item">
+                    <div class="news-item-title">Bitcoin hits new all-time high amidst institutional adoption</div>
+                    <div class="news-item-meta">CoinDesk &bull; 5 min ago</div>
+                </a>
+                <a href="#" class="news-item">
+                    <div class="news-item-title">Ethereum 2.0 upgrade expected to boost network scalability</div>
+                    <div class="news-item-meta">The Block &bull; 15 min ago</div>
+                </a>
+                <a href="#" class="news-item">
+                    <div class="news-item-title">Apple's Q3 earnings beat expectations, stock rallies</div>
+                    <div class="news-item-meta">Bloomberg &bull; 30 min ago</div>
+                </a>
+                <a href="#" class="news-item">
+                    <div class="news-item-title">Solana ecosystem sees rapid growth with new DeFi protocols</div>
+                    <div class="news-item-meta">CryptoNews &bull; 1 hour ago</div>
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // KPI Count-Up function
+        function countUp(el, target, duration = 1200) {
+            const start = performance.now();
+            const isCurrency = el.textContent.includes('$');
+            const isPercentage = el.textContent.includes('%');
+            const update = (now) => {
+                const progress = Math.min((now - start) / duration, 1);
+                let value = progress * target;
+                if (isCurrency) {
+                    el.textContent = '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                } else if (isPercentage) {
+                    el.textContent = value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+                } else {
+                    el.textContent = Math.floor(value).toLocaleString();
+                }
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                }
+            };
+            requestAnimationFrame(update);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Apply count-up animation to KPIs
+            document.querySelectorAll('[data-count]').forEach(el => {
+                const target = parseFloat(el.dataset.count);
+                countUp(el, target);
+            });
+
+            // Order Panel Buy/Sell Toggle
+            const orderPanel = document.querySelector('.order-panel');
+            const buyBtn = orderPanel.querySelector('.order-tab-btn.buy');
+            const sellBtn = orderPanel.querySelector('.order-tab-btn.sell');
+            const orderBtn = orderPanel.querySelector('.order-btn');
+
+            buyBtn.addEventListener('click', () => {
+                buyBtn.classList.add('active');
+                sellBtn.classList.remove('active');
+                orderBtn.classList.add('buy');
+                orderBtn.classList.remove('sell');
+                orderBtn.textContent = 'Buy BTC';
+            });
+
+            sellBtn.addEventListener('click', () => {
+                sellBtn.classList.add('active');
+                buyBtn.classList.remove('active');
+                orderBtn.classList.add('sell');
+                orderBtn.classList.remove('buy');
+                orderBtn.textContent = 'Sell BTC';
+            });
+
+            // Price Flash Simulation (for ticker strip and watchlist)
+            function simulatePriceFlash() {
+                const tickerItems = document.querySelectorAll('.ticker-item');
+                const watchlistItems = document.querySelectorAll('.watchlist-item');
+
+                [...tickerItems, ...watchlistItems].forEach(item => {
+                    const changeElement = item.querySelector('.ticker-change') || item.querySelector('.watchlist-item-price .change');
+                    if (changeElement) {
+                        const isPositive = changeElement.classList.contains('positive');
+                        const flashClass = isPositive ? 'price-flash-up' : 'price-flash-down';
+                        item.classList.add(flashClass);
+                        setTimeout(() => {
+                            item.classList.remove(flashClass);
+                        }, 800);
+                    }
+                });
+            }
+            setInterval(simulatePriceFlash, 5000); // Flash every 5 seconds
+
+            // Remove skeleton class after initial load animation
+            setTimeout(() => {
+                document.querySelectorAll('.stagger-item').forEach(el => {
+                    el.style.opacity = '1'; // Ensure final state is visible
+                });
+            }, 1500); // Match or exceed max animation-delay
+        });
+    </script>
+</body>
+</html>

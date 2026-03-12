@@ -136,6 +136,383 @@
       "discovery_ingest": false
     },
     {
+      "project_id": 12,
+      "version": 1,
+      "published_slug": "simple-python-v1-sc1q",
+      "archetype": "form",
+      "benchmark_path": "eval/benchmark_builds/legacy-pyrunner-python-configurator",
+      "priority": 91,
+      "label": "legacy-pyrunner-python-configurator",
+      "prompt_summary": "create me a simple python app",
+      "prompt_hints": [
+        "simple python app",
+        "python configurator",
+        "step form",
+        "wizard ui"
+      ],
+      "notes": "Strong form-flow reference. Key traits: polished multi-step wizard structure, premium dark utility styling, clear progress states, and notably solid animation and interaction handling for a lightweight app prompt.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 15,
+      "version": 1,
+      "published_slug": "ff7-v1-yxni",
+      "archetype": "game",
+      "benchmark_path": "eval/benchmark_builds/legacy-zell-dincht-fan-page",
+      "priority": 84,
+      "label": "legacy-zell-dincht-fan-page",
+      "prompt_summary": "create me a final fantasy 8 fan page with the character zell. make him look exactly the same",
+      "prompt_hints": [
+        "final fantasy 8 fan page",
+        "zell dincht",
+        "ff8 fan page"
+      ],
+      "notes": "Useful lower-priority FF8 fan-page reference. Key traits: strong section structure, energetic orange-blue accent system, polished stat rhythm, and a layout that could also inspire character-led portfolio treatments, but it is held back by weaker photo coverage.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 154,
+      "version": 1,
+      "archetype": "portfolio",
+      "benchmark_path": "eval/benchmark_builds/legacy-sterling-icon-grid-portfolio",
+      "priority": 58,
+      "label": "legacy-sterling-icon-grid-portfolio",
+      "prompt_summary": "Build a creative developer portfolio with project showcase, skills section, and contact form",
+      "prompt_hints": [
+        "creative developer portfolio",
+        "developer portfolio",
+        "icon grid portfolio"
+      ],
+      "notes": "Lower-priority portfolio reference. Worth keeping mainly for its icon treatment, terminal-like accent details, and clean grid framing rather than for overall benchmark strength.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 158,
+      "version": 1,
+      "archetype": "ecommerce",
+      "benchmark_path": "eval/benchmark_builds/legacy-apex-threads-editorial-store",
+      "priority": 83,
+      "label": "legacy-apex-threads-editorial-store",
+      "prompt_summary": "Build a premium streetwear store with product grid, cart drawer, and featured collection",
+      "prompt_hints": [
+        "premium streetwear store",
+        "streetwear ecommerce",
+        "cart drawer",
+        "featured collection"
+      ],
+      "notes": "Strong secondary ecommerce reference. Key traits: more thorough section coverage, richer product imagery, polished cart-drawer behavior, and an editorial luxury-streetwear presentation that is more complete than the lighter ecommerce variants.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 159,
+      "version": 1,
+      "archetype": "portfolio",
+      "benchmark_path": "eval/benchmark_builds/legacy-john-doe-grid-portfolio",
+      "priority": 67,
+      "label": "legacy-john-doe-grid-portfolio",
+      "prompt_summary": "Build a creative developer portfolio with project showcase, skills section, and contact form",
+      "prompt_hints": [
+        "full-stack developer portfolio",
+        "creative developer portfolio",
+        "grid portfolio"
+      ],
+      "notes": "Okay portfolio reference. Key traits: solid hero framing, dependable section layout, and clean typography rhythm, but broken project imagery keeps it below the stronger portfolio examples.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 171,
+      "version": 1,
+      "archetype": "game",
+      "benchmark_path": "eval/benchmark_builds/legacy-ff8-seed-operatives-fan-page",
+      "priority": 81,
+      "label": "legacy-ff8-seed-operatives-fan-page",
+      "prompt_summary": "Build a Final Fantasy VIII fan page with character profiles for Squall, Rinoa, and Zell, weapons gallery, and world map",
+      "prompt_hints": [
+        "final fantasy viii fan page",
+        "squall rinoa zell",
+        "ff8 world map"
+      ],
+      "notes": "Useful lower-priority FF8 reference. Key traits: strong cyan accent system, memorable header typography, and attractive card framing throughout, but image failures and some card text alignment issues keep it below the premium fan-page benchmarks.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 173,
+      "version": 1,
+      "archetype": "ecommerce",
+      "benchmark_path": "eval/benchmark_builds/legacy-apex-threads-core-storefront",
+      "priority": 74,
+      "label": "legacy-apex-threads-core-storefront",
+      "prompt_summary": "Build a premium streetwear store with product grid, cart drawer, and featured collection",
+      "prompt_hints": [
+        "premium streetwear store",
+        "streetwear storefront",
+        "cart drawer"
+      ],
+      "notes": "Decent ecommerce reference. Key traits: clean storefront structure, luxury-dark palette, and functional cart/filter interactions, but it is less thorough than the stronger Apex Threads variation.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 174,
+      "version": 1,
+      "archetype": "portfolio",
+      "benchmark_path": "eval/benchmark_builds/legacy-alex-mercer-code-portfolio",
+      "priority": 70,
+      "label": "legacy-alex-mercer-code-portfolio",
+      "prompt_summary": "Build a creative developer portfolio with project showcase, skills section, and contact form",
+      "prompt_hints": [
+        "alex mercer portfolio",
+        "creative developer portfolio",
+        "code portfolio"
+      ],
+      "notes": "Decent portfolio reference. Key traits: nice green-accent code aesthetic, strong structure, and appealing font direction, but broken text and card imagery keep it as a secondary benchmark only.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 176,
+      "version": 1,
+      "archetype": "editor",
+      "benchmark_path": "eval/benchmark_builds/legacy-designai-startup-builder",
+      "priority": 99,
+      "label": "legacy-designai-startup-builder",
+      "prompt_summary": "Build an AI web design assistant for startup founders using IBM Watson Discovery and OpenAI tools with analytics dashboard and onboarding flow",
+      "prompt_hints": [
+        "ai web design assistant",
+        "startup builder",
+        "app builder",
+        "onboarding flow",
+        "analytics dashboard"
+      ],
+      "notes": "Top-tier editor/app-builder reference. Key traits: highly polished workspace framing, strong productized tool feel, layered control surfaces, and standout interaction density that makes the experience feel substantially more premium than a generic dashboard or form flow.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 182,
+      "version": 1,
+      "archetype": "game",
+      "benchmark_path": "eval/benchmark_builds/legacy-return-to-midgar-archive",
+      "priority": 92,
+      "label": "legacy-return-to-midgar-archive",
+      "prompt_summary": "Create a premium Final Fantasy VII fan archive with hero art, character spotlights, weapons, and an atmospheric Midgar world map.",
+      "prompt_hints": [
+        "premium final fantasy vii fan archive",
+        "midgar world map",
+        "avalanche archive",
+        "ff7 archive"
+      ],
+      "notes": "Strong secondary FF7 archive reference. Key traits: polished card system, cohesive purple-accent mood, strong section structure, and an overall premium fan-archive feel, but it lacks the richer image coverage of the top FF references.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 48,
+      "version": 1,
+      "archetype": "ecommerce",
+      "benchmark_path": "eval/benchmark_builds/legacy-editorial-streetwear-store",
+      "priority": 68,
+      "label": "legacy-editorial-streetwear-store",
+      "prompt_summary": "Build a premium streetwear store with product grid, cart drawer, and featured collection",
+      "prompt_hints": [
+        "premium streetwear store",
+        "streetwear ecommerce",
+        "editorial store"
+      ],
+      "notes": "Decent baseline ecommerce reference. Key traits: clean premium-streetwear structure, readable merchandising flow, and a competent dark editorial treatment.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 49,
+      "version": 1,
+      "archetype": "ecommerce",
+      "benchmark_path": "eval/benchmark_builds/legacy-refined-streetwear-store",
+      "priority": 70,
+      "label": "legacy-refined-streetwear-store",
+      "prompt_summary": "Build a premium streetwear store with product grid, cart drawer, and featured collection",
+      "prompt_hints": [
+        "premium streetwear store",
+        "streetwear ecommerce",
+        "refined storefront"
+      ],
+      "notes": "Solid secondary ecommerce reference. Key traits: familiar luxury-dark storefront structure with slightly more refined section rhythm than the lighter streetwear variants.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 51,
+      "version": 1,
+      "archetype": "portfolio",
+      "benchmark_path": "eval/benchmark_builds/legacy-counter-motion-portfolio",
+      "priority": 79,
+      "label": "legacy-counter-motion-portfolio",
+      "prompt_summary": "Build a creative developer portfolio with project showcase, skills section, and contact form",
+      "prompt_hints": [
+        "creative developer portfolio",
+        "developer portfolio",
+        "animated counters"
+      ],
+      "notes": "Strong secondary portfolio reference. Key traits: polished counter animations, dependable structure, and better motion-driven personality than many of the more generic portfolio variants.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 63,
+      "version": 1,
+      "archetype": "dashboard",
+      "benchmark_path": "eval/benchmark_builds/legacy-trading-desk-dashboard",
+      "priority": 96,
+      "label": "legacy-trading-desk-dashboard",
+      "prompt_summary": "Build a stock trading dashboard with candlestick chart, watchlist, and portfolio breakdown",
+      "prompt_hints": [
+        "stock trading dashboard",
+        "candlestick chart",
+        "watchlist",
+        "portfolio breakdown"
+      ],
+      "notes": "Top-tier dashboard reference. Key traits: standout trading-desk layout, strong chart-first framing, premium information density, and the cleanest overall dashboard execution in this review batch.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 78,
+      "version": 1,
+      "archetype": "ecommerce",
+      "benchmark_path": "eval/benchmark_builds/legacy-complete-luxe-streetwear-store",
+      "priority": 81,
+      "label": "legacy-complete-luxe-streetwear-store",
+      "prompt_summary": "Build a premium streetwear store with product grid, cart drawer, and featured collection",
+      "prompt_hints": [
+        "premium streetwear store",
+        "streetwear ecommerce",
+        "complete product imagery"
+      ],
+      "notes": "Strong secondary ecommerce reference. Key traits: complete product imagery, dependable section coverage, and a good standard premium-store presentation without obvious broken assets.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 99,
+      "version": 1,
+      "archetype": "portfolio",
+      "benchmark_path": "eval/benchmark_builds/legacy-readable-creative-portfolio",
+      "priority": 80,
+      "label": "legacy-readable-creative-portfolio",
+      "prompt_summary": "Build a creative developer portfolio with project showcase, skills section, and contact form",
+      "prompt_hints": [
+        "creative developer portfolio",
+        "readable portfolio",
+        "clean portfolio typography"
+      ],
+      "notes": "Strong secondary portfolio reference. Key traits: especially readable typography, clean visual hierarchy, and a broader appeal than the more stylized portfolio variants.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 107,
+      "version": 1,
+      "archetype": "ecommerce",
+      "benchmark_path": "eval/benchmark_builds/legacy-structured-streetwear-store",
+      "priority": 84,
+      "label": "legacy-structured-streetwear-store",
+      "prompt_summary": "Build a premium streetwear store with product grid, cart drawer, and featured collection",
+      "prompt_hints": [
+        "premium streetwear store",
+        "streetwear ecommerce",
+        "structured storefront"
+      ],
+      "notes": "Strong ecommerce reference. Key traits: better overall structure than the neighboring streetwear variants, solid section sequencing, and a polished standard-store foundation.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 108,
+      "version": 1,
+      "archetype": "ecommerce",
+      "benchmark_path": "eval/benchmark_builds/legacy-alt-structured-streetwear-store",
+      "priority": 76,
+      "label": "legacy-alt-structured-streetwear-store",
+      "prompt_summary": "Build a premium streetwear store with product grid, cart drawer, and featured collection",
+      "prompt_hints": [
+        "premium streetwear store",
+        "streetwear ecommerce",
+        "alt storefront"
+      ],
+      "notes": "Decent secondary ecommerce reference. Key traits: good merchandising structure and a cleaner build than several older streetwear variants, but still weaker than the best ecommerce picks in this batch.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 109,
+      "version": 1,
+      "archetype": "portfolio",
+      "benchmark_path": "eval/benchmark_builds/legacy-glow-card-portfolio-v1",
+      "priority": 77,
+      "label": "legacy-glow-card-portfolio-v1",
+      "prompt_summary": "Build a creative developer portfolio with project showcase, skills section, and contact form",
+      "prompt_hints": [
+        "creative developer portfolio",
+        "glow card portfolio",
+        "portfolio cards"
+      ],
+      "notes": "Solid secondary portfolio reference. Key traits: attractive glow treatment, good card animation feel, and a polished standard portfolio layout.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 111,
+      "version": 1,
+      "archetype": "portfolio",
+      "benchmark_path": "eval/benchmark_builds/legacy-glow-card-portfolio-v2",
+      "priority": 82,
+      "label": "legacy-glow-card-portfolio-v2",
+      "prompt_summary": "Build a creative developer portfolio with project showcase, skills section, and contact form",
+      "prompt_hints": [
+        "creative developer portfolio",
+        "glow card portfolio",
+        "card animation portfolio"
+      ],
+      "notes": "Strong secondary portfolio reference. Key traits: especially nice glow and card animation effects, strong visual personality, and a more memorable portfolio presentation than most of the standard variants.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 133,
+      "version": 1,
+      "archetype": "dashboard",
+      "benchmark_path": "eval/benchmark_builds/legacy-crypto-portfolio-dashboard-core",
+      "priority": 86,
+      "label": "legacy-crypto-portfolio-dashboard-core",
+      "prompt_summary": "Build a crypto portfolio tracker with real-time prices, holdings table, and activity feed",
+      "prompt_hints": [
+        "crypto portfolio tracker",
+        "holdings table",
+        "activity feed",
+        "crypto dashboard"
+      ],
+      "notes": "Strong secondary dashboard reference. Key traits: solid portfolio-tracker framing, dependable panel hierarchy, and a good crypto-dashboard baseline.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 140,
+      "version": 1,
+      "archetype": "dashboard",
+      "benchmark_path": "eval/benchmark_builds/legacy-crypto-portfolio-dashboard-clean",
+      "priority": 88,
+      "label": "legacy-crypto-portfolio-dashboard-clean",
+      "prompt_summary": "Build a crypto portfolio tracker with real-time prices, holdings table, and activity feed",
+      "prompt_hints": [
+        "crypto portfolio tracker",
+        "clean dashboard",
+        "portfolio dashboard"
+      ],
+      "notes": "Strong secondary dashboard reference. Key traits: clean crypto-dashboard composition, appealing layout discipline, and a good balance between readability and density.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 145,
+      "version": 1,
+      "archetype": "dashboard",
+      "benchmark_path": "eval/benchmark_builds/legacy-crypto-portfolio-dashboard-polished",
+      "priority": 90,
+      "label": "legacy-crypto-portfolio-dashboard-polished",
+      "prompt_summary": "Build a crypto portfolio tracker with real-time prices, holdings table, and activity feed",
+      "prompt_hints": [
+        "crypto portfolio tracker",
+        "polished dashboard",
+        "portfolio dashboard"
+      ],
+      "notes": "Strong dashboard reference. Key traits: polished overall execution, good component hierarchy, and a more premium feel than the simpler crypto dashboard variants.",
+      "discovery_ingest": false
+    },
+    {
       "project_id": 43,
       "version": 1,
       "published_slug": "pokemon-v1-yw3q",

@@ -1,0 +1,38 @@
+/* src/style.css */
+
+/* Custom transition for cart drawer */
+.cart-drawer {
+    transition: transform 0.3s ease-out;
+}
+
+
+/* Ensure images fill their containers but maintain aspect ratio */
+.product-image, .collection-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Use cover for product/collection images */
+    object-position: center;
+}
+
+
+/* Minor adjustment for star icons if needed for alignment */
+.star-rating svg {
+    vertical-align: middle;
+}
+
+
+/* Override input styling for cart quantity to match dark theme */
+.cart-item input[type="number"] {
+    background-color: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: var(--space-xs);
+    border-radius: var(--radius-sm);
+    text-align: center;
+}
+
+
+.cart-item input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent);
+}

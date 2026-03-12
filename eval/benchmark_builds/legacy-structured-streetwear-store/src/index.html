@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNRIVALED STREETWEAR</title>
+    <style>
+        /* Global Reset */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-base: #0f0f12;
+            --bg-surface: #1a1a1f;
+            --bg-elevated: #222228;
+            --border-color: #2a2a32;
+            --accent-gold: #C9A84C;
+            --accent-gold-rgb: 201, 168, 76;
+            --text-primary: #F5F0E8;
+            --text-muted: rgba(245, 240, 232, 0.7);
+            --text-subtle: rgba(245, 240, 232, 0.5);
+            --text-dark: #0f0f12;
+            --star-empty: #2a2a32;
+            --cart-badge-bg: #C9A84C;
+        }
+
+        /* Font Imports */
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;700&family=DM+Sans:wght@400;500;700&display=swap');
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Cormorant Garamond', serif;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        button {
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: 24px;
+            padding-right: 24px;
+        }
+
+        /* Mandatory CSS Design Seed Patterns */
+        /* 1. GLOW */
+        .glow-effect {
+            box-shadow: 0 0 20px rgba(var(--accent-gold-rgb), 0.3), 0 0 60px rgba(var(--accent-gold-rgb), 0.1);
+        }
+
+        /* 2. GLASS PANEL */
+        .glass-panel {
+            background: rgba(255,255,255,0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        /* 3. GRADIENT BORDER */
+        .gradient-border-card {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .gradient-border-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, var(--accent-gold), transparent);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Navbar */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 72px;
+            background-color: rgba(15,15,18,0.7);
+            backdrop-filter: blur(10px) saturate(180%);
+            border-bottom: 1px solid rgba(42,42,50,0.5);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            padding: 0 48px;
+        }
+        .navbar-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 1400px; /* Wider for luxury feel */
+            margin: 0 auto;
+        }
+        .navbar-logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 700;
+            font-size: 24px;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+        .navbar-nav {
+            display: flex;
+            gap: 40px;
+        }
+        .navbar-nav-link {
+            color: var(--text-muted);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.03em;
+            transition: color 0.2s ease, text-shadow 0.2s ease;
+        }
+        .navbar-nav-link:hover,
+        .navbar-nav-link.active {
+            color: var(--accent-gold);
+            text-shadow: 0 0 8px rgba(var(--accent-gold-rgb), 0.4);
+        }
+        .navbar-icons {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+        .navbar-icon-btn {
+            padding: 8px;
+            border-radius: 4px;
+            transition: background 0.2s ease, transform 0.2s ease;
+            color: var(--text-muted);
+            position: relative;
+        }
+        .navbar-icon-btn:hover {
+            background: rgba(42,42,50,0.5);
+            transform: scale(1.05);
+            color: var(--text-primary);
+        }
+        .cart-badge {
+            position: absolute;
+            top: -7px;
+            right: -9px;
+            width: 18px;
+            height: 18px;
+            background: var(--cart-badge-bg);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        /* Announcement Bar */
+        .announcement-bar {
+            background: var(--accent-gold);
+            color: var(--text-dark);
+            text-align: center;
+            padding: 10px 0;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            margin-top: 72px; /* Below navbar */
+        }
+
+        /* Hero Section */
+        .hero {
+            position: relative;
+            min-height: 85vh;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            padding-top: 0; /* Announcement bar handles space */
+            padding-bottom: 0;
+        }
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            z-index: 0;
+            filter: brightness(0.6);
+            transition: filter 0.3s ease;
+        }
+        .hero-bg-fallback {
+            background: linear-gradient(135deg, #1a1a1f 0%, #222228 50%, #2a2028 100%);
+        }
+        .hero-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to right, rgba(15,15,18,0.9) 0%, rgba(15,15,18,0.6) 50%, rgba(15,15,18,0.1) 100%);
+            z-index: 1;
+        }
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 48px;
+            text-align: left;
+            width: 50%; /* Left-aligned content */
+        }
+        .hero-tagline {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--accent-gold);
+            margin-bottom: 16px;
+            display: block;
+        }
+        .hero-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 72px;
+            font-weight: 700;
+            line-height: 0.9;
+            color: var(--text-primary);
+            margin-bottom: 24px;
+        }
+        .hero-subtitle {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 18px;
+            color: var(--text-subtle);
+            line-height: 1.6;
+            max-width: 480px;
+            margin-bottom: 40px;
+        }
+        .hero-cta-group {
+            display: flex;
+            gap: 20px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, #D4B258 100%);
+            border: none;
+            color: var(--text-dark);
+            font-size: 14px;
+            font-weight: 700;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #D4B258 0%, var(--accent-gold) 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.2);
+        }
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--accent-gold);
+            color: var(--accent-gold);
+            font-size: 14px;
+            font-weight: 600;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        .btn-secondary:hover {
+            background: var(--accent-gold);
+            color: var(--text-dark);
+        }
+
+        /* Section Styling */
+        .section {
+            padding: 64px 0;
+            position: relative;
+        }
+        .section-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        /* Featured Collections */
+        .featured-collections-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        .collection-card {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.15);
+            position: relative;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            border: 1px solid transparent;
+            aspect-ratio: 4/3;
+        }
+        .collection-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.2);
+            border-color: var(--accent-gold);
+        }
+        .collection-card-image-wrapper {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-elevated) 50%, #2a2028 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .collection-card-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+        .collection-card-content-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(15,15,18,0.95) 0%, rgba(15,15,18,0.3) 60%, transparent 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 24px;
+        }
+        .collection-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        .collection-count {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            color: var(--accent-gold);
+        }
+
+        /* Filter Bar */
+        .filter-bar {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            padding: 32px 0;
+            margin-bottom: 40px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .filter-pill {
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 13px;
+            letter-spacing: 0.04em;
+            transition: all 0.15s ease;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 500;
+        }
+        .filter-pill-inactive {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            color: var(--text-subtle);
+        }
+        .filter-pill-inactive:hover {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            border-color: var(--accent-gold);
+        }
+        .filter-pill-active {
+            background: var(--accent-gold);
+            color: var(--text-dark);
+            font-weight: 700;
+            border: 1px solid var(--accent-gold);
+        }
+        .custom-select-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .custom-select {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 10px 36px 10px 14px;
+            border-radius: 4px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            appearance: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23C9A84C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            min-width: 150px;
+        }
+        .custom-select:hover,
+        .custom-select:focus {
+            border-color: var(--accent-gold);
+            background-color: rgba(var(--accent-gold-rgb), 0.1);
+            outline: none;
+        }
+
+        /* Product Grid */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+            margin-top: 48px;
+        }
+        .product-card {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.15);
+            background: var(--bg-surface);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            border: 1px solid transparent;
+        }
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.2);
+            border-color: var(--accent-gold);
+        }
+        .product-image-wrapper {
+            padding-top: 125%; /* 4:5 aspect ratio */
+            position: relative;
+            overflow: hidden;
+            border-radius: 8px 8px 0 0;
+            background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-elevated) 50%, #2a2028 100%); /* Fallback */
+        }
+        .product-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: top center;
+            transition: all 0.3s ease-out;
+        }
+        .product-card:hover .product-image {
+            filter: brightness(1.05) saturate(1.05);
+            transform: scale(1.02);
+        }
+        .product-content {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+        .product-brand {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 11px;
+            font-weight: 500;
+            color: rgba(245,240,232,0.6);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .product-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+            margin-bottom: 6px;
+        }
+        .product-rating {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+        .star-icon {
+            width: 16px;
+            height: 16px;
+            fill: var(--accent-gold);
+        }
+        .star-icon-empty {
+            fill: var(--star-empty);
+        }
+        .review-count {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 11px;
+            color: var(--text-subtle);
+            margin-left: 4px;
+        }
+        .product-price {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-top: auto;
+            margin-bottom: 16px;
+        }
+        .add-to-cart-btn {
+            background: transparent;
+            border: 1px solid rgba(var(--accent-gold-rgb),0.4);
+            color: rgba(var(--accent-gold-rgb),0.8);
+            font-size: 13px;
+            font-weight: 600;
+            padding: 10px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .add-to-cart-btn:hover {
+            background: var(--accent-gold);
+            color: var(--text-dark);
+            border-color: var(--accent-gold);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .add-to-cart-btn:hover .add-icon {
+            stroke: var(--text-dark);
+        }
+        .add-icon {
+            stroke: var(--accent-gold);
+            transition: stroke 0.2s ease;
+        }
+
+        /* Size Selector */
+        .size-selector {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .size-button {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-subtle);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            letter-spacing: 0.05em;
+            min-width: 40px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        .size-button:hover {
+            border-color: var(--accent-gold);
+            color: var(--text-primary);
+            background: rgba(var(--accent-gold-rgb), 0.1);
+        }
+        .size-button.selected {
+            background: var(--accent-gold);
+            border-color: var(--accent-gold);
+            color: var(--text-dark);
+            font-weight: 700;
+        }
+
+        /* Cart Drawer */
+        .cart-drawer {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 400px;
+            height: 100vh;
+            background: var(--bg-elevated);
+            border-left: 1px solid var(--border-color);
+            z-index: 1001;
+            transform: translateX(100%);
+            transition: transform 0.3s ease-out;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -8px 0 24px rgba(0,0,0,0.4);
+        }
+        .cart-drawer.open {
+            transform: translateX(0);
+        }
+        .cart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .cart-header h3 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .cart-close-btn {
+            font-size: 24px;
+            color: var(--text-muted);
+            transition: color 0.2s ease;
+        }
+        .cart-close-btn:hover {
+            color: var(--text-primary);
+        }
+        .cart-items {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .cart-item {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(var(--text-primary), 0.05);
+        }
+        .cart-item:last-child {
+            border-bottom: none;
+        }
+        .cart-item-image {
+            width: 80px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        .cart-item-details {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .cart-item-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-primary);
+            line-height: 1.3;
+        }
+        .cart-item-price {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        .cart-item-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+        .quantity-btn {
+            padding: 4px 8px;
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+        .quantity-btn:hover {
+            color: var(--text-primary);
+        }
+        .quantity-input {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            width: 30px;
+            text-align: center;
+            -moz-appearance: textfield;
+        }
+        .quantity-input::-webkit-outer-spin-button,
+        .quantity-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .remove-item-btn {
+            color: #ef4444;
+            font-size: 14px;
+            margin-left: auto;
+        }
+        .remove-item-btn:hover {
+            text-decoration: underline;
+        }
+        .cart-summary {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        .cart-summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 15px;
+        }
+        .cart-summary-row.total {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-top: 15px;
+        }
+        .cart-checkout-btn {
+            width: 100%;
+            margin-top: 20px;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: 700;
+            border-radius: 6px;
+        }
+
+        /* Toast Notification */
+        @keyframes toast-in {
+            from { transform: translateX(120%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes toast-out {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(120%); opacity: 0; }
+        }
+        .toast-notification {
+            position: fixed;
+            top: 80px;
+            right: 24px;
+            z-index: 9999;
+            background: var(--bg-surface);
+            border: 1px solid var(--accent-gold);
+            border-radius: 6px;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            color: var(--text-primary);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            opacity: 0;
+            transform: translateX(120%);
+            pointer-events: none;
+        }
+        .toast-notification.show {
+            animation: toast-in 0.3s cubic-bezier(0.4,0,0.2,1) forwards;
+            pointer-events: auto;
+        }
+        .toast-notification.hide {
+            animation: toast-out 0.3s cubic-bezier(0.4,0,0.2,1) forwards;
+            pointer-events: none;
+        }
+        .toast-icon {
+            color: var(--accent-gold);
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--bg-base);
+            padding: 64px 0;
+            border-top: 1px solid rgba(255,255,255,0.07);
+            box-shadow: inset 0 1px 4px rgba(0,0,0,0.15);
+        }
+        .footer-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 32px;
+        }
+        .footer-logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 700;
+            font-size: 28px;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+        .footer-links {
+            display: flex;
+            gap: 30px;
+        }
+        .footer-link {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            color: rgba(245,240,232,0.5);
+            transition: color 0.2s ease;
+        }
+        .footer-link:hover {
+            color: var(--text-primary);
+        }
+        .social-icons {
+            display: flex;
+            gap: 24px;
+        }
+        .social-icon {
+            width: 24px;
+            height: 24px;
+            color: rgba(245,240,232,0.4);
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+        .social-icon:hover {
+            color: var(--accent-gold);
+            transform: translateY(-2px);
+        }
+        .footer-copyright {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            color: rgba(245,240,232,0.3);
+            margin-top: 20px;
+        }
+    </style>
+    <script src="https://unpkg.com/alpinejs" defer></script>
+</head>
+<body x-data="appState">
+    <div style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;opacity:0.045;background-image:url('data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'><filter id=\'n\'><feTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/><feColorMatrix type=\'saturate\' values=\'0\'/></filter><rect width=\'200\' height=\'200\' filter=\'url(%23n)\'/></svg>');background-repeat:repeat;mix-blend-mode:overlay"></div>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-inner">
+            <a href="#" class="navbar-logo">UNRIVALED</a>
+            <div class="navbar-nav">
+                <a href="#products" class="navbar-nav-link">Shop</a>
+                <a href="#collections" class="navbar-nav-link">Collections</a>
+                <a href="#" class="navbar-nav-link">About</a>
+            </div>
+            <div class="navbar-icons">
+                <button class="navbar-icon-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </button>
+                <button class="navbar-icon-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                </button>
+                <button class="navbar-icon-btn" @click="toggleCart">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                    <span class="cart-badge" x-text="cart.items.length"></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Announcement Bar -->
+    <div class="announcement-bar">
+        Limited Time Offer: Free Shipping on all orders over $150.
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <img src="/api/assets/107/1/hero_background.png" alt="Urban Streetwear Background" class="hero-bg" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.classList.add('hero-bg-fallback');">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <span class="hero-tagline">Elevate Your Style</span>
+            <h1 class="hero-title">UNRIVALED STREETWEAR</h1>
+            <p class="hero-subtitle">Curated collections blending urban edge with premium craftsmanship. Define your presence.</p>
+            <div class="hero-cta-group">
+                <button class="btn-primary">Shop New Arrivals</button>
+                <button class="btn-secondary">View Lookbook</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Collections Section -->
+    <section id="collections" class="section">
+        <div class="container">
+            <h2 class="section-title">Featured Collections</h2>
+            <div class="featured-collections-grid">
+                <a href="#" class="collection-card">
+                    <div class="collection-card-image-wrapper">
+                        <img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&h=600&fit=crop&crop=top" alt="The Essentials Collection" class="collection-card-image" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #1a1a1f 0%, #222228 50%, #2a2028 100%)'">
+                    </div>
+                    <div class="collection-card-content-overlay">
+                        <h3 class="collection-name">The Essentials</h3>
+                        <span class="collection-count">120 Pieces</span>
+                    </div>
+                </a>
+                <a href="#" class="collection-card">
+                    <div class="collection-card-image-wrapper">
+                        <img src="https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&h=600&fit=crop&crop=top" alt="Urban Edge Collection" class="collection-card-image" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #1a1a1f 0%, #222228 50%, #2a2028 100%)'">
+                    </div>
+                    <div class="collection-card-content-overlay">
+                        <h3 class="collection-name">Urban Edge</h3>
+                        <span class="collection-count">85 Pieces</span>
+                    </div>
+                </a>
+                <a href="#" class="collection-card">
+                    <div class="collection-card-image-wrapper">
+                        <img src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&h=600&fit=crop&crop=top" alt="Seasonal Drop Collection" class="collection-card-image" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #1a1a1f 0%, #222228 50%, #2a2028 100%)'">
+                    </div>
+                    <div class="collection-card-content-overlay">
+                        <h3 class="collection-name">Seasonal Drop</h3>
+                        <span class="collection-count">60 Pieces</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Products Section -->
+    <section id="products" class="section">
+        <div class="container">
+            <h2 class="section-title">New Arrivals</h2>
+            <div class="filter-bar">
+                <button class="filter-pill" :class="{'filter-pill-active': activeCategory === 'All', 'filter-pill-inactive': activeCategory !== 'All'}" @click="activeCategory = 'All'">All</button>
+                <button class="filter-pill" :class="{'filter-pill-active': activeCategory === 'Hoodies', 'filter-pill-inactive': activeCategory !== 'Hoodies'}" @click="activeCategory = 'Hoodies'">Hoodies</button>
+                <button class="filter-pill" :class="{'filter-pill-active': activeCategory === 'Tees', 'filter-pill-inactive': activeCategory !== 'Tees'}" @click="activeCategory = 'Tees'">Tees</button>
+                <button class="filter-pill" :class="{'filter-pill-active': activeCategory === 'Pants', 'filter-pill-inactive': activeCategory !== 'Pants'}" @click="activeCategory = 'Pants'">Pants</button>
+                <button class="filter-pill" :class="{'filter-pill-active': activeCategory === 'Accessories', 'filter-pill-inactive': activeCategory !== 'Accessories'}" @click="activeCategory = 'Accessories'">Accessories</button>
+                <div class="custom-select-wrapper" x-data="{ open: false, selected: 'Featured' }" @click.outside="open = false">
+                    <select x-model="selectedSort" @change="open = false" class="custom-select">
+                        <option value="Featured">Featured</option>
+                        <option value="Newest">Newest</option>
+                        <option value="PriceLowToHigh">Price: Low to High</option>
+                        <option value="PriceHighToLow">Price: High to Low</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="product-grid">
+                <template x-for="product in filteredProducts" :key="product.id">
+                    <div class="product-card">
+                        <div class="product-image-wrapper">
+                            <img :src="product.image" :alt="product.name" class="product-image" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #1a1a1f 0%, #222228 50%, #2a2028 100%)'">
+                        </div>
+                        <div class="product-content">
+                            <span class="product-brand" x-text="product.brand"></span>
+                            <h3 class="product-name" x-text="product.name"></h3>
+                            <div class="product-rating">
+                                <template x-for="i in 5">
+                                    <svg class="star-icon" :class="{'star-icon-empty': i > product.rating_floor}" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" :fill="i <= product.rating_floor ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                                </template>
+                                <span class="review-count" x-text="`(${product.reviews})`"></span>
+                            </div>
+                            <span class="product-price" x-text="`$${product.price.toFixed(2)}`"></span>
+                            <div class="size-selector">
+                                <template x-for="size in product.sizes" :key="size">
+                                    <button class="size-button" :class="{'selected': product.selectedSize === size}" @click="product.selectedSize = size" x-text="size"></button>
+                                </template>
+                            </div>
+                            <button class="add-to-cart-btn" @click="addToCart(product)">
+                                <svg class="add-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                Add to Bag
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </section>
+
+    <!-- Cart Drawer -->
+    <div class="cart-drawer" :class="{'open': cart.open}" @click.outside="cart.open = false">
+        <div class="cart-header">
+            <h3>Your Bag</h3>
+            <button class="cart-close-btn" @click="toggleCart">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <div class="cart-items">
+            <template x-if="cart.items.length === 0">
+                <p style="text-align: center; color: var(--text-muted); padding: 40px;">Your bag is empty. Start shopping!</p>
+            </template>
+            <template x-for="item in cart.items" :key="item.id + item.selectedSize">
+                <div class="cart-item">
+                    <img :src="item.image" :alt="item.name" class="cart-item-image">
+                    <div class="cart-item-details">
+                        <div>
+                            <div class="cart-item-name" x-text="item.name"></div>
+                            <div class="cart-item-price" x-text="`$${item.price.toFixed(2)} - Size: ${item.selectedSize}`"></div>
+                        </div>
+                        <div class="cart-item-actions">
+                            <div class="quantity-control">
+                                <button class="quantity-btn" @click="updateQuantity(item.id, item.selectedSize, -1)">-</button>
+                                <input type="number" class="quantity-input" x-model.number="item.quantity" @change="updateQuantity(item.id, item.selectedSize, 0, $event.target.value)" min="1">
+                                <button class="quantity-btn" @click="updateQuantity(item.id, item.selectedSize, 1)">+</button>
+                            </div>
+                            <button class="remove-item-btn" @click="removeFromCart(item.id, item.selectedSize)">Remove</button>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+        <div class="cart-summary">
+            <div class="cart-summary-row">
+                <span>Subtotal</span>
+                <span x-text="`$${cart.subtotal.toFixed(2)}`"></span>
+            </div>
+            <div class="cart-summary-row">
+                <span>Shipping</span>
+                <span x-text="`$${cart.shipping.toFixed(2)}`"></span>
+            </div>
+            <div class="cart-summary-row total">
+                <span>Total</span>
+                <span x-text="`$${cart.total.toFixed(2)}`"></span>
+            </div>
+            <button class="btn-primary cart-checkout-btn">Proceed to Checkout</button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-notification" :class="{'show': toast.show, 'hide': toast.hide}">
+        <svg class="toast-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-8.5"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+        <span x-text="toast.message"></span>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container footer-inner">
+            <a href="#" class="footer-logo">UNRIVALED</a>
+            <div class="footer-links">
+                <a href="#" class="footer-link">Privacy Policy</a>
+                <a href="#" class="footer-link">Terms of Service</a>
+                <a href="#" class="footer-link">Shipping & Returns</a>
+                <a href="#" class="footer-link">Contact Us</a>
+            </div>
+            <div class="social-icons">
+                <a href="#" aria-label="Instagram">
+                    <svg class="social-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                </a>
+                <a href="#" aria-label="Twitter">
+                    <svg class="social-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17-17 17a18.9 18.9 0 0 1-2-1.7c1.3.2 2.6 0 3.8-.9a4.9 4.9 0 0 1-3.6-3.3c.4 0 .9.1 1.4-.1C2 13.9 1 12.7 1 11.4c0-.2.1-.3.1-.5c1.1.6 2.5.9 4 .9a5 5 0 0 1-1.5-4.5c.7.9 1.7 1.6 2.9 2.3A9.9 9.9 0 0 1 3 4c-.7-.4-1.4-.8-2-1.2h.5c1.4 1.7 3.2 2.7 5.1 3.2A5 5 0 0 1 5 3a5 5 0 0 1 4.5-5c1.4 0 2.7.5 3.8 1.4A9.9 9.9 0 0 0 16 2.5c-1.1.4-2.1.8-3.1 1.2a4.9 4.9 0 0 1 4.3 2.8c-1.2.2-2.3.4-3.4.4"></path></svg>
+                </a>
+                <a href="#" aria-label="Facebook">
+                    <svg class="social-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+                </a>
+            </div>
+            <span class="footer-copyright">© 2024 UNRIVALED. All rights reserved.</span>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('appState', () => ({
+                products: [
+                    {
+                        id: 1,
+                        name: 'Oversized Hoodie',
+                        brand: 'VRTX',
+                        price: 120.00,
+                        rating: 4.8,
+                        reviews: 42,
+                        image: '/api/assets/107/1/product_hoodie_hero.png',
+                        category: 'Hoodies',
+                        sizes: ['S', 'M', 'L', 'XL'],
+                        selectedSize: 'M',
+                        rating_floor: 5
+                    },
+                    {
+                        id: 2,
+                        name: 'Graphic Tee',
+                        brand: 'IGNIS',
+                        price: 45.00,
+                        rating: 4.2,
+                        reviews: 31,
+                        image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600&h=750&fit=crop&crop=top',
+                        category: 'Tees',
+                        sizes: ['S', 'M', 'L', 'XL'],
+                        selectedSize: 'M',
+                        rating_floor: 4
+                    },
+                    {
+                        id: 3,
+                        name: 'Cargo Pants',
+                        brand: 'CYBERN',
+                        price: 95.00,
+                        rating: 4.6,
+                        reviews: 87,
+                        image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=600&h=750&fit=crop&crop=top',
+                        category: 'Pants',
+                        sizes: ['28', '30', '32', '34', '36'],
+                        selectedSize: '32',
+                        rating_floor: 5
+                    },
+                    {
+                        id: 4,
+                        name: 'Premium Sneakers',
+                        brand: 'ALPHAX',
+                        price: 180.00,
+                        rating: 3.9,
+                        reviews: 19,
+                        image: '/api/assets/107/1/product_sneakers_hero.png',
+                        category: 'Accessories',
+                        sizes: ['7', '8', '9', '10', '11'],
+                        selectedSize: '9',
+                        rating_floor: 4
+                    },
+                    {
+                        id: 5,
+                        name: 'Distressed Denim Jacket',
+                        brand: 'AURORA',
+                        price: 150.00,
+                        rating: 4.5,
+                        reviews: 56,
+                        image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600&h=750&fit=crop&crop=top',
+                        category: 'Hoodies',
+                        sizes: ['S', 'M', 'L', 'XL'],
+                        selectedSize: 'L',
+                        rating_floor: 5
+                    },
+                    {
+                        id: 6,
+                        name: 'Crossbody Bag',
+                        brand: 'ZENITH',
+                        price: 75.00,
+                        rating: 5.0,
+                        reviews: 14,
+                        image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&h=750&fit=crop&crop=top',
+                        category: 'Accessories',
+                        sizes: ['One Size'],
+                        selectedSize: 'One Size',
+                        rating_floor: 5
+                    }
+                ],
+                activeCategory: 'All',
+                selectedSort: 'Featured',
+                cart: {
+                    open: false,
+                    items: [],
+                    subtotal: 0,
+                    shipping: 0,
+                    total: 0,
+                },
+                toast: {
+                    show: false,
+                    hide: false,
+                    message: '',
+                    timeout: null,
+                },
+
+                init() {
+                    this.$watch('cart.items', () => this.calculateCartTotals());
+                    this.calculateCartTotals(); // Initial calculation for badge
+                },
+
+                get filteredProducts() {
+                    let products = this.products;
+                    if (this.activeCategory !== 'All') {
+                        products = products.filter(product => product.category === this.activeCategory);
+                    }
+
+                    switch (this.selectedSort) {
+                        case 'Newest':
+                            products.sort((a, b) => b.id - a.id);
+                            break;
+                        case 'PriceLowToHigh':
+                            products.sort((a, b) => a.price - b.price);
+                            break;
+                        case 'PriceHighToLow':
+                            products.sort((a, b) => b.price - a.price);
+                            break;
+                        case 'Featured':
+                        default:
+                            products.sort((a, b) => b.rating - a.rating); // Simple featured sort
+                            break;
+                    }
+                    return products;
+                },
+
+                addToCart(product) {
+                    const existingItem = this.cart.items.find(item => item.id === product.id && item.selectedSize === product.selectedSize);
+
+                    if (existingItem) {
+                        existingItem.quantity++;
+                    } else {
+                        this.cart.items.push({
+                            id: product.id,
+                            name: product.name,
+                            price: product.price,
+                            image: product.image,
+                            selectedSize: product.selectedSize,
+                            quantity: 1,
+                        });
+                    }
+                    this.showToast('Product added to bag!');
+                },
+
+                removeFromCart(productId, size) {
+                    this.cart.items = this.cart.items.filter(item => !(item.id === productId && item.selectedSize === size));
+                    this.showToast('Product removed from bag.');
+                },
+
+                updateQuantity(productId, size, delta, newValue = null) {
+                    const item = this.cart.items.find(item => item.id === productId && item.selectedSize === size);
+                    if (item) {
+                        if (newValue !== null) {
+                            item.quantity = Math.max(1, parseInt(newValue) || 1);
+                        } else {
+                            item.quantity += delta;
+                            if (item.quantity < 1) {
+                                this.removeFromCart(productId, size);
+                            }
+                        }
+                    }
+                },
+
+                calculateCartTotals() {
+                    let subtotal = 0;
+                    this.cart.items.forEach(item => {
+                        subtotal += item.price * item.quantity;
+                    });
+                    this.cart.subtotal = subtotal;
+                    this.cart.shipping = subtotal > 150 ? 0 : 15;
+                    this.cart.total = this.cart.subtotal + this.cart.shipping;
+                },
+
+                toggleCart() {
+                    this.cart.open = !this.cart.open;
+                },
+
+                showToast(message) {
+                    if (this.toast.timeout) {
+                        clearTimeout(this.toast.timeout);
+                        this.toast.hide = true;
+                        // Allow hide animation to finish before showing new toast
+                        setTimeout(() => {
+                            this.toast.show = false;
+                            this.toast.hide = false;
+                            this.toast.message = message;
+                            this.toast.show = true;
+                            this.toast.timeout = setTimeout(() => {
+                                this.toast.hide = true;
+                                setTimeout(() => this.toast.show = false, 300);
+                            }, 2500);
+                        }, 300); // Match toast-out animation duration
+                    } else {
+                        this.toast.message = message;
+                        this.toast.show = true;
+                        this.toast.timeout = setTimeout(() => {
+                            this.toast.hide = true;
+                            setTimeout(() => this.toast.show = false, 300);
+                        }, 2500);
+                    }
+                }
+            }));
+        });
+    </script>
+</body>
+</html>

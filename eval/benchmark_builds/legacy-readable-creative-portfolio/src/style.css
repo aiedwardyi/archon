@@ -1,0 +1,47 @@
+/* Custom styles for the portfolio (overrides and minor additions) */
+
+.hero-title {
+    font-size: clamp(3rem, 8vw, 6rem); /* Responsive font size */
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+}
+
+
+.hero-eyebrow {
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: var(--space-xs);
+}
+
+
+.section-title {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin-bottom: var(--space-sm);
+}
+
+
+.skill-icon {
+    background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+
+.project-tag {
+    color: var(--accent);
+}
+
+
+.project-link {
+    color: var(--accent);
+}
+
+
+/* Ensure image fallbacks have consistent styling */
+img[onerror] {
+    background-color: var(--surface-elevated);
+    display: block;
+    object-fit: cover;
+    width: 100%;
+    height: 100%; /* Ensure it fills parent if height is not set */
+}

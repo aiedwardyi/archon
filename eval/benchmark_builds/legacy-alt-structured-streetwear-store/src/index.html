@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LUXEWEAR</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body x-data="{
+    cartOpen: false,
+    showToast: false,
+    toastMessage: '',
+    addToCart(productName) {
+        this.toastMessage = productName + ' added to bag';
+        this.showToast = true;
+        setTimeout(() => this.showToast = false, 2500);
+    },
+    selectedSize: 'M',
+    sortOption: 'new-arrivals',
+    activeCategory: 'all'
+}">
+    <div class="noise-overlay"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <a href="#" class="header-logo">LUXEWEAR</a>
+        </div>
+        <nav class="header-nav">
+            <a href="#" class="nav-link">Shop</a>
+            <a href="#" class="nav-link">Collections</a>
+            <a href="#" class="nav-link">About</a>
+        </nav>
+        <div class="header-right">
+            <button class="icon-button" aria-label="Search">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </button>
+            <button class="icon-button" aria-label="User account">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            </button>
+            <button class="icon-button cart-icon" aria-label="Shopping cart" @click="cartOpen = !cartOpen">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                <span class="cart-badge">3</span>
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-background" style="background-image: url('/api/assets/108/1/hero_background.png');"></div>
+            <div class="hero-gradient-overlay"></div>
+            <div class="hero-content">
+                <h1 class="hero-title">Define Your <span class="text-accent-gold-color">Edge</span>.</h1>
+                <p class="hero-description">Curated collections of premium streetwear designed for the modern individual. Elevate your style with exclusive drops.</p>
+                <div class="hero-ctas">
+                    <button class="btn-primary">Shop Now</button>
+                    <button class="btn-secondary">View Lookbook</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Featured Collections Section -->
+        <section class="collections-section">
+            <h2 class="section-title">Curated Collections</h2>
+            <div class="collection-grid">
+                <div class="collection-card">
+                    <div class="collection-image-wrapper" style="background: linear-gradient(135deg, #1a1a1f 0%, #222228 50%, #2a2028 100%);">
+                        <img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&h=600&fit=crop&crop=top" alt="Urban Explorer Collection" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#1a1a1f 0%,#222228 50%,#2a2028 100%)';">
+                        <div class="collection-overlay"></div>
+                        <div class="collection-info">
+                            <h3 class="collection-name">Urban Explorer</h3>
+                            <span class="collection-count">12 PIECES</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="collection-card">
+                    <div class="collection-image-wrapper" style="background: linear-gradient(135deg, #1a1a1f 0%, #222228 50%, #2a2028 100%);">
+                        <img src="https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&h=600&fit=crop&crop=top" alt="Essential Comfort Collection" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#1a1a1f 0%,#222228 50%,#2a2028 100%)';">
+                        <div class="collection-overlay"></div>
+                        <div class="collection-info">
+                            <h3 class="collection-name">Essential Comfort</h3>
+                            <span class="collection-count">8 PIECES</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="collection-card">
+                    <div class="collection-image-wrapper" style="background: linear-gradient(135deg, #1a1a1f 0%, #222228 50%, #2a2028 100%);">
+                        <img src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&h=600&fit=crop&crop=top" alt="Signature Styles Collection" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#1a1a1f 0%,#222228 50%,#2a2028 100%)';">
+                        <div class="collection-overlay"></div>
+                        <div class="collection-info">
+                            <h3 class="collection-name">Signature Styles</h3>
+                            <span class="collection-count">15 PIECES</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Filter Bar -->
+        <section class="filter-bar">
+            <div class="category-pills">
+                <button class="filter-pill" :class="{ 'filter-pill-active': activeCategory === 'all' }" @click="activeCategory = 'all'">All</button>
+                <button class="filter-pill" :class="{ 'filter-pill-active': activeCategory === 'hoodies' }" @click="activeCategory = 'hoodies'">Hoodies</button>
+                <button class="filter-pill" :class="{ 'filter-pill-active': activeCategory === 'tees' }" @click="activeCategory = 'tees'">Tees</button>
+                <button class="filter-pill" :class="{ 'filter-pill-active': activeCategory === 'jackets' }" @click="activeCategory = 'jackets'">Jackets</button>
+                <button class="filter-pill" :class="{ 'filter-pill-active': activeCategory === 'accessories' }" @click="activeCategory = 'accessories'">Accessories</button>
+            </div>
+
+            <div class="filter-group">
+                <div class="custom-select-wrapper" x-data="{ open: false }">
+                    <button class="custom-select-trigger" @click="open = !open" :aria-expanded="open ? 'true' : 'false'">
+                        Sort: <span x-text="sortOption === 'new-arrivals' ? 'New Arrivals' : (sortOption === 'price-low-high' ? 'Price: Low to High' : 'Price: High to Low')"></span>
+                    </button>
+                    <div class="custom-select-options" x-show="open" @click.outside="open = false" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-75" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" x-cloak>
+                        <div class="option" :class="{ 'option-selected': sortOption === 'new-arrivals' }" @click="sortOption = 'new-arrivals'; open = false">New Arrivals</div>
+                        <div class="option" :class="{ 'option-selected': sortOption === 'price-low-high' }" @click="sortOption = 'price-low-high'; open = false">Price: Low to High</div>
+                        <div class="option" :class="{ 'option-selected': sortOption === 'price-high-low' }" @click="sortOption = 'price-high-low'; open = false">Price: High to Low</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <div class="size-selector">
+                    <button class="size-button" :class="{ 'size-button-selected': selectedSize === 'S' }" @click="selectedSize = 'S'">S</button>
+                    <button class="size-button" :class="{ 'size-button-selected': selectedSize === 'M' }" @click="selectedSize = 'M'">M</button>
+                    <button class="size-button" :class="{ 'size-button-selected': selectedSize === 'L' }" @click="selectedSize = 'L'">L</button>
+                    <button class="size-button" :class="{ 'size-button-selected': selectedSize === 'XL' }" @click="selectedSize = 'XL'">XL</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Product Grid Section -->
+        <section class="product-grid-section">
+            <h2 class="section-title">New Arrivals</h2>
+            <div class="product-grid">
+                <!-- Product Card 1: Oversized Hoodie -->
+                <div class="product-card">
+                    <div class="product-image-wrapper" style="background: linear-gradient(135deg, #1a1a1f 0%, #222228 50%, #2a2028 100%);">
+                        <img src="https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=600&h=750&fit=crop&crop=top" alt="Oversized Hoodie" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#1a1a1f 0%,#222228 50%,#2a2028 100%)';">
+                    </div>
+                    <div class="product-content">
+                        <span class="product-brand">LUXEWEAR</span>
+                        <h3 class="product-name">Oversized Hoodie</h3>
+                        <div class="product-rating">
+                            <div class="star-rating">
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon-half" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            </div>
+                            <span class="review-count">(42)</span>
+                        </div>
+                        <span class="product-price">$120.00</span>
+                        <button class="btn-add-to-cart" @click="addToCart('Oversized Hoodie')">
+                            <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='12' y1='5' x2='12' y2='19'></line><line x1='5' y1='12' x2='19' y2='12'></line></svg>
+                            Add to Cart
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product Card 2: Distressed Denim Jacket -->
+                <div class="product-card">
+                    <div class="product-image-wrapper" style="background: linear-gradient(135deg, #1a1a1f 0%, #222228 50%, #2a2028 100%);">
+                        <img src="https://images.unsplash.com/photo-1542272604-787c3835535d?w=600&h=750&fit=crop&crop=top" alt="Distressed Denim Jacket" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#1a1a1f 0%,#222228 50%,#2a2028 100%)';">
+                    </div>
+                    <div class="product-content">
+                        <span class="product-brand">LUXEWEAR</span>
+                        <h3 class="product-name">Distressed Denim Jacket</h3>
+                        <div class="product-rating">
+                            <div class="star-rating">
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon-empty" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            </div>
+                            <span class="review-count">(31)</span>
+                        </div>
+                        <span class="product-price">$180.00</span>
+                        <button class="btn-add-to-cart" @click="addToCart('Distressed Denim Jacket')">
+                            <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='12' y1='5' x2='12' y2='19'></line><line x1='5' y1='12' x2='19' y2='12'></line></svg>
+                            Add to Cart
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product Card 3: Essential White Tee -->
+                <div class="product-card">
+                    <div class="product-image-wrapper" style="background: linear-gradient(135deg, #1a1a1f 0%, #222228 50%, #2a2028 100%);">
+                        <img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600&h=750&fit=crop&crop=top" alt="Essential White Tee" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#1a1a1f 0%,#222228 50%,#2a2028 100%)';">
+                    </div>
+                    <div class="product-content">
+                        <span class="product-brand">LUXEWEAR</span>
+                        <h3 class="product-name">Essential White Tee</h3>
+                        <div class="product-rating">
+                            <div class="star-rating">
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon-half" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            </div>
+                            <span class="review-count">(87)</span>
+                        </div>
+                        <span class="product-price">$45.00</span>
+                        <button class="btn-add-to-cart" @click="addToCart('Essential White Tee')">
+                            <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='12' y1='5' x2='12' y2='19'></line><line x1='5' y1='12' x2='19' y2='12'></line></svg>
+                            Add to Cart
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product Card 4: Bomber Jacket -->
+                <div class="product-card">
+                    <div class="product-image-wrapper" style="background: linear-gradient(135deg, #1a1a1f 0%, #222228 50%, #2a2028 100%);">
+                        <img src="https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600&h=750&fit=crop&crop=top" alt="Bomber Jacket" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#1a1a1f 0%,#222228 50%,#2a2028 100%)';">
+                    </div>
+                    <div class="product-content">
+                        <span class="product-brand">LUXEWEAR</span>
+                        <h3 class="product-name">Bomber Jacket</h3>
+                        <div class="product-rating">
+                            <div class="star-rating">
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon-half" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon-empty" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            </div>
+                            <span class="review-count">(19)</span>
+                        </div>
+                        <span class="product-price">$250.00</span>
+                        <button class="btn-add-to-cart" @click="addToCart('Bomber Jacket')">
+                            <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='12' y1='5' x2='12' y2='19'></line><line x1='5' y1='12' x2='19' y2='12'></line></svg>
+                            Add to Cart
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product Card 5: Crewneck Sweatshirt -->
+                <div class="product-card">
+                    <div class="product-image-wrapper" style="background: linear-gradient(135deg, #1a1a1f 0%, #222228 50%, #2a2028 100%);">
+                        <img src="https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600&h=750&fit=crop&crop=top" alt="Crewneck Sweatshirt" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#1a1a1f 0%,#222228 50%,#2a2028 100%)';">
+                    </div>
+                    <div class="product-content">
+                        <span class="product-brand">LUXEWEAR</span>
+                        <h3 class="product-name">Crewneck Sweatshirt</h3>
+                        <div class="product-rating">
+                            <div class="star-rating">
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon-half" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            </div>
+                            <span class="review-count">(56)</span>
+                        </div>
+                        <span class="product-price">$90.00</span>
+                        <button class="btn-add-to-cart" @click="addToCart('Crewneck Sweatshirt')">
+                            <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='12' y1='5' x2='12' y2='19'></line><line x1='5' y1='12' x2='19' y2='12'></line></svg>
+                            Add to Cart
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product Card 6: Crossbody Bag -->
+                <div class="product-card">
+                    <div class="product-image-wrapper" style="background: linear-gradient(135deg, #1a1a1f 0%, #222228 50%, #2a2028 100%);">
+                        <img src="https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&h=750&fit=crop&crop=top" alt="Crossbody Bag" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#1a1a1f 0%,#222228 50%,#2a2028 100%)';">
+                    </div>
+                    <div class="product-content">
+                        <span class="product-brand">LUXEWEAR</span>
+                        <h3 class="product-name">Crossbody Bag</h3>
+                        <div class="product-rating">
+                            <div class="star-rating">
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            </div>
+                            <span class="review-count">(14)</span>
+                        </div>
+                        <span class="product-price">$75.00</span>
+                        <button class="btn-add-to-cart" @click="addToCart('Crossbody Bag')">
+                            <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='12' y1='5' x2='12' y2='19'></line><line x1='5' y1='12' x2='19' y2='12'></line></svg>
+                            Add to Cart
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Cart Drawer -->
+    <div class="cart-backdrop" x-show="cartOpen" @click="cartOpen = false" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" x-cloak></div>
+    <div class="cart-drawer" :class="{ 'cart-drawer-open': cartOpen }" x-show="cartOpen" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="transform translate-x-full" x-transition:enter-end="transform translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="transform translate-x-0" x-transition:leave-end="transform translate-x-full" x-cloak>
+        <div class="cart-header">
+            <h3 class="cart-title">Shopping Bag</h3>
+            <button class="icon-button" @click="cartOpen = false" aria-label="Close cart">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <div class="cart-items">
+            <!-- Sample Cart Item 1 -->
+            <div class="cart-item">
+                <div class="cart-item-image-wrapper" style="background: linear-gradient(135deg, #1a1a1f 0%, #222228 50%, #2a2028 100%);">
+                    <img src="https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=100&h=125&fit=crop&crop=top" alt="Oversized Hoodie" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#1a1a1f 0%,#222228 50%,#2a2028 100%)';">
+                </div>
+                <div class="cart-item-details">
+                    <h4 class="cart-item-name">Oversized Hoodie</h4>
+                    <span class="cart-item-price">$120.00</span>
+                    <div class="cart-item-meta">Size: M, Qty: 1</div>
+                </div>
+                <button class="cart-item-remove" aria-label="Remove item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg></button>
+            </div>
+            <!-- Sample Cart Item 2 -->
+            <div class="cart-item">
+                <div class="cart-item-image-wrapper" style="background: linear-gradient(135deg, #1a1a1f 0%, #222228 50%, #2a2028 100%);">
+                    <img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=100&h=125&fit=crop&crop=top" alt="Essential White Tee" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#1a1a1f 0%,#222228 50%,#2a2028 100%)';">
+                </div>
+                <div class="cart-item-details">
+                    <h4 class="cart-item-name">Essential White Tee</h4>
+                    <span class="cart-item-price">$45.00</span>
+                    <div class="cart-item-meta">Size: L, Qty: 2</div>
+                </div>
+                <button class="cart-item-remove" aria-label="Remove item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg></button>
+            </div>
+            <!-- Sample Cart Item 3 -->
+            <div class="cart-item">
+                <div class="cart-item-image-wrapper" style="background: linear-gradient(135deg, #1a1a1f 0%, #222228 50%, #2a2028 100%);">
+                    <img src="https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=100&h=125&fit=crop&crop=top" alt="Crossbody Bag" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#1a1a1f 0%,#222228 50%,#2a2028 100%)';">
+                </div>
+                <div class="cart-item-details">
+                    <h4 class="cart-item-name">Crossbody Bag</h4>
+                    <span class="cart-item-price">$75.00</span>
+                    <div class="cart-item-meta">Size: N/A, Qty: 1</div>
+                </div>
+                <button class="cart-item-remove" aria-label="Remove item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg></button>
+            </div>
+        </div>
+        <div class="cart-footer">
+            <div class="cart-subtotal">
+                <span>Subtotal</span>
+                <span>$360.00</span>
+            </div>
+            <button class="btn-primary btn-checkout">Proceed to Checkout</button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-notification" :class="{ 'toast-notification-show': showToast }" x-show="showToast" x-transition:enter="toast-enter" x-transition:leave="toast-leave" x-cloak>
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        <span x-text="toastMessage"></span>
+    </div>
+</body>
+</html>

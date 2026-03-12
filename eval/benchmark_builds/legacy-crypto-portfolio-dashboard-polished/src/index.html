@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoPro Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Bar -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <div class="logo">CryptoPro</div>
+                <div class="ticker-strip">
+                    <div class="ticker-item"><span class="ticker-symbol">BTC</span><span class="ticker-price">$67,432.12</span><span class="ticker-change gain">+1.23%</span></div>
+                    <div class="ticker-item"><span class="ticker-symbol">ETH</span><span class="ticker-price">$3,891.56</span><span class="ticker-change loss">-0.87%</span></div>
+                    <div class="ticker-item"><span class="ticker-symbol">SOL</span><span class="ticker-price">$142.89</span><span class="ticker-change gain">+2.55%</span></div>
+                    <div class="ticker-item"><span class="ticker-symbol">ADA</span><span class="ticker-price">$0.4567</span><span class="ticker-change gain">+0.99%</span></div>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <div class="portfolio-value">Portfolio: <span class="value">$124,832.78</span></div>
+                <div class="user-avatar">AD</div>
+            </div>
+        </header>
+
+        <!-- Main Content Grid -->
+        <main class="main-content">
+            <!-- Row 1: KPI Cards -->
+            <section class="kpi-cards-grid">
+                <div class="kpi-card kpi-portfolio">
+                    <div class="kpi-label">Portfolio Value</div>
+                    <div class="kpi-value" data-count="124832">$124,832.78</div>
+                    <div class="kpi-change gain">+5.2% <span class="kpi-period">24h</span></div>
+                </div>
+                <div class="kpi-card kpi-daily-change">
+                    <div class="kpi-label">Daily Change</div>
+                    <div class="kpi-value gain" data-count="6240">$6,240.15</div>
+                    <div class="kpi-change gain">+5.2% <span class="kpi-period">24h</span></div>
+                </div>
+                <div class="kpi-card kpi-best-performer">
+                    <div class="kpi-label">Best Performer</div>
+                    <div class="kpi-value">BTC</div>
+                    <div class="kpi-change gain">+8.1% <span class="kpi-period">24h</span></div>
+                </div>
+                <div class="kpi-card kpi-total-return">
+                    <div class="kpi-label">Total Return</div>
+                    <div class="kpi-value gain" data-count="37400">$37,400.90</div>
+                    <div class="kpi-change gain">+42.1% <span class="kpi-period">All Time</span></div>
+                </div>
+            </section>
+
+            <!-- Row 2: Candlestick Chart -->
+            <section class="chart-section">
+                <div class="chart-header">
+                    <h2>Portfolio Performance</h2>
+                    <div class="chart-time-filters">
+                        <button class="chart-filter-btn active">1D</button>
+                        <button class="chart-filter-btn">1W</button>
+                        <button class="chart-filter-btn">1M</button>
+                        <button class="chart-filter-btn">1Y</button>
+                        <button class="chart-filter-btn">ALL</button>
+                    </div>
+                </div>
+                <div class="candlestick-chart-container">
+                    <!-- Placeholder for Candlestick Chart -->
+                    <div class="chart-y-axis">
+                        <span>$200k</span>
+                        <span>$150k</span>
+                        <span>$100k</span>
+                        <span>$50k</span>
+                        <span>$0k</span>
+                    </div>
+                    <div class="chart-grid">
+                        <!-- Example Candlesticks (simplified visual representation) -->
+                        <div class="candlestick gain" style="height: 40%; top: 30%;"></div>
+                        <div class="candlestick loss" style="height: 25%; top: 50%;"></div>
+                        <div class="candlestick gain" style="height: 55%; top: 20%;"></div>
+                        <div class="candlestick gain" style="height: 30%; top: 45%;"></div>
+                        <div class="candlestick loss" style="height: 60%; top: 15%;"></div>
+                        <div class="candlestick gain" style="height: 45%; top: 35%;"></div>
+                        <div class="candlestick loss" style="height: 35%; top: 40%;"></div>
+                        <div class="candlestick gain" style="height: 50%; top: 25%;"></div>
+                        <div class="candlestick gain" style="height: 40%; top: 30%;"></div>
+                        <div class="candlestick loss" style="height: 20%; top: 60%;"></div>
+                        <div class="candlestick gain" style="height: 60%; top: 10%;"></div>
+                        <div class="candlestick gain" style="height: 30%; top: 40%;"></div>
+                        <div class="candlestick loss" style="height: 50%; top: 25%;"></div>
+                        <div class="candlestick gain" style="height: 40%; top: 30%;"></div>
+                        <div class="candlestick gain" style="height: 30%; top: 45%;"></div>
+                        <div class="candlestick loss" style="height: 25%; top: 50%;"></div>
+                        <div class="candlestick gain" style="height: 55%; top: 20%;"></div>
+                        <div class="candlestick gain" style="height: 30%; top: 45%;"></div>
+                        <div class="candlestick loss" style="height: 60%; top: 15%;"></div>
+                        <div class="candlestick gain" style="height: 45%; top: 35%;"></div>
+                    </div>
+                    <div class="chart-x-axis">
+                        <span>08:00</span>
+                        <span>10:00</span>
+                        <span>12:00</span>
+                        <span>14:00</span>
+                        <span>16:00</span>
+                        <span>18:00</span>
+                        <span>20:00</span>
+                        <span>22:00</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Row 3: Split - Asset Table + Watchlist -->
+            <section class="split-section">
+                <!-- Left: Asset Table -->
+                <div class="asset-table-container card">
+                    <h2>Your Holdings</h2>
+                    <div class="table-actions">
+                        <input type="text" placeholder="Search assets..." class="search-input">
+                        <button class="btn-secondary">Filter</button>
+                        <button class="btn-secondary">Sort</button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Asset</th>
+                                    <th>Price</th>
+                                    <th>24h Change</th>
+                                    <th>Holdings</th>
+                                    <th>Value</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="asset-name">Bitcoin <span class="asset-symbol">BTC</span></td>
+                                    <td class="price">$67,432.12</td>
+                                    <td class="change gain">+1.23%</td>
+                                    <td class="holdings">0.85 BTC</td>
+                                    <td class="value">$57,317.30</td>
+                                    <td>
+                                        <button class="btn-add-watchlist" title="Add to Watchlist">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="asset-name">Ethereum <span class="asset-symbol">ETH</span></td>
+                                    <td class="price">$3,891.56</td>
+                                    <td class="change loss">-0.87%</td>
+                                    <td class="holdings">5.2 ETH</td>
+                                    <td class="value">$20,236.12</td>
+                                    <td>
+                                        <button class="btn-add-watchlist" title="Add to Watchlist">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="asset-name">Solana <span class="asset-symbol">SOL</span></td>
+                                    <td class="price">$142.89</td>
+                                    <td class="change gain">+2.55%</td>
+                                    <td class="holdings">120 SOL</td>
+                                    <td class="value">$17,146.80</td>
+                                    <td>
+                                        <button class="btn-add-watchlist" title="Add to Watchlist">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="asset-name">Cardano <span class="asset-symbol">ADA</span></td>
+                                    <td class="price">$0.4567</td>
+                                    <td class="change gain">+0.99%</td>
+                                    <td class="holdings">25,000 ADA</td>
+                                    <td class="value">$11,417.50</td>
+                                    <td>
+                                        <button class="btn-add-watchlist" title="Add to Watchlist">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="asset-name">XRP <span class="asset-symbol">XRP</span></td>
+                                    <td class="price">$0.5234</td>
+                                    <td class="change loss">-1.15%</td>
+                                    <td class="holdings">15,000 XRP</td>
+                                    <td class="value">$7,851.00</td>
+                                    <td>
+                                        <button class="btn-add-watchlist" title="Add to Watchlist">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="asset-name">Dogecoin <span class="asset-symbol">DOGE</span></td>
+                                    <td class="price">$0.1587</td>
+                                    <td class="change gain">+0.42%</td>
+                                    <td class="holdings">30,000 DOGE</td>
+                                    <td class="value">$4,761.00</td>
+                                    <td>
+                                        <button class="btn-add-watchlist" title="Add to Watchlist">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Right: Watchlist -->
+                <div class="watchlist-container card">
+                    <h2>Watchlist</h2>
+                    <div class="watchlist-item">
+                        <div class="watchlist-details">
+                            <span class="watchlist-symbol">AVAX</span>
+                            <span class="watchlist-price">$30.15</span>
+                            <span class="watchlist-change gain">+3.1%</span>
+                        </div>
+                        <div class="watchlist-sparkline">
+                            <svg viewBox="0 0 100 30" preserveAspectRatio="none">
+                                <linearGradient id="gainGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stop-color="rgba(16, 185, 129, 0.2)"/>
+                                    <stop offset="100%" stop-color="rgba(16, 185, 129, 0)"/>
+                                </linearGradient>
+                                <path fill="url(#gainGradient)" stroke="none" d="M0 25 L10 20 L20 15 L30 18 L40 12 L50 10 L60 14 L70 11 L80 16 L90 13 L100 10 V30 H0 Z"></path>
+                                <polyline fill="none" stroke="#10B981" stroke-width="1.5" points="0 25,10 20,20 15,30 18,40 12,50 10,60 14,70 11,80 16,90 13,100 10" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="watchlist-item">
+                        <div class="watchlist-details">
+                            <span class="watchlist-symbol">DOT</span>
+                            <span class="watchlist-price">$7.20</span>
+                            <span class="watchlist-change loss">-1.5%</span>
+                        </div>
+                        <div class="watchlist-sparkline">
+                            <svg viewBox="0 0 100 30" preserveAspectRatio="none">
+                                <linearGradient id="lossGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stop-color="rgba(239, 68, 68, 0.2)"/>
+                                    <stop offset="100%" stop-color="rgba(239, 68, 68, 0)"/>
+                                </linearGradient>
+                                <path fill="url(#lossGradient)" stroke="none" d="M0 10 L10 15 L20 12 L30 18 L40 20 L50 25 L60 22 L70 28 L80 20 L90 23 L100 28 V30 H0 Z"></path>
+                                <polyline fill="none" stroke="#EF4444" stroke-width="1.5" points="0 10,10 15,20 12,30 18,40 20,50 25,60 22,70 28,80 20,90 23,100 28" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="watchlist-item">
+                        <div class="watchlist-details">
+                            <span class="watchlist-symbol">LINK</span>
+                            <span class="watchlist-price">$18.45</span>
+                            <span class="watchlist-change gain">+0.8%</span>
+                        </div>
+                        <div class="watchlist-sparkline">
+                            <svg viewBox="0 0 100 30" preserveAspectRatio="none">
+                                <path fill="url(#gainGradient)" stroke="none" d="M0 20 L10 18 L20 22 L30 19 L40 15 L50 17 L60 14 L70 16 L80 13 L90 10 L100 8 V30 H0 Z"></path>
+                                <polyline fill="none" stroke="#10B981" stroke-width="1.5" points="0 20,10 18,20 22,30 19,40 15,50 17,60 14,70 16,80 13,90 10,100 8" />
+                            </svg>
+                        </div>
+                    </div>
+                     <div class="watchlist-item">
+                        <div class="watchlist-details">
+                            <span class="watchlist-symbol">UNI</span>
+                            <span class="watchlist-price">$10.20</span>
+                            <span class="watchlist-change loss">-2.1%</span>
+                        </div>
+                        <div class="watchlist-sparkline">
+                            <svg viewBox="0 0 100 30" preserveAspectRatio="none">
+                                <path fill="url(#lossGradient)" stroke="none" d="M0 15 L10 18 L20 12 L30 10 L40 14 L50 12 L60 16 L70 14 L80 18 L90 16 L100 19 V30 H0 Z"></path>
+                                <polyline fill="none" stroke="#EF4444" stroke-width="1.5" points="0 15,10 18,20 12,30 10,40 14,50 12,60 16,70 14,80 18,90 16,100 19" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="watchlist-item">
+                        <div class="watchlist-details">
+                            <span class="watchlist-symbol">LTC</span>
+                            <span class="watchlist-price">$85.60</span>
+                            <span class="watchlist-change gain">+0.6%</span>
+                        </div>
+                        <div class="watchlist-sparkline">
+                            <svg viewBox="0 0 100 30" preserveAspectRatio="none">
+                                <path fill="url(#gainGradient)" stroke="none" d="M0 10 L10 12 L20 15 L30 13 L40 16 L50 14 L60 18 L70 16 L80 19 L90 17 L100 20 V30 H0 Z"></path>
+                                <polyline fill="none" stroke="#10B981" stroke-width="1.5" points="0 10,10 12,20 15,30 13,40 16,50 14,60 18,70 16,80 19,90 17,100 20" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Row 4: News Feed -->
+            <section class="news-feed-section">
+                <h2>Latest News</h2>
+                <div class="news-feed-grid">
+                    <div class="news-item card">
+                        <h3 class="news-title">Bitcoin Surges Past $67,000 as Institutional Adoption Grows</h3>
+                        <p class="news-excerpt">Analysts point to increasing interest from large financial institutions as a key driver for the recent BTC price rally. New ETFs are attracting significant capital.</p>
+                        <div class="news-meta">
+                            <span class="news-source">CoinDesk</span>
+                            <span class="news-time">2 hours ago</span>
+                        </div>
+                    </div>
+                    <div class="news-item card">
+                        <h3 class="news-title">Ethereum Dencun Upgrade Successfully Implemented, Fees Drop</h3>
+                        <p class="news-excerpt">The highly anticipated Dencun upgrade has gone live, bringing significant improvements to transaction efficiency and reducing gas fees across the network.</p>
+                        <div class="news-meta">
+                            <span class="news-source">The Block</span>
+                            <span class="news-time">5 hours ago</span>
+                        </div>
+                    </div>
+                    <div class="news-item card">
+                        <h3 class="news-title">Solana Ecosystem Sees Explosive Growth in DeFi and NFTs</h3>
+                        <p class="news-excerpt">Solana continues to attract developers and users, with its ecosystem expanding rapidly in decentralized finance and non-fungible token markets. Transaction volumes hit new highs.</p>
+                        <div class="news-meta">
+                            <span class="news-source">Decrypt</span>
+                            <span class="news-time">1 day ago</span>
+                        </div>
+                    </div>
+                    <div class="news-item card">
+                        <h3 class="news-title">Regulatory Clarity Still Elusive for US Crypto Market</h3>
+                        <p class="news-excerpt">Despite recent positive developments, regulatory uncertainty remains a major concern for cryptocurrency businesses operating within the United States. Lawmakers debate new frameworks.</p>
+                        <div class="news-meta">
+                            <span class="news-source">Bloomberg</span>
+                            <span class="news-time">2 days ago</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- KPI Count-up JS -->
+    <script>
+        function countUp(el, target, duration = 1200) {
+            const start = performance.now();
+            const initialValue = parseFloat(el.textContent.replace(/[^0-9.-]+/g, ""));
+            const update = (now) => {
+                const progress = Math.min((now - start) / duration, 1);
+                const currentValue = initialValue + (target - initialValue) * progress;
+                el.textContent = '$' + Math.floor(currentValue).toLocaleString('en-US');
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                } else {
+                    el.textContent = '$' + target.toLocaleString('en-US'); // Ensure final value is exact
+                }
+            };
+            requestAnimationFrame(update);
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.kpi-value[data-count]').forEach(el => {
+                countUp(el, +el.dataset.count);
+            });
+
+            // Simulate price flashing for demonstration
+            setInterval(() => {
+                document.querySelectorAll('.ticker-price, .price, .kpi-value').forEach(el => {
+                    if (Math.random() > 0.7) { // Randomly flash some prices
+                        el.classList.add('price-flash');
+                        setTimeout(() => el.classList.remove('price-flash'), 500);
+                    }
+                });
+            }, 3000); // Every 3 seconds, some prices might flash
+        });
+    </script>
+</body>
+</html>
