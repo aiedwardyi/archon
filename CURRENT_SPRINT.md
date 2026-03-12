@@ -429,5 +429,43 @@ Full animated reimagination of consumer frontend (port 3002). Three design branc
 
 See `docs/EVAL_WORKFLOW.md` for the full parallel eval loop process.
 
+## Overnight Eval Run — Mar 11→12, 2026
+
+**Result: Harness bug fixed, no winning changes committed.**
+
+### What happened
+- Loop started on `eval/loops`, ran partial `saas_landing` cycle
+- Baseline scores: 75.0, 82.0, 56.0 — B-test: 75.0 (no improvement, reverted)
+- Backend + operator process died overnight — loop stopped early
+- After restart, loop resumed on `dashboard` archetype
+- Dashboard baselines: 83.0, 77.0, 84.5 — then harness crash before edit
+- Root cause: `eval/prompt_parser.py` expected a `dashboard` section in `prompts/engineer.txt` — only `SAAS LANDING PAGE` section exists there
+- Loop restarted, ran 63.0 + 76.5 dashboard baselines, then stopped in morning
+
+### Harness fix (Mar 12, 2026)
+- ✅ Added `has_section()` to `eval/prompt_parser.py`
+- ✅ `eval/operator_loop.py` now checks section exists before targeting `engineer.txt`
+- ✅ Fallback: archetypes without engineer.txt sections (dashboard, ecommerce, portfolio, game) now edit kit files in `prompts/archetypes/` instead of crashing
+- ✅ Defensive degradation: if engineer-section editing fails mid-cycle, loop falls back to kit editing instead of burning API budget on repeated crashes
+- ✅ Verified: full baseline → edit → B-test cycle completed without crash
+  - Dashboard baseline: 73.5 → B-test: 52.0 → **correctly reverted**
+- ✅ `docs/EVAL_WORKFLOW.md` updated: mission is to improve designs, not observe failures. Operators must fix local blockers, treat API spend as optimization budget, avoid passive repeat-fail cycles
+
+### New files from overnight stabilization (untracked)
+- `scripts/launch_operator_loop.py`
+- `scripts/operator_supervisor.py`
+- `scripts/run_operator_loop_forever.cmd`
+
+### Current scores (unchanged from Mar 10)
+| Archetype | Best Score |
+|-----------|------------|
+| Ecommerce | 88.5 |
+| Game (FF8) | 84.5 |
+| Portfolio | 83.5 |
+| Dashboard | 81.0 |
+| SaaS Landing | 76.0 |
+
+**Next eval run:** Harness is now stable. Loop can iterate and reject bad changes. Commit the harness fixes, then restart overnight loop targeting all 5 archetypes.
+
 
 
