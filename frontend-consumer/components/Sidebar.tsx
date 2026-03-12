@@ -14,6 +14,7 @@ interface SidebarProps {
   onNewProject: () => void;
   onOpenSettings: () => void;
   onDeleteProject: (id: string) => void;
+  onRenameProject?: (id: string, name: string) => void | Promise<void>;
   isOpen?: boolean;
   onClose?: () => void;
 }
@@ -33,10 +34,14 @@ const Sidebar: React.FC<SidebarProps> = ({
   onNewProject,
   onOpenSettings,
   onDeleteProject,
+  onRenameProject,
   isOpen = false,
   onClose,
 }) => {
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
+  const [renamingProjectId, setRenamingProjectId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [isRenaming, setIsRenaming] = useState(false);
   const [isConnected, setIsConnected] = useState(backend.getIsConnected());
 
   useEffect(() => {
@@ -46,6 +51,40 @@ const Sidebar: React.FC<SidebarProps> = ({
   }, []);
 
   const deletingProject = projects.find((project) => project.id === deletingProjectId);
+
+  const resetRenameState = () => {
+    setRenamingProjectId(null);
+    setRenameValue('');
+    setIsRenaming(false);
+  };
+
+  const renameProject = async (id: string) => {
+    if (isRenaming || renamingProjectId !== id) {
+      return;
+    }
+
+    const nextName = renameValue.trim();
+    const currentProject = projects.find((project) => project.id === id);
+
+    if (!currentProject) {
+      resetRenameState();
+      return;
+    }
+
+    if (!nextName || nextName === currentProject.name) {
+      resetRenameState();
+      return;
+    }
+
+    try {
+      setIsRenaming(true);
+      await onRenameProject?.(id, nextName);
+      resetRenameState();
+    } catch (error) {
+      console.error('Failed to rename project', error);
+      setIsRenaming(false);
+    }
+  };
 
   return (
     <aside
@@ -174,7 +213,41 @@ const Sidebar: React.FC<SidebarProps> = ({
                     style={{ backgroundColor: getStatusColor(project.status) }}
                   />
                   <span className="min-w-0 flex-1 pl-1">
-                    <span className="block truncate text-sm font-medium text-white">{project.name}</span>
+                    {renamingProjectId === project.id ? (
+                      <input
+                        autoFocus
+                        disabled={isRenaming}
+                        value={renameValue}
+                        onChange={(event) => setRenameValue(event.target.value)}
+                        onBlur={() => {
+                          void renameProject(project.id);
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            void renameProject(project.id);
+                          }
+                          if (event.key === 'Escape') {
+                            event.preventDefault();
+                            resetRenameState();
+                          }
+                        }}
+                        onClick={(event) => event.stopPropagation()}
+                        className="w-full border-b border-white/30 bg-transparent text-sm font-medium text-white outline-none"
+                      />
+                    ) : (
+                      <span
+                        className="block cursor-default truncate text-sm font-medium text-white hover:cursor-text"
+                        title="Double-click to rename"
+                        onDoubleClick={(event) => {
+                          event.stopPropagation();
+                          setRenamingProjectId(project.id);
+                          setRenameValue(project.name);
+                        }}
+                      >
+                        {project.name}
+                      </span>
+                    )}
                   </span>
                   <span
                     role="button"

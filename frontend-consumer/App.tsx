@@ -8,7 +8,7 @@ import ProjectDetailPage from './pages/ProjectDetailPage';
 import ProjectsPage from './pages/ProjectsPage';
 import RegisterPage from './pages/RegisterPage';
 import { AuthUser, clearStoredSession, fetchCurrentUser, getStoredToken, getStoredUser, logout } from './services/auth';
-import { backend, isAuthError, isNetworkError } from './services/orchestrator';
+import { apiRequest, backend, isAuthError, isNetworkError } from './services/orchestrator';
 import { Project, SystemSettings } from './types';
 
 const THEME_PREFERENCE_KEY = 'archon_consumer_theme_preference';
@@ -212,6 +212,20 @@ const App: React.FC = () => {
     }
   };
 
+  const handleRenameProject = async (id: string, name: string) => {
+    try {
+      await apiRequest(`/projects/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      await backend.fetchProjects();
+    } catch (error) {
+      if (isAuthError(error)) handleAuthError();
+      console.error('Failed to refresh projects after rename', error);
+    }
+  };
+
   const updateSettings = (updates: Partial<SystemSettings>) => {
     if (updates.theme) {
       localStorage.setItem(THEME_PREFERENCE_KEY, updates.theme);
@@ -263,6 +277,7 @@ const App: React.FC = () => {
               setIsSidebarOpen(false);
             }}
             onDeleteProject={handleDeleteProject}
+            onRenameProject={handleRenameProject}
             isOpen={isSidebarOpen}
             onClose={() => setIsSidebarOpen(false)}
           />
