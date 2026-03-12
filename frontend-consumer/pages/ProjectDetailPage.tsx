@@ -163,6 +163,26 @@ function getPriorityLabel(lang: Lang, priority: 'high' | 'medium' | 'low') {
   return t(lang, 'priorityLow');
 }
 
+function buildInsightPrompt(suggestion: string): string {
+  const lower = suggestion.toLowerCase();
+  if (/(color|colour|palette|theme|gradient)/.test(lower)) {
+    const m = suggestion.match(/like ['"](.+?)['"]/);
+    return m ? `Use ${m[1]} as the color scheme` : `Add a color scheme - try dark theme with vibrant accents`;
+  }
+  if (/(font|typography|typeface)/.test(lower)) return `Use more distinctive typography that matches the app's style`;
+  if (/(section|layout|hero|navigation)/.test(lower)) {
+    const m = suggestion.match(/like:\s*([^.]+)/s);
+    return m ? `Add these sections: ${m[1].trim()}` : `Add all key sections to the layout`;
+  }
+  if (/(game|character|genre)/.test(lower)) return `Add the game title, genre, main characters, and what fans should see`;
+  if (/(specific|detail|name|data|number)/.test(lower)) return `Add specific content - realistic names, numbers, and data throughout`;
+  if (/(product|store|price|shop)/.test(lower)) return `Add product names, prices, descriptions, and categories`;
+  if (/(portfolio|skill|project)/.test(lower)) return `Add my name, role, skills, and portfolio projects`;
+  if (/(clarity|structure|short)/.test(lower)) return `Improve the overall structure and content quality`;
+  const first = suggestion.split('.')[0].replace(/^(Your prompt[^.]*\.\s*|You didn't[^.]*\.\s*|Try )/i, '');
+  return first.length > 8 ? first : `Improve this app`;
+}
+
 function buildIterationPromptHistory(
   originalPrompt: string,
   messages: PromptHistoryEntry[],
@@ -500,13 +520,12 @@ const BuildInsightsCard: React.FC<BuildInsightsCardProps> = ({
           onClick={onToggleCollapse}
           className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-white/70 transition hover:bg-white/[0.08] hover:text-white"
         >
-          {t(lang, collapsed ? 'expand' : 'collapse')}
+          {collapsed ? 'Expand tips' : 'Collapse tips'}
           <ChevronDown size={14} className={`transition-transform duration-300 ${collapsed ? '' : 'rotate-180'}`} />
         </button>
       </div>
 
-      <div className={`transition-all duration-300 ${collapsed ? 'max-h-0 overflow-hidden opacity-0' : 'max-h-[1200px] opacity-100'}`}>
-        <div className="grid gap-5 px-5 py-5 lg:grid-cols-[240px_minmax(0,1fr)]">
+      <div className="grid gap-5 px-5 py-5 lg:grid-cols-[240px_minmax(0,1fr)]">
           <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-5">
             <div className="text-xs uppercase tracking-[0.24em] text-white/38">{t(lang, 'promptScore')}</div>
             <div className="mt-5 flex items-center justify-center">
@@ -549,33 +568,38 @@ const BuildInsightsCard: React.FC<BuildInsightsCardProps> = ({
                 const priority = normalizeInsightPriority(insight.priority);
                 return (
                   <article key={`${insight.category}-${index}-${insight.suggestion}`} className="rounded-[1.45rem] border border-white/10 bg-white/[0.04] p-4">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="inline-flex h-9 w-9 items-center justify-center rounded-[1rem] bg-white/[0.07] text-indigo-200">
-                            <Lightbulb size={16} />
-                          </span>
-                          <span className="text-sm font-semibold text-white">{getInsightCategoryLabel(lang, categoryKey)}</span>
-                          <span className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-medium ${getPriorityBadge(priority)}`}>
-                            {getPriorityLabel(lang, priority)}
-                          </span>
-                        </div>
-                        <p className="mt-3 text-sm leading-6 text-white/60">{insight.suggestion}</p>
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-[1rem] bg-white/[0.07] text-indigo-200">
+                        <Lightbulb size={16} />
+                      </span>
+                      <span className="text-sm font-semibold text-white">{getInsightCategoryLabel(lang, categoryKey)}</span>
+                      <span className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-medium ${getPriorityBadge(priority)}`}>
+                        {getPriorityLabel(lang, priority)}
+                      </span>
+                    </div>
+
+                    {!collapsed && (
+                      <p className="mb-4 text-sm leading-6 text-white/60">{insight.suggestion}</p>
+                    )}
+
+                    <div className="flex items-center justify-between gap-3 rounded-[1.1rem] border border-indigo-400/15 bg-indigo-500/[0.07] px-4 py-3">
+                      <div className="min-w-0">
+                        <div className="mb-1 text-[11px] uppercase tracking-[0.2em] text-indigo-300/60">Try asking</div>
+                        <div className="text-sm italic text-white/80">"{buildInsightPrompt(insight.suggestion)}"</div>
                       </div>
                       <button
                         type="button"
-                        onClick={() => onApplySuggestion(insight.suggestion)}
-                        className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-2 text-xs font-medium text-white/78 transition hover:bg-white/[0.12] hover:text-white"
+                        onClick={() => onApplySuggestion(buildInsightPrompt(insight.suggestion))}
+                        className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-indigo-400/25 bg-indigo-500/15 px-3 py-2 text-xs font-medium text-indigo-200 transition hover:bg-indigo-500/30 hover:text-white"
                       >
-                        {t(lang, 'applySuggestion')}
-                        <ArrowRight size={14} />
+                        Use this
+                        <ArrowRight size={13} />
                       </button>
                     </div>
                   </article>
                 );
               })}
             </div>
-          </div>
         </div>
       </div>
     </div>
@@ -619,7 +643,8 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   const [insightsUnread, setInsightsUnread] = useState(false);
   const [insightsCollapsed, setInsightsCollapsed] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return localStorage.getItem(getInsightsCollapseStorageKey(projectId)) === '1';
+    const stored = localStorage.getItem(getInsightsCollapseStorageKey(projectId));
+    return stored === null ? true : stored === '1';
   });
   const chatTextareaRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -993,13 +1018,13 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
     }
   };
 
-  const handleApplySuggestion = (suggestion: string) => {
-    setChatInput(suggestion);
+  const handleApplySuggestion = (prompt: string) => {
+    setChatInput(prompt);
     setComposerError(null);
     window.setTimeout(() => {
       chatTextareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       chatTextareaRef.current?.focus();
-      chatTextareaRef.current?.setSelectionRange(suggestion.length, suggestion.length);
+      chatTextareaRef.current?.setSelectionRange(prompt.length, prompt.length);
     }, 0);
   };
 
