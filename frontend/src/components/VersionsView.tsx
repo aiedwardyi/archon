@@ -100,7 +100,9 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
       );
       const mapped: Version[] = raw.map((v) => {
         const lastUserMsg = v.prompt_history?.filter(m => m.role === "user").pop()?.content || "";
-        const isSuccess = v.status === "success" || v.status === "completed";
+        const normalizedStatus = String(v.status || "").toLowerCase();
+        const isSuccess = normalizedStatus === "success" || normalizedStatus === "completed";
+        const isRunning = normalizedStatus === "running" || normalizedStatus === "in_progress" || normalizedStatus === "pending";
         const fileCount = v.files_generated ?? 0;
         const imageCount = v.images_generated ?? 0;
         const parts: string[] = [];
@@ -111,7 +113,7 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
           executionId: Number(v.id),
           parentVersion: v.parent_execution_id != null ? parentVersionByExecutionId.get(Number(v.parent_execution_id)) : undefined,
           label: "v" + v.version,
-          status: isSuccess ? "completed" as const : "failed" as const,
+          status: isSuccess || isRunning ? "completed" as const : "failed" as const,
           description: lastUserMsg.length > 40 ? lastUserMsg.slice(0, 40) + "…" : lastUserMsg,
           time: v.created_at ? new Date(v.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true }) : "",
           filesChanged: fileCount,
