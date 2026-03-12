@@ -118,6 +118,24 @@
       "discovery_ingest": false
     },
     {
+      "project_id": 122,
+      "version": 1,
+      "published_slug": "saas-quality-test-v1-su3r",
+      "archetype": "saas_landing",
+      "benchmark_path": "eval/benchmark_builds/legacy-writeflow-ai-writing-assistant",
+      "priority": 74,
+      "label": "legacy-writeflow-ai-writing-assistant",
+      "prompt_summary": "Build a landing page for an AI-powered writing assistant called WriteFlow with features, pricing, and testimonials",
+      "prompt_hints": [
+        "ai-powered writing assistant",
+        "ai writing assistant",
+        "writeflow",
+        "features pricing testimonials"
+      ],
+      "notes": "Useful secondary SaaS landing reference. Key traits: polished glass-nav hero framing, complete marketing-page coverage across features, comparison table, pricing, testimonials, FAQ, and CTA sections, and a solid premium cadence, but the overall dark-violet execution is more generic than the top SaaS references.",
+      "discovery_ingest": false
+    },
+    {
       "project_id": 43,
       "version": 1,
       "published_slug": "pokemon-v1-yw3q",
