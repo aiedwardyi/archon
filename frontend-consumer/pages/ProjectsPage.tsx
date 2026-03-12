@@ -32,13 +32,6 @@ function getStatusAccent(status: Project['status']) {
   return '#64748b';
 }
 
-function getStatusLabel(status: Project['status'], lang: Lang) {
-  if (status === 'COMPLETED') return t(lang, 'statusCompleted');
-  if (status === 'FAILED') return t(lang, 'statusFailed');
-  if (status === 'RUNNING') return t(lang, 'statusRunning');
-  return t(lang, 'statusIdle');
-}
-
 const ProjectsPage: React.FC<ProjectsPageProps> = ({
   lang,
   projects,
@@ -325,32 +318,24 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({
                     className="recent-card min-w-[320px] max-w-[360px] flex-1 text-left"
                   >
                     <div className="recent-shell relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-white/[0.06] backdrop-blur-2xl transition duration-300">
-                      <div className="relative h-[140px] overflow-hidden rounded-t-[1.8rem] border-b border-white/10 bg-[#03050f]">
+                      <div className="relative h-[160px] flex-shrink-0 overflow-hidden rounded-t-[1.8rem] bg-[#03050f]">
                         <iframe
                           title={`${project.name} preview`}
                           src={getPreviewUrl(project.id, 1)}
-                          className="pointer-events-none absolute left-0 top-0 h-[560px] w-[400%] origin-top-left border-0 bg-white"
+                          className="pointer-events-none absolute left-0 top-0 h-[640px] w-[400%] origin-top-left border-0 bg-white"
                           style={{ transform: 'scale(0.25)' }}
                         />
-                        <div
-                          className="absolute inset-y-0 left-0 w-1"
+                      </div>
+                      <div className="relative flex items-center gap-2.5 px-4 py-3 pl-5">
+                        <span
+                          className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
                           style={{ backgroundColor: getStatusAccent(project.status) }}
                         />
-                      </div>
-                      <div className="relative p-4 pl-5">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="truncate text-base font-semibold text-white">{project.name}</div>
-                            <div className="mt-2 inline-flex rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] uppercase tracking-[0.2em] text-white/55">
-                              {getStatusLabel(project.status, lang)}
-                            </div>
-                          </div>
-                          <ArrowRight
-                            size={18}
-                            className="recent-arrow mt-0.5 shrink-0 -translate-x-3 opacity-0 text-indigo-200 transition duration-300"
-                          />
-                        </div>
-                        <p className="mt-3 line-clamp-2 text-sm leading-6 text-white/54">{project.description}</p>
+                        <div className="min-w-0 flex-1 truncate text-sm font-semibold text-white">{project.name}</div>
+                        <ArrowRight
+                          size={18}
+                          className="recent-arrow mt-0.5 shrink-0 -translate-x-3 opacity-0 text-indigo-200 transition duration-300"
+                        />
                       </div>
                     </div>
                   </button>

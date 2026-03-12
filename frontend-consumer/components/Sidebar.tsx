@@ -160,11 +160,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                 {isActive && (
                   <span className="sidebar-accent absolute inset-y-3 left-0 w-1 rounded-r-full bg-indigo-500 shadow-[0_0_24px_rgba(99,102,241,0.8)]" />
                 )}
-                <div className="mb-3 h-[72px] w-full overflow-hidden rounded-[1rem] border border-white/10 bg-[#03050f]">
+                <div className="relative mb-3 h-[120px] w-full flex-shrink-0 overflow-hidden rounded-[1rem] bg-[#03050f]">
                   <iframe
                     title={`${project.name} thumbnail`}
                     src={getPreviewUrl(project.id, 1)}
-                    className="pointer-events-none h-[288px] w-[400%] origin-top-left border-0 bg-white"
+                    className="pointer-events-none absolute left-0 top-0 h-[480px] w-[400%] origin-top-left border-0 bg-white"
                     style={{ transform: 'scale(0.25)', display: 'block' }}
                   />
                 </div>
@@ -175,7 +175,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                   />
                   <span className="min-w-0 flex-1 pl-1">
                     <span className="block truncate text-sm font-medium text-white">{project.name}</span>
-                    <span className="mt-1 block line-clamp-2 text-xs leading-5 text-white/42">{project.description}</span>
                   </span>
                   <span
                     role="button"
