@@ -63,7 +63,7 @@ const SessionMenu: React.FC<SessionMenuProps> = ({ hasSession, user, signInHref,
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white/90 px-2.5 py-2 text-left shadow-sm transition hover:border-slate-300 hover:bg-white"
+        className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-2 text-left backdrop-blur-xl transition hover:bg-white/[0.10]"
         aria-haspopup="menu"
         aria-expanded={open}
       >
@@ -71,22 +71,22 @@ const SessionMenu: React.FC<SessionMenuProps> = ({ hasSession, user, signInHref,
           {initials}
         </span>
         <span className="hidden min-w-0 sm:block">
-          <span className="block truncate text-sm font-medium text-slate-900">{user?.name || 'Account'}</span>
-          <span className="block truncate text-xs text-slate-500">{user?.email || ''}</span>
+          <span className="block truncate text-sm font-medium text-white">{user?.name || 'Account'}</span>
+          <span className="block truncate text-xs text-white/50">{user?.email || ''}</span>
         </span>
-        <ChevronDown size={16} className={`text-slate-400 transition ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown size={16} className={`text-white/40 transition ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
-        <div className="absolute right-0 z-20 mt-2 w-60 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white p-2 shadow-[0_24px_60px_rgba(15,23,42,0.16)]">
-          <div className="rounded-[1.125rem] bg-slate-50 px-4 py-3">
-            <div className="text-sm font-medium text-slate-900">{user?.name || 'Account'}</div>
-            <div className="mt-1 text-xs text-slate-500">{user?.email || ''}</div>
+        <div className="absolute right-0 z-50 mt-2 w-60 overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#0d1424] p-2 shadow-[0_24px_60px_rgba(2,6,23,0.6)]">
+          <div className="rounded-[1.125rem] bg-white/[0.05] px-4 py-3">
+            <div className="text-sm font-medium text-white">{user?.name || 'Account'}</div>
+            <div className="mt-1 text-xs text-white/50">{user?.email || ''}</div>
           </div>
           <button
             type="button"
             onClick={handleSignOutClick}
-            className="mt-2 flex w-full items-center gap-2 rounded-[1.125rem] px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-950"
+            className="mt-2 flex w-full items-center gap-2 rounded-[1.125rem] px-4 py-3 text-sm font-medium text-white/70 transition hover:bg-white/[0.06] hover:text-white"
             role="menuitem"
           >
             <LogOut size={16} />
