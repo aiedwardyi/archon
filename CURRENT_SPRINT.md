@@ -455,7 +455,7 @@ Found during 22.I review. Next Codex task should address all of these:
 |-------|-------------|
 | ~~22.I~~ | ~~Consumer V3 Polish Pass~~ ✅ Mar 12 |
 | ~~22.J~~ | ~~Consumer V3 Remaining Polish (Google button, thumbnails, nav rail)~~ ✅ Mar 12 |
-| 22.K | Build Insights scroll UX — Insights as 7th nav rail tab (Lightbulb icon), removes need to scroll past preview |
+| ~~22.K~~ | ~~Build Insights nav rail tab + Apply suggestion UX fix~~ ✅ Mar 12 |
 | 22.D | Consumer Versions page (THE MOAT — timeline + preview + narrative) |
 | 22.F | Consumer mobile polish pass |
 | 25 | Credit / token system |
