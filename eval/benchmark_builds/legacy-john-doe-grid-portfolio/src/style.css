@@ -1,0 +1,116 @@
+body {
+    background-color: var(--bg);
+    background-image: var(--bg-grid-pattern);
+}
+
+
+.hero-title, .section-title {
+    font-family: 'Syne', monospace; /* Emphasize code-like aesthetic */
+    letter-spacing: -0.03em;
+    text-shadow: 0 0 8px rgba(16, 185, 129, 0.3), 0 0 15px rgba(16, 185, 129, 0.1);
+}
+
+
+.hero-eyebrow, .section-eyebrow, .project-tag {
+    color: var(--accent);
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+}
+
+
+.skills-content {
+    display: grid;
+    grid-template-columns: 3fr 1fr; /* Adjust for illustration */
+    gap: var(--space-xl);
+    align-items: center;
+}
+
+
+.skills-illustration {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+    justify-self: end;
+}
+
+
+.timeline-container {
+    position: relative;
+    padding-left: 20px;
+    border-left: 2px solid var(--border);
+}
+
+
+.timeline-item {
+    margin-bottom: var(--space-xl);
+    position: relative;
+    padding-left: 20px;
+}
+
+
+.timeline-dot {
+    width: 12px;
+    height: 12px;
+    background-color: var(--accent);
+    border-radius: 50%;
+    position: absolute;
+    left: -28px;
+    top: 5px;
+    border: 2px solid var(--surface);
+}
+
+
+.timeline-date {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-xs);
+}
+
+
+.timeline-title {
+    font-size: 1.25rem;
+    color: var(--text);
+    margin-bottom: var(--space-xs);
+}
+
+
+.timeline-company {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-sm);
+}
+
+
+.timeline-description {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    list-style: disc inside;
+    padding-left: 0;
+}
+
+
+.contact-illustration {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+    margin-bottom: var(--space-lg);
+}
+
+
+.contact-details .contact-item .contact-icon {
+    color: var(--accent);
+    font-size: 1.5rem;
+    margin-right: var(--space-sm);
+}
+
+
+@media (max-width: 768px) {
+    .skills-content {
+        grid-template-columns: 1fr;
+    }
+    .skills-illustration {
+        order: -1; /* Move illustration above skills grid on mobile */
+        margin-bottom: var(--space-lg);
+    }
+}

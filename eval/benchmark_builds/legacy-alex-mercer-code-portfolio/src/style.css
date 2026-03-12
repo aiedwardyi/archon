@@ -1,0 +1,78 @@
+/* Custom styles for Alex Mercer's Portfolio */
+
+:root {
+    --accent: #34D399; /* Emerald-400 as per Quality Target */
+    --font-mono: 'Fira Code', 'JetBrains Mono', Consolas, 'Courier New', monospace;
+    --surface-darker: #0d0d0e; /* From base.css, but for explicit use in background */
+}
+
+
+/* Override heading fonts for a code-like aesthetic */
+h1, h2, h3, h4, h5, h6, .hero-title, .section-title, .project-title {
+    font-family: var(--font-mono);
+    letter-spacing: -0.03em;
+}
+
+
+/* Subtle grid background pattern for terminal/IDE aesthetic */
+body {
+    background-image: radial-gradient(circle at 1px 1px, var(--surface-darker) 1px, transparent 0);
+    background-size: 24px 24px;
+    background-attachment: fixed;
+}
+
+
+/* Styling for skill icons to use the new accent color */
+.skill-card .skill-icon {
+    font-size: 1.5rem;
+    background: rgba(52, 211, 153, 0.15); /* Emerald-400 with opacity */
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    color: var(--accent);
+}
+
+
+/* Project tags styling for tech stack badges */
+.project-tag {
+    background-color: rgba(52, 211, 153, 0.15); /* Emerald-400 with opacity */
+    color: var(--accent);
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+    display: inline-block;
+}
+
+
+.project-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem; /* Use gap for spacing between tags */
+}
+
+
+/* Contact icon styling */
+.contact-item .contact-icon {
+    font-size: 1.25rem;
+    color: var(--accent);
+    margin-right: 1rem;
+}
+
+
+/* Adjust hero title size for better visual impact on larger screens */
+.hero-title {
+    font-size: 5rem; 
+}
+
+
+@media (min-width: 1024px) {
+    .hero-title {
+        font-size: 6rem;
+    }
+}

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>John Doe - Creative Developer Portfolio</title>
+    <link rel="stylesheet" href="./base.css">
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <header class="portfolio-nav">
+        <div class="nav-name">John Doe</div>
+        <nav class="nav-links">
+            <a href="#work" class="nav-link">Work</a>
+            <a href="#about" class="nav-link">About</a>
+            <a href="#skills" class="nav-link">Skills</a>
+            <a href="#contact" class="nav-link">Contact</a>
+        </nav>
+        <a href="#contact" class="nav-cta">Hire Me</a>
+    </header>
+
+    <main>
+        <section class="hero-portfolio" style="background-image: linear-gradient(rgba(13, 13, 14, 0.7), rgba(13, 13, 14, 0.7)), url('/api/assets/99/1/hero_background.png'); background-size: cover; background-position: center; border-bottom: 1px solid var(--border);">
+            <div class="hero-left">
+                <p class="hero-eyebrow">CREATIVE DEVELOPER</p>
+                <h1 class="hero-title">John Doe</h1>
+                <p class="hero-subtitle">I craft captivating web experiences with a focus on elegant design and robust functionality. Let's build something extraordinary together.</p>
+                <div class="hero-ctas">
+                    <a href="#work" class="btn-primary">View Projects</a>
+                    <a href="#" class="btn-ghost">Download CV</a>
+                </div>
+            </div>
+            <div class="hero-right">
+                <p class="hero-status">PORTFOLIO 2025</p>
+                <div class="hero-micro-stat">
+                    <span class="stat-number">15</span>
+                    <span class="stat-label">Design Awards</span>
+                </div>
+                <div class="hero-micro-stat">
+                    <span class="stat-number">50K</span>
+                    <span class="stat-label">GitHub Stars</span>
+                </div>
+                <div class="hero-micro-stat">
+                    <span class="stat-number">4.9★</span>
+                    <span class="stat-label">Average Rating</span>
+                </div>
+                <div class="availability-card">
+                    <span class="avail-dot"></span>
+                    <span class="avail-text">AVAILABLE FOR WORK</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="stats-band">
+            <div class="stats-grid">
+                <div class="stat-block">
+                    <span class="stat-value">10+</span>
+                    <span class="stat-desc">Years Experience</span>
+                </div>
+                <div class="stat-block">
+                    <span class="stat-value">150+</span>
+                    <span class="stat-desc">Projects Delivered</span>
+                </div>
+                <div class="stat-block">
+                    <span class="stat-value">60+</span>
+                    <span class="stat-desc">Happy Clients</span>
+                </div>
+                <div class="stat-block">
+                    <span class="stat-value">20</span>
+                    <span class="stat-desc">Countries Served</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="about" class="section-wrapper">
+            <div class="section-header">
+                <h2 class="section-title">About Me</h2>
+                <p class="section-desc">A brief introduction to my journey and passion for development.</p>
+            </div>
+            <div class="about-grid">
+                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80" alt="John Doe portrait" class="about-image" onerror="this.src='https://api.dicebear.com/9.x/initials/svg?seed=John%20Doe'; this.style.backgroundColor='var(--surface)'; this.style.objectFit='contain';">
+                <div class="about-text">
+                    <h3>A Passion for Digital Craftsmanship</h3>
+                    <p>Hello! I'm John Doe, a creative developer with a decade of experience crafting engaging and functional digital experiences. My journey began with a fascination for how code could bring ideas to life, evolving into a dedicated pursuit of elegant solutions and pixel-perfect designs. I thrive on bridging the gap between innovative design and robust engineering.</p>
+                    <p>I specialize in building performant web applications, from dynamic front-end interfaces using modern frameworks like React and Next.js, to scalable back-end services with Node.js and Python. My approach is user-centric, ensuring that every project not only looks great but also provides an intuitive and seamless experience. I'm always eager to learn new technologies and embrace challenges that push my creative and technical boundaries.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="skills" class="section-wrapper">
+            <div class="section-header">
+                <h2 class="section-title">My Expertise</h2>
+                <p class="section-desc">Technologies and tools I leverage to build impactful solutions.</p>
+            </div>
+            <div class="skills-grid">
+                <div class="skill-card">
+                    <div class="skill-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-react"><path d="M22 12c0 2.76-2.24 5-5 5H7c-2.76 0-5-2.24-5-5s2.24-5 5-5h10c2.76 0 5 2.24 5 5z"/><path d="M9 12v-2h6v2"/><path d="M9 12v2h6v-2"/></svg></div>
+                    <p class="skill-name">React</p>
+                    <span class="skill-level">Expert</span>
+                </div>
+                <div class="skill-card">
+                    <div class="skill-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type-script"><path d="M15.5 17h1c.8 0 1.5-.7 1.5-1.5v-9c0-.8-.7-1.5-1.5-1.5h-1c-.8 0-1.5.7-1.5 1.5v9c0 .8.7 1.5 1.5 1.5z"/><path d="M9.5 17h1c.8 0 1.5-.7 1.5-1.5v-9c0-.8-.7-1.5-1.5-1.5h-1c-.8 0-1.5.7-1.5 1.5v9c0 .8.7 1.5 1.5 1.5z"/><path d="M2 7.5V10h5V7.5"/><path d="M22 10h-5V7.5"/></svg></div>
+                    <p class="skill-name">TypeScript</p>
+                    <span class="skill-level">Advanced</span>
+                </div>
+                <div class="skill-card">
+                    <div class="skill-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-box"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg></div>
+                    <p class="skill-name">Node.js</p>
+                    <span class="skill-level">Expert</span>
+                </div>
+                <div class="skill-card">
+                    <div class="skill-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-webhook"><path d="M18 12h.01"/><path d="M21 12h.01"/><path d="M12 18h.01"/><path d="M12 21h.01"/><path d="M6 12h.01"/><path d="M3 12h.01"/><path d="M12 6h.01"/><path d="M12 3h.01"/><path d="M14.5 4.5l2 2"/><path d="M20.5 8.5l-2 2"/><path d="M9.5 4.5l-2 2"/><path d="M3.5 8.5l2 2"/><path d="M4.5 14.5l2 2"/><path d="M8.5 20.5l-2-2"/><path d="M14.5 19.5l2 2"/><path d="M20.5 15.5l-2-2"/><path d="M12 12a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/></svg></div>
+                    <p class="skill-name">Python</p>
+                    <span class="skill-level">Advanced</span>
+                </div>
+                <div class="skill-card">
+                    <div class="skill-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-figma"><path d="M5 5.5A3.5 3.5 0 0 1 8.5 2H12v7H8.5A3.5 3.5 0 0 1 5 5.5z"/><path d="M12 2h3.5a3.5 3.5 0 1 1 0 7H12V2z"/><path d="M12 12.5A3.5 3.5 0 0 1 15.5 9H19v7h-3.5a3.5 3.5 0 1 1 0-7H12v7z"/><path d="M12 16.5A3.5 3.5 0 0 1 8.5 20H5v-7h3.5a3.5 3.5 0 1 1 0 7H12v-7z"/><path d="M19 9h-3.5a3.5 3.5 0 0 0 0 7H19V9z"/></svg></div>
+                    <p class="skill-name">Figma</p>
+                    <span class="skill-level">Proficient</span>
+                </div>
+                <div class="skill-card">
+                    <div class="skill-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-cloud"><path d="M17.5 19H18a3 3 0 0 0 0-6h-.75V10.25A4.75 4.75 0 0 0 13.25 5h-2.5A4.75 4.75 0 0 0 6 10.25v2.25H5a3 3 0 0 0 0 6h.5"/></svg></div>
+                    <p class="skill-name">AWS</p>
+                    <span class="skill-level">Intermediate</span>
+                </div>
+                <div class="skill-card">
+                    <div class="skill-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-docker"><path d="M2.2 10.93V18L10 22.52V14.07L2.2 10.93Z"/><path d="M2.2 6.07L10 10.6V2.08L2.2 6.07Z"/><path d="M21.8 10.93V18L14 22.52V14.07L21.8 10.93Z"/><path d="M21.8 6.07L14 10.6V2.08L21.8 6.07Z"/><path d="M17.8 17.52L10 22.08L10 14.07L17.8 17.52Z"/><path d="M17.8 17.52L10 13.04L10 22.08L17.8 17.52Z"/><path d="M10 2.08L2.2 6.07L10 10.6L17.8 6.07L10 2.08Z"/></svg></div>
+                    <p class="skill-name">Docker</p>
+                    <span class="skill-level">Intermediate</span>
+                </div>
+                <div class="skill-card">
+                    <div class="skill-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-database"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 12A9 3 0 0 0 21 12v-1a9 3 0 0 0-18 0v1Z"/><path d="M3 5v14A9 3 0 0 0 21 19V5"/></svg></div>
+                    <p class="skill-name">PostgreSQL</p>
+                    <span class="skill-level">Advanced</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="work" class="section-wrapper">
+            <div class="section-header">
+                <h2 class="section-title">Featured Projects</h2>
+                <p class="section-desc">A selection of my recent work, showcasing diverse skills and impactful solutions.</p>
+            </div>
+            <div class="projects-bento">
+                <div class="project-card project-card--span2">
+                    <img src="/api/assets/99/1/project_thumbnail_creative_coding.png" alt="Nebula Dashboard screenshot" class="project-image" onerror="this.style.background='linear-gradient(135deg,var(--surface),var(--surface-elevated))';this.style.minHeight='240px';">
+                    <div class="project-overlay">
+                        <div class="project-info">
+                            <span class="project-tag">Creative Coding</span>
+                            <h3 class="project-title">Nebula Dashboard</h3>
+                            <p class="project-desc">An interactive data visualization dashboard built with React and D3.js, featuring real-time data feeds and custom generative art backgrounds.</p>
+                            <a href="#" class="project-link">View Project →</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="project-card">
+                    <img src="/api/assets/99/1/project_thumbnail_web.png" alt="Pulse Analytics screenshot" class="project-image" onerror="this.style.background='linear-gradient(135deg,var(--surface),var(--surface-elevated))';this.style.minHeight='240px';">
+                    <div class="project-overlay">
+                        <div class="project-info">
+                            <span class="project-tag">Web Development</span>
+                            <h3 class="project-title">Pulse Analytics</h3>
+                            <p class="project-desc">A robust web application for tracking user engagement and website performance, developed with Next.js and GraphQL.</p>
+                            <a href="#" class="project-link">View Project →</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="project-card">
+                    <img src="/api/assets/99/1/project_thumbnail_mobile.png" alt="Zenith Mobile App screenshot" class="project-image" onerror="this.style.background='linear-gradient(135deg,var(--surface),var(--surface-elevated))';this.style.minHeight='240px';">
+                    <div class="project-overlay">
+                        <div class="project-info">
+                            <span class="project-tag">Mobile App</span>
+                            <h3 class="project-title">Zenith Mobile App</h3>
+                            <p class="project-desc">A cross-platform mobile application built with React Native, offering seamless user experience for financial tracking.</p>
+                            <a href="#" class="project-link">View Project →</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="project-card">
+                    <img src="https://image.pollinations.ai/prompt/modern%20web%20app%20dashboard%20design%20screenshot%20dark%20theme?width=600&height=400&nologo=true" alt="Artisan CMS screenshot" class="project-image" onerror="this.style.background='linear-gradient(135deg,var(--surface),var(--surface-elevated))';this.style.minHeight='240px';">
+                    <div class="project-overlay">
+                        <div class="project-info">
+                            <span class="project-tag">Backend & API</span>
+                            <h3 class="project-title">Artisan CMS</h3>
+                            <p class="project-desc">A headless CMS with a custom API built on Node.js and PostgreSQL, providing flexible content management.</p>
+                            <a href="#" class="project-link">View Project →</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="project-card">
+                    <img src="https://image.pollinations.ai/prompt/e-commerce%20product%20page%20design%20screenshot%20minimalist%20dark%20theme?width=600&height=400&nologo=true" alt="Quantum Payments screenshot" class="project-image" onerror="this.style.background='linear-gradient(135deg,var(--surface),var(--surface-elevated))';this.style.minHeight='240px';">
+                    <div class="project-overlay">
+                        <div class="project-info">
+                            <span class="project-tag">E-commerce</span>
+                            <h3 class="project-title">Quantum Payments</h3>
+                            <p class="project-desc">A secure and efficient payment gateway integration for e-commerce platforms, developed with Stripe API and Python.</p>
+                            <a href="#" class="project-link">View Project →</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="section-wrapper">
+            <div class="section-header">
+                <h2 class="section-title">Get In Touch</h2>
+                <p class="section-desc">Have a project in mind or just want to chat? Feel free to reach out!</p>
+            </div>
+            <div class="contact-grid">
+                <form class="contact-form">
+                    <div class="form-group">
+                        <label for="name" class="form-label">Name</label>
+                        <input type="text" id="name" name="name" class="form-input" placeholder="Your Name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" id="email" name="email" class="form-input" placeholder="your@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="subject" class="form-label">Subject</label>
+                        <input type="text" id="subject" name="subject" class="form-input" placeholder="Project Inquiry, Collaboration, etc.">
+                    </div>
+                    <div class="form-group">
+                        <label for="message" class="form-label">Message</label>
+                        <textarea id="message" name="message" class="form-textarea" rows="6" placeholder="Tell me about your project..."></textarea>
+                    </div>
+                    <button type="submit" class="btn-primary">Send Message</button>
+                </form>
+                <div class="contact-details">
+                    <div class="contact-item">
+                        <div class="contact-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></div>
+                        <div class="contact-info">
+                            <span class="contact-label">Email</span>
+                            <a href="mailto:john.doe@example.com" class="contact-value">john.doe@example.com</a>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>
+                        <div class="contact-info">
+                            <span class="contact-label">Location</span>
+                            <span class="contact-value">San Francisco, CA</span>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-linkedin"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg></div>
+                        <div class="contact-info">
+                            <span class="contact-label">LinkedIn</span>
+                            <a href="https://linkedin.com/in/johndoe" target="_blank" class="contact-value">/in/johndoe</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <p>&copy; 2025 John Doe. All rights reserved.</p>
+        <div class="social-links">
+            <a href="#" class="btn-ghost">GitHub</a>
+            <a href="#" class="btn-ghost">Twitter</a>
+        </div>
+    </footer>
+
+    <script>
+        // Basic form submission simulation (no actual backend)
+        document.querySelector('.contact-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            alert('Thank you for your message! I will get back to you shortly.');
+            this.reset();
+        });
+
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</body>
+</html>

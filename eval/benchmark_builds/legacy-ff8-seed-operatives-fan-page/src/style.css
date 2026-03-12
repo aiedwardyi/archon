@@ -1,0 +1,51 @@
+/* Custom styles for FFVIII aesthetic */
+.hero-title-numeral {
+    font-size: 2.5em; /* Make numeral significantly larger */
+    line-height: 0.8;
+    display: block;
+    color: var(--accent);
+    text-shadow: 0 0 15px rgba(var(--accent-rgb), 0.7);
+}
+
+
+.hero-title-name {
+    font-size: 1.5em; /* Adjust base game title size relative to numeral */
+}
+
+
+.weapon-owner {
+    font-size: 0.9em;
+    margin-top: -0.5em;
+    margin-bottom: 0.5em;
+    color: var(--text-muted);
+}
+
+
+.weapon-card .weapon-stat-value {
+    color: var(--accent);
+    text-shadow: 0 0 8px rgba(var(--accent-rgb), 0.5);
+}
+
+
+/* Ensure images within cards fit well */
+.character-card .card-image,
+.weapon-banner img,
+.world-map-image img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    display: block;
+}
+
+
+/* Additional hover effects for specific elements */
+.btn-hero:hover,
+.btn-primary:hover {
+    box-shadow: 0 0 15px rgba(var(--accent-rgb), 0.5);
+}
+
+
+/* Specific adjustment for scroll indicator text color to match accent */
+.scroll-indicator-text {
+    color: var(--accent);
+}

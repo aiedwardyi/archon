@@ -1,0 +1,43 @@
+/* src/style.css */
+
+/* Custom styles and overrides for Apex Threads */
+
+/* Ensure cart drawer slides in correctly */
+.cart-drawer {
+    transform: translateX(100%); /* Start off-screen to the right */
+    transition: transform 0.3s ease-out; /* Smooth transition */
+}
+
+
+.cart-drawer.cart-drawer-open {
+    transform: translateX(0); /* Slide into view */
+}
+
+
+/* Hero background image fallback if the inline style fails */
+.hero-banner:not([style*="background-image"]) {
+    background: linear-gradient(135deg, var(--bg), #222228);
+}
+
+
+/* Adjust hero overlay transparency for better text contrast if base.css default is too light */
+.hero-overlay {
+    background: linear-gradient(to top, rgba(15,15,18,0.8), rgba(15,15,18,0.2));
+}
+
+
+/* Small adjustments for filter pills if base.css doesn't perfectly match active state accent color */
+.filter-pill.active {
+    background-color: var(--accent);
+    color: var(--bg);
+}
+
+
+/* Ensure star SVGs use accent color, as base.css might set a generic fill */
+.star-rating .star-filled {
+    fill: var(--accent);
+}
+
+.star-rating .star-empty {
+    fill: var(--border);
+}

@@ -1,0 +1,68 @@
+/* src/style.css */
+
+/* Custom styles for brand story section */
+.brand-story-section {
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+}
+
+
+.brand-story-content {
+    display: flex;
+    align-items: center;
+    gap: 3rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--space-lg);
+}
+
+
+.brand-story-image {
+    flex: 1;
+    max-width: 50%;
+    height: auto;
+    object-fit: cover;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-xl);
+}
+
+
+.brand-story-text {
+    flex: 1;
+    font-size: var(--font-size-lg);
+    line-height: 1.7;
+    color: var(--text-secondary);
+    max-width: 50%;
+}
+
+
+/* Cart drawer open state */
+.cart-drawer.cart-drawer-open {
+    transform: translateX(0);
+}
+
+
+/* Empty state for cart */
+.cart-empty-state {
+    text-align: center;
+    padding: var(--space-xl) var(--space-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-md);
+    color: var(--text-muted);
+}
+
+
+/* Responsive adjustments for brand story */
+@media (max-width: 768px) {
+    .brand-story-content {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .brand-story-image,
+    .brand-story-text {
+        max-width: 100%;
+    }
+}

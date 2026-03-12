@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PyRunner — Simple Python App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="app-wrapper">
+  <header class="topbar">
+    <div class="topbar-logo">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <rect width="28" height="28" rx="8" fill="url(#logoGrad)"/>
+        <path d="M8 10h7a3 3 0 010 6H8V10z" fill="#fff" opacity="0.9"/>
+        <path d="M13 16h7v6h-7V16z" fill="#fff" opacity="0.6"/>
+        <defs><linearGradient id="logoGrad" x1="0" y1="0" x2="28" y2="28"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>
+      </svg>
+      <span class="logo-text">PyRunner</span>
+    </div>
+    <div class="topbar-steps" id="topbarSteps">
+      <div class="step-pill active" data-step="1">1 Configure</div>
+      <div class="step-divider"></div>
+      <div class="step-pill" data-step="2">2 Parameters</div>
+      <div class="step-divider"></div>
+      <div class="step-pill" data-step="3">3 Review</div>
+    </div>
+    <div class="topbar-right">
+      <span class="env-badge">Python 3.12</span>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="form-card" id="formCard">
+
+      <div class="step-indicator" id="stepIndicator">
+        <div class="step-node active" id="node1">
+          <div class="step-circle">1</div>
+          <span>Configure</span>
+        </div>
+        <div class="step-track"><div class="step-fill" id="fill12"></div></div>
+        <div class="step-node" id="node2">
+          <div class="step-circle">2</div>
+          <span>Parameters</span>
+        </div>
+        <div class="step-track"><div class="step-fill" id="fill23"></div></div>
+        <div class="step-node" id="node3">
+          <div class="step-circle">3</div>
+          <span>Review</span>
+        </div>
+      </div>
+
+      <div class="form-body">
+
+        <div class="form-step" id="step1">
+          <div class="step-header">
+            <h2>Application Configuration</h2>
+            <p>Set up the core identity and runtime for your Python application.</p>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="appName">Application Name <span class="required">*</span></label>
+            <div class="input-wrap">
+              <input class="field-input" id="appName" type="text" placeholder="e.g. data-processor" autocomplete="off">
+              <div class="input-icon">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              </div>
+            </div>
+            <span class="field-error" id="appName-err"></span>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="appType">Application Type <span class="required">*</span></label>
+            <div class="select-wrap">
+              <select class="field-select" id="appType">
+                <option value="">Select a type…</option>
+                <option value="cli">CLI Tool</option>
+                <option value="web">Web Service (Flask)</option>
+                <option value="script">Automation Script</option>
+                <option value="api">REST API (FastAPI)</option>
+                <option value="ml">ML Pipeline</option>
+              </select>
+              <div class="select-arrow">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              </div>
+            </div>
+            <span class="field-error" id="appType-err"></span>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="pythonVer">Python Version</label>
+            <div class="select-wrap">
+              <select class="field-select" id="pythonVer">
+                <option value="3.12">Python 3.12 (recommended)</option>
+                <option value="3.11">Python 3.11</option>
+                <option value="3.10">Python 3.10</option>
+                <option value="3.9">Python 3.9</option>
+              </select>
+              <div class="select-arrow">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              </div>
+            </div>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="description">Description</label>
+            <textarea class="field-textarea" id="description" placeholder="What does this app do?" rows="3"></textarea>
+          </div>
+        </div>
+
+        <div class="form-step hidden" id="step2">
+          <div class="step-header">
+            <h2>Runtime Parameters</h2>
+            <p>Define execution environment, dependencies, and entry point.</p>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="entryFile">Entry File <span class="required">*</span></label>
+            <div class="input-wrap">
+              <input class="field-input mono" id="entryFile" type="text" placeholder="main.py" value="main.py">
+              <div class="input-icon mono-icon">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              </div>
+            </div>
+            <span class="field-error" id="entryFile-err"></span>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="dependencies">Dependencies</label>
+            <div class="deps-input-wrap">
+              <div class="input-wrap">
+                <input class="field-input mono" id="depInput" type="text" placeholder="e.g. requests, numpy…">
+              </div>
+              <button type="button" class="btn-add" id="addDep">Add</button>
+            </div>
+            <div class="deps-list" id="depsList"></div>
+            <span class="field-hint">Press Add or Enter to include a package.</span>
+          </div>
+          <div class="field-row">
+            <div class="field-group">
+              <label class="field-label" for="timeout">Timeout (seconds)</label>
+              <div class="input-wrap">
+                <input class="field-input" id="timeout" type="number" placeholder="30" min="1" max="3600" value="30">
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="memLimit">Memory Limit</label>
+              <div class="select-wrap">
+                <select class="field-select" id="memLimit">
+                  <option value="256">256 MB</option>
+                  <option value="512" selected>512 MB</option>
+                  <option value="1024">1 GB</option>
+                  <option value="2048">2 GB</option>
+                </select>
+                <div class="select-arrow">
+                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Environment Variables</label>
+            <div class="env-list" id="envList">
+              <div class="env-row">
+                <input class="field-input mono env-key" type="text" placeholder="KEY">
+                <span class="env-eq">=</span>
+                <input class="field-input mono env-val" type="text" placeholder="value">
+                <button type="button" class="btn-remove-env" title="Remove">×</button>
+              </div>
+            </div>
+            <button type="button" class="btn-add-env" id="addEnv">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              Add Variable
+            </button>
+          </div>
+        </div>
+
+        <div class="form-step hidden" id="step3">
+          <div class="step-header">
+            <h2>Review & Launch</h2>
+            <p>Confirm your configuration before generating the Python application scaffold.</p>
+          </div>
+          <div class="review-card" id="reviewCard">
+            <div class="review-section">
+              <div class="review-label">Application</div>
+              <div class="review-row"><span>Name</span><span class="review-val" id="r-name">—</span></div>
+              <div class="review-row"><span>Type</span><span class="review-val" id="r-type">—</span></div>
+              <div class="review-row"><span>Python</span><span class="review-val" id="r-python">—</span></div>
+              <div class="review-row"><span>Description</span><span class="review-val" id="r-desc">—</span></div>
+            </div>
+            <div class="review-divider"></div>
+            <div class="review-section">
+              <div class="review-label">Runtime</div>
+              <div class="review-row"><span>Entry File</span><span class="review-val mono" id="r-entry">—</span></div>
+              <div class="review-row"><span>Timeout</span><span class="review-val" id="r-timeout">—</span></div>
+              <div class="review-row"><span>Memory</span><span class="review-val" id="r-memory">—</span></div>
+              <div class="review-row"><span>Dependencies</span><span class="review-val" id="r-deps">—</span></div>
+            </div>
+            <div class="review-divider"></div>
+            <div class="review-section">
+              <div class="review-label">Generated Command</div>
+              <div class="code-block" id="r-cmd"><span class="code-prompt">$</span> <span id="r-cmd-text">python main.py</span></div>
+            </div>
+          </div>
+          <div class="launch-note">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            This will scaffold a Python project with the selected configuration including <code>requirements.txt</code>, <code>README.md</code>, and entry point.
+          </div>
+        </div>
+
+        <div class="form-step hidden" id="stepSuccess">
+          <div class="success-state">
+            <div class="success-icon">
+              <svg width="40" height="40" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="url(#sGrad)"/><path d="M8 12l3 3 5-5" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><defs><linearGradient id="sGrad" x1="0" y1="0" x2="24" y2="24"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs></svg>
+            </div>
+            <h2>Application Scaffolded!</h2>
+            <p id="successMsg">Your Python app has been configured and is ready to run.</p>
+            <div class="success-files" id="successFiles"></div>
+            <div class="code-block success-cmd">
+              <span class="code-prompt">$</span> <span id="successCmd">python main.py</span>
+            </div>
+            <button type="button" class="btn-primary restart-btn" id="restartBtn">Start New App</button>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="actions" id="actionsBar">
+        <button type="button" class="btn-secondary" id="backBtn" style="display:none;">← Back</button>
+        <div class="actions-right">
+          <span class="step-counter" id="stepCounter">Step 1 of 3</span>
+          <button type="button" class="btn-primary" id="nextBtn">Continue →</button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast">
+  <div class="toast-icon" id="toastIcon"></div>
+  <div class="toast-body">
+    <div class="toast-title" id="toastTitle"></div>
+    <div class="toast-msg" id="toastMsg"></div>
+  </div>
+  <button class="toast-close" id="toastClose">×</button>
+</div>
+
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Validation Error</div>
+      <button class="modal-close" id="modalClose">×</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer">
+      <button class="btn-primary" id="modalOk">Got it</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const state = { step: 1, totalSteps: 3, deps: [], submitting: false };
+
+const $ = id => document.getElementById(id);
+
+const typeLabels = { cli: 'CLI Tool', web: 'Web Service (Flask)', script: 'Automation Script', api: 'REST API (FastAPI)', ml: 'ML Pipeline' };
+
+function showToast(title, msg, type = 'info') {
+  const t = $('toast');
+  $('toastTitle').textContent = title;
+  $('toastMsg').textContent = msg;
+  const icons = { info: '💡', success: '✅', error: '❌', warn: '⚠️' };
+  $('toastIcon').textContent = icons[type] || '💡';
+  t.className = 'toast show ' + type;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.className = 'toast'; }, 4000);
+}
+
+$('toastClose').addEventListener('click', () => { $('toast').className = 'toast'; });
+
+function showModal(title, body) {
+  $('modalTitle').textContent = title;
+  $('modalBody').innerHTML = body;
+  $('modalOverlay').classList.remove('hidden');
+  $('modal').classList.add('open');
+}
+
+function closeModal() {
+  $('modalOverlay').classList.add('hidden');
+  $('modal').classList.remove('open');
+}
+
+$('modalClose').addEventListener('click', closeModal);
+$('modalOk').addEventListener('click', closeModal);
+$('modalOverlay').addEventListener('click', e => { if (e.target === $('modalOverlay')) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+function setFieldError(id, msg) {
+  const el = $(id + '-err');
+  const input = $(id);
+  if (el) el.textContent = msg;
+  if (input) {
+    if (msg) { input.classList.add('error'); }
+    else { input.classList.remove('error'); }
+  }
+}
+
+function clearErrors() {
+  document.querySelectorAll('.field-error').forEach(e => e.textContent = '');
+  document.querySelectorAll('.error').forEach(e => e.classList.remove('error'));
+}
+
+function validateStep1() {
+  clearErrors();
+  let valid = true;
+  const name = $('appName').value.trim();
+  if (!name) {
+    setFieldError('appName', 'Application name is required.');
+    valid = false;
+  } else if (!/^[a-z0-9_-]+$/i.test(name)) {
+    setFieldError('appName', 'Use only letters, numbers, hyphens, or underscores.');
+    valid = false;
+  }
+  const type = $('appType').value;
+  if (!type) {
+    setFieldError('appType', 'Please select an application type.');
+    valid = false;
+  }
+  return valid;
+}
+
+function validateStep2() {
+  clearErrors();
+  let valid = true;
+  const entry = $('entryFile').value.trim();
+  if (!entry) {
+    setFieldError('entryFile', 'Entry file name is required.');
+    valid = false;
+  } else if (!entry.endsWith('.py')) {
+    setFieldError('entryFile', 'Entry file must end in .py');
+    valid = false;
+  }
+  return valid;
+}
+
+function renderDeps() {
+  const list = $('depsList');
+  list.innerHTML = '';
+  if (state.deps.length === 0) {
+    list.innerHTML = '<span class="no-deps">No dependencies added yet.</span>';
+    return;
+  }
+  state.deps.forEach((dep, i) => {
+    const pill = document.createElement('div');
+    pill.className = 'dep-pill';
+    pill.innerHTML = `<span class="mono">${dep}</span><button class="dep-remove" data-i="${i}">×</button>`;
+    list.appendChild(pill);
+  });
+  list.querySelectorAll('.dep-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.deps.splice(+btn.dataset.i, 1);
+      renderDeps();
+    });
+  });
+}
+
+function addDep() {
+  const val = $('depInput').value.trim().replace(/,+$/, '');
+  if (!val) return;
+  val.split(',').map(v => v.trim()).filter(Boolean).forEach(v => {
+    if (!state.deps.includes(v)) state.deps.push(v);
+  });
+  $('depInput').value = '';
+  renderDeps();
+}
+
+$('addDep').addEventListener('click', addDep);
+$('depInput').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addDep(); } });
+
+$('addEnv').addEventListener('click', () => {
+  const row = document.createElement('div');
+  row.className = 'env-row';
+  row.innerHTML = '<input class="field-input mono env-key" type="text" placeholder="KEY"><span class="env-eq">=</span><input class="field-input mono env-val" type="text" placeholder="value"><button type="button" class="btn-remove-env" title="Remove">×</button>';
+  $('envList').appendChild(row);
+  row.querySelector('.btn-remove-env').addEventListener('click', () => row.remove());
+});
+
+document.querySelector('.btn-remove-env').addEventListener('click', function() { this.closest('.env-row').remove(); });
+
+function getEnvVars() {
+  const rows = $('envList').querySelectorAll('.env-row');
+  const vars = [];
+  rows.forEach(row => {
+    const k = row.querySelector('.env-key').value.trim();
+    const v = row.querySelector('.env-val').value.trim();
+    if (k) vars.push({ k, v });
+  });
+  return vars;
+}
+
+function populateReview() {
+  const name = $('appName').value.trim();
+  const type = $('appType').value;
+  const python = $('pythonVer').value;
+  const desc = $('description').value.trim() || 'No description provided.';
+  const entry = $('entryFile').value.trim();
+  const timeout = $('timeout').value;
+  const mem = $('memLimit').value;
+
+  $('r-name').textContent = name;
+  $('r-type').textContent = typeLabels[type] || type;
+  $('r-python').textContent = `Python ${python}`;
+  $('r-desc').textContent = desc;
+  $('r-entry').textContent = entry;
+  $('r-timeout').textContent = `${timeout}s`;
+  $('r-memory').textContent = `${mem} MB`;
+  $('r-deps').textContent = state.deps.length ? state.deps.join(', ') : 'None';
+
+  const cmd = `python${python.startsWith('3') ? '3' : ''} ${entry}`;
+  $('r-cmd-text').textContent = cmd;
+}
+
+function goToStep(n) {
+  document.querySelectorAll('.form-step').forEach(s => s.classList.add('hidden'));
+  const ids = { 1: 'step1', 2: 'step2', 3: 'step3', 4: 'stepSuccess' };
+  $(ids[n]).classList.remove('hidden');
+  $(ids[n]).classList.add('animating');
+  setTimeout(() => $(ids[n]).classList.remove('animating'), 400);
+
+  document.querySelectorAll('.step-node').forEach((node, i) => {
+    node.classList.toggle('active', i + 1 <= n);
+    node.classList.toggle('done', i + 1 < n);
+  });
+  document.querySelectorAll('.step-pill').forEach((pill, i) => {
+    pill.classList.toggle('active', i + 1 === n);
+    pill.classList.toggle('done', i + 1 < n);
+  });
+
+  $('fill12').style.width = n > 1 ? '100%' : '0%';
+  $('fill23').style.width = n > 2 ? '100%' : '0%';
+
+  const isSuccess = n > 3;
+  $('actionsBar').style.display = isSuccess ? 'none' : 'flex';
+  $('stepIndicator').style.opacity = isSuccess ? '0' : '1';
+
+  if (n === 1) {
+    $('backBtn').style.display = 'none';
+    $('nextBtn').textContent = 'Continue →';
+  } else if (n === 2) {
+    $('backBtn').style.display = 'flex';
+    $('nextBtn').textContent = 'Continue →';
+  } else if (n === 3) {
+    $('backBtn').style.display = 'flex';
+    $('nextBtn').textContent = 'Launch App ✦';
+    $('nextBtn').classList.add('launch');
+    populateReview();
+  }
+
+  $('stepCounter').textContent = `Step ${Math.min(n, 3)} of 3`;
+  state.step = n;
+}
+
+$('nextBtn').addEventListener('click', () => {
+  if (state.step === 1) {
+    if (!validateStep1()) {
+      showToast('Validation Failed', 'Please fix the highlighted fields.', 'error');
+      return;
+    }
+    goToStep(2);
+  } else if (state.step === 2) {
+    if (!validateStep2()) {
+      showToast('Validation Failed', 'Entry file must be a .py file.', 'error');
+      return;
+    }
+    goToStep(3);
+  } else if (state.step === 3) {
+    launchApp();
+  }
+});
+
+$('backBtn').addEventListener('click', () => {
+  if (state.step > 1) goToStep(state.step - 1);
+});
+
+function simulateValidating(cb) {
+  const btn = $('nextBtn');
+  btn.classList.add('loading');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Validating…';
+  setTimeout(cb, 1400);
+}
+
+function launchApp() {
+  simulateValidating(() => {
+    const btn = $('nextBtn');
+    btn.innerHTML = '<span class="spinner"></span> Scaffolding…';
+    setTimeout(() => {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+      btn.textContent = 'Launch App ✦';
+      buildSuccess();
+      goToStep(4);
+      showToast('App Scaffolded!', 'Your Python project is ready.', 'success');
+    }, 900);
+  });
+}
+
+function buildSuccess() {
+  const name = $('appName').value.trim();
+  const type = $('appType').value;
+  const entry = $('entryFile').value.trim();
+  const python = $('pythonVer').value;
+
+  $('successMsg').textContent = `"${name}" (${typeLabels[type]}) has been configured and is ready to run.`;
+  $('successCmd').textContent = `python3 ${entry}`;
+
+  const files = [
+    { name: entry, icon: '🐍' },
+    { name: 'requirements.txt', icon: '📦' },
+    { name: 'README.md', icon: '📄' },
+    { name: '.env.example', icon: '🔑' },
+    { name: 'pyproject.toml', icon: '⚙️' },
+  ];
+  if (type === 'web' || type === 'api') files.push({ name: 'Dockerfile', icon: '🐳' });
+
+  const sf = $('successFiles');
+  sf.innerHTML = files.map(f => `<div class="success-file"><span>${f.icon}</span><span class="mono">${f.name}</span></div>`).join('');
+}
+
+$('restartBtn').addEventListener('click', () => {
+  document.querySelectorAll('.field-input, .field-textarea').forEach(el => el.value = '');
+  $('appName').value = '';
+  $('appType').value = '';
+  $('pythonVer').value = '3.12';
+  $('entryFile').value = 'main.py';
+  $('timeout').value = '30';
+  $('memLimit').value = '512';
+  $('description').value = '';
+  state.deps = [];
+  renderDeps();
+  $('envList').innerHTML = '<div class="env-row"><input class="field-input mono env-key" type="text" placeholder="KEY"><span class="env-eq">=</span><input class="field-input mono env-val" type="text" placeholder="value"><button type="button" class="btn-remove-env" title="Remove">×</button></div>';
+  document.querySelector('.btn-remove-env').addEventListener('click', function() { this.closest('.env-row').remove(); });
+  clearErrors();
+  $('actionsBar').style.display = 'flex';
+  $('stepIndicator').style.opacity = '1';
+  $('nextBtn').classList.remove('launch');
+  $('nextBtn').textContent = 'Continue →';
+  goToStep(1);
+});
+
+renderDeps();
+goToStep(1);
+</script>
+</body>
+</html>

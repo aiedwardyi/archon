@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final Fantasy VIII - Fan Page</title>
+    <link rel="stylesheet" href="./base.css">
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="noise-overlay"></div>
+
+    <nav class="glass-nav">
+        <div class="nav-logo">FF VIII</div>
+        <div class="nav-links">
+            <a href="#characters" data-section="characters" class="nav-link active">CHARACTERS</a>
+            <a href="#weapons" data-section="weapons" class="nav-link">WEAPONS</a>
+            <a href="#world-map" data-section="world-map" class="nav-link">WORLD MAP</a>
+        </div>
+    </nav>
+
+    <section class="hero-cinematic" id="hero">
+        <div class="hero-bg-image" style="background-image: url('/api/assets/171/1/hero_background.png');">
+            <div class="hero-bg-overlay"></div>
+        </div>
+        <div class="hero-content">
+            <p class="hero-eyebrow">BALAMB GARDEN PRESENTS</p>
+            <h1 class="hero-title-name">Final Fantasy <span class="hero-title-numeral">VIII</span></h1>
+            <p class="hero-subtitle">Step into the shoes of SeeD mercenaries. Discover a world torn between past and future, where love defies time itself.</p>
+            <div class="hero-ctas">
+                <button class="btn-hero">MEET THE SEEDS</button>
+                <button class="btn-hero btn-hero--outline">EXPLORE THE WORLD</button>
+            </div>
+        </div>
+        <div class="scroll-indicator">
+            <div class="mouse-icon">
+                <div class="mouse-dot"></div>
+            </div>
+            <p class="scroll-indicator-text">SCROLL</p>
+        </div>
+    </section>
+
+    <section class="section-wrapper" id="characters">
+        <div class="section-header">
+            <p class="eyebrow">THE PARTY</p>
+            <h2 class="section-title">SeeD Operatives</h2>
+            <div class="section-divider"></div>
+        </div>
+        <div class="grid-characters">
+            <div class="character-card">
+                <div class="card-image-wrapper">
+                    <img src="/api/assets/171/1/character_squall.png" alt="Squall Leonhart" class="card-image" onerror="this.style.background='linear-gradient(135deg,var(--surface-1),var(--surface-2))';this.style.minHeight='200px'">
+                </div>
+                <div class="card-body">
+                    <p class="char-role">SEE D COMMANDER</p>
+                    <h3 class="char-name">SQUALL LEONHART</h3>
+                    <p class="char-weapon">Weapon: Gunblade</p>
+                    <p class="char-desc">A lone wolf mercenary from Balamb Garden, cold on the surface, but driven by an unshakeable sense of duty.</p>
+                    <div class="stat-group">
+                        <div class="stat-row">
+                            <span class="stat-label">STR</span>
+                            <div class="stat-bar"><div class="stat-bar-fill" style="width: 90%;"></div></div>
+                            <span class="stat-value">90</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">VIT</span>
+                            <div class="stat-bar"><div class="stat-bar-fill" style="width: 85%;"></div></div>
+                            <span class="stat-value">85</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">MAG</span>
+                            <div class="stat-bar"><div class="stat-bar-fill" style="width: 70%;"></div></div>
+                            <span class="stat-value">70</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">SPD</span>
+                            <div class="stat-bar"><div class="stat-bar-fill" style="width: 80%;"></div></div>
+                            <span class="stat-value">80</span>
+                        </div>
+                    </div>
+                    <button class="btn-primary">VIEW LOADOUT</button>
+                </div>
+            </div>
+
+            <div class="character-card">
+                <div class="card-image-wrapper">
+                    <img src="/api/assets/171/1/character_rinoa.png" alt="Rinoa Heartilly" class="card-image" onerror="this.style.background='linear-gradient(135deg,var(--surface-1),var(--surface-2))';this.style.minHeight='200px'">
+                </div>
+                <div class="card-body">
+                    <p class="char-role">SORCERESS</p>
+                    <h3 class="char-name">RINOA HEARTILLY</h3>
+                    <p class="char-weapon">Weapon: Blaster Edge</p>
+                    <p class="char-desc">A spirited resistance fighter whose warmth breaks through the coldest hearts. Destiny chose her as a Sorceress.</p>
+                    <div class="stat-group">
+                        <div class="stat-row">
+                            <span class="stat-label">STR</span>
+                            <div class="stat-bar"><div class="stat-bar-fill" style="width: 55%;"></div></div>
+                            <span class="stat-value">55</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">VIT</span>
+                            <div class="stat-bar"><div class="stat-bar-fill" style="width: 60%;"></div></div>
+                            <span class="stat-value">60</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">MAG</span>
+                            <div class="stat-bar"><div class="stat-bar-fill" style="width: 95%;"></div></div>
+                            <span class="stat-value">95</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">SPD</span>
+                            <div class="stat-bar"><div class="stat-bar-fill" style="width: 75%;"></div></div>
+                            <span class="stat-value">75</span>
+                        </div>
+                    </div>
+                    <button class="btn-primary">VIEW LOADOUT</button>
+                </div>
+            </div>
+
+            <div class="character-card">
+                <div class="card-image-wrapper">
+                    <img src="/api/assets/171/1/character_zell.png" alt="Zell Dincht" class="card-image" onerror="this.style.background='linear-gradient(135deg,var(--surface-1),var(--surface-2))';this.style.minHeight='200px'">
+                </div>
+                <div class="card-body">
+                    <p class="char-role">SEE D OPERATIVE</p>
+                    <h3 class="char-name">ZELL DINCHT</h3>
+                    <p class="char-weapon">Weapon: Combat Gloves</p>
+                    <p class="char-desc">An energetic martial artist with a heart of gold. His fists speak louder than words on the battlefield.</p>
+                    <div class="stat-group">
+                        <div class="stat-row">
+                            <span class="stat-label">STR</span>
+                            <div class="stat-bar"><div class="stat-bar-fill" style="width: 92%;"></div></div>
+                            <span class="stat-value">92</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">VIT</span>
+                            <div class="stat-bar"><div class="stat-bar-fill" style="width: 88%;"></div></div>
+                            <span class="stat-value">88</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">MAG</span>
+                            <div class="stat-bar"><div class="stat-bar-fill" style="width: 50%;"></div></div>
+                            <span class="stat-value">50</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">SPD</span>
+                            <div class="stat-bar"><div class="stat-bar-fill" style="width: 98%;"></div></div>
+                            <span class="stat-value">98</span>
+                        </div>
+                    </div>
+                    <button class="btn-primary">VIEW LOADOUT</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section-wrapper" id="weapons">
+        <div class="section-header">
+            <p class="eyebrow">ARSENAL</p>
+            <h2 class="section-title">Weapons of SeeD</h2>
+            <div class="section-divider"></div>
+        </div>
+        <div class="weapons-showcase">
+            <div class="weapons-banner">
+                <img src="/api/assets/171/1/weapon_art.png" alt="Final Fantasy VIII Weapons" onerror="this.style.background='linear-gradient(135deg,var(--surface-1),var(--surface-2))';this.style.minHeight='200px'">
+            </div>
+            <div class="grid-weapons">
+                <div class="weapon-card">
+                    <p class="weapon-type">GUNBLADE</p>
+                    <h3 class="weapon-name">REVOLVER</h3>
+                    <p class="weapon-owner">Owner: <span style="color: var(--accent);">Squall</span></p>
+                    <p class="weapon-desc">A hybrid blade-firearm. Pulling the trigger at the moment of impact sends a shockwave through the target.</p>
+                    <div class="weapon-stats">
+                        <div><span class="weapon-stat-value">96</span><span class="weapon-stat-label">ATK</span></div>
+                        <div><span class="weapon-stat-value">24</span><span class="weapon-stat-label">MAG</span></div>
+                    </div>
+                </div>
+                <div class="weapon-card">
+                    <p class="weapon-type">BLASTER EDGE</p>
+                    <h3 class="weapon-name">PINWHEEL</h3>
+                    <p class="weapon-owner">Owner: <span style="color: var(--accent);">Rinoa</span></p>
+                    <p class="weapon-desc">A wrist-mounted projectile launcher that fires a bladed disc toward enemies with deadly precision.</p>
+                    <div class="weapon-stats">
+                        <div><span class="weapon-stat-value">78</span><span class="weapon-stat-label">ATK</span></div>
+                        <div><span class="weapon-stat-value">32</span><span class="weapon-stat-label">MAG</span></div>
+                    </div>
+                </div>
+                <div class="weapon-card">
+                    <p class="weapon-type">COMBAT GLOVES</p>
+                    <h3 class="weapon-name">METAL KNUCKLE</h3>
+                    <p class="weapon-owner">Owner: <span style="color: var(--accent);">Zell</span></p>
+                    <p class="weapon-desc">Reinforced gauntlets designed for close-quarters combat. Each punch carries the force of a battering ram.</p>
+                    <div class="weapon-stats">
+                        <div><span class="weapon-stat-value">98</span><span class="weapon-stat-label">ATK</span></div>
+                        <div><span class="weapon-stat-value">49</span><span class="weapon-stat-label">MAG</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section-wrapper" id="world-map">
+        <div class="section-header">
+            <p class="eyebrow">EXPLORATION</p>
+            <h2 class="section-title">World Map</h2>
+            <div class="section-divider"></div>
+        </div>
+        <div class="world-map-showcase">
+            <div class="world-map-image">
+                <img src="/api/assets/171/1/location_balamb.png" alt="Final Fantasy VIII World Map" onerror="this.style.background='linear-gradient(135deg,var(--surface-1),var(--surface-2))';this.style.minHeight='200px'">
+            </div>
+            <div class="grid-locations">
+                <div class="location-card">
+                    <p class="location-region">ACADEMY</p>
+                    <h3 class="location-name">BALAMB GARDEN</h3>
+                    <p class="location-desc">The elite military academy where SeeD mercenaries are trained.</p>
+                </div>
+                <div class="location-card">
+                    <p class="location-region">CITY</p>
+                    <h3 class="location-name">DOLLET</h3>
+                    <p class="location-desc">A bustling port town known for its communications tower and scenic seaside.</p>
+                </div>
+                <div class="location-card">
+                    <p class="location-region">TOWN</p>
+                    <h3 class="location-name">TIMBER</h3>
+                    <p class="location-desc">A forest town under Galbadian occupation, home to the resistance group Forest Owls.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="site-footer">
+        <p>&copy; 1999-2024 SQUARE ENIX CO., LTD. All Rights Reserved. Final Fantasy VIII Fan Page.</p>
+    </footer>
+
+    <script>
+        document.querySelectorAll('nav a[data-section]').forEach(a => {
+            a.addEventListener('click', e => {
+                e.preventDefault();
+                const targetId = a.dataset.section;
+                const targetElement = document.getElementById(targetId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({ behavior: 'smooth' });
+                }
+                document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+                a.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

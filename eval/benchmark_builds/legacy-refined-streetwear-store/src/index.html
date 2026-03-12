@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apex Threads - Premium Streetwear</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body x-data="{ cartOpen: false, showToast: false }">
+    <!-- Mandatory Noise Overlay -->
+    <div style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;opacity:0.045;background-image:url('data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'><filter id=\'n\'><feTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/><feColorMatrix type=\'saturate\' values=\'0\'/></filter><rect width=\'200\' height=\'200\' filter=\'url(%23n)\'/></svg>');background-repeat:repeat;mix-blend-mode:overlay"></div>
+
+    <header class="header">
+        <div class="container header-content">
+            <a href="#" class="logo">Apex Threads</a>
+            <nav class="nav-links">
+                <a href="#products">Shop</a>
+                <a href="#collections">Collections</a>
+                <a href="#about">About</a>
+            </nav>
+            <div class="header-icons">
+                <button class="icon-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </button>
+                <button class="icon-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                </button>
+                <button class="icon-btn cart-icon-btn" @click="cartOpen = true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                    <span class="cart-badge">3</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero-section">
+            <div class="hero-bg-overlay"></div>
+            <div class="container hero-content">
+                <div class="hero-text">
+                    <h1>Unleash Your Edge.</h1>
+                    <p class="hero-description">Curated collections of premium streetwear designed to elevate your style and make a statement. Discover unique pieces that blend comfort with cutting-edge fashion.</p>
+                    <div class="hero-ctas">
+                        <a href="#products" class="btn btn-primary">Shop New Arrivals</a>
+                        <a href="#collections" class="btn btn-secondary">View Lookbook</a>
+                    </div>
+                </div>
+                <div class="hero-image-container">
+                    <img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&h=1000&fit=crop&crop=top" alt="Model in streetwear" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,var(--surface) 0%,var(--elevated) 50%,#2a2028 100%)'">
+                </div>
+            </div>
+        </section>
+
+        <section id="collections" class="section featured-collections-section">
+            <div class="container">
+                <h2 class="section-title">Curated Collections</h2>
+                <div class="collections-grid">
+                    <a href="#" class="collection-card">
+                        <div class="collection-card-img-wrapper" style="background: linear-gradient(135deg, var(--surface) 0%, var(--elevated) 50%, #2a2028 100%)">
+                            <img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&h=600&fit=crop&crop=top" alt="Fashion editorial" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,var(--surface) 0%,var(--elevated) 50%,#2a2028 100%)'">
+                        </div>
+                        <div class="collection-card-content">
+                            <span class="collection-piece-count">12 PIECES</span>
+                            <h3 class="collection-name">Urban Alley</h3>
+                        </div>
+                    </a>
+                    <a href="#" class="collection-card">
+                        <div class="collection-card-img-wrapper" style="background: linear-gradient(135deg, var(--surface) 0%, var(--elevated) 50%, #2a2028 100%)">
+                            <img src="https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&h=600&fit=crop&crop=top" alt="Streetwear editorial" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,var(--surface) 0%,var(--elevated) 50%,#2a2028 100%)'">
+                        </div>
+                        <div class="collection-card-content">
+                            <span class="collection-piece-count">8 PIECES</span>
+                            <h3 class="collection-name">Minimalist Concrete</h3>
+                        </div>
+                    </a>
+                    <a href="#" class="collection-card">
+                        <div class="collection-card-img-wrapper" style="background: linear-gradient(135deg, var(--surface) 0%, var(--elevated) 50%, #2a2028 100%)">
+                            <img src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&h=600&fit=crop&crop=top" alt="Urban fashion" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,var(--surface) 0%,var(--elevated) 50%,#2a2028 100%)'">
+                        </div>
+                        <div class="collection-card-content">
+                            <span class="collection-piece-count">15 PIECES</span>
+                            <h3 class="collection-name">Night Shift</h3>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section id="products" class="section product-grid-section">
+            <div class="container">
+                <div class="filter-bar" x-data="{ activeCategory: 'all', activeSize: 'all', activePrice: 'low-high', showSizeDropdown: false, showSortDropdown: false }">
+                    <div class="filter-pills">
+                        <button :class="{'active': activeCategory === 'all'}" @click="activeCategory = 'all'">All</button>
+                        <button :class="{'active': activeCategory === 'hoodies'}" @click="activeCategory = 'hoodies'">Hoodies</button>
+                        <button :class="{'active': activeCategory === 'tees'}" @click="activeCategory = 'tees'">Tees</button>
+                        <button :class="{'active': activeCategory === 'jackets'}" @click="activeCategory = 'jackets'">Jackets</button>
+                        <button :class="{'active': activeCategory === 'accessories'}" @click="activeCategory = 'accessories'">Accessories</button>
+                    </div>
+                    <div class="filter-dropdowns">
+                        <div class="custom-select" @click.outside="showSizeDropdown = false">
+                            <button class="select-toggle" @click="showSizeDropdown = !showSizeDropdown">
+                                Size: <span x-text="activeSize === 'all' ? 'All' : activeSize.toUpperCase()">All</span>
+                                <svg class="chevron-down" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                            </button>
+                            <div class="select-options" x-show="showSizeDropdown" x-transition>
+                                <button @click="activeSize = 'all'; showSizeDropdown = false">All</button>
+                                <button @click="activeSize = 's'; showSizeDropdown = false">S</button>
+                                <button @click="activeSize = 'm'; showSizeDropdown = false">M</button>
+                                <button @click="activeSize = 'l'; showSizeDropdown = false">L</button>
+                                <button @click="activeSize = 'xl'; showSizeDropdown = false">XL</button>
+                            </div>
+                        </div>
+                        <div class="custom-select" @click.outside="showSortDropdown = false">
+                            <button class="select-toggle" @click="showSortDropdown = !showSortDropdown">
+                                Sort by: <span x-text="activePrice === 'low-high' ? 'Price: Low to High' : 'Price: High to Low'">Price: Low to High</span>
+                                <svg class="chevron-down" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                            </button>
+                            <div class="select-options" x-show="showSortDropdown" x-transition>
+                                <button @click="activePrice = 'low-high'; showSortDropdown = false">Price: Low to High</button>
+                                <button @click="activePrice = 'high-low'; showSortDropdown = false">Price: High to Low</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="product-grid">
+                    <div class="product-card product-card-1">
+                        <div class="product-image-wrapper" style="background: linear-gradient(135deg, var(--surface) 0%, var(--elevated) 50%, #2a2028 100%)">
+                            <img src="https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=600&h=750&fit=crop&crop=top" alt="Oversized Hoodie" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,var(--surface) 0%,var(--elevated) 50%,#2a2028 100%)'">
+                        </div>
+                        <div class="product-info">
+                            <span class="product-brand">Apex Threads</span>
+                            <h3 class="product-name">Oversized Hoodie</h3>
+                            <div class="product-rating">
+                                <div class="stars" style="--rating: 4.8;"></div>
+                                <span class="review-count">(42)</span>
+                            </div>
+                            <p class="product-price">$75.00</p>
+                            <button class="btn btn-add-to-cart" @click="showToast = true; setTimeout(() => showToast = false, 2500)">
+                                <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='12' y1='5' x2='12' y2='19'></line><line x1='5' y1='12' x2='19' y2='12'></line></svg>
+                                Add to Cart
+                            </button>
+                            <div class="size-selector">
+                                <button class="size-btn" :class="{'selected': activeSize === 's'}" @click="activeSize = 's'">S</button>
+                                <button class="size-btn" :class="{'selected': activeSize === 'm'}" @click="activeSize = 'm'">M</button>
+                                <button class="size-btn" :class="{'selected': activeSize === 'l'}" @click="activeSize = 'l'">L</button>
+                                <button class="size-btn" :class="{'selected': activeSize === 'xl'}" @click="activeSize = 'xl'">XL</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-card product-card-2">
+                        <div class="product-image-wrapper" style="background: linear-gradient(135deg, var(--surface) 0%, var(--elevated) 50%, #2a2028 100%)">
+                            <img src="https://images.unsplash.com/photo-1542272604-787c3835535d?w=600&h=750&fit=crop&crop=top" alt="Distressed Denim Jacket" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,var(--surface) 0%,var(--elevated) 50%,#2a2028 100%)'">
+                        </div>
+                        <div class="product-info">
+                            <span class="product-brand">Street Culture</span>
+                            <h3 class="product-name">Distressed Denim Jacket</h3>
+                            <div class="product-rating">
+                                <div class="stars" style="--rating: 4.2;"></div>
+                                <span class="review-count">(31)</span>
+                            </div>
+                            <p class="product-price">$180.00</p>
+                            <button class="btn btn-add-to-cart" @click="showToast = true; setTimeout(() => showToast = false, 2500)">
+                                <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='12' y1='5' x2='12' y2='19'></line><line x1='5' y1='12' x2='19' y2='12'></line></svg>
+                                Add to Cart
+                            </button>
+                            <div class="size-selector">
+                                <button class="size-btn" :class="{'selected': activeSize === 's'}" @click="activeSize = 's'">S</button>
+                                <button class="size-btn" :class="{'selected': activeSize === 'm'}" @click="activeSize = 'm'">M</button>
+                                <button class="size-btn" :class="{'selected': activeSize === 'l'}" @click="activeSize = 'l'">L</button>
+                                <button class="size-btn" :class="{'selected': activeSize === 'xl'}" @click="activeSize = 'xl'">XL</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-card product-card-3">
+                        <div class="product-image-wrapper" style="background: linear-gradient(135deg, var(--surface) 0%, var(--elevated) 50%, #2a2028 100%)">
+                            <img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600&h=750&fit=crop&crop=top" alt="Oversized Graphic Tee" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,var(--surface) 0%,var(--elevated) 50%,#2a2028 100%)'">
+                        </div>
+                        <div class="product-info">
+                            <span class="product-brand">Urban Flow</span>
+                            <h3 class="product-name">Oversized Graphic Tee</h3>
+                            <div class="product-rating">
+                                <div class="stars" style="--rating: 4.6;"></div>
+                                <span class="review-count">(87)</span>
+                            </div>
+                            <p class="product-price">$45.00</p>
+                            <button class="btn btn-add-to-cart" @click="showToast = true; setTimeout(() => showToast = false, 2500)">
+                                <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='12' y1='5' x2='12' y2='19'></line><line x1='5' y1='12' x2='19' y2='12'></line></svg>
+                                Add to Cart
+                            </button>
+                            <div class="size-selector">
+                                <button class="size-btn" :class="{'selected': activeSize === 's'}" @click="activeSize = 's'">S</button>
+                                <button class="size-btn" :class="{'selected': activeSize === 'm'}" @click="activeSize = 'm'">M</button>
+                                <button class="size-btn" :class="{'selected': activeSize === 'l'}" @click="activeSize = 'l'">L</button>
+                                <button class="size-btn" :class="{'selected': activeSize === 'xl'}" @click="activeSize = 'xl'">XL</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-card product-card-4">
+                        <div class="product-image-wrapper" style="background: linear-gradient(135deg, var(--surface) 0%, var(--elevated) 50%, #2a2028 100%)">
+                            <img src="https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600&h=750&fit=crop&crop=top" alt="Bomber Jacket" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,var(--surface) 0%,var(--elevated) 50%,#2a2028 100%)'">
+                        </div>
+                        <div class="product-info">
+                            <span class="product-brand">Noir Luxe</span>
+                            <h3 class="product-name">Classic Bomber Jacket</h3>
+                            <div class="product-rating">
+                                <div class="stars" style="--rating: 3.9;"></div>
+                                <span class="review-count">(19)</span>
+                            </div>
+                            <p class="product-price">$220.00</p>
+                            <button class="btn btn-add-to-cart" @click="showToast = true; setTimeout(() => showToast = false, 2500)">
+                                <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='12' y1='5' x2='12' y2='19'></line><line x1='5' y1='12' x2='19' y2='12'></line></svg>
+                                Add to Cart
+                            </button>
+                            <div class="size-selector">
+                                <button class="size-btn" :class="{'selected': activeSize === 's'}" @click="activeSize = 's'">S</button>
+                                <button class="size-btn" :class="{'selected': activeSize === 'm'}" @click="activeSize = 'm'">M</button>
+                                <button class="size-btn" :class="{'selected': activeSize === 'l'}" @click="activeSize = 'l'">L</button>
+                                <button class="size-btn" :class="{'selected': activeSize === 'xl'}" @click="activeSize = 'xl'">XL</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-card product-card-5">
+                        <div class="product-image-wrapper" style="background: linear-gradient(135deg, var(--surface) 0%, var(--elevated) 50%, #2a2028 100%)">
+                            <img src="https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600&h=750&fit=crop&crop=top" alt="Crewneck Sweatshirt" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,var(--surface) 0%,var(--elevated) 50%,#2a2028 100%)'">
+                        </div>
+                        <div class="product-info">
+                            <span class="product-brand">Echo Attire</span>
+                            <h3 class="product-name">Embroidered Crewneck Sweatshirt</h3>
+                            <div class="product-rating">
+                                <div class="stars" style="--rating: 4.5;"></div>
+                                <span class="review-count">(56)</span>
+                            </div>
+                            <p class="product-price">$85.00</p>
+                            <button class="btn btn-add-to-cart" @click="showToast = true; setTimeout(() => showToast = false, 2500)">
+                                <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='12' y1='5' x2='12' y2='19'></line><line x1='5' y1='12' x2='19' y2='12'></line></svg>
+                                Add to Cart
+                            </button>
+                            <div class="size-selector">
+                                <button class="size-btn" :class="{'selected': activeSize === 's'}" @click="activeSize = 's'">S</button>
+                                <button class="size-btn" :class="{'selected': activeSize === 'm'}" @click="activeSize = 'm'">M</button>
+                                <button class="size-btn" :class="{'selected': activeSize === 'l'}" @click="activeSize = 'l'">L</button>
+                                <button class="size-btn" :class="{'selected': activeSize === 'xl'}" @click="activeSize = 'xl'">XL</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-card product-card-6">
+                        <div class="product-image-wrapper" style="background: linear-gradient(135deg, var(--surface) 0%, var(--elevated) 50%, #2a2028 100%)">
+                            <img src="https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&h=750&fit=crop&crop=top" alt="Crossbody Bag" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,var(--surface) 0%,var(--elevated) 50%,#2a2028 100%)'">
+                        </div>
+                        <div class="product-info">
+                            <span class="product-brand">Momentum Gear</span>
+                            <h3 class="product-name">Tactical Crossbody Bag</h3>
+                            <div class="product-rating">
+                                <div class="stars" style="--rating: 5.0;"></div>
+                                <span class="review-count">(14)</span>
+                            </div>
+                            <p class="product-price">$60.00</p>
+                            <button class="btn btn-add-to-cart" @click="showToast = true; setTimeout(() => showToast = false, 2500)">
+                                <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='12' y1='5' x2='12' y2='19'></line><line x1='5' y1='12' x2='19' y2='12'></line></svg>
+                                Add to Cart
+                            </button>
+                            <div class="size-selector">
+                                <button class="size-btn" :class="{'selected': activeSize === 's'}" @click="activeSize = 's'">S</button>
+                                <button class="size-btn" :class="{'selected': activeSize === 'm'}" @click="activeSize = 'm'">M</button>
+                                <button class="size-btn" :class="{'selected': activeSize === 'l'}" @click="activeSize = 'l'">L</button>
+                                <button class="size-btn" :class="{'selected': activeSize === 'xl'}" @click="activeSize = 'xl'">XL</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="cart-drawer" :class="{'open': cartOpen}" @click.outside="cartOpen = false">
+        <div class="cart-header">
+            <h3>Your Cart</h3>
+            <button class="close-cart-btn" @click="cartOpen = false">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <div class="cart-items">
+            <div class="cart-item">
+                <img src="https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=100&h=125&fit=crop&crop=top" alt="Oversized Hoodie">
+                <div class="item-details">
+                    <h4 class="item-name">Oversized Hoodie</h4>
+                    <p class="item-meta">Size: M, Color: Black</p>
+                    <div class="item-quantity-control">
+                        <button>-</button>
+                        <span>1</span>
+                        <button>+</button>
+                    </div>
+                </div>
+                <p class="item-price">$75.00</p>
+            </div>
+            <div class="cart-item">
+                <img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=100&h=125&fit=crop&crop=top" alt="Oversized Graphic Tee">
+                <div class="item-details">
+                    <h4 class="item-name">Oversized Graphic Tee</h4>
+                    <p class="item-meta">Size: L, Color: White</p>
+                    <div class="item-quantity-control">
+                        <button>-</button>
+                        <span>2</span>
+                        <button>+</button>
+                    </div>
+                </div>
+                <p class="item-price">$90.00</p>
+            </div>
+        </div>
+        <div class="cart-summary">
+            <div class="summary-row">
+                <span>Subtotal:</span>
+                <span>$165.00</span>
+            </div>
+            <div class="summary-row">
+                <span>Shipping:</span>
+                <span>$10.00</span>
+            </div>
+            <div class="summary-row total">
+                <span>Total:</span>
+                <span>$175.00</span>
+            </div>
+            <button class="btn btn-primary checkout-btn">Proceed to Checkout</button>
+        </div>
+    </div>
+
+    <div class="toast-notification" x-show="showToast" x-transition:enter="toast-enter" x-transition:enter-start="toast-enter-start" x-transition:enter-end="toast-enter-end" x-transition:leave="toast-leave" x-transition:leave-start="toast-leave-start" x-transition:leave-end="toast-leave-end">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="checkmark-icon"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        <span>Item added to bag!</span>
+    </div>
+
+</body>
+</html>

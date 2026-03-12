@@ -1,0 +1,84 @@
+/* Subtle grid background pattern for terminal/IDE aesthetic */
+body {
+    background-image: linear-gradient(to right, var(--surface) 1px, transparent 1px),
+                      linear-gradient(to bottom, var(--surface) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+
+/* Hero background image and overlay */
+.hero-portfolio {
+    background-image: url('/api/assets/154/1/hero_background.png');
+    background-size: cover;
+    background-position: center bottom;
+    position: relative;
+    z-index: 1;
+}
+
+.hero-portfolio::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(13,13,14,0.95), rgba(13,13,14,0.4));
+    z-index: -1;
+}
+
+
+/* Custom styling for Unicode icons */
+.skill-icon, .contact-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+}
+
+.skill-icon {
+    font-size: 1.5rem;
+    background: var(--surface-elevated);
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    transition: transform 0.3s ease-in-out;
+}
+
+.skill-card:hover .skill-icon {
+    transform: translateY(-5px) rotate(5deg);
+}
+
+.contact-icon {
+    font-size: 1.25rem;
+    margin-right: 12px;
+}
+
+
+/* Project card overlay and link color */
+.project-card .project-overlay {
+    background: rgba(13, 13, 14, 0.9);
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.project-card:hover .project-overlay {
+    opacity: 1;
+}
+
+.project-link {
+    color: var(--accent);
+}
+
+.project-link:hover {
+    text-decoration: underline;
+}
+
+
+/* Nav CTA styling */
+.nav-cta {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.nav-cta:hover {
+    background-color: var(--accent);
+    color: var(--bg);
+}

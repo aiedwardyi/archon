@@ -1,0 +1,776 @@
+:root {
+    /* Colors from Quality Target & Archetype */
+    --bg-base: #0d1117; /* Quality Target */
+    --bg-card: #111827; /* Fintech Archetype */
+    --bg-surface: #1E2536; /* Fintech Archetype */
+    --border-color: #2A3348; /* Fintech Archetype */
+    --accent-primary: #10B981; /* Emerald-500 for gains */
+    --accent-primary-rgb: 16, 185, 129;
+    --accent-danger: #EF4444; /* Red-500 for losses */
+    --accent-danger-rgb: 239, 68, 68;
+    --accent-warning: #F59E0B; /* Amber-500 */
+    --accent-secondary: #81A6ED; /* Softer blue for subtle */
+    --accent-secondary-rgb: 129, 166, 237;
+    --text-primary: #F1F5F9;
+    --text-muted: #94A3B8;
+    --text-subtle: #6B7280;
+
+    /* Spacing */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: var(--bg-base);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex; /* For app-container full height */
+    flex-direction: column;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif;
+    color: var(--text-primary);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+}
+
+h2 {
+    font-size: 1.5rem; /* 24px */
+    font-weight: 700;
+    margin-bottom: var(--space-lg);
+}
+
+.app-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 100vh;
+}
+
+/* Typography for numbers */
+.kpi-value, .ticker-price, .ticker-change, .price, .change, .holdings, .value, .watchlist-price, .watchlist-change, .chart-y-axis span, .chart-x-axis span {
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Global Card Styling */
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: var(--space-lg);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 15px rgba(0,0,0,0.2);
+    transition: all 0.2s ease-out;
+}
+
+/* Top Bar */
+.topbar {
+    height: 64px;
+    background: var(--bg-card);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 var(--space-xl);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3); /* Added for depth */
+}
+
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xl);
+}
+
+.logo {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 1.25rem; /* 20px */
+    color: var(--text-primary);
+    letter-spacing: -0.03em;
+}
+
+.ticker-strip {
+    display: flex;
+    gap: var(--space-lg);
+}
+
+.ticker-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: 0.8rem; /* 13px */
+    color: var(--text-muted);
+}
+
+.ticker-symbol {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.ticker-change.gain {
+    color: var(--accent-primary);
+}
+
+.ticker-change.loss {
+    color: var(--accent-danger);
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xl);
+}
+
+.portfolio-value {
+    font-size: 0.9rem; /* 14px */
+    color: var(--text-muted);
+}
+
+.portfolio-value .value {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1rem; /* 16px */
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--accent-secondary);
+    color: var(--text-primary);
+    font-size: 0.8rem; /* 13px */
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease-out;
+}
+
+.user-avatar:hover {
+    background: #6a90dc; /* slightly lighter secondary accent */
+}
+
+/* Main Content Area */
+.main-content {
+    flex-grow: 1;
+    padding: var(--space-lg); /* 24px padding around the grid */
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg); /* Gap between sections */
+}
+
+/* KPI Cards Grid */
+.kpi-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-lg);
+}
+
+.kpi-card {
+    padding: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    border-top: 3px solid transparent; /* Default, will be overridden */
+}
+
+.kpi-portfolio { border-top-color: var(--accent-secondary); }
+.kpi-daily-change { border-top-color: var(--accent-primary); }
+.kpi-best-performer { border-top-color: var(--accent-warning); }
+.kpi-total-return { border-top-color: var(--accent-primary); }
+
+.kpi-label {
+    font-size: 0.85rem; /* 14px */
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.kpi-value {
+    font-size: 1.8rem; /* 28px */
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.kpi-value.gain {
+    color: var(--accent-primary);
+}
+.kpi-value.loss {
+    color: var(--accent-danger);
+}
+
+.kpi-change {
+    font-size: 0.9rem; /* 14px */
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.kpi-change.gain {
+    color: var(--accent-primary);
+}
+.kpi-change.loss {
+    color: var(--accent-danger);
+}
+
+.kpi-period {
+    font-size: 0.75rem; /* 12px */
+    color: var(--text-subtle);
+}
+
+/* Chart Section */
+.chart-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: var(--space-lg);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+}
+
+.chart-time-filters {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.chart-filter-btn {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.75rem; /* 12px */
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.chart-filter-btn:hover {
+    background: rgba(255,255,255,0.08);
+    color: var(--text-primary);
+}
+
+.chart-filter-btn.active {
+    background: var(--accent-primary);
+    color: var(--text-primary); /* White text on active green */
+    box-shadow: 0 2px 6px rgba(var(--accent-primary-rgb), 0.4);
+    border-color: var(--accent-primary);
+}
+
+.candlestick-chart-container {
+    position: relative;
+    height: 300px; /* Aspect ratio 16:5, width is fluid */
+    background: var(--bg-surface);
+    border-radius: 8px;
+    overflow: hidden;
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.chart-grid {
+    position: absolute;
+    inset: var(--space-md);
+    display: grid;
+    grid-template-columns: repeat(20, 1fr); /* 20 candlesticks */
+    gap: 2px;
+    border-left: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.chart-grid::before, .chart-grid::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 1px;
+    background: var(--border-color);
+    opacity: 0.5;
+}
+.chart-grid::before {
+    top: 25%;
+}
+.chart-grid::after {
+    top: 50%;
+}
+.chart-grid .candlestick:nth-child(even)::before {
+    content: '';
+    position: absolute;
+    height: 100%;
+    width: 1px;
+    background: var(--border-color);
+    opacity: 0.5;
+    left: 50%; /* Center grid line on even candlesticks */
+    transform: translateX(-50%);
+}
+
+
+.candlestick {
+    position: relative;
+    width: 60%; /* Width of the candle body */
+    margin: 0 auto;
+    border-radius: 1px;
+    opacity: 0.8;
+}
+
+.candlestick.gain {
+    background: var(--accent-primary);
+}
+
+.candlestick.loss {
+    background: var(--accent-danger);
+}
+
+/* Simplified wicks for visual representation */
+.candlestick::before, .candlestick::after {
+    content: '';
+    position: absolute;
+    width: 1px;
+    background: currentColor; /* Matches candle body color */
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.candlestick.gain::before {
+    height: 10px;
+    top: -5px;
+}
+.candlestick.gain::after {
+    height: 5px;
+    bottom: -2px;
+}
+.candlestick.loss::before {
+    height: 5px;
+    top: -2px;
+}
+.candlestick.loss::after {
+    height: 10px;
+    bottom: -5px;
+}
+
+
+.chart-y-axis {
+    position: absolute;
+    left: 0;
+    top: var(--space-md);
+    bottom: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    font-size: 0.7rem; /* 11px */
+    color: var(--text-muted);
+    padding-right: var(--space-sm);
+    text-align: right;
+    width: 60px;
+}
+
+.chart-x-axis {
+    position: absolute;
+    bottom: 0;
+    left: var(--space-md);
+    right: var(--space-md);
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem; /* 11px */
+    color: var(--text-muted);
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--border-color);
+    margin-left: 60px; /* Align with actual chart area */
+}
+
+
+/* Split Section: Asset Table + Watchlist */
+.split-section {
+    display: grid;
+    grid-template-columns: 65fr 35fr;
+    gap: var(--space-lg);
+}
+
+.asset-table-container {
+    padding: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+}
+
+.table-actions {
+    display: flex;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+    align-items: center;
+}
+
+.search-input {
+    flex-grow: 1;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-input::placeholder {
+    color: var(--text-muted);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--accent-secondary);
+    box-shadow: 0 0 0 2px rgba(129, 166, 237, 0.2);
+}
+
+.btn-secondary {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+    background: rgba(255,255,255,0.08);
+    color: var(--text-primary);
+    border-color: var(--accent-secondary);
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem; /* 14px */
+}
+
+thead th {
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 0.7rem; /* 11px */
+    letter-spacing: 0.05em;
+    padding: var(--space-md) var(--space-lg);
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+}
+
+tbody tr {
+    transition: background 0.15s ease;
+    cursor: pointer;
+}
+
+tbody tr:hover {
+    background: rgba(255,255,255,0.03);
+}
+
+tbody td {
+    padding: var(--space-sm) var(--space-lg);
+    border-bottom: 1px solid rgba(42, 51, 72, 0.5); /* Lighter border for rows */
+    white-space: nowrap;
+}
+
+.asset-name {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.asset-symbol {
+    color: var(--text-subtle);
+    font-size: 0.8rem;
+    margin-left: var(--space-xs);
+}
+
+.price, .value, .holdings {
+    color: var(--text-primary);
+}
+
+.change {
+    font-weight: 500;
+}
+
+.change.gain {
+    color: var(--accent-primary);
+}
+
+.change.loss {
+    color: var(--accent-danger);
+}
+
+.btn-add-watchlist {
+    background: rgba(var(--accent-secondary-rgb), 0.1);
+    border: 1px solid rgba(var(--accent-secondary-rgb), 0.3);
+    color: var(--accent-secondary);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-add-watchlist:hover {
+    background: rgba(var(--accent-secondary-rgb), 0.2);
+    border-color: var(--accent-secondary);
+}
+
+/* Watchlist */
+.watchlist-container {
+    padding: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.watchlist-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px dashed rgba(var(--border-color), 0.5); /* Dashed border for subtle separation */
+}
+
+.watchlist-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.watchlist-details {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.watchlist-symbol {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.watchlist-price {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.watchlist-change {
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.watchlist-change.gain {
+    color: var(--accent-primary);
+}
+
+.watchlist-change.loss {
+    color: var(--accent-danger);
+}
+
+.watchlist-sparkline svg {
+    width: 80px;
+    height: 24px;
+    overflow: visible; /* Allow path to extend for visual effect */
+}
+
+/* News Feed */
+.news-feed-section {
+    padding: var(--space-lg);
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.news-feed-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-lg);
+}
+
+.news-item {
+    padding: var(--space-md);
+    background: var(--bg-surface); /* Slightly darker background for news items */
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+}
+
+.news-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 0 1px var(--accent-secondary), 0 8px 20px rgba(0,0,0,0.3);
+}
+
+.news-title {
+    font-size: 1.1rem; /* 18px */
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--space-sm);
+}
+
+.news-excerpt {
+    font-size: 0.85rem; /* 14px */
+    color: var(--text-muted);
+    flex-grow: 1;
+    margin-bottom: var(--space-md);
+    line-height: 1.6;
+}
+
+.news-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem; /* 12px */
+    color: var(--text-subtle);
+}
+
+/* Animations */
+@keyframes shimmer {
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
+}
+
+.skeleton {
+    background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-surface) 50%, var(--bg-card) 75%); /* Adjusted for dark theme */
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+}
+
+@keyframes priceFlash {
+    0% { background-color: transparent; }
+    20% { background-color: rgba(var(--accent-primary-rgb), 0.2); }
+    100% { background-color: transparent; }
+}
+
+.price-flash {
+    animation: priceFlash 0.5s ease-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+    .split-section {
+        grid-template-columns: 1fr; /* Stack asset table and watchlist */
+    }
+}
+
+@media (max-width: 768px) {
+    .topbar {
+        flex-direction: column;
+        height: auto;
+        padding: var(--space-md);
+        gap: var(--space-sm);
+    }
+    .topbar-left {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .ticker-strip {
+        display: none; /* Hide ticker strip on small screens */
+    }
+    .topbar-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .main-content {
+        padding: var(--space-md);
+        gap: var(--space-md);
+    }
+    .kpi-cards-grid {
+        grid-template-columns: 1fr;
+    }
+    .chart-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-sm);
+    }
+    h2 {
+        font-size: 1.2rem; /* 20px */
+    }
+    .table-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .btn-secondary {
+        width: 100%;
+    }
+    .search-input {
+        width: 100%;
+    }
+    .news-feed-grid {
+        grid-template-columns: 1fr;
+    }
+    .chart-y-axis {
+        width: 45px;
+        font-size: 0.6rem;
+    }
+    .chart-x-axis {
+        font-size: 0.6rem;
+        margin-left: 45px;
+    }
+}
+
+/* Depth & Polish Patterns from global rules */
+/* GLOW - for accent cards, active nav, KPI values (already applied to active chart filter btn) */
+/* Example for an active KPI card if desired: */
+.kpi-card:hover {
+    box-shadow: 0 0 10px rgba(var(--accent-primary-rgb), 0.2), 0 0 30px rgba(var(--accent-primary-rgb), 0.08);
+}
+
+/* GLASS PANEL - applied to topbar, also can be applied to modals if present */
+/* Topbar already has backdrop-filter blur */
+
+/* GRADIENT BORDER - for featured/hero cards (not explicitly required for this specific task's cards, but good for future) */
+/* Not directly applied to current elements, but can be added if a "featured" card appears. */
+
+/* SHIMMER SKELETON - for loading states (visual placeholder) */
+/* Can be applied to KPI cards or chart if data is loading */
+/* Example usage: <div class="kpi-value skeleton" style="height: 28px; width: 80%;"></div> */
+
+/* CHART DRAW - for SVG path elements (used in sparklines) */
+.watchlist-sparkline polyline {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation: draw 1.5s ease forwards;
+}
+@keyframes draw {
+    to { stroke-dashoffset: 0; }
+}
+
+/* PAGE LOAD STAGGER - for card grids (news feed, KPI cards) */
+/* .news-item { animation: fadeUp 0.4s ease forwards; opacity:0; }
+.news-item:nth-child(1){animation-delay:0.05s} .news-item:nth-child(2){animation-delay:0.1s}
+.news-item:nth-child(3){animation-delay:0.15s} .news-item:nth-child(4){animation-delay:0.2s} */
+/* For simplicity and line limits, I'll omit full stagger animation definition, but the concept is here. */
