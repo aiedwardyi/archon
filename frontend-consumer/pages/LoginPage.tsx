@@ -133,7 +133,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onAuthSuccess, onNavigate }) => {
             </div>
           )}
 
-          <div className="mt-6 rounded-[1.2rem] border border-white/10 bg-white/[0.05] p-1.5">
+          <div className="mt-6">
             <GoogleAuthButton text="signin_with" onCredential={handleGoogle} onError={(message) => setError(message)} />
           </div>
 

@@ -1399,7 +1399,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
       </header>
 
       <div className="relative z-10 min-h-0 flex-1 overflow-hidden p-4 sm:p-6">
-        <div className="grid h-full min-h-0 gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
+        <div className="grid h-full min-h-0 gap-5 lg:grid-cols-[260px_48px_minmax(0,1fr)]">
           <aside className="relative min-h-0 rounded-[2rem] border border-white/10 bg-[#07101f] shadow-[0_24px_80px_rgba(2,6,23,0.34)]">
             <div className="absolute inset-0 rounded-[2rem] bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.18),transparent_42%),radial-gradient(circle_at_bottom,rgba(8,145,178,0.12),transparent_36%)]" />
             <div className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-[2rem]">
@@ -1501,29 +1501,30 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                 </form>
               </div>
             </div>
-            <div className="absolute right-[-52px] top-[84px] hidden lg:block">
-              <div className="flex flex-col gap-2 rounded-full border border-white/10 bg-[#060b19]/92 p-2 backdrop-blur-xl">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    title={tab.label}
-                    onClick={() => handleTabChange(tab.id)}
-                    className={`group relative flex h-10 w-10 items-center justify-center rounded-full transition ${
-                      activeTab === tab.id
-                        ? 'bg-[linear-gradient(135deg,#4f46e5,#7c3aed)] text-white shadow-[0_12px_30px_rgba(79,70,229,0.35)]'
-                        : 'bg-white/[0.04] text-white/56 hover:bg-white/[0.08] hover:text-white'
-                    }`}
-                  >
-                    <tab.icon size={16} />
-                    <span className="pointer-events-none absolute right-[calc(100%+10px)] whitespace-nowrap rounded-full border border-white/10 bg-[#09101f] px-3 py-1.5 text-xs font-medium text-white/80 opacity-0 transition group-hover:opacity-100">
-                      {tab.label}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
           </aside>
+
+          <div className="hidden lg:flex flex-col items-center justify-center gap-2 py-8">
+            <div className="flex flex-col gap-2 rounded-full border border-white/10 bg-[#060b19]/92 p-2 backdrop-blur-xl">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  title={tab.label}
+                  onClick={() => handleTabChange(tab.id)}
+                  className={`group relative flex h-10 w-10 items-center justify-center rounded-full transition ${
+                    activeTab === tab.id
+                      ? 'bg-[linear-gradient(135deg,#4f46e5,#7c3aed)] text-white shadow-[0_12px_30px_rgba(79,70,229,0.35)]'
+                      : 'bg-white/[0.04] text-white/56 hover:bg-white/[0.08] hover:text-white'
+                  }`}
+                >
+                  <tab.icon size={16} />
+                  <span className="pointer-events-none absolute right-[calc(100%+10px)] whitespace-nowrap rounded-full border border-white/10 bg-[#09101f] px-3 py-1.5 text-xs font-medium text-white/80 opacity-0 transition group-hover:opacity-100">
+                    {tab.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
 
           <section ref={rightPanelRef} className="custom-scrollbar min-h-0 overflow-y-auto pr-1">
             <div key={`${activeTab}-${resolvedVersion ?? 'none'}-${project.status}`} className="content-panel-enter space-y-4">
