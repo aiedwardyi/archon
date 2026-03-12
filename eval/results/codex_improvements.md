@@ -89,3 +89,15 @@ Use one section per experiment. Update this file before moving to the next arche
 - Verdict: committed
 - Notes: Branch eval/loops. Improvement exceeded +1.0.
 - Next hypothesis: Move to the next weakest archetype.
+
+### Cycle 007 - 2026-03-12 10:02
+- Archetype: dashboard
+- Baseline average across 3 runs: 73.5
+- Weakest dimensions: depth_polish, interactivity_cues
+- Exact change made: Updated dashboard.css with one targeted instruction cluster for depth_polish, interactivity_cues.
+- File changed: C:/Users/mredw/Desktop/ai-dev-team/prompts/archetypes/dashboard.css
+- Test average across 3 runs: 52.0
+- Delta: -21.50
+- Verdict: reverted
+- Notes: Branch eval/loops. Change reverted because delta did not exceed +1.0.
+- Next hypothesis: Try the other editable surface for this archetype or target the next-lowest dimension.

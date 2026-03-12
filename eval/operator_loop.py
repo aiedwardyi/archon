@@ -455,8 +455,17 @@ def pick_weak_dimensions(sample_set: SampleSet) -> list[str]:
 
 def choose_edit_target(archetype: str, weak_dimensions: list[str]) -> tuple[str, Path | None]:
     primary = weak_dimensions[0] if weak_dimensions else "overall_impression"
+    parser = PromptParser()
+    engineer_available = parser.has_section(archetype)
+
     if primary in {"visual_hierarchy", "layout_precision", "data_completeness", "overall_impression"}:
-        return ("engineer", None)
+        if engineer_available:
+            return ("engineer", None)
+        log.info(
+            "No engineer.txt section found for %s; falling back to archetype kit text file",
+            archetype,
+        )
+        return ("kit_txt", REPO_ROOT / "prompts" / "archetypes" / f"{archetype}.txt")
     if primary == "depth_polish":
         return ("kit_css", REPO_ROOT / "prompts" / "archetypes" / f"{archetype}.css")
     return ("kit_txt", REPO_ROOT / "prompts" / "archetypes" / f"{archetype}.txt")
@@ -666,16 +675,37 @@ async def run_cycle(args: argparse.Namespace) -> dict[str, Any]:
     log.info("Selected lever: %s", edit_target)
 
     if edit_target == "engineer":
-        changed_path, original_text, _updated_text = edit_engineer_section(
-            client=client,
-            config=config,
-            archetype=weakest,
-            sample_set=baseline,
-        )
-        exact_change = (
-            f"Rewrote the {weakest} archetype section in prompts/engineer.txt to target "
-            f"{', '.join(weak_dimensions) if weak_dimensions else 'the weakest baseline dimension'}."
-        )
+        try:
+            changed_path, original_text, _updated_text = edit_engineer_section(
+                client=client,
+                config=config,
+                archetype=weakest,
+                sample_set=baseline,
+            )
+            exact_change = (
+                f"Rewrote the {weakest} archetype section in prompts/engineer.txt to target "
+                f"{', '.join(weak_dimensions) if weak_dimensions else 'the weakest baseline dimension'}."
+            )
+        except ValueError as err:
+            fallback_path = REPO_ROOT / "prompts" / "archetypes" / f"{weakest}.txt"
+            log.warning(
+                "Engineer section edit failed for %s (%s). Falling back to %s.",
+                weakest,
+                err,
+                fallback_path.name,
+            )
+            changed_path, original_text, _updated_text = edit_kit_file(
+                client=client,
+                config=config,
+                archetype=weakest,
+                sample_set=baseline,
+                target_path=fallback_path,
+            )
+            exact_change = (
+                f"Engineer section was unavailable for {weakest}; updated {fallback_path.name} "
+                f"with one targeted instruction cluster for "
+                f"{', '.join(weak_dimensions) if weak_dimensions else 'the weakest baseline dimension'}."
+            )
     else:
         if edit_path is None:
             raise RuntimeError("Expected an archetype kit path")

@@ -2,6 +2,19 @@
 
 This workflow is the authoritative runbook for manual eval optimization. It uses the repo's existing control points and does not add a wrapper script around the loop.
 
+## Mission
+
+The goal of this loop is not to "watch evals run." The goal is to improve design output quality and raise accepted scores by making the prompt and design-kit system better over time.
+
+Treat API spend as optimization budget. If the loop is spending tokens on baseline runs, scoring, or failed cycles without producing better prompt or kit changes, that is a problem to solve immediately.
+
+Operator stance:
+
+- Be proactive, not passive.
+- Remove blockers that prevent prompt or kit iteration.
+- Prefer fixing the eval workflow when it is preventing optimization.
+- Do not stop at reporting failures if a reasonable fix on `eval/loops` can unblock continued improvement.
+
 ## Scope
 
 - Eval executor: `eval/eval_runner.py`
@@ -17,6 +30,14 @@ Out of scope for this loop:
 - `backend/*`
 - New orchestration or automation wrappers
 - Merges, rebases, or branch switching away from `eval/loops` during an eval session
+
+Allowed workflow fixes on `eval/loops` when they directly unblock optimization:
+
+- `eval/*` fixes needed to keep the operator loop running
+- Prompt parsing or section-detection fixes needed to reach the edit step
+- Logging or loop-control fixes needed to prevent wasted repeated failures
+
+Do not treat a broken eval harness as "out of scope" if fixing it is the shortest path to resume design improvement on `eval/loops`.
 
 ## Session Start
 
@@ -70,6 +91,11 @@ Only these files are valid experiment surfaces for the operator loop:
 
 Do not treat `prompts/engineer_core.txt`, `prompts/planner.txt`, `utils/*`, or `backend/*` as first-line tuning surfaces for this workflow.
 
+Priority rule:
+
+- If the eval harness can reach prompt or kit edits, keep experiments on the prompt and kit surfaces above.
+- If the eval harness cannot reach prompt or kit edits due to a bug in `eval/*`, fix the harness first, then resume experiments immediately.
+
 ## One Full Operator Cycle
 
 1. Read:
@@ -113,6 +139,24 @@ python eval/eval_runner.py --archetypes <archetype> --max-iterations 3
 13. Update `eval/results/codex_improvements.md`.
 14. Move to the second-weakest archetype and repeat.
 
+## Blocker Handling
+
+If the loop cannot complete a full baseline -> edit -> B-test cycle, do not keep burning API budget on repeated failed starts.
+
+Required response to blockers:
+
+1. Identify whether the failure is:
+   - prompt/kit quality
+   - eval harness bug
+   - backend/runtime issue
+   - external service/API issue
+2. If the failure is in `eval/*` and blocks prompt or kit iteration, fix it on `eval/loops` before resuming.
+3. If the failure is a prompt-surface mismatch, such as parser logic not finding a live archetype section in `prompts/engineer.txt`, treat that as a must-fix blocker, not as an observation to log and ignore.
+4. If one tuning surface is blocked, switch to the other valid tuning surface when possible rather than stalling the loop.
+5. Record the blocker, the fix, and the reason it was necessary in `eval/results/codex_improvements.md`.
+
+Never let the loop sit in a repeat-fail pattern when a local code fix would restore useful optimization work.
+
 ## Lever Mapping
 
 Use one lever per experiment:
@@ -150,6 +194,7 @@ Discovery diagnosis is operational only for this loop. Do not patch `utils/*` or
 
 - Stay on `eval/loops` for the actual eval session.
 - Commit only the winning experiment files plus `eval/results/codex_improvements.md`.
+- Commit harness fixes separately from prompt/kit wins when possible, with a message that makes the unblock explicit.
 - Revert only the prompt or kit files changed in the failed experiment.
 - Do not revert unrelated repo changes.
 - Do not merge.
@@ -170,6 +215,12 @@ Standardize each experiment entry in `eval/results/codex_improvements.md` with:
 - Verdict: committed or reverted
 - Notes and next hypotheses
 
+If a blocker fix was required, also log:
+
+- Why the loop could not continue without the fix
+- Whether API spend would have been wasted by continuing without it
+- What exact file or logic was fixed to restore optimization
+
 Hourly persistence rule:
 
 - Even if no winning prompt or design change is committed, commit the updated log at least once per hour on `eval/loops`.
@@ -182,6 +233,12 @@ A winning change must satisfy all of the following:
 - No build failures in the accepted sample set
 - No screenshot or scoring failures in the accepted sample set
 - No newly degraded dimension falls below `7.0`, unless the net gain is still clearly positive and the regression is explicitly documented
+
+Session-level success criteria:
+
+- The loop must actually reach prompt or kit edits and B-tests.
+- Repeated baseline-only or crash-only cycles do not count as productive progress.
+- If the loop is blocked by local code, the blocker should be fixed before more substantial eval spend is incurred.
 
 ## Test Discipline
 

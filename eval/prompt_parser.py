@@ -145,6 +145,11 @@ class PromptParser:
         # Fall back to shell section (STEP 2)
         return self._find_shell_section_span(text, archetype_name)
 
+    def has_section(self, archetype_name: str) -> bool:
+        """Return True if engineer.txt contains an editable section for this archetype."""
+        text = self._read(self.engineer_path)
+        return self._find_any_span(text, archetype_name) is not None
+
     def extract_section(self, archetype_name: str) -> str:
         """Extract the full text of one archetype section from engineer.txt."""
         text = self._read(self.engineer_path)
