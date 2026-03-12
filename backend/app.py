@@ -1157,6 +1157,25 @@ def get_project(project_id: int):
         session.close()
 
 
+@app.route('/api/projects/<int:project_id>', methods=['PATCH'])
+@jwt_required()
+def rename_project(project_id):
+    data = request.get_json() or {}
+    name = (data.get('name') or '').strip()
+    if not name:
+        return jsonify({'error': 'Name is required'}), 400
+    session = get_session()
+    try:
+        project = session.get(Project, project_id)
+        if not project:
+            return jsonify({'error': 'Not found'}), 404
+        project.name = name
+        session.commit()
+        return jsonify({'id': project_id, 'name': name})
+    finally:
+        session.close()
+
+
 @app.route("/api/projects/<int:project_id>", methods=["DELETE"])
 def delete_project(project_id: int):
     session = get_session()
