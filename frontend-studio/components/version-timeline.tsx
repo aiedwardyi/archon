@@ -11,7 +11,7 @@ import {
   XCircle,
   Loader2,
   FileText,
-  Map,
+  Map as MapIcon,
   Code2,
   Download,
 } from "lucide-react"
@@ -22,6 +22,7 @@ const API_BASE = "http://localhost:5000"
 
 type Version = {
   id: number
+  executionId: number
   version: number
   parentVersion?: number
   prompt: string
@@ -31,9 +32,11 @@ type Version = {
   filesChanged: number
   qualityTier?: string | null
   readinessScore?: number | null
+  isActiveHead?: boolean
 }
 
-function parseVersions(raw: any[]): Version[] {
+function parseVersions(raw: any): Version[] {
+  if (!Array.isArray(raw)) return []
   const parentVersionByExecutionId = new Map(
     raw.map((e) => [Number(e.id), Number(e.version)])
   )
@@ -58,12 +61,13 @@ function parseVersions(raw: any[]): Version[] {
       running: "running", in_progress: "running", pending: "pending",
     }
     return {
-      id: Number(e.id), version: Number(e.version), prompt: promptRaw,
+      id: Number(e.id), executionId: Number(e.id), version: Number(e.version), prompt: promptRaw,
       parentVersion: e.parent_execution_id != null ? parentVersionByExecutionId.get(Number(e.parent_execution_id)) : undefined,
       timestamp: date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
       date: dateLabel, status: statusMap[e.status] ?? "pending", filesChanged: e.files_generated ?? 0,
       qualityTier: e.quality_tier ?? null,
       readinessScore: e.readiness_score ?? null,
+      isActiveHead: Boolean(e.is_active_head),
     }
   })
 }
@@ -88,6 +92,7 @@ export function VersionTimeline() {
   const [isProjectBuilding, setIsProjectBuilding] = useState(false)
   const prevVersionCount = useRef(0)
   const restoreConfirmationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     const pid = sessionStorage.getItem("archon_current_project_id")
@@ -99,12 +104,25 @@ export function VersionTimeline() {
   useEffect(() => {
     if (!projectId) { setLoading(false); return }
     prevVersionCount.current = 0
-    fetchVersions()
+    setLoading(true)
+    void fetchVersions({ showLoading: true })
+    if (pollRef.current) {
+      clearInterval(pollRef.current)
+    }
+    pollRef.current = setInterval(() => {
+      void fetchVersions({ showLoading: false })
+    }, 3000)
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current)
+        pollRef.current = null
+      }
+    }
   }, [projectId])
 
-  const fetchVersions = async () => {
+  const fetchVersions = async ({ showLoading = false }: { showLoading?: boolean } = {}) => {
     if (!projectId) return
-    setLoading(true)
+    if (showLoading) setLoading(true)
     try {
       const statusRes = await fetch(`${API_BASE}/api/execution-status?project_id=${projectId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('archon_token')}` }
@@ -117,7 +135,7 @@ export function VersionTimeline() {
     try {
       const res = await fetch(`${API_BASE}/api/projects/${projectId}/versions`)
       const data = await res.json()
-      const parsed = parseVersions(data.versions || [])
+      const parsed = parseVersions(data.versions || []).sort((left, right) => right.version - left.version)
       setVersions(parsed)
       const hasNewBuild = parsed.length > prevVersionCount.current
       if (parsed.length > 0 && (hasNewBuild || selectedVersionId === null || !parsed.find((v) => v.id === selectedVersionId))) {
@@ -128,7 +146,9 @@ export function VersionTimeline() {
       }
       prevVersionCount.current = parsed.length
     } catch (e) { console.error("Failed to load versions:", e) }
-    finally { setLoading(false) }
+    finally {
+      if (showLoading) setLoading(false)
+    }
   }
 
   const handleVersionClick = (v: Version) => {
@@ -148,7 +168,7 @@ export function VersionTimeline() {
       restoreConfirmationTimeoutRef.current = setTimeout(() => {
         setRestoreConfirmedExecutionId(null)
       }, 2000)
-      await fetchVersions()
+      await fetchVersions({ showLoading: false })
     } catch (e) { console.error("Restore failed:", e) }
     finally { setRestoring(false) }
   }
@@ -162,7 +182,7 @@ export function VersionTimeline() {
   }, [])
 
   const selected = versions.find((v) => v.id === selectedVersionId)
-  const headVersion = versions[0]
+  const headVersion = versions.find((v) => v.isActiveHead) || versions[0]
   const versionsByDate = versions.reduce((acc, v) => {
     if (!acc[v.date]) acc[v.date] = []
     acc[v.date].push(v)
@@ -206,6 +226,7 @@ export function VersionTimeline() {
                 </div>
                 {dateVersions.map((v) => {
                   const isActive = v.id === selectedVersionId
+                  const isBuildingThis = isProjectBuilding && headVersion?.id === v.id
                   return (
                     <button
                       key={v.id}
@@ -221,7 +242,7 @@ export function VersionTimeline() {
                           }`}>
                             v{v.version}
                           </span>
-                          {isProjectBuilding ? <Loader2 className="h-4 w-4 text-blue-500 animate-spin" /> : <VersionStatusIcon status={v.status} />}
+                          {isBuildingThis ? <Loader2 className="h-4 w-4 text-blue-500 animate-spin" /> : <VersionStatusIcon status={v.status} />}
                         </div>
                         <span className="text-xs text-muted-foreground">{v.timestamp}</span>
                       </div>
@@ -265,8 +286,8 @@ export function VersionTimeline() {
                   V{selected.version}
                 </span>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-border text-muted-foreground">
-                  {isProjectBuilding ? <Loader2 className="h-4 w-4 text-blue-500 animate-spin" /> : <VersionStatusIcon status={selected.status} />}
-                  {isProjectBuilding ? <span className="text-xs font-medium text-blue-500 ml-1">Building</span> : <span className="capitalize ml-1">{selected.status}</span>}
+                  {isProjectBuilding && headVersion?.id === selected.id ? <Loader2 className="h-4 w-4 text-blue-500 animate-spin" /> : <VersionStatusIcon status={selected.status} />}
+                  {isProjectBuilding && headVersion?.id === selected.id ? <span className="text-xs font-medium text-blue-500 ml-1">Building</span> : <span className="capitalize ml-1">{selected.status}</span>}
                 </span>
                 <span className="text-muted-foreground">{selected.date} at {selected.timestamp}</span>
               </div>
@@ -277,13 +298,13 @@ export function VersionTimeline() {
                 </button>
                 {selected.status !== "running" && headVersion && selected.id !== headVersion.id && (
                   <button
-                    onClick={() => handleRestore(selected.id)}
+                    onClick={() => handleRestore(selected.executionId)}
                     disabled={restoring}
                     title="Future builds will continue from this version"
                     className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
                   >
                     {restoring ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3" />}
-                    {restoreConfirmedExecutionId === selected.id ? "Set ✓" : "Set as iteration base"}
+                    {restoreConfirmedExecutionId === selected.executionId ? "Set ✓" : "Set as iteration base"}
                   </button>
                 )}
               </div>
@@ -316,7 +337,7 @@ export function VersionTimeline() {
             <div className="grid grid-cols-3 gap-3">
               {[
                 { label: t("brief"), sub: t("requirementsDoc"), icon: FileText, color: "text-primary", bg: "bg-primary/10", border: "border-l-primary", tab: "brief" },
-                { label: t("buildPlan"), sub: t("architecturePlan"), icon: Map, color: "text-info", bg: "bg-info/10", border: "border-l-info", tab: "plan" },
+                { label: t("buildPlan"), sub: t("architecturePlan"), icon: MapIcon, color: "text-info", bg: "bg-info/10", border: "border-l-info", tab: "plan" },
                 { label: t("code"), sub: `${selected.filesChanged} ${t("files")}`, icon: Code2, color: "text-success", bg: "bg-success/10", border: "border-l-success", tab: "code" },
               ].map((art) => (
                 <button
