@@ -1405,7 +1405,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
       `}</style>
       <div className="pointer-events-none absolute inset-0 detail-grid" />
 
-      <header className="relative z-10 border-b border-white/10 bg-[#040815]/88 px-4 py-3 backdrop-blur-xl sm:px-6">
+      <header className="relative z-50 border-b border-white/10 bg-[#040815]/88 px-4 py-3 backdrop-blur-xl sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <button
