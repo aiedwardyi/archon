@@ -392,18 +392,57 @@ Full animated reimagination of consumer frontend (port 3002). Three design branc
 - ✅ Sidebar: "WORLDS IN PROGRESS" branding, pulsing backend status dot, gradient Start Building button
 - ✅ Branch: design/v3-reimagined → merged to main Mar 11
 
-**Known polish items (queued for 22.I):**
-- 🔴 Remove light/dark toggle from SettingsModal (dark-only app)
-- 🔴 SettingsModal UI too bright — needs dark theme match
-- 🔴 Language switch bug back — requires settings reopen to take effect
-- 🔴 Enter = submit prompt, Shift+Enter = newline (landing textarea)
-- 🔴 Menu icon overlaps chat on mobile/narrow layouts
-- 🔴 Sign In button (top right) too bright white — needs dark theme treatment
-- 🔴 "Could not load" shown during active build for non-preview tabs — needs friendlier message
-- 🔴 Switching tabs starts from mid-page scroll position — should scroll to top
-- 🔴 Versions page: hide "Restore" button when only 1 version or current version selected
-- 🔴 Recent projects on landing page should show live iframe preview thumbnail
-- 🔴 Sign In page is bright white split-modal design — needs dark theme redesign to match v3
+**Phase 22.I polish items (✅ Complete Mar 12, 2026):**
+- ✅ Removed light/dark toggle from SettingsModal (dark-only app)
+- ✅ SettingsModal redesigned to match v3 dark theme
+- ✅ Language switch now applies instantly on Save (lang prop passed from App.tsx)
+- ✅ Enter = submit prompt, Shift+Enter = newline (landing textarea)
+- ✅ Menu/nav icon rail repositioned to not overlap chat panel
+- ✅ Sign In button (top right) updated to dark glass style
+- ✅ "Could not load" replaced with "Building..." message during active builds
+- ✅ Tab switches and code file switches now scroll right panel to top
+- ✅ Versions page: Restore button hidden when only 1 version or current version selected
+- ✅ Recent projects on landing page now show live iframe preview thumbnails
+- ✅ Sidebar project list now shows live iframe preview thumbnails
+- ✅ Sign In / Register pages redesigned to match v3 dark theme
+- ✅ Button hover animation lag fixed (backface-visibility, translateZ, scale reduced to 1.005)
+
+**Phase 22.J — Remaining Polish (queued):**
+
+Found during 22.I review. Next Codex task should address all of these:
+
+1. **Google Sign-In button color** (`LoginPage.tsx`, `RegisterPage.tsx`)
+   - The Google OAuth button currently renders with a dark olive/grey-green background color — looks wrong and unpolished
+   - Should be: white background with Google logo + dark text (standard Google brand button style), OR match the v3 dark glass style: `border border-white/10 bg-white/[0.05] text-white` with the Google colored `G` logo inline SVG
+   - File: wherever the Google sign-in button is rendered in `LoginPage.tsx` and `RegisterPage.tsx`
+
+2. **Thumbnail height inconsistent with long project descriptions** (`ProjectsPage.tsx`, `Sidebar.tsx`)
+   - Project cards that have longer description text push the thumbnail area taller/shorter because the description text bleeds into the thumbnail container height
+   - The thumbnail iframe section should be a **fixed height** regardless of description length — `h-[140px]` on landing page cards, `h-[72px]` on sidebar cards — with `overflow-hidden` enforced
+   - Description text should be clamped (`line-clamp-2`) and sit below the thumbnail in its own fixed-height info section, not affect thumbnail sizing
+   - Check that the iframe thumbnail container uses `position: relative` + `overflow: hidden` with explicit `height` in px, not `min-height` or flexible sizing
+
+3. **Thumbnail card edges look off** (`ProjectsPage.tsx`, `Sidebar.tsx`)
+   - The rounded corners at the top of the thumbnail iframe don't perfectly match the card's outer rounded corners — there's a slight visual mismatch where the iframe bleeds past the rounded edge or the border radius doesn't line up
+   - Fix: ensure the thumbnail container div has `rounded-t-[1.8rem] overflow-hidden` matching the card's outer `rounded-[1.8rem]`. The iframe inside should have no border-radius of its own.
+   - On the sidebar, the thumbnail container should use `rounded-[1rem] overflow-hidden` to match the project card's inner radius
+   - Also check: is there a visible gap or double-border between the thumbnail bottom edge and the info section? If so, remove the `border-b` from the thumbnail container or merge it with the card border
+
+4. **Nav icon rail placement** (`ProjectDetailPage.tsx`)
+   - The icon rail (Preview / Brief / Plan / Code / History / Versions buttons) is positioned between the chat panel and the preview panel but the positioning is still slightly awkward — it floats in an odd z-index layer and on some viewport widths it overlaps the left chat panel's right edge or sits too close to the preview content
+   - Desired behavior: the rail should sit in the gap between the two panels, vertically centered, and never overlap either panel's content. It should only be visible on `lg:` breakpoints (hidden on mobile — mobile gets a bottom tab bar in Phase 22.F)
+   - Consider: moving the rail to be `position: absolute` on the `<aside>` with `right-[-28px]` so it visually bridges the gap. Or embed it as a narrow column in the grid layout `lg:grid-cols-[260px_48px_minmax(0,1fr)]` so it has its own dedicated column and never overlaps
+   - The rail icons should have smooth tooltip labels on hover (already implemented) — verify they still show correctly after repositioning
+
+5. **Mobile layout** (`ProjectsPage.tsx`, `Sidebar.tsx`, `ProjectDetailPage.tsx`) — **Phase 22.F**
+   - The entire consumer frontend is not mobile-optimized. This is a separate, significant task and should be done as its own Codex brief after 22.J is complete
+   - Key issues:
+     - Landing page: hero text too large, textarea cramped, inspiration cards overflow horizontally
+     - Sidebar: doesn't open/close properly on mobile, overlaps content
+     - Project detail page: two-column grid collapses badly — chat panel and preview panel stack awkwardly
+     - Icon nav rail: completely broken on mobile — needs to become a bottom tab bar on small viewports
+     - Thumbnail cards: may need to be single-column on mobile
+   - Do NOT combine with 22.J — mobile is its own full-day task
 
 **Deferred (bigger features, separate phases):**
 - Credit/token system (Phase 25)
@@ -414,7 +453,8 @@ Full animated reimagination of consumer frontend (port 3002). Three design branc
 
 | Phase | Description |
 |-------|-------------|
-| 22.I | Consumer V3 Polish Pass (11 items above) |
+| ~~22.I~~ | ~~Consumer V3 Polish Pass~~ ✅ Mar 12 |
+| 22.J | Consumer V3 Remaining Polish (Google button, thumbnail sizing/edges, nav rail placement) |
 | 22.D | Consumer Versions page (THE MOAT — timeline + preview + narrative) |
 | 22.F | Consumer mobile polish pass |
 | 25 | Credit / token system |
