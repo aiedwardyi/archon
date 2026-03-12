@@ -83,3 +83,6 @@ tmp_*.log
 tmp-*.log
 /frontend-consumer-*.png
 
+# Eval loop runtime files
+*.pid
+*.stop
