@@ -248,6 +248,7 @@ ai-dev-team/
 │   ├── eval_runner.py        # Automated build → screenshot → score → improve loop
 │   ├── eval_scorer.py        # Vision-based scoring (Claude Sonnet 4.6)
 │   ├── eval_improver.py      # Prompt improvement based on scoring feedback
+│   ├── archetype_benchmarks.json # Shared registry for legacy reference builds + Discovery ingest candidates
 │   ├── scoring_rubric.py     # 8-dimension quality rubric with archetype criteria
 │   ├── screenshotter.py      # Playwright full-page screenshot capture
 │   └── eval_config.json      # Eval loop configuration
@@ -256,6 +257,53 @@ ai-dev-team/
 ├── ROADMAP.md
 └── CURRENT_SPRINT.md
 ```
+
+---
+
+## Reference Build Registry
+
+Legacy strong builds are tracked in [eval/archetype_benchmarks.json](eval/archetype_benchmarks.json).
+
+- The backend uses this registry as a local fallback reference source when Watson Discovery is unavailable or has no matching archetype result.
+- `scripts/ingest_best_builds.py` also reads the same registry, so there is one canonical place to manage benchmark builds.
+- Portable benchmark source files live under `eval/benchmark_builds/` and should be committed if you want them available on another machine.
+- Seeded starter projects and older README showcase examples can be promoted into the same registry; copy their `src/` files into `eval/benchmark_builds/<label>/src/` and add an entry.
+- To add another legacy example, add one entry with:
+  - `project_id`
+  - `version`
+  - `archetype`
+  - `benchmark_path`
+  - `priority` (higher wins for local fallback)
+  - `label`
+  - optional `published_slug` when the legacy example only exists under `published/<slug>/src/`
+  - optional `prompt_summary` for published-only examples without a factsheet
+  - optional `prompt_hints` if that legacy example should also bias vague prompts toward its archetype
+  - optional `notes` for reusable design traits shared across that archetype's best legacy examples
+  - optional `global_guidance: true` if the example should influence premium interaction/polish guidance across all archetypes, not just its own
+  - optional `notes`
+  - optional `eval_score`
+  - `discovery_ingest: true` only if you want that build included in Discovery ingestion
+
+The generated files must exist at `generated/<project_id>/v<version>/`.
+
+To import a new portable benchmark source:
+
+```powershell
+python scripts/import_benchmark.py --label legacy-my-example --project-id 123 --version 1 --archetype saas_landing --generated --prompt-hint "my prompt phrase"
+```
+
+Or from a published artifact:
+
+```powershell
+python scripts/import_benchmark.py --label legacy-my-published-example --project-id 999 --version 1 --archetype game --published-slug my-site-v1-abcd
+```
+
+The script copies the source into `eval/benchmark_builds/<label>/src/` and prints the registry JSON entry to paste into `eval/archetype_benchmarks.json`.
+
+At runtime, Archon uses the registry in two ways:
+- Highest-priority matching entry can provide full reference HTML/CSS when Discovery has no suitable result.
+- All `notes` for the selected archetype are merged into benchmark guidance, so shared traits like premium card motion, glow systems, or archive-style interactions can influence new builds even when the prompt targets a different franchise.
+- Entries marked `global_guidance: true` also contribute cross-archetype polish guidance, useful for strong interaction-heavy utilities that should raise the quality floor everywhere.
 
 ---
 

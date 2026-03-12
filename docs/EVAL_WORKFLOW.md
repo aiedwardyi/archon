@@ -21,6 +21,7 @@ Operator stance:
 - Prompt evolution target: `prompts/engineer.txt`
 - Manual design-kit targets: `prompts/archetypes/<archetype>.css` and `prompts/archetypes/<archetype>.txt`
 - Optional tuning target after plateau only: `eval/eval_config.json`
+- Shared legacy benchmark registry: `eval/archetype_benchmarks.json`
 - Result artifacts: `eval/results/<archetype>/iter_<n>/scores.json`
 - Operator logs: `eval/results/codex_improvements.md`, `eval/results/overnight_summary.md`, `eval/results/checkpoint.md`
 
@@ -38,6 +39,31 @@ Allowed workflow fixes on `eval/loops` when they directly unblock optimization:
 - Logging or loop-control fixes needed to prevent wasted repeated failures
 
 Do not treat a broken eval harness as "out of scope" if fixing it is the shortest path to resume design improvement on `eval/loops`.
+
+## Legacy Benchmarks
+
+Use `eval/archetype_benchmarks.json` as the single registry for reference builds.
+
+- Backend local fallback:
+  - If Watson Discovery is disabled or returns no matching result, the backend loads the highest-priority matching archetype from this registry and injects it into the engineer prompt as `reference_code`.
+- Discovery ingestion:
+  - `scripts/ingest_best_builds.py` reads the same file.
+  - Set `discovery_ingest: true` on entries that should be uploaded into Discovery.
+- Adding a new legacy example:
+  - Prefer importing it into `eval/benchmark_builds/` so the example is portable across machines
+  - This includes older seeded starter projects and showcase examples referenced in the README
+  - Use `python scripts/import_benchmark.py ...` to copy the source and generate the registry snippet
+  - Add a registry entry with `project_id`, `version`, `archetype`, `benchmark_path`, `priority`, and `label`
+  - If only the published artifact exists, add `published_slug` and optional `prompt_summary`
+  - Add `prompt_hints` when a legacy example should bias an otherwise vague prompt toward that archetype
+  - Use a higher `priority` than existing entries if you want it to become the default local fallback for that archetype
+  - Keep `notes` short and factual so future operators know why the build matters
+  - Use `global_guidance: true` when an example is valuable mainly for transferable interaction/polish traits across all archetypes
+
+- Archetype transfer behavior:
+  - The top-priority matching benchmark still provides the concrete HTML/CSS reference build.
+  - All `notes` for the selected archetype are merged into benchmark guidance for the engineer, so reusable traits from multiple legacy examples can influence future builds.
+  - Entries with `global_guidance: true` also inject cross-archetype polish guidance and are useful for exceptional utilities or interaction-heavy apps that should raise the global quality floor.
 
 ## Session Start
 

@@ -13,49 +13,40 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from utils.watson_discovery import DiscoveryClient
-
-
-TOP_BUILDS = [
-    {"project_id": 163, "archetype": "ecommerce", "eval_score": 88.5},
-    {"project_id": 161, "archetype": "game", "eval_score": 84.5},
-    {"project_id": 169, "archetype": "portfolio", "eval_score": 83.5},
-    {"project_id": 155, "archetype": "dashboard", "eval_score": 81.0},
-    {"project_id": 162, "archetype": "saas_landing", "eval_score": 76.0},
-]
+from utils.reference_build_registry import get_reference_build_registry, load_reference_build_content
 
 
 def _read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _build_document(project_id: int, fallback_archetype: str, eval_score: float) -> dict:
-    base = ROOT / "generated" / str(project_id) / "v1"
+def _build_document(entry: dict) -> dict:
+    project_id = int(entry["project_id"])
+    version = int(entry.get("version", 1))
+    base = ROOT / "generated" / str(project_id) / f"v{version}"
     factsheet = _read_json(base / "last_factsheet.json")
     plan = _read_json(base / "last_plan.json")
-
-    html_code = (base / "code" / "src" / "index.html").read_text(encoding="utf-8")
-    style_css_path = base / "code" / "src" / "style.css"
-    style_css = style_css_path.read_text(encoding="utf-8") if style_css_path.exists() else ""
-
-    base_css_path = base / "code" / "src" / "base.css"
-    base_css = base_css_path.read_text(encoding="utf-8") if base_css_path.exists() else ""
+    loaded = load_reference_build_content(entry)
+    if loaded is None:
+        raise FileNotFoundError(f"Missing benchmark files for project {project_id} v{version}")
 
     factsheet_archetype = factsheet.get("pipeline", {}).get("ui_archetype") or ""
-    archetype = fallback_archetype or factsheet_archetype
+    archetype = entry.get("archetype") or factsheet_archetype
     prompt_summary = factsheet.get("prompt_summary", "")
+    eval_score = entry.get("eval_score")
 
     return {
         "archetype": archetype,
         "prompt": prompt_summary,
         "plan_json": json.dumps(plan, ensure_ascii=False),
-        "html_code": html_code,
-        "css_code": style_css,
-        "base_css": base_css,
+        "html_code": loaded["html_code"],
+        "css_code": loaded["css_code"],
+        "base_css": loaded["base_css"],
         "eval_score": eval_score,
         "dimension_scores": factsheet.get("scoring", {}),
         "factsheet_archetype": factsheet_archetype,
         "project_id": project_id,
-        "version": int(factsheet.get("project", {}).get("version", 1)),
+        "version": version,
         "created_at": factsheet.get("generated_at"),
     }
 
@@ -68,14 +59,22 @@ def main() -> int:
         print("[Discovery] Credentials missing. Nothing ingested.")
         return 0
 
+    discovery_entries = [
+        entry for entry in get_reference_build_registry()
+        if entry.get("discovery_ingest")
+    ]
+    if not discovery_entries:
+        print("[Discovery] No registry entries marked discovery_ingest=true. Nothing ingested.")
+        return 0
+
     successes = 0
-    for item in TOP_BUILDS:
-        project_id = item["project_id"]
-        arch = item["archetype"]
-        score = item["eval_score"]
+    for entry in discovery_entries:
+        project_id = int(entry["project_id"])
+        arch = entry["archetype"]
+        score = entry.get("eval_score")
 
         try:
-            doc = _build_document(project_id=project_id, fallback_archetype=arch, eval_score=score)
+            doc = _build_document(entry)
         except Exception as exc:
             print(f"[Discovery] Failed to load project {project_id}: {exc}")
             print(f"  [FAIL] project {project_id} failed")
@@ -95,7 +94,7 @@ def main() -> int:
         else:
             print(f"  [FAIL] project {project_id} failed")
 
-    print(f"[Discovery] Ingested {successes}/{len(TOP_BUILDS)} builds")
+    print(f"[Discovery] Ingested {successes}/{len(discovery_entries)} builds")
 
     # Test query
     print("\nWaiting 10s for Discovery indexing...")

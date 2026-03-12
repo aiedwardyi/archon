@@ -28,6 +28,11 @@ from auth import auth_bp, claim_guest_project_for_user, init_jwt
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from agents.nlu_agent import NLUAgent
 from agents.engineer_agent import DESIGN_KIT_ALIASES
+from utils.reference_build_registry import (
+    get_archetype_benchmark_guidance,
+    load_local_reference_build,
+    suggest_reference_archetype,
+)
 from utils.watson_discovery import DiscoveryClient
 from utils.image_asset_catalog import catalog_design_assets
 from utils.asset_filler import fill_missing_assets
@@ -497,6 +502,14 @@ def run_full_pipeline_async(
                     project = session.get(Project, execution.project_id)
                     if project:
                         locked_ui_archetype = project.locked_ui_archetype
+        if not locked_ui_archetype:
+            benchmark_match = suggest_reference_archetype(task_description)
+            if benchmark_match and benchmark_match.get("archetype"):
+                locked_ui_archetype = benchmark_match["archetype"]
+                print(
+                    f"[Benchmark] Prompt matched registry entry '{benchmark_match.get('label')}', "
+                    f"locking archetype to '{locked_ui_archetype}'"
+                )
         is_iteration = bool(version and version > 1)
 
         if project_id and version:
@@ -705,11 +718,13 @@ def run_full_pipeline_async(
 
         # Query Watson Discovery for best archetype-matched build (initial build only)
         reference_code = None
+        benchmark_guidance = ""
         if not is_iteration:
             detected_archetype = get_plan_ui_archetype(plan) or locked_ui_archetype
             engineer_kit_archetype = DESIGN_KIT_ALIASES.get(engineer_task.ui_archetype, engineer_task.ui_archetype)
             if detected_archetype:
                 canonical_archetype = DESIGN_KIT_ALIASES.get(detected_archetype, detected_archetype)
+                benchmark_guidance = get_archetype_benchmark_guidance(canonical_archetype)
                 try:
                     best_build = discovery_client.query_best_build(canonical_archetype)
                     if best_build and canonical_archetype == engineer_kit_archetype:
@@ -718,6 +733,7 @@ def run_full_pipeline_async(
                             "css": best_build.get("css_code", ""),
                             "score": best_build.get("eval_score", "N/A"),
                             "archetype": canonical_archetype,
+                            "benchmark_guidance": benchmark_guidance,
                         }
                         msg = (
                             f"[Discovery] Found reference build for '{canonical_archetype}' "
@@ -734,6 +750,21 @@ def run_full_pipeline_async(
                         print(msg)
                 except Exception as disc_err:
                     print(f"[Discovery] Query failed (non-fatal): {disc_err}")
+
+                if reference_code is None and canonical_archetype == engineer_kit_archetype:
+                    local_build = load_local_reference_build(canonical_archetype)
+                    if local_build:
+                        reference_code = {
+                            "html": local_build.get("html_code", ""),
+                            "css": local_build.get("css_code", ""),
+                            "score": local_build.get("eval_score") or local_build.get("label", "local-benchmark"),
+                            "archetype": canonical_archetype,
+                            "benchmark_guidance": local_build.get("benchmark_guidance", benchmark_guidance),
+                        }
+                        print(
+                            f"[Benchmark] Using local reference build for '{canonical_archetype}' "
+                            f"(project {local_build.get('project_id')}, label: {local_build.get('label')})"
+                        )
             else:
                 print("[Discovery] Skipping query: no archetype detected from plan or project lock")
 

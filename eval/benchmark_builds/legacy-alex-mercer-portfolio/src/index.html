@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alex Mercer — Creative Developer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+  <!-- TOPBAR NAV -->
+  <nav class="topbar" id="topbar">
+    <div class="topbar-inner">
+      <div class="nav-name">AM<span class="nav-dot">.</span></div>
+      <ul class="nav-links">
+        <li><a href="#about" class="nav-link">About</a></li>
+        <li><a href="#skills" class="nav-link">Skills</a></li>
+        <li><a href="#projects" class="nav-link">Work</a></li>
+        <li><a href="#experience" class="nav-link">Experience</a></li>
+      </ul>
+      <a href="#contact" class="nav-cta">Let's Talk
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- MOBILE MENU -->
+  <div class="mobile-menu" id="mobileMenu">
+    <ul>
+      <li><a href="#about" class="mobile-link">About</a></li>
+      <li><a href="#skills" class="mobile-link">Skills</a></li>
+      <li><a href="#projects" class="mobile-link">Work</a></li>
+      <li><a href="#experience" class="mobile-link">Experience</a></li>
+      <li><a href="#contact" class="mobile-link mobile-cta">Let's Talk</a></li>
+    </ul>
+  </div>
+
+  <!-- HERO BAND -->
+  <section class="hero" id="hero">
+    <div class="hero-grain"></div>
+    <div class="hero-glow"></div>
+    <div class="hero-after"></div>
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        Available for work
+      </div>
+      <h1 class="hero-title">
+        Crafting Digital
+        <span class="hero-title-accent">Experiences</span>
+        That Matter
+      </h1>
+      <p class="hero-sub">I'm Alex Mercer — a full-stack developer & creative technologist building interfaces that are fast, beautiful, and unforgettable.</p>
+      <div class="hero-ctas">
+        <a href="#projects" class="btn-primary">View My Work</a>
+        <a href="#contact" class="btn-secondary">Get In Touch</a>
+      </div>
+      <div class="hero-meta">
+        <span>7+ Years Experience</span>
+        <span class="meta-rule"></span>
+        <span>40+ Projects Shipped</span>
+        <span class="meta-rule"></span>
+        <span>Remote / Worldwide</span>
+        <span class="meta-rule"></span>
+        <span>Full-Stack + Design</span>
+      </div>
+    </div>
+    <div class="hero-scroll-indicator">
+      <div class="scroll-line"></div>
+      <span>Scroll</span>
+    </div>
+  </section>
+
+  <!-- MARQUEE TICKER -->
+  <div class="marquee-band">
+    <div class="marquee-track">
+      <span class="marquee-item">React</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">Next.js</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">TypeScript</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">Node.js</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">Figma</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">Three.js</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">PostgreSQL</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">Docker</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">AWS</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">Tailwind CSS</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">GraphQL</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">Prisma</span><span class="marquee-sep">✦</span>
+      <!-- duplicate for seamless loop -->
+      <span class="marquee-item">React</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">Next.js</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">TypeScript</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">Node.js</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">Figma</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">Three.js</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">PostgreSQL</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">Docker</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">AWS</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">Tailwind CSS</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">GraphQL</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">Prisma</span><span class="marquee-sep">✦</span>
+    </div>
+  </div>
+
+  <!-- ABOUT -->
+  <section class="about section" id="about">
+    <div class="container">
+      <div class="about-grid">
+        <div class="about-image-col">
+          <div class="about-img-wrapper">
+            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80&fit=crop&auto=format" alt="Alex Mercer" class="about-img">
+            <div class="about-img-badge">
+              <span class="pulse-dot"></span>
+              Open to opportunities
+            </div>
+          </div>
+          <div class="about-stats">
+            <div class="about-stat">
+              <span class="about-stat-num" data-count="40">0</span>
+              <span class="about-stat-label">Projects</span>
+            </div>
+            <div class="about-stat">
+              <span class="about-stat-num" data-count="7">0</span>
+              <span class="about-stat-label">Years Exp.</span>
+            </div>
+            <div class="about-stat">
+              <span class="about-stat-num" data-count="28">0</span>
+              <span class="about-stat-label">Clients</span>
+            </div>
+          </div>
+        </div>
+        <div class="about-text-col">
+          <div class="section-label">About Me</div>
+          <h2 class="section-heading">Building at the intersection of design & engineering</h2>
+          <p class="about-body">I've spent the last 7 years shipping products that people actually love using. From early-stage startups to Fortune 500 companies, I bring a deep care for craft to every pixel and every function.</p>
+          <p class="about-body">My work lives at the intersection of thoughtful design and solid engineering. I believe software should feel as good as it works — and I obsess over every detail until it does.</p>
+          <div class="about-tags">
+            <span class="tag">Problem Solver</span>
+            <span class="tag">Detail-Obsessed</span>
+            <span class="tag">Open Source Contributor</span>
+            <span class="tag">Conference Speaker</span>
+            <span class="tag">Remote First</span>
+          </div>
+          <a href="#contact" class="btn-primary btn-inline">Work With Me
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SKILLS GRID -->
+  <section class="skills section" id="skills">
+    <div class="container">
+      <div class="section-header center">
+        <div class="section-label">Expertise</div>
+        <h2 class="section-heading">A toolkit built for <span class="accent-word">modern</span> web</h2>
+        <p class="section-sub">Every tool chosen deliberately. Every skill sharpened over years of real-world projects.</p>
+      </div>
+      <div class="skills-grid">
+        <div class="skill-card card stagger-1">
+          <div class="skill-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <h3 class="skill-name">Frontend</h3>
+          <p class="skill-desc">React, Next.js, TypeScript, Vue.js, Svelte, Tailwind CSS, Framer Motion, GSAP</p>
+          <div class="skill-bar-wrap"><div class="skill-bar" style="--bar-pct:95%"></div></div>
+          <span class="skill-level">Expert</span>
+        </div>
+        <div class="skill-card card stagger-2">
+          <div class="skill-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+          <h3 class="skill-name">Backend</h3>
+          <p class="skill-desc">Node.js, Express, NestJS, Python, FastAPI, GraphQL, REST APIs, WebSockets</p>
+          <div class="skill-bar-wrap"><div class="skill-bar" style="--bar-pct:88%"></div></div>
+          <span class="skill-level">Advanced</span>
+        </div>
+        <div class="skill-card card stagger-3">
+          <div class="skill-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4.03 3-9 3S3 13.66 3 12"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/></svg>
+          </div>
+          <h3 class="skill-name">Data & Cloud</h3>
+          <p class="skill-desc">PostgreSQL, MongoDB, Redis, AWS, GCP, Docker, Kubernetes, Terraform</p>
+          <div class="skill-bar-wrap"><div class="skill-bar" style="--bar-pct:80%"></div></div>
+          <span class="skill-level">Proficient</span>
+        </div>
+        <div class="skill-card card stagger-4">
+          <div class="skill-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+          </div>
+          <h3 class="skill-name">Design</h3>
+          <p class="skill-desc">Figma, Sketch, UI/UX Design Systems, Prototyping, Motion Design, 3D with Blender</p>
+          <div class="skill-bar-wrap"><div class="skill-bar" style="--bar-pct:85%"></div></div>
+          <span class="skill-level">Advanced</span>
+        </div>
+        <div class="skill-card card stagger-1">
+          <div class="skill-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z"/><path d="M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/><path d="M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S8 21.33 8 20.5v-5c0-.83.67-1.5 1.5-1.5z"/><path d="M3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14z"/><path d="M14 14.5c0-.83.67-1.5 1.5-1.5h5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-5c-.83 0-1.5-.67-1.5-1.5z"/><path d="M15.5 19H14v1.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z"/><path d="M10 9.5C10 8.67 9.33 8 8.5 8h-5C2.67 8 2 8.67 2 9.5S2.67 11 3.5 11h5c.83 0 1.5-.67 1.5-1.5z"/><path d="M8.5 5H10V3.5C10 2.67 9.33 2 8.5 2S7 2.67 7 3.5 7.67 5 8.5 5z"/></svg>
+          </div>
+          <h3 class="skill-name">Integration & APIs</h3>
+          <p class="skill-desc">Stripe, Twilio, OpenAI API, Supabase, Firebase, Clerk, Vercel, Netlify</p>
+          <div class="skill-bar-wrap"><div class="skill-bar" style="--bar-pct:92%"></div></div>
+          <span class="skill-level">Expert</span>
+        </div>
+        <div class="skill-card card stagger-2">
+          <div class="skill-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+          </div>
+          <h3 class="skill-name">Performance & SEO</h3>
+          <p class="skill-desc">Core Web Vitals, Lighthouse, SSR/SSG, Edge Functions, CDN Strategy, Analytics</p>
+          <div class="skill-bar-wrap"><div class="skill-bar" style="--bar-pct:87%"></div></div>
+          <span class="skill-level">Advanced</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROJECTS GRID -->
+  <section class="projects section" id="projects">
+    <div class="container">
+      <div class="section-header center">
+        <div class="section-label">Selected Work</div>
+        <h2 class="section-heading">Projects I'm proud of</h2>
+        <p class="section-sub">Four carefully selected projects that showcase my range — from AI-powered tools to real-time collaboration platforms.</p>
+      </div>
+      <div class="projects-grid">
+
+        <!-- Project 1 -->
+        <article class="project-card card stagger-1" data-project="0">
+          <div class="project-thumb">
+            <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80&fit=crop&auto=format" alt="Nexus Analytics" class="project-img">
+            <div class="project-overlay">
+              <button class="project-view-btn" data-project="0">View Project
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+            <div class="project-badge">AI-Powered</div>
+          </div>
+          <div class="project-info">
+            <div class="project-meta-row">
+              <span class="project-category">Analytics Platform</span>
+              <span class="project-year">2024</span>
+            </div>
+            <h3 class="project-title">Nexus Analytics</h3>
+            <p class="project-desc">A real-time business intelligence dashboard with AI-powered anomaly detection and predictive forecasting for mid-market SaaS companies.</p>
+            <div class="project-stack">
+              <span class="stack-tag">Next.js</span>
+              <span class="stack-tag">TypeScript</span>
+              <span class="stack-tag">OpenAI</span>
+              <span class="stack-tag">PostgreSQL</span>
+            </div>
+            <div class="project-links">
+              <a href="#" class="project-link" onclick="event.stopPropagation()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                Live Demo
+              </a>
+              <a href="#" class="project-link" onclick="event.stopPropagation()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+                GitHub
+              </a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Project 2 -->
+        <article class="project-card card stagger-2" data-project="1">
+          <div class="project-thumb">
+            <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80&fit=crop&auto=format" alt="Collab Studio" class="project-img">
+            <div class="project-overlay">
+              <button class="project-view-btn" data-project="1">View Project
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+            <div class="project-badge featured">Featured</div>
+          </div>
+          <div class="project-info">
+            <div class="project-meta-row">
+              <span class="project-category">Collaboration Tool</span>
+              <span class="project-year">2024</span>
+            </div>
+            <h3 class="project-title">Collab Studio</h3>
+            <p class="project-desc">A multiplayer design & whiteboarding tool with real-time cursor presence, voice channels, and version history — built for distributed teams.</p>
+            <div class="project-stack">
+              <span class="stack-tag">React</span>
+              <span class="stack-tag">WebSockets</span>
+              <span class="stack-tag">Canvas API</span>
+              <span class="stack-tag">Redis</span>
+            </div>
+            <div class="project-links">
+              <a href="#" class="project-link" onclick="event.stopPropagation()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                Live Demo
+              </a>
+              <a href="#" class="project-link" onclick="event.stopPropagation()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+                GitHub
+              </a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Project 3 -->
+        <article class="project-card card stagger-3" data-project="2">
+          <div class="project-thumb">
+            <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&q=80&fit=crop&auto=format" alt="Drift Commerce" class="project-img">
+            <div class="project-overlay">
+              <button class="project-view-btn" data-project="2">View Project
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="project-info">
+            <div class="project-meta-row">
+              <span class="project-category">E-Commerce</span>
+              <span class="project-year">2023</span>
+            </div>
+            <h3 class="project-title">Drift Commerce</h3>
+            <p class="project-desc">A headless e-commerce platform with a blazing-fast storefront, 3D product previews, AR try-on, and a custom checkout flow with 2.3× higher conversion.</p>
+            <div class="project-stack">
+              <span class="stack-tag">Next.js</span>
+              <span class="stack-tag">Three.js</span>
+              <span class="stack-tag">Stripe</span>
+              <span class="stack-tag">Shopify API</span>
+            </div>
+            <div class="project-links">
+              <a href="#" class="project-link" onclick="event.stopPropagation()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                Live Demo
+              </a>
+              <a href="#" class="project-link" onclick="event.stopPropagation()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+                GitHub
+              </a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Project 4 -->
+        <article class="project-card card stagger-4" data-project="3">
+          <div class="project-thumb">
+            <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&q=80&fit=crop&auto=format" alt="PulseHealth" class="project-img">
+            <div class="project-overlay">
+              <button class="project-view-btn" data-project="3">View Project
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+            <div class="project-badge">Open Source</div>
+          </div>
+          <div class="project-info">
+            <div class="project-meta-row">
+              <span class="project-category">HealthTech</span>
+              <span class="project-year">2023</span>
+            </div>
+            <h3 class="project-title">PulseHealth</h3>
+            <p class="project-desc">An open-source patient management system for independent clinics — with HIPAA-compliant data storage, appointment scheduling, and telehealth video calls.</p>
+            <div class="project-stack">
+              <span class="stack-tag">React</span>
+              <span class="stack-tag">Node.js</span>
+              <span class="stack-tag">WebRTC</span>
+              <span class="stack-tag">Prisma</span>
+            </div>
+            <div class="project-links">
+              <a href="#" class="project-link" onclick="event.stopPropagation()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                Live Demo
+              </a>
+              <a href="#" class="project-link" onclick="event.stopPropagation()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+                GitHub
+              </a>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- EXPERIENCE -->
+  <section class="experience section" id="experience">
+    <div class="container">
+      <div class="exp-grid">
+        <div class="exp-left">
+          <div class="section-label">Experience</div>
+          <h2 class="section-heading">Where I've built things</h2>
+          <p class="section-sub left">From scrappy startups to global enterprises, every role taught me something irreplaceable about what it means to ship great software.</p>
+          <a href="#contact" class="btn-primary btn-inline">Open to new roles
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        </div>
+        <div class="exp-timeline">
+          <div class="exp-item">
+            <div class="exp-dot"></div>
+            <div class="exp-content">
+              <div class="exp-header">
+                <div>
+                  <h4 class="exp-role">Senior Frontend Engineer</h4>
+                  <span class="exp-company">Vercel</span>
+                </div>
+                <span class="exp-date">2022 — Present</span>
+              </div>
+              <p class="exp-desc">Led the redesign of the dashboard experience serving 1M+ developers. Reduced TTFB by 40% via edge computing architecture. Mentored a team of 5 engineers.</p>
+              <div class="exp-tags">
+                <span class="tag small">Next.js</span>
+                <span class="tag small">Edge Runtime</span>
+                <span class="tag small">TypeScript</span>
+              </div>
+            </div>
+          </div>
+          <div class="exp-item">
+            <div class="exp-dot"></div>
+            <div class="exp-content">
+              <div class="exp-header">
+                <div>
+                  <h4 class="exp-role">Full-Stack Engineer</h4>
+                  <span class="exp-company">Linear</span>
+                </div>
+                <span class="exp-date">2020 — 2022</span>
+              </div>
+              <p class="exp-desc">Core contributor to Linear's real-time sync engine. Implemented keyboard shortcuts system and command palette (250K+ weekly active users). Built the GitHub integration.</p>
+              <div class="exp-tags">
+                <span class="tag small">React</span>
+                <span class="tag small">GraphQL</span>
+                <span class="tag small">Electron</span>
+              </div>
+            </div>
+          </div>
+          <div class="exp-item">
+            <div class="exp-dot"></div>
+            <div class="exp-content">
+              <div class="exp-header">
+                <div>
+                  <h4 class="exp-role">Frontend Developer</h4>
+                  <span class="exp-company">Shopify</span>
+                </div>
+                <span class="exp-date">2018 — 2020</span>
+              </div>
+              <p class="exp-desc">Built performance-critical storefront components used across 1M+ stores. Contributed to the Polaris design system and owned the checkout flow for 3 months.</p>
+              <div class="exp-tags">
+                <span class="tag small">React</span>
+                <span class="tag small">Liquid</span>
+                <span class="tag small">Node.js</span>
+              </div>
+            </div>
+          </div>
+          <div class="exp-item">
+            <div class="exp-dot"></div>
+            <div class="exp-content">
+              <div class="exp-header">
+                <div>
+                  <h4 class="exp-role">Junior Developer</h4>
+                  <span class="exp-company">Freelance & Agency</span>
+                </div>
+                <span class="exp-date">2017 — 2018</span>
+              </div>
+              <p class="exp-desc">Delivered 12 client projects across e-commerce, media, and fintech verticals. Learned to work fast, communicate clearly, and always ship on time.</p>
+              <div class="exp-tags">
+                <span class="tag small">JavaScript</span>
+                <span class="tag small">WordPress</span>
+                <span class="tag small">PHP</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section class="contact section" id="contact">
+    <div class="container">
+      <div class="contact-card">
+        <div class="contact-glow"></div>
+        <div class="section-label center-label">Get In Touch</div>
+        <h2 class="contact-heading">Let's build something <span class="accent-word">great</span> together</h2>
+        <p class="contact-sub">Whether you have a project in mind, a role to fill, or just want to say hello — my inbox is always open.</p>
+        <div class="contact-actions">
+          <a href="mailto:hello@alexmercer.dev" class="btn-primary btn-lg">hello@alexmercer.dev
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </a>
+          <div class="contact-socials">
+            <a href="#" class="social-link" title="GitHub">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+            </a>
+            <a href="#" class="social-link" title="LinkedIn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+            </a>
+            <a href="#" class="social-link" title="Twitter">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/></svg>
+            </a>
+            <a href="#" class="social-link" title="Dribbble">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M8.56 2.75c4.37 6.03 6.02 9.42 8.03 17.72m2.54-15.38c-3.72 4.35-8.94 5.66-16.88 5.85m19.5 1.9c-3.5-.93-6.63-.82-8.94 0-2.58.92-5.01 2.86-7.44 6.32"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <span class="footer-name">AM<span class="nav-dot">.</span></span>
+        <span class="footer-copy">© 2024 Alex Mercer. Designed & built with intention.</span>
+        <a href="#hero" class="footer-top">Back to top
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 9V3M3 6l3-3 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- PROJECT MODAL -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal">
+      <button class="modal-close" id="modalClose">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <div class="modal-body" id="modalBody">
+        <!-- filled by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast">Link copied to clipboard!</div>
+
+  <script>
+    // ─── DATA ───────────────────────────────────────────
+    const projects = [
+      {
+        title: 'Nexus Analytics',
+        category: 'Analytics Platform',
+        year: '2024',
+        desc: 'A real-time business intelligence dashboard with AI-powered anomaly detection and predictive forecasting for mid-market SaaS companies. Built to handle millions of events per second with sub-second query response times.',
+        longDesc: 'Nexus was built to solve a specific pain point I kept seeing: analytics tools that were either too simple or too complex. The goal was a platform that anyone on a team could use confidently, but with the raw power that data engineers demand.\n\nKey achievements: 99.98% uptime SLA, <200ms p95 query latency, native GPT-4 integration for natural language queries, and a custom charting engine built from scratch using Canvas API.',
+        stack: ['Next.js 14', 'TypeScript', 'OpenAI API', 'PostgreSQL', 'ClickHouse', 'Redis', 'Docker'],
+        image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=900&q=80&fit=crop&auto=format',
+        demo: '#',
+        github: '#',
+        impact: ['1M+ events/sec processed', '40% faster than incumbent tools', 'Acquired by DataCo in 2024']
+      },
+      {
+        title: 'Collab Studio',
+        category: 'Collaboration Tool',
+        year: '2024',
+        desc: 'A multiplayer design & whiteboarding tool with real-time cursor presence, voice channels, and version history — built for distributed teams across time zones.',
+        longDesc: 'Collab Studio was born from the frustration of juggling Figma, Miro, Notion, and Slack simultaneously. I wanted one tool that felt native to each use case without sacrificing depth.\n\nThe real-time engine uses CRDTs (Conflict-free Replicated Data Types) for seamless offline support and merge conflict resolution — a pattern I had to implement from first principles.',
+        stack: ['React 18', 'WebSockets', 'Canvas API', 'CRDT (Yjs)', 'Redis', 'Node.js', 'WebRTC'],
+        image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=900&q=80&fit=crop&auto=format',
+        demo: '#',
+        github: '#',
+        impact: ['12K+ active teams', 'Real-time sync <50ms latency', 'Featured on Product Hunt #2']
+      },
+      {
+        title: 'Drift Commerce',
+        category: 'E-Commerce Platform',
+        year: '2023',
+        desc: 'A headless e-commerce platform with a blazing-fast storefront, 3D product previews, AR try-on, and a custom checkout flow that achieved 2.3× higher conversion vs. the previous solution.',
+        longDesc: 'Drift Commerce was a ground-up rebuild of a luxury streetwear brand\'s online store. The client had been losing sales to slow load times and a clunky mobile checkout. We rebuilt it headless with Next.js 13 App Router and implemented WebGL-powered 3D product viewers.\n\nThe AR try-on feature (using WebXR API) was a first for any Shopify-integrated store at the time and generated significant press coverage.',
+        stack: ['Next.js 13', 'Three.js', 'WebXR', 'Stripe', 'Shopify Storefront API', 'Prisma', 'Vercel'],
+        image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=900&q=80&fit=crop&auto=format',
+        demo: '#',
+        github: '#',
+        impact: ['2.3× conversion rate increase', 'Page load <800ms on 3G', '$4M+ revenue in first quarter']
+      },
+      {
+        title: 'PulseHealth',
+        category: 'HealthTech Platform',
+        year: '2023',
+        desc: 'An open-source patient management system for independent clinics — with HIPAA-compliant data storage, appointment scheduling, and integrated telehealth video calls.',
+        longDesc: 'PulseHealth started as a pro-bono project for a network of independent clinics who couldn\'t afford enterprise EMR software. It\'s now open source and maintained by a community of contributors.\n\nHIPAA compliance was the hardest engineering challenge: end-to-end encrypted data at rest and in transit, audit logging, role-based access with fine-grained permissions, and a BAA-compliant infrastructure on AWS.',
+        stack: ['React', 'Node.js', 'WebRTC', 'Prisma', 'PostgreSQL', 'AWS (HIPAA)', 'Twilio'],
+        image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=900&q=80&fit=crop&auto=format',
+        demo: '#',
+        github: '#',
+        impact: ['340+ clinics using it', '2,400+ GitHub stars', 'HIPAA-certified & audited']
+      }
+    ];
+
+    // ─── TOPBAR SCROLL ──────────────────────────────────
+    const topbar = document.getElementById('topbar');
+    window.addEventListener('scroll', () => {
+      topbar.classList.toggle('scrolled', window.scrollY > 60);
+    });
+
+    // ─── HAMBURGER ──────────────────────────────────────
+    const hamburger = document.getElementById('hamburger');
+    const mobileMenu = document.getElementById('mobileMenu');
+    hamburger.addEventListener('click', () => {
+      hamburger.classList.toggle('open');
+      mobileMenu.classList.toggle('open');
+    });
+    document.querySelectorAll('.mobile-link').forEach(l => {
+      l.addEventListener('click', () => {
+        hamburger.classList.remove('open');
+        mobileMenu.classList.remove('open');
+      });
+    });
+
+    // ─── MODAL ──────────────────────────────────────────
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modalBody = document.getElementById('modalBody');
+    const modalClose = document.getElementById('modalClose');
+
+    function openModal(idx) {
+      const p = projects[idx];
+      modalBody.innerHTML = `
+        <div class="modal-img-wrap">
+          <img src="${p.image}" alt="${p.title}" class="modal-img">
+          <div class="modal-img-overlay"></div>
+        </div>
+        <div class="modal-content">
+          <div class="modal-meta">
+            <span class="project-category">${p.category}</span>
+            <span class="project-year">${p.year}</span>
+          </div>
+          <h2 class="modal-title">${p.title}</h2>
+          <p class="modal-desc">${p.longDesc.replace(/\n/g, '</p><p class="modal-desc">')}</p>
+          <div class="modal-impact">
+            ${p.impact.map(i => `<div class="impact-item"><span class="impact-check">✓</span>${i}</div>`).join('')}
+          </div>
+          <div class="modal-stack">
+            <span class="modal-stack-label">Tech Stack</span>
+            <div class="modal-stack-tags">${p.stack.map(s => `<span class="stack-tag">${s}</span>`).join('')}</div>
+          </div>
+          <div class="modal-actions">
+            <a href="${p.demo}" class="btn-primary">Live Demo <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+            <a href="${p.github}" class="btn-secondary">View Code</a>
+          </div>
+        </div>
+      `;
+      modalOverlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      modalOverlay.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    modalClose.addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    document.querySelectorAll('[data-project]').forEach(el => {
+      el.addEventListener('click', () => openModal(+el.dataset.project));
+    });
+
+    // ─── COUNT UP ───────────────────────────────────────
+    function countUp(el, target, duration = 1400) {
+      const start = performance.now();
+      const update = (now) => {
+        const p = Math.min((now - start) / duration, 1);
+        const ease = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.floor(ease * target);
+        if (p < 1) requestAnimationFrame(update);
+      };
+      requestAnimationFrame(update);
+    }
+
+    // IntersectionObserver for count-up
+    const countObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !entry.target.dataset.counted) {
+          entry.target.dataset.counted = '1';
+          countUp(entry.target, +entry.target.dataset.count);
+        }
+      });
+    }, { threshold: 0.5 });
+    document.querySelectorAll('[data-count]').forEach(el => countObserver.observe(el));
+
+    // ─── SKILL BAR ANIMATE ──────────────────────────────
+    const skillObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.querySelectorAll('.skill-bar').forEach(bar => {
+            bar.style.width = bar.style.getPropertyValue('--bar-pct') || bar.style.cssText.match(/--bar-pct:(.*?)(%|;)/)?.[0]?.replace('--bar-pct:', '') || '0%';
+            bar.classList.add('animated');
+          });
+        }
+      });
+    }, { threshold: 0.2 });
+    document.querySelectorAll('.skill-card').forEach(el => skillObserver.observe(el));
+
+    // ─── STAGGER FADE-IN ────────────────────────────────
+    const fadeObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.card, .exp-item, .about-stat').forEach(el => fadeObserver.observe(el));
+
+    // ─── ACTIVE NAV LINK ────────────────────────────────
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav-link');
+    const sectionObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          navLinks.forEach(link => {
+            link.classList.toggle('active', link.getAttribute('href') === '#' + entry.target.id);
+          });
+        }
+      });
+    }, { rootMargin: '-40% 0px -40% 0px' });
+    sections.forEach(s => sectionObserver.observe(s));
+
+    // ─── TOAST ──────────────────────────────────────────
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+  </script>
+</body>
+</html>

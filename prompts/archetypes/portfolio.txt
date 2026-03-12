@@ -72,9 +72,9 @@ REQUIRED SECTIONS
    - Image onerror fallback
 
 5. SKILLS — .section-wrapper with .skills-grid (8+ .skill-card):
-   - Each: .skill-icon (Unicode symbol in amber-tinted <span> — NO inline SVG), .skill-name, .skill-level (e.g. "Expert", "Advanced")
+   - Each: .skill-icon (premium inline SVG in amber-tinted container), .skill-name, .skill-level (e.g. "Expert", "Advanced")
    - Skills: React, TypeScript, Node.js, Python, Figma, AWS, Docker, PostgreSQL (or similar relevant stack)
-   - Each icon must be a recognizable Unicode symbol (not empty spans)
+   - Each icon must be visually distinct and premium, not a generic placeholder shape
 
 6. PROJECTS — .section-wrapper with .projects-bento:
    - 4-6 .project-card entries
@@ -106,17 +106,15 @@ CONTENT RULES
 - Headings: Syne 800 with letter-spacing: -0.03em
 
 ═══════════════════════════════════════
-SVG & OUTPUT SIZE RULES (CRITICAL)
+ICON QUALITY RULES
 ═══════════════════════════════════════
-Your total output must fit within 65,000 tokens. Inline SVGs are the #1 cause of token overflow.
-RULES:
-
-Skill icons: Use Unicode symbols (★, ◆, ⚡, ⚙, , , , , , ☁, etc.) inside a styled <span> — NOT inline SVG
-Contact icons: Use Unicode (✉ for email,  for location,  for phone,  for LinkedIn) — NOT inline SVG
-Navigation icons: Use text or Unicode — NOT inline SVG
-The ONLY acceptable SVGs: small decorative arrows (< 3 lines of SVG markup)
-If you need an icon look, use a colored <span> with font-size and the unicode character
-Example skill icon: <span class="skill-icon">⚛</span> with CSS .skill-icon { font-size: 1.5rem; background: rgba(245,158,11,0.15); width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 12px; }
+Use concise premium inline SVG icons for skills, contact details, and any supportive UI markers.
+Do NOT use emoji, Unicode symbol soups, or cheap pictograms for portfolio UI.
+Keep SVGs compact and stylistically consistent:
+- 20-24px
+- consistent stroke width
+- simple premium geometry
+- amber accent used sparingly on icon containers, not every path
 
 ═══════════════════════════════════════
 SELF-CHECK BEFORE OUTPUT
@@ -128,7 +126,7 @@ SELF-CHECK BEFORE OUTPUT
 □ Hero stats ≠ stats band stats (different values!)
 □ Stats band has 4 blocks with positive numbers
 □ About section has image + text side-by-side
-□ 8+ skill cards with SVG icons
+□ 8+ skill cards with premium SVG icons
 □ Projects bento: first card spans 2 columns
 □ 4-6 projects with real names, descriptions, and .project-link "View Project →"
 □ Contact form + contact details side-by-side
@@ -137,4 +135,4 @@ SELF-CHECK BEFORE OUTPUT
 □ style.css is ONLY overrides (≤80 lines)
 □ No "0" values anywhere
 □ Every <img> has onerror fallback
-□ NO inline SVG markup (use Unicode symbols for all icons)
+□ Icons use concise premium inline SVGs, not emoji or Unicode placeholders

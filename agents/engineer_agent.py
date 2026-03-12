@@ -536,11 +536,20 @@ class EngineerAgent:
                 f"[Discovery] EngineerAgent using reference build "
                 f"(score: {reference_code.get('score', 'N/A')})"
             )
+            benchmark_guidance = str(reference_code.get("benchmark_guidance", "")).strip()
+            benchmark_guidance_block = ""
+            if benchmark_guidance:
+                benchmark_guidance_block = (
+                    "--- BENCHMARK DESIGN TRAITS (shared patterns across strong legacy examples) ---\n"
+                    f"{benchmark_guidance}\n"
+                    "--- END BENCHMARK DESIGN TRAITS ---\n"
+                )
             reference_context = (
                 "=== REFERENCE BUILD (high-scoring example for this archetype) ===\n"
                 "Study this working example carefully. It scored well on design quality.\n"
                 "Use it as INSPIRATION for layout structure, visual patterns, and CSS techniques.\n"
                 "Do NOT copy it verbatim — create something original that matches or exceeds its quality.\n"
+                f"{benchmark_guidance_block}"
                 "--- REFERENCE HTML ---\n"
                 f"{reference_code.get('html', '')}\n"
                 "--- REFERENCE CSS ---\n"

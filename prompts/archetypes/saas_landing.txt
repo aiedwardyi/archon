@@ -27,7 +27,7 @@ A base.css file is injected automatically. It provides:
 - Animations: pulse, marquee, fadeUp
 - Responsive breakpoints, focus states, hover transitions with box-shadows
 
-DO NOT duplicate any of these in style.css. Your style.css should contain ONLY page-specific overrides (target ≤80 lines).
+DO NOT duplicate any of these in style.css. Prefer page-specific overrides and additions over redefining the whole kit, but do not sacrifice quality just to keep the file tiny. If the page needs richer custom CSS to feel premium, add it.
 
 ═══════════════════════════════════════
 YOUR index.html MUST LINK base.css FIRST
@@ -40,8 +40,12 @@ In <head>:
 DO NOT add Google Fonts @import — base.css already imports Space Grotesk + Inter.
 
 ═══════════════════════════════════════
-REQUIRED 11 SECTIONS (all visible on first paint)
+CORE SECTIONS (required) + OPTIONAL DEPTH
 ═══════════════════════════════════════
+
+The page MUST include the required archetype sections from the planner contract.
+Use the list below as the preferred playbook for high-quality SaaS landings, not as a rigid "exactly N sections" checklist.
+Choose the strongest subset that fits the prompt and quality target. Avoid filler.
 
 1. NAVBAR — .glass-nav with logo, 5+ nav links, .nav-cta button
 
@@ -65,18 +69,19 @@ REQUIRED 11 SECTIONS (all visible on first paint)
    - Each card MUST have a .card-badge + h3 + .card-desc + a coded visual element (mini UI, SVG, metric bars)
    - Each card must include one interactive cue (`.card-link`, button, or tab trigger) with hover and focus styles
    - NEVER leave feature cards as text-only
-   - NEVER use <img> tags in feature cards — build coded visuals: CSS bar charts, SVG sparklines, metric numbers, mini UI mockups in HTML. Broken image placeholders are a critical failure
+   - Prefer coded visuals (CSS bar charts, SVG sparklines, metric numbers, mini UI mockups in HTML)
+   - If real DESIGN ASSETS are provided and materially improve the section, you MAY use them outside the hero as long as they are integrated intentionally and do not degrade the layout
 
-5. PRODUCT MOCKUP — .mockup-wrapper containing a fully coded mini dashboard/editor UI (dark card with fake chart bars, metric numbers, status badges — all real HTML, NOT description text)
+5. PRODUCT MOCKUP — Recommended when the prompt suggests a product or platform. Use a fully coded mini dashboard/editor UI when possible.
 
-6. COMPARISON TABLE — .comparison-table with 8 feature rows comparing your product vs 2 competitors. 4 columns: Feature | Your Product (featured) | Competitor A | Competitor B. Featured column uses .featured-col class. Use a mix of checkmarks (.check-featured violet SVG, .check-competitor grey SVG) AND specific values (e.g. "Unlimited" vs "10/mo", "99.5%" vs "94%", "Real-time" vs "Batch only"). This makes the table feel data-rich, not just a wall of checkmarks. Feature rows: "AI Suggestions", "Grammar Depth", "Tone Detection", "Plagiarism Check", "Export Formats", "API Access", "Team Seats", "Support SLA"
+6. COMPARISON TABLE — Recommended for competitive or AI-tool prompts. If used, make it data-rich with specific values, not a wall of identical checkmarks.
 
 7. PRICING — .pricing-toggle (Monthly/Annual with Alpine.js x-data) + .pricing-grid with 3 .pricing-card tiers. Middle card: .pricing-card--featured. Monthly: $9/$29/$79. Annual: $7/$23/$63 + .save-badge "Save 20%". Each card: .plan-name, .plan-price, .plan-desc, .plan-features (5-6 items with green check SVGs), .plan-btn
 
 8. TESTIMONIALS — .testimonials-grid with 3 .testimonial-card. Each: .quote (real testimonial text), .author with .author-avatar (SVG silhouette inside) + .author-name + .author-role. Use realistic names, companies, and roles.
    - Quotes must use high-contrast body color (not muted text) to avoid readability failures
 
-9. FAQ — .faq-list with 6+ .faq-item. Each: .faq-question with text + .chevron SVG, .faq-answer. Use Alpine.js x-data for open/close. Real questions relevant to the product.
+9. FAQ — Use when it adds conversion value. Prefer 4-6 strong questions over padding the page with weak copy.
 
 10. CTA BANNER — .cta-banner with h2, p, .btn-primary. Gradient radial background already in CSS.
 
@@ -90,20 +95,19 @@ CONTENT & DATA RULES
 - Product name: use whatever the user specified
 - Testimonials: realistic names, companies, roles (NOT "User 1")
 - Feature descriptions: specific to the product type, not generic
-- All 11 sections MUST be visible on first paint (no display:none, no lazy loading)
-- NEVER use <img> tags anywhere — no stock photos, no AI images, no mockup images, no illustration images. Every visual must be CODED in HTML/CSS (mini UIs, SVG shapes, CSS gradients). If you output a single <img> tag, the entire page fails
-- ONLY include the 11 sections listed above — do NOT invent extra sections like "How It Works", "Workflow", or "Process". Every section on the page must be one of the 11 required sections
+- Required planner/archetype sections MUST be visible and implemented. Optional supporting sections are allowed if they clearly improve the page.
+- NEVER use broken external placeholder images. Prefer coded visuals first. Use real local DESIGN ASSETS when available.
+- Do NOT pad the page with generic filler sections. Every section must earn its place.
 - Accent restraint: violet on max 4 element types (CTA buttons, featured pricing border, hero highlight, section badge borders)
 - Color system rule: keep one dominant accent + one secondary accent only; avoid adding low-contrast tertiary grays for primary copy
 
 ═══════════════════════════════════════
-JAVASCRIPT (Alpine.js + interactions)
+JAVASCRIPT INTERACTIONS
 ═══════════════════════════════════════
 
-Include Alpine.js via CDN in <head>:
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+Use plain JavaScript by default. If the broader system prompt or task permits a small dependency, Alpine-style patterns are acceptable, but they are not required.
 
-Use x-data for:
+Implement working behavior for:
 - Pricing toggle (monthly/annual switch with sliding pill)
 - FAQ accordion (open/close with chevron rotation)
 
@@ -120,7 +124,7 @@ SELF-CHECK BEFORE OUTPUT
 ═══════════════════════════════════════
 
 □ index.html links base.css BEFORE style.css
-□ All 11 sections present and visible (no display:none)
+□ All required planner/archetype sections are present and visible
 □ Hero heading is 96px+ on desktop, NO background images
 □ Announcement pill is visible (42px+ tall)
 □ Logo cloud has 10 companies duplicated (20 DOM items) with marquee
@@ -131,11 +135,11 @@ SELF-CHECK BEFORE OUTPUT
 □ Comparison table has 8 feature rows with real metrics
 □ Pricing toggle animates between monthly/annual
 □ No "0" values anywhere
-□ No <img> tags anywhere
-□ Page has EXACTLY 11 sections — no extra "How It Works" or "Process" sections
+□ No broken external placeholder images
+□ Page is not padded with generic filler sections
 □ No excessive vertical gaps — max 80px padding between adjacent sections (check section-wrapper padding)
 □ Testimonials have real names/companies
 □ FAQ has 6+ items with Alpine accordion
 □ Footer has 4+ link columns
-□ style.css contains ONLY overrides (≤80 lines)
+□ style.css is lean where possible, but premium quality takes priority over arbitrary line limits
 □ All heading text uses font-family: 'Space Grotesk', explicit on each element
