@@ -204,6 +204,14 @@ function buildIterationPromptHistory(
   return [{ role: 'user', content: trimmedOriginalPrompt }, ...withoutOriginalPrompt];
 }
 
+function shouldShowOriginalPromptCard(originalPrompt: string, messages: PromptHistoryEntry[]) {
+  const normalizedPrompt = originalPrompt.trim();
+  if (!normalizedPrompt) return false;
+  const firstUserMessage = messages.find((message) => message.role === 'user' && message.content.trim().length > 0);
+  if (!firstUserMessage) return true;
+  return firstUserMessage.content.trim() !== normalizedPrompt;
+}
+
 async function loadWithRetry<T>(loader: () => Promise<T>, retries = 0, delayMs = 700): Promise<T> {
   let attempt = 0;
 
@@ -641,6 +649,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   const [showRegisterPrompt, setShowRegisterPrompt] = useState(false);
   const [insightsState, setInsightsState] = useState<InsightsState>(() => createEmptyInsightsState());
   const [insightsUnread, setInsightsUnread] = useState(false);
+  const [messagesLoaded, setMessagesLoaded] = useState(false);
   const [insightsCollapsed, setInsightsCollapsed] = useState(() => {
     if (typeof window === 'undefined') return false;
     const stored = localStorage.getItem(getInsightsCollapseStorageKey(projectId));
@@ -666,11 +675,18 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
+      if (!cancelled) setMessagesLoaded(false);
       try {
         const history = await fetchChatHistory(projectId);
-        if (!cancelled) setMessages(history || []);
+        if (!cancelled) {
+          setMessages(history || []);
+          setMessagesLoaded(true);
+        }
       } catch {
-        if (!cancelled) setMessages([]);
+        if (!cancelled) {
+          setMessages([]);
+          setMessagesLoaded(true);
+        }
       }
     };
     void load();
@@ -929,6 +945,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
             : project?.currentStage === 'engineer'
               ? t(lang, 'writingCode')
               : t(lang, 'buildingApp');
+  const showOriginalPromptCard = messagesLoaded && shouldShowOriginalPromptCard(project?.description || '', messages);
 
   const tabs = [
     { id: 'preview' as const, label: t(lang, 'preview'), icon: Monitor },
@@ -1502,10 +1519,12 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
                 <div className="mb-4 text-xs uppercase tracking-[0.24em] text-white/34">{t(lang, 'projectConversation')}</div>
                 <div className="space-y-4">
-                  <div className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-4">
-                    <div className="text-[11px] uppercase tracking-[0.22em] text-white/36">{t(lang, 'originalPrompt')}</div>
-                    <div className="mt-3 text-sm leading-6 text-white/66">{project.description}</div>
-                  </div>
+                  {showOriginalPromptCard && (
+                    <div className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-4">
+                      <div className="text-[11px] uppercase tracking-[0.22em] text-white/36">{t(lang, 'originalPrompt')}</div>
+                      <div className="mt-3 text-sm leading-6 text-white/66">{project.description}</div>
+                    </div>
+                  )}
 
                   {messages.length > 0 ? (
                     messages.map((message, index) => <ChatBubble key={`${message.role}-${index}-${message.content}`} message={message} />)
