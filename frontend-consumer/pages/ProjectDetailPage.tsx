@@ -65,7 +65,7 @@ interface ProjectDetailPageProps {
   onSignOut: () => Promise<void> | void;
 }
 
-type ActiveTab = 'preview' | 'brief' | 'buildPlan' | 'code' | 'changes' | 'versions';
+type ActiveTab = 'preview' | 'brief' | 'buildPlan' | 'code' | 'changes' | 'versions' | 'insights';
 type RemoteState<T> = { loading: boolean; error: boolean; data: T | null };
 type CodeFileRecord = { filename: string; content: string; language: string };
 type InsightCategoryKey = 'detail' | 'color' | 'content' | 'default';
@@ -616,6 +616,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   const [previewRefreshKey, setPreviewRefreshKey] = useState(() => Date.now());
   const [showRegisterPrompt, setShowRegisterPrompt] = useState(false);
   const [insightsState, setInsightsState] = useState<InsightsState>(() => createEmptyInsightsState());
+  const [insightsUnread, setInsightsUnread] = useState(false);
   const [insightsCollapsed, setInsightsCollapsed] = useState(() => {
     if (typeof window === 'undefined') return false;
     return localStorage.getItem(getInsightsCollapseStorageKey(projectId)) === '1';
@@ -625,6 +626,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   const rightPanelRef = useRef<HTMLElement>(null);
   const previousStatusRef = useRef<Project['status'] | null>(null);
   const previousPreviewVersionRef = useRef<number | null>(null);
+  const previousInsightsVersionRef = useRef<number | null>(null);
 
   useEffect(() => {
     const sync = () => setProject(backend.getProject(projectId));
@@ -797,6 +799,19 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   }, [project?.status, projectId, resolvedVersion, versionsState.loading]);
 
   useEffect(() => {
+    if (insightsState.version == null || insightsState.insights.length === 0) {
+      previousInsightsVersionRef.current = null;
+      setInsightsUnread(false);
+      return;
+    }
+
+    if (previousInsightsVersionRef.current !== insightsState.version) {
+      previousInsightsVersionRef.current = insightsState.version;
+      setInsightsUnread(activeTab !== 'insights');
+    }
+  }, [activeTab, insightsState.insights.length, insightsState.version]);
+
+  useEffect(() => {
     let cancelled = false;
     const load = async () => {
       if (!resolvedVersion) {
@@ -897,9 +912,13 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
     { id: 'code' as const, label: t(lang, 'code'), icon: Code2 },
     { id: 'changes' as const, label: t(lang, 'changes'), icon: History },
     { id: 'versions' as const, label: t(lang, 'versions'), icon: Clock3 },
+    { id: 'insights' as const, label: t(lang, 'buildInsights'), icon: Lightbulb },
   ];
 
   const handleTabChange = (tab: ActiveTab) => {
+    if (tab === 'insights') {
+      setInsightsUnread(false);
+    }
     setActiveTab(tab);
     rightPanelRef.current?.scrollTo({ top: 0 });
   };
@@ -1166,6 +1185,26 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
         detail={isBuilding ? 'This will be ready when the build completes.' : undefined}
       />
     );
+  } else if (activeTab === 'insights') {
+    activePanel =
+      insightsState.insights.length > 0 && insightsState.version != null ? (
+        <BuildInsightsCard
+          key={`${projectId}-${insightsState.version}`}
+          lang={lang}
+          version={insightsState.version}
+          insights={insightsState.insights}
+          promptScore={insightsState.promptScore}
+          collapsed={insightsCollapsed}
+          onToggleCollapse={() => setInsightsCollapsed((current) => !current)}
+          onApplySuggestion={handleApplySuggestion}
+        />
+      ) : (
+        <EmptyPanel
+          icon={<Lightbulb size={22} />}
+          title="No insights yet"
+          detail="Build something first to get suggestions."
+        />
+      );
   } else {
     activePanel = versionsState.loading ? (
       <EmptyPanel icon={<Loader2 size={22} className="animate-spin" />} title={t(lang, 'loadingVersions')} />
@@ -1518,6 +1557,9 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                   }`}
                 >
                   <tab.icon size={16} />
+                  {tab.id === 'insights' && insightsUnread && (
+                    <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.8)]" />
+                  )}
                   <span className="pointer-events-none absolute right-[calc(100%+10px)] whitespace-nowrap rounded-full border border-white/10 bg-[#09101f] px-3 py-1.5 text-xs font-medium text-white/80 opacity-0 transition group-hover:opacity-100">
                     {tab.label}
                   </span>
@@ -1529,18 +1571,6 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
           <section ref={rightPanelRef} className="custom-scrollbar min-h-0 overflow-y-auto pr-1">
             <div key={`${activeTab}-${resolvedVersion ?? 'none'}-${project.status}`} className="content-panel-enter space-y-4">
               {activePanel}
-              {insightsState.version != null && insightsState.insights.length > 0 && (
-                <BuildInsightsCard
-                  key={`${projectId}-${insightsState.version}`}
-                  lang={lang}
-                  version={insightsState.version}
-                  insights={insightsState.insights}
-                  promptScore={insightsState.promptScore}
-                  collapsed={insightsCollapsed}
-                  onToggleCollapse={() => setInsightsCollapsed((current) => !current)}
-                  onApplySuggestion={handleApplySuggestion}
-                />
-              )}
             </div>
           </section>
         </div>
