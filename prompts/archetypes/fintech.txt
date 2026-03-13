@@ -1,0 +1,91 @@
+ARCHETYPE: FINTECH / TRADING
+PATH: B (Raw CSS — base.css provides the design system)
+
+═══════════════════════════════════════
+DESIGN KIT: base.css IS ALREADY PROVIDED
+═══════════════════════════════════════
+
+A base.css file is injected automatically. It provides:
+- CSS variables: --bg, --surface, --surface-alt, --accent, --accent-2, --danger, --text, --text-secondary, --text-muted, --border
+- Fonts: Space Grotesk (700) for display, Inter (400/500/600) for UI, JetBrains Mono (500/700) for all numeric data
+- Layout: .fintech-shell, .topbar, .topbar-brand, .topbar-actions, .dashboard-grid, .panel, .panel-header
+- Ticker bar: .ticker-row, .ticker-card, .ticker-symbol, .ticker-price, .ticker-delta
+- KPI rail: .kpi-grid, .kpi-card, .kpi-label, .kpi-value, .kpi-delta
+- Charts: .hero-chart, .chart-toolbar, .range-pill, .range-pill.active
+- Tables/watchlists: .asset-table, .watchlist, .watch-item, .watch-sparkline
+- Feed: .news-feed, .feed-item, .feed-time, .feed-tag
+- Chips/buttons: .ghost-btn, .primary-btn, .status-chip, .market-pill
+- Animations, focus states, responsive breakpoints, hover transitions
+
+DO NOT duplicate these in style.css. Use style.css for page-specific overrides and domain accents only.
+
+═══════════════════════════════════════
+YOUR index.html MUST LINK base.css FIRST
+═════════════════════════════════════════
+
+In <head>:
+  <link rel="stylesheet" href="./base.css">
+  <link rel="stylesheet" href="./style.css">
+
+DO NOT import fonts in style.css. base.css already imports them.
+
+═══════════════════════════════════════
+STRUCTURAL REQUIREMENTS
+═══════════════════════════════════════
+
+1. DARK TRADING TERMINAL MOOD
+- Background must feel premium and financial, not gaming neon.
+- Use emerald for gains, red for losses, restrained cyan or blue for secondary actions only.
+- Numbers MUST use JetBrains Mono explicitly, with precise alignment and consistent spacing to enhance readability and a professional, data-driven feel.
+- Typography must be crisp and legible. Use Inter for all UI text, varying weights (400, 500, 600) to establish clear hierarchy without excessive font size changes. Ensure generous line-height for readability and a professional, data-driven feel.
+- Implement a consistent, layered depth system. Use `box-shadow` for panels and cards to create a sense of elevation, `border-radius` for soft corners, and subtle linear gradients on backgrounds or interactive elements to add dimension. Avoid flat designs; every major element should have a perceived Z-index.
+
+2. TOPBAR
+- Brand at left, market status + 2-3 action buttons at right.
+- Include a "Live market" chip and at least one timeframe/filter control.
+
+3. TICKER ROW
+- 4-6 ticker cards with symbol, price, delta, and mini sparkline.
+- Values must be realistic, varied, and non-zero.
+- Deltas must mix gains and losses.
+
+4. KPI GRID
+- Exactly 4 KPI cards: portfolio value, day P/L, win rate, open positions.
+- Large tabular numbers, delta badges, and one supporting line per card.
+
+5. HERO CHART PANEL
+- One large chart-first focal panel above the fold.
+- Include toolbar with 1D / 1W / 1M / 1Y / ALL controls, one active.
+- Chart must show a real SVG path or candlestick-like construction with 12+ points.
+- Add visible buy/sell/export style controls so interactivity is obvious.
+
+6. DATA DENSITY BELOW THE FOLD
+- Asset table with 6+ rows and columns for asset, price, change, holdings, value, signal.
+- Watchlist or order-book style side panel.
+- News/activity feed with 4+ timestamped items and source tags.
+
+═══════════════════════════════════════
+CONTENT RULES
+═══════════════════════════════════════
+
+- ZERO-VALUE BAN: never show 0, 0%, $0, empty charts, or blank rows.
+- Every number must look market-realistic: $12,482.14, +3.42%, 18.7 BTC, etc.
+- Use mixed positive and negative deltas with clear semantic color.
+- At least one panel should feel elevated and premium with layered shadow, inset highlight, and a subtle glow edge.
+- Include at least one explicit click target per major surface: range pills, trade button, watch action, filter chip.
+- Avoid generic dashboard filler like lorem ipsum or vague metrics.
+
+═══════════════════════════════════════
+SELF-CHECK BEFORE OUTPUT
+═══════════════════════════════════════
+
+□ index.html links base.css BEFORE style.css
+□ All numeric values use JetBrains Mono
+□ 4 KPI cards with non-zero realistic values
+□ Hero chart has 12+ points and visible toolbar controls
+□ 4+ ticker cards with mixed positive/negative deltas
+□ Asset table has 6+ populated rows
+□ Watchlist/order panel is present
+□ News/activity feed has 4+ timestamped items
+□ No empty chart, blank panel, or generic placeholder copy
+□ style.css only contains overrides, not a duplicate system

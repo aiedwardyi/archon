@@ -1,0 +1,156 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=JetBrains+Mono:wght@500;700&family=Manrope:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg: #f2ede3;
+  --panel: rgba(255, 255, 255, 0.78);
+  --panel-alt: rgba(249, 245, 238, 0.92);
+  --accent: #b45309;
+  --text: #20150d;
+  --text-secondary: #5d4b3f;
+  --text-muted: #8d7a6a;
+  --border: rgba(32, 21, 13, 0.09);
+  --shadow: 0 24px 60px rgba(69, 45, 19, 0.12);
+  --radius: 22px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(180, 83, 9, 0.1), transparent 20%),
+    linear-gradient(180deg, #f6f0e7, #ece5d8);
+  color: var(--text);
+  font-family: 'Manrope', sans-serif;
+}
+
+.editor-shell {
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.topbar,
+.toolbar,
+.workspace-grid,
+.toolbar-group,
+.doc-meta {
+  display: flex;
+  gap: 12px;
+}
+
+.topbar {
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1.7fr) 320px;
+  gap: 18px;
+  align-items: start;
+}
+
+.sidebar,
+.editor-main,
+.inspector,
+.toolbar,
+.document-hero,
+.inspector-card,
+.comment-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
+}
+
+.sidebar,
+.editor-main,
+.inspector {
+  padding: 18px;
+}
+
+.toolbar {
+  padding: 12px;
+  margin-bottom: 14px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tool-btn,
+.publish-btn,
+.status-chip {
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.72);
+  padding: 8px 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.tool-btn.active,
+.publish-btn,
+.status-chip {
+  border-color: rgba(180, 83, 9, 0.25);
+  color: var(--accent);
+}
+
+.doc-title,
+.panel-title,
+.workspace-title {
+  font-family: 'Fraunces', serif;
+}
+
+.doc-meta,
+.status-line,
+.comment-time {
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.editor-canvas {
+  padding: 22px;
+}
+
+.canvas-paper {
+  background: rgba(255, 253, 249, 0.94);
+  border: 1px solid rgba(32, 21, 13, 0.07);
+  border-radius: 18px;
+  min-height: 760px;
+  padding: 36px;
+}
+
+.outline-list,
+.inspector-stack {
+  display: grid;
+  gap: 12px;
+}
+
+.outline-item,
+.comment-card,
+.inspector-card {
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1100px) {
+  .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -23,7 +23,7 @@ DO NOT duplicate any of these in style.css. Your style.css should contain ONLY p
 
 ═══════════════════════════════════════
 YOUR index.html MUST LINK base.css FIRST
-═══════════════════════════════════════
+═══════════════════════════════════════════
 
 In <head>:
   <link rel="stylesheet" href="./base.css">
@@ -55,29 +55,32 @@ REQUIRED SECTIONS (inside .content-area)
 
 1. KPI CARDS — .kpi-grid with exactly 4 .kpi-card:
    - Each: .kpi-label, .kpi-value (large number), .kpi-delta (up/down with arrow + percentage)
-   - Values MUST be realistic positive numbers (e.g. "$47,832.50", "12.4%", "847", "3.2s")
-   - ZERO-VALUE BAN: never "0", "$0", "0%"
+   - Values MUST be realistic, positive, and varied (e.g., currency, percentage, count, duration). Ensure they represent meaningful, actionable metrics for a dashboard.
+   - ZERO-VALUE BAN: never "0", "$0", "0%" – all values must be non-zero and convey active, dynamic data.
    - Use .kpi-delta--up for positive, .kpi-delta--down for negative
+   - One .kpi-card MUST be visually distinct with an elevated treatment (e.g., using .card-elevated from base.css, or custom layered shadows) to highlight a primary metric.
 
 2. CHART — .chart-card (has accent top border) with .chart-header (.chart-title + period buttons):
    - .chart-header: display:flex between .chart-title and a div of .chart-period-btn buttons
    - Period buttons: 4x .chart-period-btn (1D, 1W, 1M, 1Y). "1M" gets .active class (green bg)
    - SVG line chart with 12+ data points (monthly data, Jan-Dec)
+   - Chart data should depict a clear, plausible trend (e.g., growth, fluctuation) over the period, not just random points.
    - Chart SVG: visible path with stroke var(--accent), stroke-width 2, fill below with linearGradient (accent 10% opacity to transparent)
    - Y-axis labels: 5 labels at left edge, font-size 12px, color var(--text-secondary) — MUST be readable
    - X-axis labels: month abbreviations, font-size 11px, color var(--text-muted)
    - Horizontal grid lines: stroke rgba(255,255,255,0.04), 5 lines
    - Add small circle dots (r=3, fill accent) on 3-4 data points for emphasis
+   - Implement a simple, non-intrusive tooltip on hover over data points, displaying the exact value and date/month.
    - NEVER leave chart empty — must have real SVG path data
    - Add at least 2 contextual action chips (e.g. "Rebalance", "Export CSV") using `.interactive-chip` with visible hover states
 
 3. HOLDINGS TABLE — .data-table-wrapper > .data-table:
    - thead: 6 columns (Name, Price, 24h Change, Holdings, Value, Action)
+   - Add a subtle visual separator (e.g., a thin border-bottom) to the `<thead>` for clear distinction from `<tbody>`.
    - tbody: 8+ rows with realistic data
    - .cell-primary for asset names
    - .cell-positive / .cell-negative for price changes (include + or - prefix)
-   - Action column: use .cell-action with text "Trade" — this shows clickable interaction
-   - Include keyboard-focusable interactive elements in Action cells (`<button>` or `<a tabindex=\"0\">`)
+   - Action column: Each 'Trade' cell MUST contain a keyboard-focusable interactive element (`<button>` or `<a>`) with the text "Trade", ideally accompanied by a small, relevant icon (e.g., arrow, exchange icon). Ensure visible hover and active states for these interactive elements.
    - font-variant-numeric: tabular-nums on all numbers
    - NEVER use double currency symbols ($$)
 

@@ -1,0 +1,94 @@
+ARCHETYPE: editorTARGET FILE: editor.txtCURRENT FILE CONTENT:
+```
+ARCHETYPE: EDITOR / WORKSPACE
+PATH: B (Raw CSS — base.css provides the design system)
+
+═══════════════════════════════════════
+DESIGN KIT: base.css IS ALREADY PROVIDED
+═════════════════════════════════════════
+
+A base.css file is injected automatically. It provides:
+- CSS variables: --bg, --panel, --panel-alt, --accent, --text, --text-secondary, --text-muted, --border
+- Fonts: Manrope for UI copy, Fraunces for editorial titles, JetBrains Mono for status/meta text
+- Layout: .editor-shell, .workspace-grid, .topbar, .sidebar, .editor-main, .inspector
+- Toolbar: .toolbar, .toolbar-group, .tool-btn, .tool-btn.active
+- Editor surfaces: .document-hero, .editor-canvas, .canvas-paper, .doc-meta, .doc-title, .doc-body
+- Supporting UI: .outline-list, .comment-card, .status-chip, .publish-btn, .inspector-card
+- Animations, hover/focus states, responsive breakpoints
+
+DO NOT duplicate these in style.css. Use style.css only for prompt-specific overrides.
+
+═══════════════════════════════════════
+YOUR index.html MUST LINK base.css FIRST
+═════════════════════════════════════════
+
+In <head>:
+  <link rel="stylesheet" href="./base.css">
+  <link rel="stylesheet" href="./style.css">
+
+═══════════════════════════════════════
+REQUIRED WORKSPACE STRUCTURE
+═══════════════════════════════════════
+
+1. TOPBAR
+- Product/editor name at left.
+- Save state, publish button, and at least 2 utility actions at right.
+- Include one visible "last saved" status and one collaborator/presence cue.
+
+2. THREE-PANEL LAYOUT
+- Left sidebar for outline, views, or document navigation.
+- Center editor canvas as the main focal area.
+- Right inspector/comments panel for metadata, comments, or publishing settings.
+- The center panel must dominate visually.
+
+3. TOOLBAR
+- Formatting or content controls with active states.
+- At least 6 controls such as heading, bold, highlight, slash command, comment, export.
+- One active control must be visibly selected.
+
+4. DOCUMENT CANVAS
+- Large editorial-style title, subtitle/meta row, and multiple content blocks.
+- Use real-looking structured content, not lorem ipsum.
+- Include mixed block types: paragraph, checklist, quote, metric card, inline callout, or embed preview.
+- Show a clear editing affordance such as a selected block, insertion marker, floating action, or comment anchor.
+
+5. SUPPORTING PANELS
+- Left outline with 4+ sections and one active row.
+- Right panel with at least 2 cards, such as comments, SEO/publish settings, collaborators, or revision notes.
+- Include timestamps, avatars/initials, and non-zero counts.
+
+═══════════════════════════════════════
+INTERACTION & POLISH RULES
+═══════════════════════════════════════
+
+- Every interactive control must have clear hover, focus, and active states.
+- Include multiple distinct and prominent editor-specific interaction cues, such as:
+  a selected formatting state, a threaded comment highlight, a visible slash-menu trigger, a publish confirmation, an autosave chip, or a drag-handle for block reordering.
+- Use layered panels, subtle shadows, and contrast between chrome and canvas. Leverage the provided CSS variables (--bg, --panel, --panel-alt, --border) and layout classes to establish clear visual hierarchy and depth. Specifically, use `--panel-alt` for elements that appear 'above' `--panel` (e.g., modals, active cards), and `--border` for subtle separators or outlines. Ensure consistent padding, margins, and alignment throughout the UI for a polished feel.
+- Apply the provided font families consistently: Manrope for general UI text, Fraunces for prominent titles (e.g., document title), and JetBrains Mono for metadata or code-like elements. Ensure Fraunces titles are significantly larger and potentially bolder than surrounding text, and JetBrains Mono is used at a smaller size with potentially muted color for technical details. These distinct font choices must actively contribute to visual hierarchy and content differentiation, making editorial titles feel grand and technical text precise.
+- Avoid generic dashboard KPI rows unless they support the editing workflow.
+
+═══════════════════════════════════════
+CONTENT RULES
+═══════════════════════════════════════
+
+- ZERO-VALUE BAN: no 0 comments, 0 views, or empty placeholders.
+- Document content must match the prompt domain and look intentionally authored.
+- Sidebar labels, comment snippets, and inspector controls should be specific, not generic.
+- Prefer a premium editorial/product feel over SaaS-marketing sections.
+
+═══════════════════════════════════════
+SELF-CHECK BEFORE OUTPUT
+═══════════════════════════════════════
+
+□ index.html links base.css BEFORE style.css
+□ Three-panel editor workspace is visible
+□ Topbar includes save/publish state and actions
+□ Toolbar has 6+ controls with one active state
+□ Center canvas is the visual focal point
+□ Left outline has 4+ items with one active
+□ Right panel has 2+ populated cards
+□ At least one editor-specific interaction cue is visible
+□ No empty placeholder blocks or zero-valued metadata
+□ style.css only contains overrides
+```
