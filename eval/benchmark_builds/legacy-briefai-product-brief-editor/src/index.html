@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collaborative Product Brief Editor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,700&family=Manrope:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./base.css">
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="editor-shell">
+        <header class="topbar">
+            <div class="toolbar-group">
+                <span class="editor-logo">Brief AI</span>
+                <span class="document-title" id="document-title-display">Product Brief: Feature X</span>
+            </div>
+            <div class="toolbar-group">
+                <div class="formatting-toolbar">
+                    <button class="tool-btn" id="bold-btn" title="Bold">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path></svg>
+                    </button>
+                    <button class="tool-btn" id="italic-btn" title="Italic">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="4" x2="10" y2="4"></line><line x1="14" y1="20" x2="5" y2="20"></line><line x1="15" y1="4" x2="9" y2="20"></line></svg>
+                    </button>
+                    <button class="tool-btn active" id="heading-btn" title="Heading 1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h8"></path><path d="M4 18V6"></path><path d="M12 18V6"></path><path d="M17 12h3"></path><path d="M17 18V6"></path></svg>
+                    </button>
+                    <button class="tool-btn" id="list-btn" title="Bullet List">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                    </button>
+                    <button class="tool-btn" id="comment-btn" title="Add Comment">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    </button>
+                    <button class="tool-btn" id="embed-btn" title="Embed">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07L9.5 9.5m-5 3.5a5 5 0 0 0 7.07 7.07l3-3a5 5 0 0 0-7.54-.54L4.5 14.5"></path></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="toolbar-group"> 
+                <span class="status-chip" id="save-status">Saved</span>
+                <button class="tool-btn" id="save-btn">Save</button>
+                <button class="publish-btn" id="publish-btn">Publish</button>
+                <div class="collaborators-indicator">
+                    <div class="avatar small">AD</div>
+                    <div class="avatar small">SK</div>
+                    <div class="avatar small more">+2</div>
+                </div>
+                <div class="avatar">JA</div>
+            </div>
+        </header>
+
+        <div class="workspace-grid">
+            <aside class="sidebar">
+                <div class="inspector-card">
+                    <h3>Document Outline</h3>
+                    <ul class="outline-list">
+                        <li class="outline-item active" data-target="overview"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg> Overview</li>
+                        <li class="outline-item" data-target="goals"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg> Goals</li>
+                        <li class="outline-item" data-target="user-stories"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg> User Stories</li>
+                        <li class="outline-item" data-target="technical-specs"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg> Technical Specs</li>
+                        <li class="outline-item" data-target="open-questions"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg> Open Questions</li>
+                    </ul>
+                </div>
+            </aside>
+
+            <main class="editor-main">
+                <div class="editor-canvas">
+                    <div class="canvas-paper">
+                        <div class="document-hero">
+                            <h1 class="doc-title" contenteditable="true">Product Brief: Feature X - Enhanced User Onboarding</h1>
+                            <div class="doc-meta">
+                                <span class="meta-item">Last edited by Alice on <span id="last-edited-time">2 hours ago</span></span>
+                                <span class="meta-item">3 collaborators currently editing</span>
+                            </div>
+                        </div>
+
+                        <section id="overview" class="content-block">
+                            <h2 contenteditable="true">Overview</h2>
+                            <p contenteditable="true">This document outlines the scope, objectives, and key requirements for developing <strong>Feature X</strong>, which focuses on enhancing the user onboarding experience. The goal is to significantly improve first-time user engagement and reduce churn during the initial setup phase. We aim to make the process more intuitive and personalized, guiding users through essential steps with clear feedback.</p>
+                            <p contenteditable="true">The current onboarding flow has a conversion rate of <em>72%</em>, which is below our target of <span class="underline-text">85%</span>. This feature will introduce interactive walkthroughs, personalized setup options, and clear progress indicators. <span class="comment-bubble" onclick="app.toggleComments(this)">1</span></p>
+                        </section>
+
+                        <section id="goals" class="content-block">
+                            <h2 contenteditable="true">Goals</h2>
+                            <ul contenteditable="true">
+                                <li>Increase first-week user retention by 15%.</li>
+                                <li>Reduce support tickets related to onboarding by 20%.</li>
+                                <li>Achieve an onboarding completion rate of 85% within the first month post-launch.</li>
+                            </ul>
+                        </section>
+
+                        <section id="user-stories" class="content-block">
+                            <h3 contenteditable="true">User Stories</h3>
+                            <ol contenteditable="true">
+                                <li>As a <strong>new user</strong>, I want to quickly understand the core value of the product so I can get started without friction.</li>
+                                <li>As an <em>existing user</em> exploring a new feature, I want clear guidance on how to set it up so I can utilize its full potential.</li>
+                                <li>As an administrator, I want to track onboarding progress to identify pain points and optimize the flow.</li>
+                            </ol>
+                        </section>
+
+                        <section class="content-block">
+                            <h3 contenteditable="true">Key Metrics</h3>
+                            <div class="metric-card">
+                                <span class="metric-label">Onboarding Completion Rate</span>
+                                <span class="metric-value">72% <span class="change negative">-3%</span></span>
+                            </div>
+                            <div class="metric-card">
+                                <span class="metric-label">First-week Retention</span>
+                                <span class="metric-value">65% <span class="change positive">+5%</span></span>
+                            </div>
+                        </section>
+
+                        <section class="content-block">
+                            <blockquote contenteditable="true">
+                                "The best products don't just solve problems; they anticipate needs and delight users with thoughtful design." - Product Team Lead
+                            </blockquote>
+                        </section>
+
+                        <div class="collaborator-cursor-area">
+                            <div class="collaborator-cursor" style="left: 20%; top: 50%;"><span>Alice</span></div>
+                            <div class="collaborator-cursor" style="left: 70%; top: 80%;"><span>Bob</span></div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <aside class="inspector">
+                <div class="inspector-card">
+                    <h3>Comments <span class="count">(2)</span></h3>
+                    <div class="comment-card">
+                        <div class="comment-header">
+                            <div class="avatar small">SK</div>
+                            <span class="comment-author">Sarah K.</span>
+                            <span class="comment-time">3 min ago</span>
+                        </div>
+                        <p class="comment-text">"72% conversion is indeed low. We need to focus on micro-conversions within the flow."</p>
+                        <div class="comment-actions">
+                            <button class="tool-btn small">Reply</button>
+                            <button class="tool-btn small" onclick="app.resolveComment(this)">Resolve</button>
+                        </div>
+                    </div>
+                    <div class="comment-card resolved">
+                        <div class="comment-header">
+                            <div class="avatar small">AD</div>
+                            <span class="comment-author">Alex D.</span>
+                            <span class="comment-time">1 day ago</span>
+                        </div>
+                        <p class="comment-text">"Consider adding a progress bar at the top of the onboarding flow."</p>
+                        <div class="comment-actions">
+                            <button class="tool-btn small" onclick="app.resolveComment(this)">Unresolve</button>
+                        </div>
+                    </div>
+                    <button class="tool-btn full-width" onclick="app.addComment()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                        Add new comment
+                    </button>
+                </div>
+
+                <div class="inspector-card">
+                    <h3>Publish Settings</h3>
+                    <div class="property-group">
+                        <label>Status:</label>
+                        <span class="status-chip published">Published</span>
+                    </div>
+                    <div class="property-group">
+                        <label>Visibility:</label>
+                        <span>Public</span>
+                    </div>
+                    <div class="property-group">
+                        <label>Last Published:</label>
+                        <span>Nov 23, 2023, 10:30 AM</span>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <footer class="status-bar">
+            <div class="status-item">
+                <span id="word-count">Word Count: 452</span>
+            </div>
+            <div class="status-item">
+                <span>Last Saved: <span id="last-saved-time-footer">Just now</span></span>
+            </div>
+            <div class="status-item">
+                <span class="ai-status-indicator status-idle"></span>
+                <span>AI Assistant: Idle</span>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const app = {
+            state: {
+                saveStatus: 'Saved',
+                wordCount: 0,
+                lastSavedTime: new Date().toLocaleTimeString(),
+                activeOutlineItem: 'overview'
+            },
+
+            init() {
+                this.updateWordCount();
+                setInterval(this.updateLastSavedTime.bind(this), 60 * 1000); // Update every minute
+                document.querySelectorAll('.outline-item').forEach(item => {
+                    item.addEventListener('click', this.handleOutlineClick.bind(this));
+                });
+                document.getElementById('save-btn').addEventListener('click', this.saveDocument.bind(this));
+                document.getElementById('publish-btn').addEventListener('click', this.publishDocument.bind(this));
+                document.getElementById('bold-btn').addEventListener('click', () => this.toggleFormatting('bold-btn'));
+                document.getElementById('italic-btn').addEventListener('click', () => this.toggleFormatting('italic-btn'));
+                document.getElementById('heading-btn').addEventListener('click', () => this.toggleFormatting('heading-btn'));
+                document.getElementById('list-btn').addEventListener('click', () => this.toggleFormatting('list-btn'));
+                document.getElementById('comment-btn').addEventListener('click', () => alert('Comment mode activated! Click on text to add a comment.'));
+                document.getElementById('embed-btn').addEventListener('click', () => alert('Embed dialog opens!'));
+
+                document.querySelectorAll('.content-block').forEach(block => {
+                    block.addEventListener('input', this.updateWordCount.bind(this));
+                    block.addEventListener('focus', () => this.setSaveStatus('Unsaved'));
+                });
+                document.getElementById('document-title-display').textContent = document.querySelector('.doc-title').textContent;
+                document.querySelector('.doc-title').addEventListener('input', (e) => {
+                    document.getElementById('document-title-display').textContent = e.target.textContent;
+                    this.setSaveStatus('Unsaved');
+                });
+            },
+
+            updateWordCount() {
+                const editorContent = document.querySelector('.canvas-paper').innerText;
+                const words = editorContent.match(/\b\w+\b/g);
+                this.state.wordCount = words ? words.length : 0;
+                document.getElementById('word-count').textContent = `Word Count: ${this.state.wordCount}`;
+            },
+
+            setSaveStatus(status) {
+                this.state.saveStatus = status;
+                document.getElementById('save-status').textContent = status;
+                if (status === 'Saved') {
+                    this.state.lastSavedTime = new Date().toLocaleTimeString();
+                    document.getElementById('last-saved-time-footer').textContent = 'Just now';
+                }
+            },
+
+            updateLastSavedTime() {
+                if (this.state.saveStatus === 'Saved') {
+                    const now = new Date();
+                    const lastSaved = new Date(now.toDateString() + ' ' + this.state.lastSavedTime);
+                    const diffMinutes = Math.round((now - lastSaved) / (1000 * 60));
+                    if (diffMinutes === 0) {
+                        document.getElementById('last-saved-time-footer').textContent = 'Just now';
+                    } else if (diffMinutes === 1) {
+                        document.getElementById('last-saved-time-footer').textContent = '1 minute ago';
+                    } else {
+                        document.getElementById('last-saved-time-footer').textContent = `${diffMinutes} minutes ago`;
+                    }
+                }
+            },
+
+            saveDocument() {
+                this.setSaveStatus('Saving...');
+                setTimeout(() => {
+                    this.setSaveStatus('Saved');
+                    alert('Document saved!');
+                }, 1000);
+            },
+
+            publishDocument() {
+                this.setSaveStatus('Publishing...');
+                setTimeout(() => {
+                    this.setSaveStatus('Saved'); // Assumes publish also saves
+                    alert('Document published successfully!');
+                }, 1500);
+            },
+
+            handleOutlineClick(event) {
+                document.querySelectorAll('.outline-item').forEach(item => item.classList.remove('active'));
+                event.currentTarget.classList.add('active');
+                this.state.activeOutlineItem = event.currentTarget.dataset.target;
+                const targetSection = document.getElementById(this.state.activeOutlineItem);
+                if (targetSection) {
+                    targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            },
+
+            toggleFormatting(buttonId) {
+                document.querySelectorAll('.formatting-toolbar .tool-btn').forEach(btn => {
+                    if (btn.id !== buttonId) {
+                        btn.classList.remove('active');
+                    }
+                });
+                document.getElementById(buttonId).classList.toggle('active');
+                // In a real editor, this would apply formatting to selected text
+                alert(`Toggled ${buttonId.replace('-btn', '')} formatting.`);
+            },
+
+            toggleComments(commentBubble) {
+                commentBubble.classList.toggle('active');
+                const inspector = document.querySelector('.inspector');
+                inspector.classList.toggle('comments-active');
+                // In a real app, this would highlight the relevant comment in the inspector
+                alert('Toggled comment bubble/panel visibility.');
+            },
+
+            resolveComment(button) {
+                const commentCard = button.closest('.comment-card');
+                commentCard.classList.toggle('resolved');
+                button.textContent = commentCard.classList.contains('resolved') ? 'Unresolve' : 'Resolve';
+                alert(`Comment ${commentCard.classList.contains('resolved') ? 'resolved' : 'unresolved'}.`);
+            },
+
+            addComment() {
+                alert('New comment input modal/area opens!');
+                // In a real app, this would add a new comment card to the inspector
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            app.init();
+        });
+    </script>
+</body>
+</html>

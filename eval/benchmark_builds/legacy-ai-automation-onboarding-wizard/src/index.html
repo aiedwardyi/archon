@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Automation Platform Onboarding</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./base.css">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+  <div class="wizard-shell">
+    <div class="wizard-frame">
+
+      <!-- Left Side Rail -->
+      <div class="wizard-side">
+        <div class="logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+            <path d="M2 17l10 5 10-5"></path>
+            <path d="M2 12l10 5 10-5"></path>
+          </svg>
+          <span class="logo-text">AI Automation</span>
+        </div>
+
+        <div class="step-rail" role="tablist" aria-label="Onboarding Progress">
+          <div class="step-item" id="step-item-1" role="tab" aria-controls="form-step-1" aria-selected="true">
+            <div class="step-dot active">1</div>
+            <div class="step-label">Plan Selection</div>
+          </div>
+          <div class="step-item" id="step-item-2" role="tab" aria-controls="form-step-2">
+            <div class="step-dot">2</div>
+            <div class="step-label">Workspace Details</div>
+          </div>
+          <div class="step-item" id="step-item-3" role="tab" aria-controls="form-step-3">
+            <div class="step-dot">3</div>
+            <div class="step-label">Integrations</div>
+          </div>
+          <div class="step-item" id="step-item-4" role="tab" aria-controls="form-step-4">
+            <div class="step-dot">4</div>
+            <div class="step-label">Review & Confirm</div>
+          </div>
+        </div>
+
+        <div class="signal-card" id="summary-card">
+          <h4>Your Current Setup</h4>
+          <div class="summary-item">
+            <span class="summary-label">Plan:</span>
+            <span class="summary-value" id="summary-plan">Pro</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Workspace:</span>
+            <span class="summary-value" id="summary-workspace">Not set</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Region:</span>
+            <span class="summary-value" id="summary-region">Not set</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Integrations:</span>
+            <span class="summary-value" id="summary-integrations">0 connected</span>
+          </div>
+        </div>
+
+        <div class="notice">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <p>Need help? Our support team is available 24/7 to assist with your onboarding.</p>
+        </div>
+      </div>
+
+      <!-- Right Main Panel -->
+      <div class="wizard-main">
+
+        <!-- Step 1: Plan Selection -->
+        <section class="form-card" id="form-step-1" role="tabpanel" aria-labelledby="step1-heading">
+          <div class="form-card-header">
+            <h2 id="step1-heading">Choose Your Automation Plan</h2>
+            <p>Select the plan that best fits your team's needs.</p>
+          </div>
+          <div class="form-body">
+            <div class="field-grid plan-selection-grid">
+              <label class="select-card plan-card" for="plan-basic">
+                <input type="radio" name="plan" id="plan-basic" value="Basic">
+                <div class="card-content">
+                  <h3>Basic</h3>
+                  <p class="plan-price">$29<span>/month</span></p>
+                  <ul>
+                    <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Up to 5 automations</li>
+                    <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Standard support</li>
+                    <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>5000 tasks/month</li>
+                  </ul>
+                </div>
+              </label>
+
+              <label class="select-card plan-card" for="plan-pro">
+                <input type="radio" name="plan" id="plan-pro" value="Pro" checked>
+                <div class="card-content">
+                  <h3>Pro</h3>
+                  <p class="plan-price">$79<span>/month</span></p>
+                  <ul>
+                    <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Unlimited automations</li>
+                    <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Priority support</li>
+                    <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Advanced analytics</li>
+                    <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>25000 tasks/month</li>
+                  </ul>
+                </div>
+              </label>
+
+              <label class="select-card plan-card" for="plan-enterprise">
+                <input type="radio" name="plan" id="plan-enterprise" value="Enterprise">
+                <div class="card-content">
+                  <h3>Enterprise</h3>
+                  <p class="plan-price">Custom<span>pricing</span></p>
+                  <ul>
+                    <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Dedicated infrastructure</li>
+                    <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>SLA support</li>
+                    <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Custom integrations</li>
+                  </ul>
+                </div>
+              </label>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" id="next-step-1">
+              Next Step
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
+        </section>
+
+        <!-- Step 2: Workspace Details -->
+        <section class="form-card hidden" id="form-step-2" role="tabpanel" aria-labelledby="step2-heading">
+          <div class="form-card-header">
+            <h2 id="step2-heading">Set Up Your Workspace</h2>
+            <p>Configure the essential details for your AI automation hub.</p>
+          </div>
+          <div class="form-body">
+            <div class="field-group">
+              <label for="workspace-name" class="field-label">Workspace Name <span class="required">*</span></label>
+              <input type="text" id="workspace-name" class="text-input" placeholder="e.g., AI-Ops Central" value="AI-Ops Central">
+              <div class="field-error" id="workspace-name-error"></div>
+            </div>
+
+            <div class="field-grid two-col">
+              <div class="field-group">
+                <label for="region" class="field-label">Region</label>
+                <div class="select-wrap">
+                  <select id="region" class="text-input">
+                    <option value="North America" selected>North America</option>
+                    <option value="Europe">Europe</option>
+                    <option value="Asia Pacific">Asia Pacific</option>
+                  </select>
+                  <span class="select-arrow">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </span>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <label for="timezone" class="field-label">Timezone</label>
+                <div class="select-wrap">
+                  <select id="timezone" class="text-input">
+                    <option value="UTC-8">UTC-8 (Pacific)</option>
+                    <option value="UTC" selected>UTC (Coordinated Universal Time)</option>
+                    <option value="UTC+1">UTC+1 (Central European)</option>
+                  </select>
+                  <span class="select-arrow">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-ghost" id="back-step-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              Back
+            </button>
+            <button class="btn btn-primary" id="next-step-2">
+              Next Step
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
+        </section>
+
+        <!-- Step 3: Integrations -->
+        <section class="form-card hidden" id="form-step-3" role="tabpanel" aria-labelledby="step3-heading">
+          <div class="form-card-header">
+            <h2 id="step3-heading">Connect Your Tools</h2>
+            <p>Integrate with your existing platforms to supercharge your workflows.</p>
+          </div>
+          <div class="form-body">
+            <div class="field-grid integration-grid">
+              <div class="integration-card">
+                <label class="toggle-chip" for="integration-slack">
+                  <input type="checkbox" id="integration-slack" checked>
+                  <span class="toggle-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z"></path>
+                      <path d="M20.5 10H19c-1.38 0-2.5-1.12-2.5-2.5V4.5c0-1.38 1.12-2.5 2.5-2.5h1.5v-1.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v1.5H24c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-1.5v1.5c0 1.38-1.12 2.5-2.5 2.5z"></path>
+                      <path d="M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5z"></path>
+                      <path d="M3.5 14H5c1.38 0 2.5 1.12 2.5 2.5v1.5c0 1.38-1.12 2.5-2.5 2.5H3.5v1.5c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5v-1.5H0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5h1.5v-1.5c0-1.38 1.12-2.5 2.5-2.5z"></path>
+                    </svg>
+                  </span>
+                  <span class="toggle-text">Slack</span>
+                </label>
+                <p class="integration-desc">Connect to Slack for notifications and alerts.</p>
+              </div>
+
+              <div class="integration-card">
+                <label class="toggle-chip" for="integration-jira">
+                  <input type="checkbox" id="integration-jira">
+                  <span class="toggle-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="12" y1="8" x2="12" y2="16"></line>
+                      <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                  </span>
+                  <span class="toggle-text">Jira</span>
+                </label>
+                <p class="integration-desc">Integrate with Jira for task management.</p>
+                <div class="field-group api-key-field hidden" id="jira-api-key-group">
+                  <label for="jira-api-key" class="field-label">Jira API Key <span class="required">*</span></label>
+                  <input type="text" id="jira-api-key" class="text-input" placeholder="Enter your Jira API key">
+                  <div class="field-error" id="jira-api-key-error"></div>
+                </div>
+              </div>
+
+              <div class="integration-card">
+                <label class="toggle-chip" for="integration-salesforce">
+                  <input type="checkbox" id="integration-salesforce">
+                  <span class="toggle-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                      <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                    </svg>
+                  </span>
+                  <span class="toggle-text">Salesforce</span>
+                </label>
+                <p class="integration-desc">Sync with Salesforce for CRM automation.</p>
+                <div class="field-group api-key-field hidden" id="salesforce-api-key-group">
+                  <label for="salesforce-api-key" class="field-label">Salesforce API Key <span class="required">*</span></label>
+                  <input type="text" id="salesforce-api-key" class="text-input" placeholder="Enter your Salesforce API key">
+                  <div class="field-error" id="salesforce-api-key-error"></div>
+                </div>
+              </div>
+
+              <div class="integration-card">
+                <label class="toggle-chip" for="integration-google-sheets">
+                  <input type="checkbox" id="integration-google-sheets" checked>
+                  <span class="toggle-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="8" y1="3" x2="8" y2="21"></line>
+                      <line x1="16" y1="3" x2="16" y2="21"></line>
+                      <line x1="3" y1="8" x2="21" y2="8"></line>
+                      <line x1="3" y1="16" x2="21" y2="16"></line>
+                    </svg>
+                  </span>
+                  <span class="toggle-text">Google Sheets</span>
+                </label>
+                <p class="integration-desc">Automate data entry and reporting.</p>
+              </div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-ghost" id="back-step-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              Back
+            </button>
+            <button class="btn btn-primary" id="next-step-3">
+              Next Step
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
+        </section>
+
+        <!-- Step 4: Review & Confirm -->
+        <section class="form-card hidden" id="form-step-4" role="tabpanel" aria-labelledby="step4-heading">
+          <div class="form-card-header">
+            <h2 id="step4-heading">Review Your Setup</h2>
+            <p>Please confirm your selections before launching your platform.</p>
+          </div>
+          <div class="form-body">
+            <div class="summary-details-grid" id="review-summary">
+              <!-- Populated by JS -->
+            </div>
+
+            <div class="field-group" style="margin-top: 24px;">
+              <label for="confirm-text" class="field-label">Confirm to Launch <span class="required">*</span></label>
+              <input type="text" id="confirm-text" class="text-input" placeholder="Type 'launch' to confirm">
+              <div class="field-error" id="confirm-text-error"></div>
+              <p class="field-hint">Type <code id="confirm-hint">'launch'</code> to proceed.</p>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-ghost" id="back-step-4">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              Back
+            </button>
+            <button class="btn btn-primary" id="submit-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+              Launch Platform
+            </button>
+          </div>
+        </section>
+
+        <!-- Validating State -->
+        <section class="form-card hidden state-card" id="form-validating" aria-live="polite">
+          <div class="state-content">
+            <div class="spinner"></div>
+            <h2>Launching Your Platform...</h2>
+            <p>Provisioning resources and configuring services.</p>
+            <div class="progress-meter-wrap">
+              <div class="progress-meter" id="progress-bar"></div>
+            </div>
+            <div class="log-container" id="validating-log">
+              <div class="log-line skeleton" style="width: 80%;"></div>
+              <div class="log-line skeleton" style="width: 65%;"></div>
+              <div class="log-line skeleton" style="width: 75%;"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Success State -->
+        <section class="form-card hidden state-card" id="form-success" aria-live="polite">
+          <div class="state-content">
+            <div class="success-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-8.87"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+            </div>
+            <h2>Congratulations! Your Platform is Ready.</h2>
+            <p>Your AI Automation Platform is now live and operational. Get started by exploring your new dashboard.</p>
+            <div class="success-panel">
+              <h3>Next Steps:</h3>
+              <ul>
+                <li><a href="#" class="btn btn-ghost btn-sm">Explore Dashboard</a></li>
+                <li><a href="#" class="btn btn-ghost btn-sm">Invite Team Members</a></li>
+                <li><a href="#" class="btn btn-ghost btn-sm">Connect More Integrations</a></li>
+              </ul>
+            </div>
+            <button class="btn btn-primary" onclick="resetForm()">Start New Onboarding</button>
+          </div>
+        </section>
+
+        <!-- Error State -->
+        <section class="form-card hidden state-card" id="form-error" aria-live="assertive">
+          <div class="state-content">
+            <div class="error-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            </div>
+            <h2>Launch Failed</h2>
+            <p id="error-message">An unexpected error occurred during platform setup. Please try again or contact support.</p>
+            <div class="error-details">
+              <p class="mono-text" id="error-code">Error: INTEGRATION_AUTH_FAILED - Jira API key is invalid.</p>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" onclick="retryFromError()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6"/><path d="M2.5 22v-6h6"/><path d="M21.5 12A10 10 0 0 1 3 12c0-3.9 2.5-7.2 6-8.5"/><path d="M2.5 12A10 10 0 0 0 21 12c0 3.9-2.5 7.2-6 8.5"/></svg>
+                Retry
+              </button>
+              <button class="btn btn-ghost" onclick="resetForm()">Start Over</button>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const show = (id) => $(id).classList.remove('hidden');
+    const hide = (id) => $(id).classList.add('hidden');
+
+    let currentStep = 1;
+    const TOTAL_STEPS = 4; // Plan, Workspace, Integrations, Review
+
+    const formData = {
+      plan: 'Pro',
+      workspaceName: 'AI-Ops Central',
+      region: 'North America',
+      timezone: 'UTC',
+      integrations: {
+        slack: true,
+        jira: false,
+        salesforce: false,
+        googleSheets: true
+      },
+      apiKeys: {
+        jira: '',
+        salesforce: ''
+      }
+    };
+
+    function updateSummaryCard() {
+      $('summary-plan').textContent = formData.plan;
+      $('summary-workspace').textContent = formData.workspaceName || 'Not set';
+      $('summary-region').textContent = formData.region;
+
+      let connectedIntegrations = 0;
+      if (formData.integrations.slack) connectedIntegrations++;
+      if (formData.integrations.jira && formData.apiKeys.jira) connectedIntegrations++;
+      if (formData.integrations.salesforce && formData.apiKeys.salesforce) connectedIntegrations++;
+      if (formData.integrations.googleSheets) connectedIntegrations++;
+      $('summary-integrations').textContent = `${connectedIntegrations} connected`;
+    }
+
+    function goToStep(step) {
+      // Hide all form cards
+      for (let i = 1; i <= TOTAL_STEPS; i++) {
+        hide(`form-step-${i}`);
+      }
+      hide('form-validating');
+      hide('form-success');
+      hide('form-error');
+
+      // Show the current step
+      show(`form-step-${step}`);
+      currentStep = step;
+
+      // Update step indicator rail
+      for (let i = 1; i <= TOTAL_STEPS; i++) {
+        const stepItem = $(`step-item-${i}`);
+        const stepDot = stepItem.querySelector('.step-dot');
+
+        stepItem.setAttribute('aria-selected', i === step);
+
+        if (i < step) {
+          stepDot.classList.add('complete');
+          stepDot.classList.remove('active');
+        } else if (i === step) {
+          stepDot.classList.add('active');
+          stepDot.classList.remove('complete');
+        } else {
+          stepDot.classList.remove('active', 'complete');
+        }
+      }
+      updateSummaryCard();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function clearErrors() {
+      document.querySelectorAll('.field-error').forEach(el => el.textContent = '');
+      document.querySelectorAll('.text-input').forEach(el => el.classList.remove('is-error'));
+    }
+
+    function setError(inputEl, errorEl, message) {
+      if (inputEl) inputEl.classList.add('is-error');
+      if (errorEl) errorEl.textContent = message;
+    }
+
+    function validateStep1() {
+      clearErrors();
+      const selectedPlan = document.querySelector('input[name="plan"]:checked');
+      if (!selectedPlan) {
+        console.error("No plan selected!"); // Should not happen with default checked
+        return false;
+      }
+      formData.plan = selectedPlan.value;
+      return true;
+    }
+
+    function validateStep2() {
+      clearErrors();
+      let valid = true;
+      const workspaceNameInput = $('workspace-name');
+      const workspaceName = workspaceNameInput.value.trim();
+
+      if (!workspaceName) {
+        setError(workspaceNameInput, $('workspace-name-error'), 'Workspace name is required.');
+        valid = false;
+      } else if (workspaceName.length < 3) {
+        setError(workspaceNameInput, $('workspace-name-error'), 'Workspace name must be at least 3 characters.');
+        valid = false;
+      }
+
+      if (valid) {
+        formData.workspaceName = workspaceName;
+        formData.region = $('region').value;
+        formData.timezone = $('timezone').value;
+      }
+      return valid;
+    }
+
+    function validateStep3() {
+      clearErrors();
+      let valid = true;
+
+      // Jira
+      if (formData.integrations.jira) {
+        const jiraApiKeyInput = $('jira-api-key');
+        const jiraApiKey = jiraApiKeyInput.value.trim();
+        if (!jiraApiKey) {
+          setError(jiraApiKeyInput, $('jira-api-key-error'), 'Jira API key is required for integration.');
+          valid = false;
+        } else if (jiraApiKey.length < 10) { // Example validation
+          setError(jiraApiKeyInput, $('jira-api-key-error'), 'Jira API key seems too short.');
+          valid = false;
+        }
+        formData.apiKeys.jira = jiraApiKey;
+      } else {
+        formData.apiKeys.jira = ''; // Clear if not active
+      }
+
+      // Salesforce
+      if (formData.integrations.salesforce) {
+        const salesforceApiKeyInput = $('salesforce-api-key');
+        const salesforceApiKey = salesforceApiKeyInput.value.trim();
+        if (!salesforceApiKey) {
+          setError(salesforceApiKeyInput, $('salesforce-api-key-error'), 'Salesforce API key is required for integration.');
+          valid = false;
+        } else if (salesforceApiKey.length < 10) { // Example validation
+          setError(salesforceApiKeyInput, $('salesforce-api-key-error'), 'Salesforce API key seems too short.');
+          valid = false;
+        }
+        formData.apiKeys.salesforce = salesforceApiKey;
+      } else {
+        formData.apiKeys.salesforce = ''; // Clear if not active
+      }
+
+      return valid;
+    }
+
+    function validateStep4() {
+      clearErrors();
+      const confirmTextInput = $('confirm-text');
+      const confirmText = confirmTextInput.value.trim();
+      if (confirmText.toLowerCase() !== 'launch') {
+        setError(confirmTextInput, $('confirm-text-error'), 'Please type "launch" to confirm.');
+        return false;
+      }
+      return true;
+    }
+
+    // Event Listeners for step navigation
+    $('next-step-1').addEventListener('click', () => {
+      if (validateStep1()) {
+        goToStep(2);
+      }
+    });
+
+    $('back-step-2').addEventListener('click', () => goToStep(1));
+    $('next-step-2').addEventListener('click', () => {
+      if (validateStep2()) {
+        goToStep(3);
+      }
+    });
+
+    $('back-step-3').addEventListener('click', () => goToStep(2));
+    $('next-step-3').addEventListener('click', () => {
+      if (validateStep3()) {
+        buildReviewSummary();
+        goToStep(4);
+      }
+    });
+
+    $('back-step-4').addEventListener('click', () => goToStep(3));
+    $('submit-btn').addEventListener('click', () => {
+      if (validateStep4()) {
+        startValidating();
+      }
+    });
+
+    // Integration toggles logic
+    function setupIntegrationToggle(checkboxId, apiKeyGroupId, apiKeyInputId) {
+      const checkbox = $(checkboxId);
+      const apiKeyGroup = $(apiKeyGroupId);
+      if (checkbox) {
+        checkbox.addEventListener('change', (e) => {
+          const integrationName = checkboxId.replace('integration-', '');
+          formData.integrations[integrationName] = e.target.checked;
+          if (apiKeyGroup) {
+            if (e.target.checked) {
+              show(apiKeyGroupId);
+            } else {
+              hide(apiKeyGroupId);
+              $(apiKeyInputId).value = ''; // Clear API key if integration is disabled
+              clearErrors(); // Clear potential errors for this field
+            }
+          }
+          updateSummaryCard();
+        });
+      }
+      // Initial state
+      if (apiKeyGroup && !checkbox.checked) {
+        hide(apiKeyGroupId);
+      }
+    }
+
+    setupIntegrationToggle('integration-slack'); // No API key for Slack in this demo
+    setupIntegrationToggle('integration-jira', 'jira-api-key-group', 'jira-api-key');
+    setupIntegrationToggle('integration-salesforce', 'salesforce-api-key-group', 'salesforce-api-key');
+    setupIntegrationToggle('integration-google-sheets'); // No API key for Google Sheets in this demo
+
+    // Update form data on input change for dynamic summary
+    $('workspace-name').addEventListener('input', () => {
+      formData.workspaceName = $('workspace-name').value;
+      updateSummaryCard();
+    });
+    $('region').addEventListener('change', () => {
+      formData.region = $('region').value;
+      updateSummaryCard();
+    });
+    $('timezone').addEventListener('change', () => {
+      formData.timezone = $('timezone').value;
+      updateSummaryCard();
+    });
+    document.querySelectorAll('input[name="plan"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        formData.plan = e.target.value;
+        updateSummaryCard();
+      });
+    });
+
+
+    // Review Summary Builder
+    function buildReviewSummary() {
+      const reviewGrid = $('review-summary');
+      reviewGrid.innerHTML = '';
+
+      const items = [
+        { label: 'Plan', value: formData.plan },
+        { label: 'Workspace Name', value: formData.workspaceName },
+        { label: 'Region', value: formData.region },
+        { label: 'Timezone', value: formData.timezone }
+      ];
+
+      reviewGrid.innerHTML += items.map(item => `
+        <div class="summary-detail-item">
+          <span class="summary-label">${item.label}:</span>
+          <span class="summary-value">${item.value}</span>
+        </div>
+      `).join('');
+
+      // Add integrations
+      const integrationsList = Object.keys(formData.integrations)
+        .filter(key => formData.integrations[key])
+        .map(key => {
+          let text = key.charAt(0).toUpperCase() + key.slice(1);
+          if (formData.apiKeys[key]) {
+            text += ' (connected)';
+          }
+          return text;
+        }).join(', ');
+
+      reviewGrid.innerHTML += `
+        <div class="summary-detail-item full-width">
+          <span class="summary-label">Integrations:</span>
+          <span class="summary-value">${integrationsList || 'None selected'}</span>
+        </div>
+      `;
+
+      $('confirm-hint').innerHTML = `Type '<code class="mono-text">launch</code>' to proceed.`;
+    }
+
+    // Validating State simulation
+    const LOG_LINES = [
+      'Initializing core services...',
+      'Allocating cloud resources for workspace...',
+      'Deploying AI models and automation engines...',
+      'Configuring plan features for ' + formData.plan + '...',
+      'Setting up region and timezone...',
+      'Connecting to Slack for notifications...',
+      'Validating Jira API key...',
+      'Establishing Salesforce connection...',
+      'Synchronizing with Google Sheets...',
+      'Performing final security checks...',
+      'Platform launch complete.'
+    ];
+
+    function startValidating() {
+      clearErrors();
+      // Update LOG_LINES dynamically based on integrations
+      LOG_LINES[6] = formData.integrations.jira ? 'Validating Jira API key...' : 'Skipping Jira integration.';
+      LOG_LINES[7] = formData.integrations.salesforce ? 'Establishing Salesforce connection...' : 'Skipping Salesforce integration.';
+
+      hide('form-step-4');
+      show('form-validating');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      const logContainer = $('validating-log');
+      logContainer.innerHTML = '';
+      const progressBar = $('progress-bar');
+      progressBar.style.width = '0%';
+
+      let step = 0;
+      const total = LOG_LINES.length;
+
+      function addLogLine() {
+        if (step < total) {
+          const div = document.createElement('div');
+          div.className = 'log-line';
+          div.textContent = LOG_LINES[step];
+          logContainer.appendChild(div);
+          logContainer.scrollTop = logContainer.scrollHeight; // Auto-scroll
+          step++;
+          const progress = Math.min((step / total) * 100, 100);
+          progressBar.style.width = progress + '%';
+          setTimeout(addLogLine, 300 + Math.random() * 400); // Simulate network delay
+        } else {
+          // Simulate success or failure
+          const fail = Math.random() < 0.2; // 20% chance of failure
+          setTimeout(() => {
+            hide('form-validating');
+            if (fail) {
+              showError(Math.random() < 0.5 ? 'API_KEY_INVALID' : 'RESOURCE_PROVISION_FAILED');
+            } else {
+              showSuccess();
+            }
+          }, 800);
+        }
+      }
+      addLogLine();
+    }
+
+    function showError(errorCode) {
+      hide('form-validating');
+      show('form-error');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      let errorMessage = 'An unexpected error occurred during platform setup. Please try again or contact support.';
+      let errorDetails = `Error: ${errorCode || 'UNKNOWN_ERROR'}`;
+
+      if (errorCode === 'API_KEY_INVALID') {
+        errorMessage = 'One or more API keys provided are invalid. Please check your credentials.';
+        errorDetails = 'Error: INTEGRATION_AUTH_FAILED - Please review API keys.';
+      } else if (errorCode === 'RESOURCE_PROVISION_FAILED') {
+        errorMessage = 'Failed to provision necessary cloud resources. Please contact support.';
+        errorDetails = 'Error: CLOUD_RESOURCE_LIMIT - Contact support for assistance.';
+      }
+
+      $('error-message').textContent = errorMessage;
+      $('error-code').textContent = errorDetails;
+    }
+
+    function showSuccess() {
+      hide('form-validating');
+      show('form-success');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function retryFromError() {
+      // Go back to the integrations step if API key error, otherwise to review
+      if ($('error-code').textContent.includes('INTEGRATION_AUTH_FAILED')) {
+        goToStep(3);
+      } else {
+        goToStep(4); // For other errors, let them review and try again
+      }
+      clearErrors();
+    }
+
+    function resetForm() {
+      // Reset form data to initial state
+      formData.plan = 'Pro';
+      formData.workspaceName = 'AI-Ops Central';
+      formData.region = 'North America';
+      formData.timezone = 'UTC';
+      formData.integrations = {
+        slack: true,
+        jira: false,
+        salesforce: false,
+        googleSheets: true
+      };
+      formData.apiKeys = {
+        jira: '',
+        salesforce: ''
+      };
+
+      // Reset form inputs
+      document.querySelector('input[name="plan"][value="Pro"]').checked = true;
+      $('workspace-name').value = 'AI-Ops Central';
+      $('region').value = 'North America';
+      $('timezone').value = 'UTC';
+      $('integration-slack').checked = true;
+      $('integration-jira').checked = false;
+      $('integration-salesforce').checked = false;
+      $('integration-google-sheets').checked = true;
+      $('jira-api-key').value = '';
+      $('salesforce-api-key').value = '';
+      hide('jira-api-key-group');
+      hide('salesforce-api-key-group');
+      $('confirm-text').value = '';
+
+      clearErrors();
+      goToStep(1);
+    }
+
+    // Initialize the form
+    document.addEventListener('DOMContentLoaded', () => {
+      resetForm(); // Call reset to set initial values and states
+      goToStep(1);
+    });
+
+  </script>
+</body>
+</html>

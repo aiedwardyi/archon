@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jane Doe - Creative Front-End Developer</title>
+    <link rel="stylesheet" href="./base.css">
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body class="dark-theme">
+    <nav class="portfolio-nav">
+        <div class="nav-name">JANE DOE</div>
+        <ul class="nav-links">
+            <li><a href="#projects" class="nav-link">Work</a></li>
+            <li><a href="#about" class="nav-link">About</a></li>
+            <li><a href="#skills" class="nav-link">Skills</a></li>
+            <li><a href="#contact" class="nav-link">Contact</a></li>
+        </ul>
+        <a href="#contact" class="nav-cta btn-primary">Get in Touch</a>
+    </nav>
+
+    <section class="section-wrapper section-hero">
+        <div class="hero-portfolio">
+            <div class="hero-left">
+                <p class="hero-eyebrow">CREATIVE FRONT-END DEVELOPER</p>
+                <h1 class="hero-title">Jane Doe</h1>
+                <p class="hero-subtitle">
+                    I craft engaging, pixel-perfect user experiences with a focus on intuitive design and robust front-end architecture. Bringing creative visions to life through elegant code and seamless interactions.
+                </p>
+                <div class="hero-ctas">
+                    <a href="#projects" class="btn-primary">View Projects</a>
+                    <a href="#" class="btn-ghost" onclick="alert('CV download not implemented in this demo.'); return false;">Download CV</a>
+                </div>
+            </div>
+            <div class="hero-right">
+                <p class="hero-status">PORTFOLIO 2025</p>
+                <div class="hero-micro-stat">
+                    <span class="stat-number">10</span>
+                    <span class="stat-label">Creative Projects</span>
+                </div>
+                <div class="hero-micro-stat">
+                    <span class="stat-number">35K</span>
+                    <span class="stat-label">GitHub Contributions</span>
+                </div>
+                <div class="hero-micro-stat">
+                    <span class="stat-number">4.8★</span>
+                    <span class="stat-label">Client Satisfaction</span>
+                </div>
+                <div class="availability-card">
+                    <span class="avail-dot"></span>
+                    <span class="avail-text">AVAILABLE FOR WORK</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="stats-band">
+        <div class="stats-grid">
+            <div class="stat-block">
+                <span class="stat-value">5+</span>
+                <span class="stat-desc">Years Experience</span>
+            </div>
+            <div class="stat-block">
+                <span class="stat-value">80+</span>
+                <span class="stat-desc">Projects Completed</span>
+            </div>
+            <div class="stat-block">
+                <span class="stat-value">30+</span>
+                <span class="stat-desc">Happy Clients</span>
+            </div>
+            <div class="stat-block">
+                <span class="stat-value">10</span>
+                <span class="stat-desc">Global Collaborations</span>
+            </div>
+        </div>
+    </section>
+
+    <section id="about" class="section-wrapper">
+        <div class="section-header">
+            <p class="section-eyebrow">WHO I AM</p>
+            <h2 class="section-title">About Me</h2>
+        </div>
+        <div class="about-grid">
+            <div class="about-image-wrapper">
+                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80&fit=crop&auto=format" alt="Jane Doe" class="about-image" onerror="this.src='https://via.placeholder.com/600x800/0d0d0e/ffffff?text=Image+Load+Error'; this.style.backgroundColor='var(--surface)'; this.style.objectFit='contain';">
+            </div>
+            <div class="about-text">
+                <p>
+                    As a dedicated Creative Front-End Developer, I specialize in bringing innovative designs to life through clean, efficient, and user-centric code. My journey in web development is driven by a passion for creating impactful digital experiences that are both visually stunning and highly functional.
+                </p>
+                <p>
+                    I thrive on the challenge of transforming complex ideas into intuitive interfaces, focusing on performance, accessibility, and pixel-perfect execution. My approach combines strong technical skills with a keen eye for design, ensuring every project delivers an exceptional user experience.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section id="skills" class="section-wrapper section-skills">
+        <div class="section-header">
+            <p class="section-eyebrow">WHAT I DO</p>
+            <h2 class="section-title">Skills & Expertise</h2>
+        </div>
+        <div class="skills-grid">
+            <div class="skill-card">
+                <span class="skill-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-react"><path d="M20.94 11a9.006 9.006 0 0 0-16.7 0M12 2v4M12 18v4M19.78 4.22l-2.83 2.83M4.22 19.78l2.83-2.83M2.22 13.78l2.83-2.83M19.78 13.78l-2.83-2.83M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/></svg></span>
+                <h3 class="skill-name">React</h3>
+                <p class="skill-level">Expert</p>
+            </div>
+            <div class="skill-card">
+                <span class="skill-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-nextjs"><path d="M12 2L2 12l10 10 10-10-10-10zM12 5l-7 7 7 7 7-7-7-7z"/><path d="M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg></span>
+                <h3 class="skill-name">Next.js</h3>
+                <p class="skill-level">Advanced</p>
+            </div>
+            <div class="skill-card">
+                <span class="skill-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-typescript"><path d="M2 12s2-2 5-2 5 2 5 2 2-2 5-2 5 2 5 2M12 2v20"/></svg></span>
+                <h3 class="skill-name">TypeScript</h3>
+                <p class="skill-level">Expert</p>
+            </div>
+            <div class="skill-card">
+                <span class="skill-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tailwind"><path d="M12 2l-7 12h14l-7-12z"/><path d="M12 22l-7-12h14l-7 12z"/></svg></span>
+                <h3 class="skill-name">Tailwind CSS</h3>
+                <p class="skill-level">Advanced</p>
+            </div>
+            <div class="skill-card">
+                <span class="skill-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-nodejs"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></span>
+                <h3 class="skill-name">Node.js</h3>
+                <p class="skill-level">Proficient</p>
+            </div>
+            <div class="skill-card">
+                <span class="skill-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-figma"><path d="M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z"/><path d="M12 2v20M2 12h20"/></svg></span>
+                <h3 class="skill-name">Figma</h3>
+                <p class="skill-level">Intermediate</p>
+            </div>
+            <div class="skill-card">
+                <span class="skill-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-git"><circle cx="12" cy="12" r="4"/><path d="M11 16L12 22 13 16M12 2v10M2 12h10M12 12h10"/></svg></span>
+                <h3 class="skill-name">Git</h3>
+                <p class="skill-level">Expert</p>
+            </div>
+            <div class="skill-card">
+                <span class="skill-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-graphql"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20M17.66 6.34l-3.54 3.54M6.34 17.66l3.54-3.54M6.34 6.34l3.54 3.54M17.66 17.66l-3.54-3.54"/></svg></span>
+                <h3 class="skill-name">GraphQL</h3>
+                <p class="skill-level">Proficient</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="projects" class="section-wrapper">
+        <div class="section-header">
+            <p class="section-eyebrow">MY WORK</p>
+            <h2 class="section-title">Featured Projects</h2>
+        </div>
+        <div class="projects-bento">
+            <div class="project-card project-card--span2">
+                <img src="/api/assets/147/1/project_showcase_illustration.png" alt="Interactive Data Dashboard" class="project-image" onerror="this.style.background='linear-gradient(135deg,var(--surface),var(--surface-elevated))';this.style.minHeight='240px';">
+                <div class="project-overlay">
+                    <div class="project-info">
+                        <p class="project-tag">Web App</p>
+                        <h3 class="project-title">Interactive Data Dashboard</h3>
+                        <p class="project-desc">A dynamic analytics dashboard built for real-time data visualization and complex reporting, ensuring data-driven insights.</p>
+                        <div class="project-tech-badges">
+                            <span class="tech-badge">React</span>
+                            <span class="tech-badge">D3.js</span>
+                            <span class="tech-badge">TypeScript</span>
+                        </div>
+                        <a href="#" class="project-link" onclick="alert('Viewing project: Interactive Data Dashboard'); return false;">View Project →</a>
+                    </div>
+                </div>
+            </div>
+            <div class="project-card">
+                <img src="/api/assets/147/1/project_showcase_illustration.png" alt="E-commerce API Integration" class="project-image" onerror="this.style.background='linear-gradient(135deg,var(--surface),var(--surface-elevated))';this.style.minHeight='240px';">
+                <div class="project-overlay">
+                    <div class="project-info">
+                        <p class="project-tag">Backend</p>
+                        <h3 class="project-title">E-commerce API Integration</h3>
+                        <p class="project-desc">Developed robust RESTful APIs and integrated third-party e-commerce services for seamless product and order management.</p>
+                        <div class="project-tech-badges">
+                            <span class="tech-badge">Next.js</span>
+                            <span class="tech-badge">Node.js</span>
+                            <span class="tech-badge">PostgreSQL</span>
+                        </div>
+                        <a href="#" class="project-link" onclick="alert('Viewing project: E-commerce API Integration'); return false;">View Project →</a>
+                    </div>
+                </div>
+            </div>
+            <div class="project-card">
+                <img src="/api/assets/147/1/project_showcase_illustration.png" alt="Real-time Chat Application" class="project-image" onerror="this.style.background='linear-gradient(135deg,var(--surface),var(--surface-elevated))';this.style.minHeight='240px';">
+                <div class="project-overlay">
+                    <div class="project-info">
+                        <p class="project-tag">Full-Stack</p>
+                        <h3 class="project-title">Real-time Chat Application</h3>
+                        <p class="project-desc">Designed and implemented a scalable real-time chat platform with secure authentication and instant messaging features.</p>
+                        <div class="project-tech-badges">
+                            <span class="tech-badge">React</span>
+                            <span class="tech-badge">Socket.IO</span>
+                            <span class="tech-badge">Firebase</span>
+                        </div>
+                        <a href="#" class="project-link" onclick="alert('Viewing project: Real-time Chat Application'); return false;">View Project →</a>
+                    </div>
+                </div>
+            </div>
+            <div class="project-card">
+                <img src="/api/assets/147/1/project_showcase_illustration.png" alt="Personal Portfolio v3" class="project-image" onerror="this.style.background='linear-gradient(135deg,var(--surface),var(--surface-elevated))';this.style.minHeight='240px';">
+                <div class="project-overlay">
+                    <div class="project-info">
+                        <p class="project-tag">Design</p>
+                        <h3 class="project-title">Personal Portfolio v3</h3>
+                        <p class="project-desc">The third iteration of my personal portfolio, focusing on modern design principles, performance, and engaging animations.</p>
+                        <div class="project-tech-badges">
+                            <span class="tech-badge">HTML</span>
+                            <span class="tech-badge">CSS</span>
+                            <span class="tech-badge">JavaScript</span>
+                        </div>
+                        <a href="#" class="project-link" onclick="alert('Viewing project: Personal Portfolio v3'); return false;">View Project →</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="experience" class="section-wrapper">
+        <div class="section-header">
+            <p class="section-eyebrow">MY JOURNEY</p>
+            <h2 class="section-title">Experience</h2>
+        </div>
+        <div class="experience-timeline">
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <h3 class="timeline-title">Senior Front-End Developer</h3>
+                <p class="timeline-company">CreativeTech Solutions | 2022 - Present</p>
+                <ul class="timeline-description">
+                    <li>Led development of complex UI features using React and Next.js, improving user engagement by 20%.</li>
+                    <li>Mentored junior developers and established best practices for front-end architecture.</li>
+                </ul>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <h3 class="timeline-title">UI Developer</h3>
+                <p class="timeline-company">PixelCraft Studio | 2018 - 2022</p>
+                <ul class="timeline-description">
+                    <li>Designed and implemented responsive user interfaces for various client projects.</li>
+                    <li>Collaborated with UX/UI designers to translate wireframes into interactive web applications.</li>
+                </ul>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <h3 class="timeline-title">Junior Web Designer</h3>
+                <p class="timeline-company">Digital Forge Agency | 2016 - 2018</p>
+                <ul class="timeline-description">
+                    <li>Built and maintained responsive websites using HTML, CSS, and vanilla JavaScript.</li>
+                    <li>Assisted in client requirement gathering and initial design mockups.</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="section-wrapper">
+        <div class="section-header">
+            <p class="section-eyebrow">LET'S CONNECT</p>
+            <h2 class="section-title">Get in Touch</h2>
+        </div>
+        <div class="contact-grid">
+            <form class="contact-form" onsubmit="alert('Thank you for your message, Jane will get back to you soon!'); return false;">
+                <div class="form-group">
+                    <label for="name" class="form-label">Name</label>
+                    <input type="text" id="name" name="name" class="form-input" placeholder="Your Name" required>
+                </div>
+                <div class="form-group">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" id="email" name="email" class="form-input" placeholder="your@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="subject" class="form-label">Subject</label>
+                    <input type="text" id="subject" name="subject" class="form-input" placeholder="How can I help you?" required>
+                </div>
+                <div class="form-group">
+                    <label for="message" class="form-label">Message</label>
+                    <textarea id="message" name="message" class="form-textarea" placeholder="Your message..." rows="5" required></textarea>
+                </div>
+                <button type="submit" class="btn-primary">Send Message</button>
+            </form>
+            <div class="contact-details">
+                <div class="contact-item">
+                    <span class="contact-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-mail"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
+                    <div class="contact-info">
+                        <p class="contact-label">Email</p>
+                        <p class="contact-value">jane.doe@example.com</p>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <span class="contact-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-map-pin"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+                    <div class="contact-info">
+                        <p class="contact-label">Location</p>
+                        <p class="contact-value">New York, NY</p>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <span class="contact-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-linkedin"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></span>
+                    <div class="contact-info">
+                        <p class="contact-label">LinkedIn</p>
+                        <p class="contact-value"><a href="https://linkedin.com/in/janedoe" target="_blank">linkedin.com/in/janedoe</a></p>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <span class="contact-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 3c0-.97-.34-2.11-.69-3C18 2 16 2.62 14 7c-1.45-1.52-3.13-2-5-2-1.87 0-3.55.48-5 2-2.91-4.38-4.91-4.38-5-3 0 0-1 2-1 3.5.5 0 1.5.2 2.5.5C3.5 10 3.5 12 3.5 12c0 0-1 2-1 3.5 0 1.5.5 2.5 1.5 3.5.5.5.5 1.5.5 2.5h-1"/></svg></span>
+                    <div class="contact-info">
+                        <p class="contact-label">GitHub</p>
+                        <p class="contact-value"><a href="https://github.com/janedoe" target="_blank">github.com/janedoe</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="site-footer">
+        <p>&copy; 2025 Jane Doe. All rights reserved.</p>
+        <div class="social-links">
+            <a href="https://linkedin.com/in/janedoe" target="_blank" class="social-link"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-linkedin"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></a>
+            <a href="https://github.com/janedoe" target="_blank" class="social-link"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 3c0-.97-.34-2.11-.69-3C18 2 16 2.62 14 7c-1.45-1.52-3.13-2-5-2-1.87 0-3.55.48-5 2-2.91-4.38-4.91-4.38-5-3 0 0-1 2-1 3.5.5 0 1.5.2 2.5.5C3.5 10 3.5 12 3.5 12c0 0-1 2-1 3.5 0 1.5.5 2.5 1.5 3.5.5.5.5 1.5.5 2.5h-1"/></svg></a>
+        </div>
+    </footer>
+
+    <script>
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                if (targetId === '#') return; // Ignore bare '#' links
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // Simulate form submission
+        const contactForm = document.querySelector('.contact-form');
+        if (contactForm) {
+            contactForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                alert('Thank you for your message, Jane will get back to you soon!');
+                // In a real application, you would send this data to a backend.
+                contactForm.reset();
+            });
+        }
+    </script>
+</body>
+</html>
