@@ -49,7 +49,7 @@ log = logging.getLogger("operator_loop")
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
 OPERATOR_RESULTS_DIR = RESULTS_DIR / "operator_loop"
-LOG_PATH = RESULTS_DIR / "codex_improvements.md"
+LOG_PATH = RESULTS_DIR / "operator_improvements.md"
 OVERNIGHT_SUMMARY_PATH = RESULTS_DIR / "overnight_summary.md"
 CHECKPOINT_PATH = RESULTS_DIR / "checkpoint.md"
 

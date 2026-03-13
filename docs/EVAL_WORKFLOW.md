@@ -23,7 +23,7 @@ Operator stance:
 - Optional tuning target after plateau only: `eval/eval_config.json`
 - Shared legacy benchmark registry: `eval/archetype_benchmarks.json`
 - Result artifacts: `eval/results/<archetype>/iter_<n>/scores.json`
-- Operator logs: `eval/results/codex_improvements.md`, `eval/results/overnight_summary.md`, `eval/results/checkpoint.md`
+- Operator logs: `eval/results/operator_improvements.md`, `eval/results/overnight_summary.md`, `eval/results/checkpoint.md`
 
 Out of scope for this loop:
 
@@ -113,7 +113,7 @@ Only these files are valid experiment surfaces for the operator loop:
 - `prompts/archetypes/<archetype>.txt`
 - `eval/eval_config.json`
   - Only after a documented plateau and only for prompt-selection tuning.
-- `eval/results/codex_improvements.md`
+- `eval/results/operator_improvements.md`
 
 Do not treat `prompts/engineer_core.txt`, `prompts/planner.txt`, `utils/*`, or `backend/*` as first-line tuning surfaces for this workflow.
 
@@ -125,7 +125,7 @@ Priority rule:
 ## One Full Operator Cycle
 
 1. Read:
-   - `eval/results/codex_improvements.md`
+   - `eval/results/operator_improvements.md`
    - `eval/results/overnight_summary.md`
    - `eval/results/checkpoint.md`
 2. Determine the weakest archetype across:
@@ -162,7 +162,7 @@ python eval/eval_runner.py --archetypes <archetype> --max-iterations 3
 10. Average `weighted_total` across the three B-test runs and compare it to the baseline average.
 11. Commit only if the improvement is greater than `+1.0`.
 12. If the change does not clear `+1.0`, revert only the files changed in that experiment.
-13. Update `eval/results/codex_improvements.md`.
+13. Update `eval/results/operator_improvements.md`.
 14. Move to the second-weakest archetype and repeat.
 
 ## Blocker Handling
@@ -179,7 +179,7 @@ Required response to blockers:
 2. If the failure is in `eval/*` and blocks prompt or kit iteration, fix it on `eval/loops` before resuming.
 3. If the failure is a prompt-surface mismatch, such as parser logic not finding a live archetype section in `prompts/engineer.txt`, treat that as a must-fix blocker, not as an observation to log and ignore.
 4. If one tuning surface is blocked, switch to the other valid tuning surface when possible rather than stalling the loop.
-5. Record the blocker, the fix, and the reason it was necessary in `eval/results/codex_improvements.md`.
+5. Record the blocker, the fix, and the reason it was necessary in `eval/results/operator_improvements.md`.
 
 Never let the loop sit in a repeat-fail pattern when a local code fix would restore useful optimization work.
 
@@ -212,14 +212,14 @@ Run this check after every eval:
    - `WATSON_DISCOVERY_API` or `WATSON_DISCOVERY_API_KEY`
    - `WATSON_DISCOVERY_URL`
    - `WATSON_DISCOVERY_PROJECT_ID`
-5. If those values exist and Discovery is still disabled, record the blocker in `eval/results/codex_improvements.md` and stop short of code changes.
+5. If those values exist and Discovery is still disabled, record the blocker in `eval/results/operator_improvements.md` and stop short of code changes.
 
 Discovery diagnosis is operational only for this loop. Do not patch `utils/*` or `backend/*` as part of prompt/design experiments.
 
 ## Git Rules
 
 - Stay on `eval/loops` for the actual eval session.
-- Commit only the winning experiment files plus `eval/results/codex_improvements.md`.
+- Commit only the winning experiment files plus `eval/results/operator_improvements.md`.
 - Commit harness fixes separately from prompt/kit wins when possible, with a message that makes the unblock explicit.
 - Revert only the prompt or kit files changed in the failed experiment.
 - Do not revert unrelated repo changes.
@@ -228,7 +228,7 @@ Discovery diagnosis is operational only for this loop. Do not patch `utils/*` or
 
 ## Logging Contract
 
-Standardize each experiment entry in `eval/results/codex_improvements.md` with:
+Standardize each experiment entry in `eval/results/operator_improvements.md` with:
 
 - Cycle number and timestamp
 - Archetype
