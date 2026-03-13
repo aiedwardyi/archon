@@ -77,6 +77,41 @@
       "discovery_ingest": true
     },
     {
+      "project_id": 190,
+      "version": 1,
+      "archetype": "fintech",
+      "benchmark_path": "eval/benchmark_builds/legacy-tradeflow-terminal-fintech",
+      "priority": 98,
+      "label": "legacy-tradeflow-terminal-fintech",
+      "prompt_summary": "Build a premium stock trading dashboard with live market chart, portfolio breakdown, order actions, and dense terminal-like navigation.",
+      "prompt_hints": [
+        "stock trading dashboard",
+        "trading terminal",
+        "portfolio breakdown",
+        "market overview",
+        "order actions"
+      ],
+      "notes": "Top-tier fintech benchmark. Key traits: unmistakably trading-focused information density, persistent market controls, monospace numeric rhythm, clear trade-action affordances, and a premium dark-terminal atmosphere that stays distinct from broader analytics dashboards.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 120,
+      "version": 1,
+      "archetype": "fintech",
+      "benchmark_path": "eval/benchmark_builds/legacy-stocktrack-live-terminal",
+      "priority": 76,
+      "label": "legacy-stocktrack-live-terminal",
+      "prompt_summary": "Build a live stock-monitoring workspace with ticker rail, portfolio chart, holdings table, and watchlist actions.",
+      "prompt_hints": [
+        "live stock-monitoring workspace",
+        "ticker rail",
+        "portfolio chart",
+        "watchlist actions"
+      ],
+      "notes": "Useful secondary fintech benchmark. Key traits: persistent ticker strip, clear live-market framing, strong monospace numeric treatment, and a more approachable portfolio-monitoring layout that still stays finance-specific.",
+      "discovery_ingest": false
+    },
+    {
       "project_id": 162,
       "version": 1,
       "archetype": "saas_landing",

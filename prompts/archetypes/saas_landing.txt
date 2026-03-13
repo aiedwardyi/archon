@@ -58,6 +58,7 @@ Choose the strongest subset that fits the prompt and quality target. Avoid fille
    - NEVER use background images — the gradient mesh IS the background
    - NEVER use <img> tags in the hero — no mockup images, no screenshots. The hero is TEXT + GRADIENT ONLY
    - Maintain contrast: hero subtitle/body text must be at least `var(--text-high-contrast)` (no low-contrast gray-on-dark combinations)
+   - Hero MUST feel premium and cinematic, not like a standard template heading on a dark gradient. Add one coded supporting visual detail inside the hero content area such as mini proof chips, a floating metric row, or a product signal strip.
 
 3. LOGO CLOUD — .logo-cloud with .marquee-label ("TRUSTED BY TEAMS AT 50,000+ COMPANIES") and .marquee-track containing 10 logo items (Notion, Figma, Linear, Stripe, Vercel, Loom, Intercom, Airtable, Webflow, Framer). Duplicate for seamless loop (20 items total). Each .logo-item has the company name as TEXT ONLY (no SVG icons). Use font-weight: 600 and letter-spacing for a clean logo-text look. NEVER use SVG icons in the logo cloud — they always end up identical, which triggers score-killer #16. The company NAME is the logo.
 
@@ -70,9 +71,15 @@ Choose the strongest subset that fits the prompt and quality target. Avoid fille
    - Each card must include one interactive cue (`.card-link`, button, or tab trigger) with hover and focus styles
    - NEVER leave feature cards as text-only
    - Prefer coded visuals (CSS bar charts, SVG sparklines, metric numbers, mini UI mockups in HTML)
+   - Do not leave visual containers empty. If a mockup/image slot cannot be populated with confidence, replace it with a fully coded UI surface or chart instead of an empty box.
    - If real DESIGN ASSETS are provided and materially improve the section, you MAY use them outside the hero as long as they are integrated intentionally and do not degrade the layout
+- Card surfaces must feel glossy and premium: layered background, subtle inner highlight, border glow restraint, and stronger depth than a plain flat rectangle
+- Avoid uniform same-height card stacks that read like a generic template. Card rhythm should feel intentionally editorial.
+- First and fourth cards MUST obviously span wider than the middle cards at first glance. If the layout reads like a uniform 2x2 or 4-up template, it is wrong.
+- Feature-card content integrity matters more than density. Do not let labels, badges, charts, and helper text overlap or collide just to cram in more detail.
 
 5. PRODUCT MOCKUP — Recommended when the prompt suggests a product or platform. Use a fully coded mini dashboard/editor UI when possible.
+- If present, the product mockup must look sharper and more premium than the feature cards around it. It should be a visual payoff section, not another generic dark rectangle.
 
 6. COMPARISON TABLE — Recommended for competitive or AI-tool prompts. If used, make it data-rich with specific values, not a wall of identical checkmarks.
 
@@ -100,6 +107,13 @@ CONTENT & DATA RULES
 - Do NOT pad the page with generic filler sections. Every section must earn its place.
 - Accent restraint: violet on max 4 element types (CTA buttons, featured pricing border, hero highlight, section badge borders)
 - Color system rule: keep one dominant accent + one secondary accent only; avoid adding low-contrast tertiary grays for primary copy
+- If a section reads like a template block with weak individuality, redesign the section composition rather than just changing colors.
+- The page must feel like a premium shipped product site, not an AI-generated marketing scaffold.
+- Avoid stacking sections with identical widths, paddings, and card treatments from top to bottom. Vary rhythm intentionally.
+- If a section starts looking broken, crowded, or low-confidence, simplify that section instead of forcing more micro-UI into it. Fewer premium sections beat more broken sections.
+- Avoid layered floating labels or decorative chips that sit on top of charts/text and create clipping.
+- Do not use emoji, Unicode pictograms, or placeholder icon text inside premium product sections. Use concise inline SVGs, bars, charts, mini UI rows, or styled logo text instead.
+- If the palette starts feeling flat, deepen contrast and use restrained glow/gradient treatment on the highest-value surfaces rather than making every section the same dark rectangle.
 
 ═══════════════════════════════════════
 JAVASCRIPT INTERACTIONS
@@ -141,5 +155,12 @@ SELF-CHECK BEFORE OUTPUT
 □ Testimonials have real names/companies
 □ FAQ has 6+ items with Alpine accordion
 □ Footer has 4+ link columns
+□ Feature cards feel glossy/layered, not flat template blocks
+□ Hero contains at least one premium supporting signal beyond heading + paragraph + buttons
+□ Feature layout is obviously asymmetric on first glance
+□ Product mockup feels like a premium payoff section, not filler
+□ No feature-card overlaps, clipped text, or broken micro-UI collisions
+□ No empty mockup/image containers anywhere on the page
+□ No emoji or placeholder pictograms inside premium feature sections
 □ style.css is lean where possible, but premium quality takes priority over arbitrary line limits
 □ All heading text uses font-family: 'Space Grotesk', explicit on each element

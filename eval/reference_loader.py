@@ -2,7 +2,9 @@
 Load and organize reference images for vision API scoring.
 """
 
+import asyncio
 import logging
+import subprocess
 import sys
 from pathlib import Path
 
@@ -20,7 +22,6 @@ ARCHETYPE_ALIASES = {
     "game_ff9": "game",
 }
 BENCHMARK_ARCHETYPE_ALIASES = {
-    "fintech": "dashboard",
 }
 
 try:
@@ -135,12 +136,34 @@ class ReferenceLoader:
 
         try:
             screenshot_path.parent.mkdir(parents=True, exist_ok=True)
-            capture_sync(
-                html_path.resolve().as_uri(),
-                screenshot_path,
-                wait_seconds=0.5,
-                full_page=True,
-            )
+            url = html_path.resolve().as_uri()
+            try:
+                asyncio.get_running_loop()
+                in_running_loop = True
+            except RuntimeError:
+                in_running_loop = False
+
+            if in_running_loop:
+                subprocess.run(
+                    [
+                        sys.executable,
+                        "-m",
+                        "eval.screenshotter",
+                        url,
+                        str(screenshot_path),
+                        "--wait-seconds",
+                        "0.5",
+                    ],
+                    check=True,
+                    cwd=str(ROOT),
+                )
+            else:
+                capture_sync(
+                    url,
+                    screenshot_path,
+                    wait_seconds=0.5,
+                    full_page=True,
+                )
             return screenshot_path
         except Exception as exc:
             logger.warning(
