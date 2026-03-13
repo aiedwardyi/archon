@@ -3,6 +3,7 @@ Load and organize reference images for vision API scoring.
 """
 
 import logging
+import sys
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -26,10 +27,19 @@ try:
     from screenshotter import capture_sync
 except ImportError:
     from eval.screenshotter import capture_sync
-from utils.reference_build_registry import (
-    get_sorted_reference_build_entries,
-    resolve_reference_build_source_paths,
-)
+try:
+    from utils.reference_build_registry import (
+        get_sorted_reference_build_entries,
+        resolve_reference_build_source_paths,
+    )
+except ImportError:
+    repo_root = Path(__file__).resolve().parent.parent
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    from utils.reference_build_registry import (
+        get_sorted_reference_build_entries,
+        resolve_reference_build_source_paths,
+    )
 
 # Mapping from archetype name to glob patterns for good/bad examples
 REFERENCE_MAP = {

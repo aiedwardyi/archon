@@ -275,7 +275,7 @@ async def run_eval_loop(config: dict = None):
                     f"{archetype}: Score DROPPED {prev_best} -> {scores.weighted_total}. "
                     f"Rolling back to best prompt."
                 )
-                if archetype in best_prompts:
+                if archetype in best_prompts and parser.has_section(archetype):
                     parser.replace_section(archetype, best_prompts[archetype])
                     save_text(best_prompts[archetype], output_dir / "prompt_rollback.txt")
                     logger.info(f"Rolled back {archetype} prompt to best version (score {prev_best})")
@@ -287,7 +287,8 @@ async def run_eval_loop(config: dict = None):
             # Track best score and prompt
             if prev_best is None or scores.weighted_total > prev_best:
                 best_scores[archetype] = scores.weighted_total
-                best_prompts[archetype] = parser.extract_section(archetype)
+                if parser.has_section(archetype):
+                    best_prompts[archetype] = parser.extract_section(archetype)
                 logger.info(f"New best score for {archetype}: {scores.weighted_total}")
 
             # 6. Check if improvement is needed
