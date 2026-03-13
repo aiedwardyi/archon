@@ -1,0 +1,88 @@
+ARCHETYPE: FORM / WIZARD
+PATH: B (Raw CSS — base.css provides the design system)
+
+═══════════════════════════════════════
+DESIGN KIT: base.css IS ALREADY PROVIDED
+═══════════════════════════════════════
+
+A base.css file is injected automatically. It provides:
+- CSS variables: --bg, --surface, --surface-alt, --accent, --accent-soft, --text, --text-secondary, --text-muted, --border
+- Fonts: Sora for headings, Inter for body and controls, JetBrains Mono for progress/meta text
+- Layout: .wizard-shell, .wizard-frame, .wizard-side, .wizard-main
+- Progress UI: .step-rail, .step-item, .step-dot, .step-dot.active, .step-dot.complete, .progress-meter
+- Form primitives: .field-grid, .field-group, .field-label, .text-input, .select-card, .toggle-chip
+- State surfaces: .summary-card, .signal-card, .log-line, .notice, .success-panel
+- Buttons: .btn-primary, .btn-secondary, .btn-ghost
+- Responsive breakpoints, focus states, hover transitions
+
+DO NOT duplicate these in style.css. Use style.css only for prompt-specific tuning.
+
+═══════════════════════════════════════
+YOUR index.html MUST LINK base.css FIRST
+═══════════════════════════════════════
+
+In <head>:
+  <link rel="stylesheet" href="./base.css">
+  <link rel="stylesheet" href="./style.css">
+
+═══════════════════════════════════════
+REQUIRED FLOW STRUCTURE
+═══════════════════════════════════════
+
+1. SPLIT WIZARD LAYOUT
+- Left rail for progress and reassurance.
+- Right main panel for the active step and form content.
+- The UI should feel like a premium onboarding or setup flow, not a plain contact form.
+
+2. STEP PROGRESSION
+- Show 4-5 steps with one active, prior steps complete, later steps pending.
+- Include progress percentage or progress meter.
+- Use meaningful step labels, not Step 1 / Step 2 only.
+
+3. ACTIVE FORM STEP
+- At least 4 form controls on the main step.
+- Mix control types: text input, segmented choice, card selection, toggle, textarea, checklist, or integration tile.
+- One field must show a validation/help/error state.
+- Include clear primary and secondary actions.
+
+4. SUPPORTING CONTEXT
+- Left side should include benefits, checklist, or trust/progress messaging.
+- Add a summary or signal card showing the current configuration in non-zero terms.
+- Include one premium state treatment such as validation log lines, success notice, or readiness score.
+
+5. SUCCESS / RESULT VISIBILITY
+- Even if the main step is mid-flow, include a visible preview of the success/result state:
+  confirmation card, launch summary, next-step panel, or generated workspace snapshot.
+
+═══════════════════════════════════════
+INTERACTION RULES
+═══════════════════════════════════════
+
+- Buttons, chips, and selectable cards must have hover/focus/active states.
+- The active step must be visually obvious.
+- Show at least one dynamic-feeling state: validating, syncing, ready, or confirmed.
+- Inputs must have clear focus styling and helper/error text.
+
+═══════════════════════════════════════
+CONTENT RULES
+═══════════════════════════════════════
+
+- ZERO-VALUE BAN: no 0 connected apps, 0 steps complete, or empty summaries.
+- Use realistic setup data: team size, workspace URL, plan names, integration counts, launch dates.
+- Avoid generic hero marketing copy. This is a flow/product screen first.
+- Keep the page grounded in function, but polished enough to feel premium.
+
+═══════════════════════════════════════
+SELF-CHECK BEFORE OUTPUT
+═══════════════════════════════════════
+
+□ index.html links base.css BEFORE style.css
+□ Split wizard layout is visible
+□ 4-5 steps shown with active + complete states
+□ Active panel has 4+ real controls
+□ One control shows validation/help/error state
+□ Summary/signal card uses realistic non-zero data
+□ Success/result preview is visible somewhere in the flow
+□ Buttons and chips have obvious interaction states
+□ No empty placeholder copy or zero values
+□ style.css only contains overrides

@@ -7,9 +7,16 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-ARCHETYPES_DIR = Path(__file__).resolve().parent.parent / "archetypes"
-GOOD_DIR = ARCHETYPES_DIR / "good_examples"
-BAD_DIR = ARCHETYPES_DIR / "bad_examples"
+ROOT = Path(__file__).resolve().parent.parent
+PROMPT_REFS_DIR = ROOT / "prompts" / "archetypes" / "references"
+LEGACY_ARCHETYPES_DIR = ROOT / "archetypes"
+GOOD_DIR = LEGACY_ARCHETYPES_DIR / "good_examples"
+BAD_DIR = LEGACY_ARCHETYPES_DIR / "bad_examples"
+ARCHETYPE_ALIASES = {
+    "game_ff7": "game",
+    "game_ff8": "game",
+    "game_ff9": "game",
+}
 
 # Mapping from archetype name to glob patterns for good/bad examples
 REFERENCE_MAP = {
@@ -73,24 +80,46 @@ class ReferenceLoader:
 
         return unique[:max_count]
 
+    def _canonicalize_archetype(self, archetype: str) -> str:
+        return ARCHETYPE_ALIASES.get(str(archetype).strip().lower(), str(archetype).strip().lower())
+
+    def _load_prompt_reference_dir(self, archetype: str, max_count: int = 4) -> list[tuple[str, Path]]:
+        canonical = self._canonicalize_archetype(archetype)
+        refs_dir = PROMPT_REFS_DIR / canonical
+        if not refs_dir.exists():
+            return []
+        files = [
+            (path.stem, path)
+            for path in sorted(refs_dir.iterdir())
+            if path.is_file() and path.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+        ]
+        if files:
+            logger.info(f"Loaded {len(files[:max_count])} prompt reference images for '{canonical}'")
+        return files[:max_count]
+
     def get_good_examples(self, archetype: str, max_count: int = 4) -> list[tuple[str, Path]]:
         """Get good reference images for an archetype.
 
         Returns list of (label, path) tuples.
         """
-        mapping = REFERENCE_MAP.get(archetype, {})
+        prompt_refs = self._load_prompt_reference_dir(archetype, max_count=max_count)
+        if prompt_refs:
+            return prompt_refs
+
+        canonical = self._canonicalize_archetype(archetype)
+        mapping = REFERENCE_MAP.get(canonical, {})
         patterns = mapping.get("good", [])
 
         if not patterns:
             # Fallback: try finding any images that match the archetype name
-            fallback_patterns = [f"{archetype}*.png", f"{archetype}*.jpg"]
+            fallback_patterns = [f"{canonical}*.png", f"{canonical}*.jpg"]
             results = self._resolve_files(self.good_dir, fallback_patterns, max_count)
             if results:
-                logger.info(f"Found {len(results)} fallback good examples for '{archetype}'")
+                logger.info(f"Found {len(results)} fallback good examples for '{canonical}'")
             return results
 
         results = self._resolve_files(self.good_dir, patterns, max_count)
-        logger.info(f"Loaded {len(results)} good examples for '{archetype}'")
+        logger.info(f"Loaded {len(results)} good examples for '{canonical}'")
         return results
 
     def get_bad_examples(self, archetype: str, max_count: int = 2) -> list[tuple[str, Path]]:
@@ -98,16 +127,17 @@ class ReferenceLoader:
 
         Returns list of (label, path) tuples.
         """
-        mapping = REFERENCE_MAP.get(archetype, {})
+        canonical = self._canonicalize_archetype(archetype)
+        mapping = REFERENCE_MAP.get(canonical, {})
         patterns = mapping.get("bad", [])
 
         if not patterns:
             # Fallback: try finding bad examples that match
-            fallback_patterns = [f"bad_{archetype}*.png"]
+            fallback_patterns = [f"bad_{canonical}*.png"]
             return self._resolve_files(self.bad_dir, fallback_patterns, max_count)
 
         results = self._resolve_files(self.bad_dir, patterns, max_count)
-        logger.info(f"Loaded {len(results)} bad examples for '{archetype}'")
+        logger.info(f"Loaded {len(results)} bad examples for '{canonical}'")
         return results
 
     def list_available(self) -> dict[str, dict[str, int]]:

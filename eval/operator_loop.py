@@ -53,7 +53,16 @@ LOG_PATH = RESULTS_DIR / "codex_improvements.md"
 OVERNIGHT_SUMMARY_PATH = RESULTS_DIR / "overnight_summary.md"
 CHECKPOINT_PATH = RESULTS_DIR / "checkpoint.md"
 
-TRACKED_ARCHETYPES = ["dashboard", "game", "saas_landing", "ecommerce", "portfolio"]
+DEFAULT_TRACKED_ARCHETYPES = [
+    "dashboard",
+    "game",
+    "saas_landing",
+    "ecommerce",
+    "portfolio",
+    "fintech",
+    "editor",
+    "form",
+]
 DIMENSION_PRIORITY = [
     "data_completeness",
     "layout_precision",
@@ -132,6 +141,22 @@ def read_text(path: Path) -> str:
 def write_text(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
+
+
+def resolve_tracked_archetypes(
+    config: dict[str, Any],
+    cli_archetypes: list[str] | None,
+) -> list[str]:
+    configured = cli_archetypes or config.get("archetypes") or DEFAULT_TRACKED_ARCHETYPES
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for archetype in configured:
+        name = str(archetype).strip()
+        if not name or name in seen:
+            continue
+        seen.add(name)
+        ordered.append(name)
+    return ordered or list(DEFAULT_TRACKED_ARCHETYPES)
 
 
 def run_git(args: list[str]) -> str:
@@ -257,10 +282,14 @@ def _normalize_archetype_label(label: str) -> str:
     return mapping.get(raw, raw.replace(" ", "_").replace("-", "_"))
 
 
-def parse_best_scores_from_markdown(path: Path) -> dict[str, float]:
+def parse_best_scores_from_markdown(
+    path: Path,
+    tracked_archetypes: list[str] | None = None,
+) -> dict[str, float]:
     if not path.exists():
         return {}
 
+    allowed = set(tracked_archetypes or [])
     scores: dict[str, float] = {}
     for raw_line in path.read_text(encoding="utf-8").splitlines():
         line = raw_line.strip()
@@ -270,7 +299,7 @@ def parse_best_scores_from_markdown(path: Path) -> dict[str, float]:
         if len(parts) < 2:
             continue
         archetype = _normalize_archetype_label(parts[0])
-        if archetype not in TRACKED_ARCHETYPES:
+        if allowed and archetype not in allowed:
             continue
 
         numeric_values: list[float] = []
@@ -285,9 +314,12 @@ def parse_best_scores_from_markdown(path: Path) -> dict[str, float]:
     return scores
 
 
-def read_summary_score(archetype: str) -> float | None:
+def read_summary_score(
+    archetype: str,
+    tracked_archetypes: list[str] | None = None,
+) -> float | None:
     for path in [OVERNIGHT_SUMMARY_PATH, CHECKPOINT_PATH]:
-        scores = parse_best_scores_from_markdown(path)
+        scores = parse_best_scores_from_markdown(path, tracked_archetypes=tracked_archetypes)
         if archetype in scores:
             return scores[archetype]
     return None
@@ -318,12 +350,15 @@ def read_latest_operator_results_score(archetype: str) -> float | None:
     return latest[1]
 
 
-def read_latest_weighted_total(archetype: str) -> float | None:
+def read_latest_weighted_total(
+    archetype: str,
+    tracked_archetypes: list[str] | None = None,
+) -> float | None:
     operator_log_score = read_latest_operator_log_score(archetype)
     if operator_log_score is not None:
         return operator_log_score
 
-    summary_score = read_summary_score(archetype)
+    summary_score = read_summary_score(archetype, tracked_archetypes=tracked_archetypes)
     if summary_score is not None:
         return summary_score
 
@@ -410,6 +445,7 @@ async def run_sample_builds(
 
 async def choose_weakest_archetype(
     *,
+    tracked_archetypes: list[str],
     refresh_if_missing: bool,
     config: dict[str, Any],
     api: BuilderAPI,
@@ -418,11 +454,14 @@ async def choose_weakest_archetype(
     refs: ReferenceLoader,
     stamp: str,
 ) -> str:
-    current_scores = {name: read_latest_weighted_total(name) for name in TRACKED_ARCHETYPES}
+    current_scores = {
+        name: read_latest_weighted_total(name, tracked_archetypes=tracked_archetypes)
+        for name in tracked_archetypes
+    }
     if refresh_if_missing and any(score is None for score in current_scores.values()):
         log.info("Missing comparable scores, running one score-only sample for tracked archetypes")
         refreshed: dict[str, float] = {}
-        for archetype in TRACKED_ARCHETYPES:
+        for archetype in tracked_archetypes:
             sample = await run_sample_builds(
                 config=config,
                 api=api,
@@ -635,6 +674,7 @@ async def run_cycle(args: argparse.Namespace) -> dict[str, Any]:
     config = load_config(args.config)
     if args.archetypes:
         config["archetypes"] = args.archetypes
+    tracked_archetypes = resolve_tracked_archetypes(config, args.archetypes)
 
     api = BuilderAPI(base_url=config.get("backend_url", "http://localhost:5000"))
     if not api.health_check():
@@ -650,6 +690,7 @@ async def run_cycle(args: argparse.Namespace) -> dict[str, Any]:
     weakest = args.archetype
     if not weakest:
         weakest = await choose_weakest_archetype(
+            tracked_archetypes=tracked_archetypes,
             refresh_if_missing=True,
             config=config,
             api=api,
@@ -765,6 +806,7 @@ async def run_cycle(args: argparse.Namespace) -> dict[str, Any]:
 
     result = {
         "branch": branch,
+        "tracked_archetypes": tracked_archetypes,
         "archetype": weakest,
         "baseline_average": baseline.average_total,
         "b_test_average": b_test.average_total,
@@ -796,7 +838,7 @@ async def run_forever(args: argparse.Namespace) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Operator-style eval loop")
     parser.add_argument("--config", default="eval_config.json")
-    parser.add_argument("--archetypes", nargs="+")
+    parser.add_argument("--archetypes", nargs="+", default=list(DEFAULT_TRACKED_ARCHETYPES))
     parser.add_argument("--archetype", help="Force a specific archetype for this cycle")
     parser.add_argument("--baseline-runs", type=int, default=3)
     parser.add_argument("--expected-branch", help="Fail if current branch does not match")
