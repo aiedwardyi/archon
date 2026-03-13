@@ -12,11 +12,24 @@ PROMPT_REFS_DIR = ROOT / "prompts" / "archetypes" / "references"
 LEGACY_ARCHETYPES_DIR = ROOT / "archetypes"
 GOOD_DIR = LEGACY_ARCHETYPES_DIR / "good_examples"
 BAD_DIR = LEGACY_ARCHETYPES_DIR / "bad_examples"
+CACHE_DIR = ROOT / "eval" / ".reference_cache"
 ARCHETYPE_ALIASES = {
     "game_ff7": "game",
     "game_ff8": "game",
     "game_ff9": "game",
 }
+BENCHMARK_ARCHETYPE_ALIASES = {
+    "fintech": "dashboard",
+}
+
+try:
+    from screenshotter import capture_sync
+except ImportError:
+    from eval.screenshotter import capture_sync
+from utils.reference_build_registry import (
+    get_sorted_reference_build_entries,
+    resolve_reference_build_source_paths,
+)
 
 # Mapping from archetype name to glob patterns for good/bad examples
 REFERENCE_MAP = {
@@ -83,6 +96,68 @@ class ReferenceLoader:
     def _canonicalize_archetype(self, archetype: str) -> str:
         return ARCHETYPE_ALIASES.get(str(archetype).strip().lower(), str(archetype).strip().lower())
 
+    def _benchmark_archetype(self, archetype: str) -> str:
+        canonical = self._canonicalize_archetype(archetype)
+        return BENCHMARK_ARCHETYPE_ALIASES.get(canonical, canonical)
+
+    def _benchmark_cache_path(self, entry: dict[str, object]) -> Path:
+        label = str(entry.get("label", "benchmark")).strip() or "benchmark"
+        slug = "".join(ch if ch.isalnum() or ch in {"-", "_"} else "-" for ch in label).strip("-")
+        return CACHE_DIR / f"{slug}.png"
+
+    def _ensure_benchmark_screenshot(self, entry: dict[str, object]) -> Path | None:
+        source_paths = resolve_reference_build_source_paths(entry)
+        if source_paths is None:
+            return None
+
+        screenshot_path = self._benchmark_cache_path(entry)
+        html_path = source_paths["html_path"]
+        css_path = source_paths["css_path"]
+        base_css_path = source_paths["base_css_path"]
+
+        source_mtimes = [html_path.stat().st_mtime, css_path.stat().st_mtime]
+        if base_css_path.exists():
+            source_mtimes.append(base_css_path.stat().st_mtime)
+        latest_source_mtime = max(source_mtimes)
+
+        if screenshot_path.exists() and screenshot_path.stat().st_mtime >= latest_source_mtime:
+            return screenshot_path
+
+        try:
+            screenshot_path.parent.mkdir(parents=True, exist_ok=True)
+            capture_sync(
+                html_path.resolve().as_uri(),
+                screenshot_path,
+                wait_seconds=0.5,
+                full_page=True,
+            )
+            return screenshot_path
+        except Exception as exc:
+            logger.warning(
+                "Failed to render benchmark screenshot for '%s': %s",
+                entry.get("label", "benchmark"),
+                exc,
+            )
+            return None
+
+    def _load_benchmark_references(self, archetype: str, max_count: int = 4) -> list[tuple[str, Path]]:
+        benchmark_archetype = self._benchmark_archetype(archetype)
+        entries = get_sorted_reference_build_entries(benchmark_archetype)
+        results: list[tuple[str, Path]] = []
+        for entry in entries[:max_count]:
+            screenshot_path = self._ensure_benchmark_screenshot(entry)
+            if screenshot_path is None:
+                continue
+            label = str(entry.get("label", screenshot_path.stem))
+            results.append((label, screenshot_path))
+        if results:
+            logger.info(
+                "Loaded %s benchmark reference screenshots for '%s'",
+                len(results),
+                benchmark_archetype,
+            )
+        return results
+
     def _load_prompt_reference_dir(self, archetype: str, max_count: int = 4) -> list[tuple[str, Path]]:
         canonical = self._canonicalize_archetype(archetype)
         refs_dir = PROMPT_REFS_DIR / canonical
@@ -102,9 +177,19 @@ class ReferenceLoader:
 
         Returns list of (label, path) tuples.
         """
+        benchmark_refs = self._load_benchmark_references(archetype, max_count=max_count)
         prompt_refs = self._load_prompt_reference_dir(archetype, max_count=max_count)
-        if prompt_refs:
-            return prompt_refs
+        merged: list[tuple[str, Path]] = []
+        seen: set[Path] = set()
+        for label, path in benchmark_refs + prompt_refs:
+            if path in seen:
+                continue
+            seen.add(path)
+            merged.append((label, path))
+            if len(merged) >= max_count:
+                break
+        if merged:
+            return merged
 
         canonical = self._canonicalize_archetype(archetype)
         mapping = REFERENCE_MAP.get(canonical, {})

@@ -30,6 +30,54 @@ def get_reference_build_entries(archetype: str | None = None) -> list[dict[str, 
     return [item for item in entries if item.get("archetype") == archetype]
 
 
+def get_sorted_reference_build_entries(archetype: str | None = None) -> list[dict[str, Any]]:
+    entries = get_reference_build_entries(archetype)
+    return sorted(entries, key=lambda item: int(item.get("priority", 0)), reverse=True)
+
+
+def resolve_reference_build_source_paths(entry: dict[str, Any]) -> dict[str, Path] | None:
+    project_id = int(entry["project_id"])
+    version = int(entry.get("version", 1))
+    benchmark_path = entry.get("benchmark_path")
+    published_slug = entry.get("published_slug")
+
+    base = GENERATED_DIR / str(project_id) / f"v{version}"
+    html_path = base / "code" / "src" / "index.html"
+    css_path = base / "code" / "src" / "style.css"
+    base_css_path = base / "code" / "src" / "base.css"
+
+    if benchmark_path:
+        benchmark_base = ROOT / str(benchmark_path)
+        benchmark_html = benchmark_base / "src" / "index.html"
+        benchmark_css = benchmark_base / "src" / "style.css"
+        if benchmark_html.exists() and benchmark_css.exists():
+            html_path = benchmark_html
+            css_path = benchmark_css
+        benchmark_base_css = benchmark_base / "src" / "base.css"
+        if benchmark_base_css.exists():
+            base_css_path = benchmark_base_css
+
+    if (not html_path.exists() or not css_path.exists()) and published_slug:
+        published_base = PUBLISHED_DIR / str(published_slug) / "src"
+        published_html = published_base / "index.html"
+        published_css = published_base / "style.css"
+        if published_html.exists() and published_css.exists():
+            html_path = published_html
+            css_path = published_css
+        published_base_css = published_base / "base.css"
+        if published_base_css.exists():
+            base_css_path = published_base_css
+
+    if not html_path.exists() or not css_path.exists():
+        return None
+
+    return {
+        "html_path": html_path,
+        "css_path": css_path,
+        "base_css_path": base_css_path,
+    }
+
+
 def _get_guidance_lines(entries: list[dict[str, Any]], limit: int) -> list[str]:
     entries.sort(key=lambda item: int(item.get("priority", 0)), reverse=True)
     lines: list[str] = []
@@ -95,44 +143,19 @@ def load_reference_build_content(entry: dict[str, Any]) -> dict[str, Any] | None
     project_id = int(entry["project_id"])
     version = int(entry.get("version", 1))
     archetype = entry.get("archetype", "")
-    benchmark_path = entry.get("benchmark_path")
-    published_slug = entry.get("published_slug")
+    source_paths = resolve_reference_build_source_paths(entry)
+    if source_paths is None:
+        return None
 
     base = GENERATED_DIR / str(project_id) / f"v{version}"
-    html_path = base / "code" / "src" / "index.html"
-    css_path = base / "code" / "src" / "style.css"
+    html_path = source_paths["html_path"]
+    css_path = source_paths["css_path"]
+    base_css_path = source_paths["base_css_path"]
     factsheet_path = base / "last_factsheet.json"
     factsheet: dict[str, Any] = {}
 
-    if benchmark_path:
-        benchmark_base = ROOT / str(benchmark_path)
-        benchmark_html = benchmark_base / "src" / "index.html"
-        benchmark_css = benchmark_base / "src" / "style.css"
-        if benchmark_html.exists() and benchmark_css.exists():
-            html_path = benchmark_html
-            css_path = benchmark_css
-        benchmark_base_css = benchmark_base / "src" / "base.css"
-    else:
-        benchmark_base_css = Path()
-
-    if not html_path.exists() or not css_path.exists():
-        if not published_slug:
-            return None
-        published_base = PUBLISHED_DIR / str(published_slug) / "src"
-        html_path = published_base / "index.html"
-        css_path = published_base / "style.css"
-        if not html_path.exists() or not css_path.exists():
-            return None
-    elif factsheet_path.exists():
+    if factsheet_path.exists():
         factsheet = _read_json(factsheet_path)
-
-    base_css_path = base / "code" / "src" / "base.css"
-    if benchmark_base_css.exists():
-        base_css_path = benchmark_base_css
-    elif not base_css_path.exists() and published_slug:
-        published_base_css = PUBLISHED_DIR / str(published_slug) / "src" / "base.css"
-        if published_base_css.exists():
-            base_css_path = published_base_css
 
     return {
         "project_id": project_id,
@@ -156,11 +179,9 @@ def load_local_reference_build(archetype: str) -> dict[str, Any] | None:
     if not archetype:
         return None
 
-    matches = get_reference_build_entries(archetype)
+    matches = get_sorted_reference_build_entries(archetype)
     if not matches:
         return None
-
-    matches.sort(key=lambda item: int(item.get("priority", 0)), reverse=True)
     build = load_reference_build_content(matches[0])
     if build:
         build["benchmark_guidance"] = get_archetype_benchmark_guidance(archetype)

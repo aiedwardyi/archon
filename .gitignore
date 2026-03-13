@@ -67,7 +67,8 @@ frontend-studio/next-env.d.ts
 
 # Eval loop artifacts (generated during scoring runs)
 eval/results/*
-!eval/results/codex_improvements.md
+!eval/results/operator_improvements.md
+eval/.reference_cache/
 eval/backups/
 eval/FAILURES_LOG.md
 
