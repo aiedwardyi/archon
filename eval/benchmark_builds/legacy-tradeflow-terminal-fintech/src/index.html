@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeFlow Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./base.css">
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body class="dashboard-layout">
+    <div class="noise-overlay"></div>
+
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 17l10 5 10-5M2 12l10 5 10-5M12 2v15"></path></svg>
+            <span>TradeFlow</span>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="sidebar-group">
+                <div class="sidebar-group-label">Main</div>
+                <a href="#dashboard" class="sidebar-item active">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18.7 8.3L12 15 7.3 10.3 3 14"></path><path d="M18.7 8.3h-4.4M18.7 8.3v4.4"></path></svg>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#portfolio" class="sidebar-item">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"></path><path d="M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"></path></svg>
+                    <span>Portfolio</span>
+                </a>
+                <a href="#orders" class="sidebar-item">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+                    <span>Orders</span>
+                </a>
+                <a href="#watchlist" class="sidebar-item">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"></path></svg>
+                    <span>Watchlist</span>
+                </a>
+            </div>
+            <div class="sidebar-group">
+                <div class="sidebar-group-label">Account</div>
+                <a href="#settings" class="sidebar-item">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V15z"></path></svg>
+                    <span>Settings</span>
+                </a>
+                <a href="#help" class="sidebar-item">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
+                    <span>Help</span>
+                </a>
+            </div>
+        </nav>
+        <div class="sidebar-user">
+            <div class="header-avatar">
+                <img src="https://api.dicebear.com/9.x/initials/svg?seed=JD" alt="User Avatar">
+            </div>
+            <div class="user-info">
+                <span class="user-name">Jane Doe</span>
+                <span class="user-email">jane@example.com</span>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="header-bar">
+            <h1 class="page-title">Dashboard Overview</h1>
+            <div class="header-actions">
+                <div class="header-search">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path></svg>
+                    <input type="text" placeholder="Search stocks...">
+                </div>
+                <button class="header-icon-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                </button>
+                <div class="portfolio-value">
+                    <span class="value-label">Portfolio Value</span>
+                    <span class="value-amount jetbrains-mono" data-count="124832">$124,832.00</span>
+                </div>
+                <div class="header-avatar">
+                    <img src="https://api.dicebear.com/9.x/initials/svg?seed=JD" alt="User Avatar">
+                </div>
+            </div>
+        </header>
+
+        <div class="content-area">
+            <section class="kpi-grid">
+                <div class="kpi-card">
+                    <span class="kpi-label">Portfolio Value</span>
+                    <span class="kpi-value outfit jetbrains-mono" data-count="124832">$124,832.00</span>
+                    <span class="kpi-delta kpi-delta--up jetbrains-mono">+5.2%</span>
+                </div>
+                <div class="kpi-card card-elevated">
+                    <span class="kpi-label">Daily Change</span>
+                    <span class="kpi-value outfit jetbrains-mono" data-count="6120">$6,120.00</span>
+                    <span class="kpi-delta kpi-delta--up jetbrains-mono">+4.9%</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">Top Gainer</span>
+                    <span class="kpi-value outfit">TSLA</span>
+                    <span class="kpi-delta kpi-delta--up jetbrains-mono">+7.1%</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">Total Return</span>
+                    <span class="kpi-value outfit jetbrains-mono" data-count="34500">$34,500.00</span>
+                    <span class="kpi-delta kpi-delta--up jetbrains-mono">+38.2%</span>
+                </div>
+            </section>
+
+            <section class="chart-card">
+                <div class="chart-header">
+                    <h2 class="chart-title outfit">Market Overview</h2>
+                    <div class="chart-controls">
+                        <div class="chart-period-btn-group">
+                            <button class="chart-period-btn" data-range="1D">1D</button>
+                            <button class="chart-period-btn" data-range="1W">1W</button>
+                            <button class="chart-period-btn active" data-range="1M">1M</button>
+                            <button class="chart-period-btn" data-range="3M">3M</button>
+                            <button class="chart-period-btn" data-range="1Y">1Y</button>
+                            <button class="chart-period-btn" data-range="5Y">5Y</button>
+                        </div>
+                        <div class="interactive-chips">
+                            <button class="interactive-chip">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+                                Buy
+                            </button>
+                            <button class="interactive-chip">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="M12 19l-7-7 7-7"></path></svg>
+                                Sell
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-svg-container">
+                    <svg viewBox="0 0 1000 300" preserveAspectRatio="none" class="line-chart-stock">
+                        <defs>
+                            <linearGradient id="chartGradientStock" x1="0" x2="0" y1="0" y2="1">
+                                <stop offset="0%" stop-color="rgba(var(--accent-rgb), 0.2)"></stop>
+                                <stop offset="100%" stop-color="rgba(var(--accent-rgb), 0)"></stop>
+                            </linearGradient>
+                        </defs>
+                        <!-- Grid lines -->
+                        <g class="grid x-grid">
+                            <line x1="0" y1="250" x2="1000" y2="250"></line>
+                            <line x1="0" y1="200" x2="1000" y2="200"></line>
+                            <line x1="0" y1="150" x2="1000" y2="150"></line>
+                            <line x1="0" y1="100" x2="1000" y2="100"></line>
+                            <line x1="0" y1="50" x2="1000" y2="50"></line>
+                        </g>
+                        <g class="grid y-grid">
+                            <line x1="0" y1="0" x2="0" y2="300"></line>
+                            <line x1="100" y1="0" x2="100" y2="300"></line>
+                            <line x1="200" y1="0" x2="200" y2="300"></line>
+                            <line x1="300" y1="0" x2="300" y2="300"></line>
+                            <line x1="400" y1="0" x2="400" y2="300"></line>
+                            <line x1="500" y1="0" x2="500" y2="300"></line>
+                            <line x1="600" y1="0" x2="600" y2="300"></line>
+                            <line x1="700" y1="0" x2="700" y2="300"></line>
+                            <line x1="800" y1="0" x2="800" y2="300"></line>
+                            <line x1="900" y1="0" x2="900" y2="300"></line>
+                            <line x1="1000" y1="0" x2="1000" y2="300"></line>
+                        </g>
+                        <!-- Data points: Example for 12 months, scaled to 0-300 height -->
+                        <!-- Max value $200, Min value $100 -->
+                        <!-- (Month-1)*80 for x-position, (300 - (value-100)/100*300) for y-position -->
+                        <path class="chart-area-fill" fill="url(#chartGradientStock)" d="M0 250 C80 170, 160 190, 240 160 C320 130, 400 150, 480 120 C560 90, 640 100, 720 70 C800 50, 880 30, 960 10 C980 5, 1000 0 L1000 250 L0 250 Z"></path>
+                        <path class="chart-line-path" d="M0 180 C80 170, 160 190, 240 160 C320 130, 400 150, 480 120 C560 90, 640 100, 720 70 C800 50, 880 30, 960 10 C980 5, 1000 0"></path>
+                        <!-- X-axis labels (months) -->
+                        <text x="0" y="270" class="axis-label">Jan</text>
+                        <text x="80" y="270" class="axis-label">Feb</text>
+                        <text x="160" y="270" class="axis-label">Mar</text>
+                        <text x="240" y="270" class="axis-label">Apr</text>
+                        <text x="320" y="270" class="axis-label">May</text>
+                        <text x="400" y="270" class="axis-label">Jun</text>
+                        <text x="480" y="270" class="axis-label">Jul</text>
+                        <text x="560" y="270" class="axis-label">Aug</text>
+                        <text x="640" y="270" class="axis-label">Sep</text>
+                        <text x="720" y="270" class="axis-label">Oct</text>
+                        <text x="800" y="270" class="axis-label">Nov</text>
+                        <text x="880" y="270" class="axis-label">Dec</text>
+                        <!-- Y-axis labels (values) -->
+                        <text x="990" y="15" text-anchor="end" class="axis-label jetbrains-mono">$200</text>
+                        <text x="990" y="65" text-anchor="end" class="axis-label jetbrains-mono">$180</text>
+                        <text x="990" y="115" text-anchor="end" class="axis-label jetbrains-mono">$160</text>
+                        <text x="990" y="165" text-anchor="end" class="axis-label jetbrains-mono">$140</text>
+                        <text x="990" y="215" text-anchor="end" class="axis-label jetbrains-mono">$120</text>
+                        <text x="990" y="265" text-anchor="end" class="axis-label jetbrains-mono">$100</text>
+                    </svg>
+                </div>
+            </section>
+
+            <section class="grid-2col">
+                <div class="data-table-wrapper">
+                    <h2 class="chart-title outfit">Portfolio Breakdown</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Asset</th>
+                                <th>Price</th>
+                                <th>Change 24h</th>
+                                <th>Holdings</th>
+                                <th>Value</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr data-asset="AAPL">
+                                <td class="cell-primary">AAPL</td>
+                                <td class="jetbrains-mono price" data-price="175.20">$175.20</td>
+                                <td class="cell-positive jetbrains-mono">+1.25%</td>
+                                <td class="jetbrains-mono">50.00</td>
+                                <td class="jetbrains-mono">$8,760.00</td>
+                                <td class="cell-action"><button class="action-btn">Trade <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1l4 4-4 4"></polyline><path d="M21 5H3"></path></svg></button></td>
+                            </tr>
+                            <tr data-asset="TSLA">
+                                <td class="cell-primary">TSLA</td>
+                                <td class="jetbrains-mono price" data-price="200.50">$200.50</td>
+                                <td class="cell-positive jetbrains-mono">+7.10%</td>
+                                <td class="jetbrains-mono">30.00</td>
+                                <td class="jetbrains-mono">$6,015.00</td>
+                                <td class="cell-action"><button class="action-btn">Trade <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1l4 4-4 4"></polyline><path d="M21 5H3"></path></svg></button></td>
+                            </tr>
+                            <tr data-asset="MSFT">
+                                <td class="cell-primary">MSFT</td>
+                                <td class="jetbrains-mono price" data-price="320.10">$320.10</td>
+                                <td class="cell-negative jetbrains-mono">-0.80%</td>
+                                <td class="jetbrains-mono">25.00</td>
+                                <td class="jetbrains-mono">$8,002.50</td>
+                                <td class="cell-action"><button class="action-btn">Trade <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1l4 4-4 4"></polyline><path d="M21 5H3"></path></svg></button></td>
+                            </tr>
+                            <tr data-asset="GOOG">
+                                <td class="cell-primary">GOOG</td>
+                                <td class="jetbrains-mono price" data-price="150.00">$150.00</td>
+                                <td class="cell-positive jetbrains-mono">+0.45%</td>
+                                <td class="jetbrains-mono">40.00</td>
+                                <td class="jetbrains-mono">$6,000.00</td>
+                                <td class="cell-action"><button class="action-btn">Trade <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1l4 4-4 4"></polyline><path d="M21 5H3"></path></svg></button></td>
+                            </tr>
+                            <tr data-asset="AMZN">
+                                <td class="cell-primary">AMZN</td>
+                                <td class="jetbrains-mono price" data-price="180.75">$180.75</td>
+                                <td class="cell-negative jetbrains-mono">-1.10%</td>
+                                <td class="jetbrains-mono">15.00</td>
+                                <td class="jetbrains-mono">$2,711.25</td>
+                                <td class="cell-action"><button class="action-btn">Trade <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1l4 4-4 4"></polyline><path d="M21 5H3"></path></svg></button></td>
+                            </tr>
+                            <tr data-asset="NVDA">
+                                <td class="cell-primary">NVDA</td>
+                                <td class="jetbrains-mono price" data-price="1050.30">$1,050.30</td>
+                                <td class="cell-positive jetbrains-mono">+2.80%</td>
+                                <td class="jetbrains-mono">5.00</td>
+                                <td class="jetbrains-mono">$5,251.50</td>
+                                <td class="cell-action"><button class="action-btn">Trade <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1l4 4-4 4"></polyline><path d="M21 5H3"></path></svg></button></td>
+                            </tr>
+                            <tr data-asset="NFLX">
+                                <td class="cell-primary">NFLX</td>
+                                <td class="jetbrains-mono price" data-price="650.00">$650.00</td>
+                                <td class="cell-positive jetbrains-mono">+0.90%</td>
+                                <td class="jetbrains-mono">8.00</td>
+                                <td class="jetbrains-mono">$5,200.00</td>
+                                <td class="cell-action"><button class="action-btn">Trade <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1l4 4-4 4"></polyline><path d="M21 5H3"></path></svg></button></td>
+                            </tr>
+                            <tr data-asset="SPG">
+                                <td class="cell-primary">SPG</td>
+                                <td class="jetbrains-mono price" data-price="140.15">$140.15</td>
+                                <td class="cell-negative jetbrains-mono">-0.30%</td>
+                                <td class="jetbrains-mono">20.00</td>
+                                <td class="jetbrains-mono">$2,803.00</td>
+                                <td class="cell-action"><button class="action-btn">Trade <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1l4 4-4 4"></polyline><path d="M21 5H3"></path></svg></button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="activity-feed">
+                    <h2 class="feed-header outfit">Watchlist</h2>
+                    <div class="activity-items">
+                        <div class="activity-item">
+                            <div class="activity-icon activity-icon--info">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"></path></svg>
+                            </div>
+                            <div class="activity-text">
+                                <strong>AAPL</strong> (Apple Inc.)
+                                <span class="jetbrains-mono price" data-price="175.20">$175.20</span>
+                                <span class="cell-positive jetbrains-mono">+1.25%</span>
+                            </div>
+                            <span class="activity-time">2 min ago</span>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon activity-icon--info">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"></path></svg>
+                            </div>
+                            <div class="activity-text">
+                                <strong>GOOG</strong> (Alphabet Inc.)
+                                <span class="jetbrains-mono price" data-price="150.00">$150.00</span>
+                                <span class="cell-positive jetbrains-mono">+0.45%</span>
+                            </div>
+                            <span class="activity-time">15 min ago</span>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon activity-icon--info">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"></path></svg>
+                            </div>
+                            <div class="activity-text">
+                                <strong>TSLA</strong> (Tesla Inc.)
+                                <span class="jetbrains-mono price" data-price="200.50">$200.50</span>
+                                <span class="cell-positive jetbrains-mono">+7.10%</span>
+                            </div>
+                            <span class="activity-time">1 hour ago</span>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon activity-icon--info">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"></path></svg>
+                            </div>
+                            <div class="activity-text">
+                                <strong>AMZN</strong> (Amazon.com Inc.)
+                                <span class="jetbrains-mono price" data-price="180.75">$180.75</span>
+                                <span class="cell-negative jetbrains-mono">-1.10%</span>
+                            </div>
+                            <span class="activity-time">3 hours ago</span>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon activity-icon--info">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"></path></svg>
+                            </div>
+                            <div class="activity-text">
+                                <strong>MSFT</strong> (Microsoft Corp.)
+                                <span class="jetbrains-mono price" data-price="320.10">$320.10</span>
+                                <span class="cell-negative jetbrains-mono">-0.80%</span>
+                            </div>
+                            <span class="activity-time">yesterday</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        // KPI Count-up animation
+        function countUp(el, target, duration = 1200) {
+            const start = performance.now();
+            const startValue = parseFloat(el.textContent.replace(/[^0-9.-]+/g, ""));
+            const isCurrency = el.textContent.includes('$');
+            const hasDecimal = el.textContent.includes('.');
+
+            const update = (now) => {
+                const p = Math.min((now - start) / duration, 1);
+                const currentValue = startValue + (target - startValue) * p;
+                el.textContent = (isCurrency ? '$' : '') + currentValue.toLocaleString(undefined, {
+                    minimumFractionDigits: hasDecimal ? 2 : 0,
+                    maximumFractionDigits: hasDecimal ? 2 : 0
+                });
+                if (p < 1) requestAnimationFrame(update);
+            };
+            requestAnimationFrame(update);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Apply countUp to KPI values
+            document.querySelectorAll('.kpi-value[data-count], .portfolio-value .value-amount[data-count]').forEach(el => {
+                const target = +el.dataset.count;
+                // Reset for animation, keeping currency symbol if present
+                el.textContent = el.textContent.includes('$') ? '$0' : '0'; 
+                countUp(el, target);
+            });
+
+            // Chart time range toggles
+            document.querySelectorAll('.chart-period-btn-group .chart-period-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    document.querySelectorAll('.chart-period-btn-group .chart-period-btn').forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    console.log('Chart range changed to:', button.dataset.range);
+                    // In a real app, this would trigger data fetch and chart re-render
+                });
+            });
+
+            // Table row click for details
+            document.querySelectorAll('.data-table tbody tr').forEach(row => {
+                row.addEventListener('click', (e) => {
+                    if (!e.target.closest('.action-btn')) { // Don't trigger if Trade button is clicked
+                        const assetName = row.dataset.asset;
+                        alert(`Showing details for ${assetName}`);
+                        console.log('Row clicked:', assetName);
+                    }
+                });
+            });
+
+            // Trade button click
+            document.querySelectorAll('.action-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent row click event
+                    const assetName = button.closest('tr').dataset.asset;
+                    alert(`Initiating trade for ${assetName}`);
+                    console.log('Trade button clicked for:', assetName);
+                });
+            });
+
+            // Search functionality for holdings table
+            const searchInput = document.querySelector('.header-search input');
+            const tableRows = document.querySelectorAll('.data-table tbody tr');
+
+            searchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                tableRows.forEach(row => {
+                    const assetName = row.querySelector('.cell-primary').textContent.toLowerCase();
+                    if (assetName.includes(searchTerm)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+
+            // Price flash animation
+            const prices = document.querySelectorAll('.price');
+            setInterval(() => {
+                prices.forEach(priceEl => {
+                    const currentPrice = parseFloat(priceEl.dataset.price);
+                    const changeAmount = (Math.random() * 0.02 - 0.01) * currentPrice; // +/- 1%
+                    let newPrice = currentPrice + changeAmount;
+                    newPrice = parseFloat(newPrice.toFixed(2));
+
+                    const isPositive = newPrice >= currentPrice;
+                    priceEl.classList.remove('positive-flash', 'negative-flash');
+                    void priceEl.offsetWidth; // Trigger reflow to restart animation
+                    priceEl.classList.add(isPositive ? 'positive-flash' : 'negative-flash');
+
+                    // Update dataset price for next iteration
+                    priceEl.dataset.price = newPrice;
+                    priceEl.textContent = (priceEl.textContent.includes('$') ? '$' : '') + newPrice.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+
+                    // Update associated change percentage (simplified for mock)
+                    const changeEl = priceEl.closest('td') ? priceEl.closest('td').nextElementSibling : priceEl.nextElementSibling;
+                    if (changeEl && (changeEl.classList.contains('cell-positive') || changeEl.classList.contains('cell-negative'))) {
+                        const currentChange = parseFloat(changeEl.textContent.replace(/[^0-9.-]+/g, ""));
+                        const newChange = currentChange + (Math.random() * 0.5 - 0.25); // +/- 0.25%
+                        const isChangePositive = newChange >= 0;
+                        changeEl.classList.remove('cell-positive', 'cell-negative');
+                        changeEl.classList.add(isChangePositive ? 'cell-positive' : 'cell-negative');
+                        changeEl.textContent = (isChangePositive ? '+' : '') + newChange.toFixed(2) + '%';
+                    }
+                });
+            }, 3000); // Update every 3 seconds
+        });
+    </script>
+</body>
+</html>

@@ -55,6 +55,8 @@ REQUIRED SECTIONS
    - .availability-card with green dot + "AVAILABLE FOR WORK"
 
    CRITICAL: Hero right stats MUST be DIFFERENT from stats band stats below.
+   - Do NOT place a busy photo, abstract art, or noisy illustration directly behind the hero text.
+   - The hero should rely on typography, spacing, and restrained surface treatment first. Background media in the hero is discouraged unless it is extremely subtle.
 
 3. STATS BAND — .stats-band with .stats-grid (4 .stat-block):
    - Different values from hero right strip, e.g.:
@@ -65,9 +67,9 @@ REQUIRED SECTIONS
    - ZERO-VALUE BAN: never "0"
 
 4. ABOUT — .section-wrapper with .about-grid:
-   - Left: .about-image — use a professional portrait from Unsplash:
-     https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80
-     (or another professional headshot — NEVER use landscapes, castles, or unrelated images)
+  - Left: .about-image — use a professional portrait from Unsplash:
+    https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80
+   (or another professional headshot — NEVER use landscapes, castles, or unrelated images)
    - Right: h2, .about-text paragraphs (2-3 paragraphs about background, passion, approach)
    - Image onerror fallback
 
@@ -79,12 +81,17 @@ REQUIRED SECTIONS
 6. PROJECTS — .section-wrapper with .projects-bento:
    - 4-6 .project-card entries
    - First card: .project-card--span2 (larger, spans 2 columns)
-   - Each: .project-image (use pollinations.ai URLs with descriptive prompts like "modern web app dashboard design screenshot dark theme" or "mobile app interface design mockup dark"), .project-info > .project-tag + .project-title + .project-desc + .project-link ("View Project →")
+   - Each: .project-image should prefer clean UI mockup imagery, restrained abstract product visuals, or fully coded preview cards. Do NOT rely on low-confidence surreal image generation.
    - EVERY project card MUST have a .project-link with text "View Project →" — this shows interactivity
    - .project-overlay appears on hover with extra info (visible at 70% by default in base.css, full on hover)
    - Real project names: "Nebula Dashboard", "Pulse Analytics", "Artisan CMS", "Zenith Mobile", "Quantum Payments", etc.
    - Each project: specific description of what was built, tech stack tags
-   - Image onerror fallback on every img: onerror="this.style.background='linear-gradient(135deg,var(--surface),var(--surface-elevated))';this.style.minHeight='240px'"
+   - If using an <img>, include onerror fallback on every img: onerror="this.style.background='linear-gradient(135deg,var(--surface),var(--surface-elevated))';this.style.minHeight='240px'"
+   - Project imagery must make semantic sense for the project title. Do not pair random visuals with unrelated project descriptions.
+   - NEVER output broken words, clipped labels, or malformed project titles. Text integrity matters as much as the layout.
+   - Prefer clean product-like imagery, interface mockups, or restrained abstract visuals over random cinematic scenes.
+   - If image confidence is low, do not force a generated image. Use a coded thumbnail, gradient panel, interface-style block, or typography-led presentation instead.
+   - At least one featured project card should feel like a real case-study hero with stronger hierarchy, richer metadata, and more deliberate composition than the surrounding cards.
 
 7. CONTACT — .section-wrapper with .contact-grid:
    - Left: .contact-form with .form-group entries (Name, Email, Subject, Message) + .btn-primary "Send Message"
@@ -104,6 +111,12 @@ CONTENT RULES
 - Skills: relevant tech stack with variety
 - Accent amber used sparingly (max 10% of surface): CTAs, eyebrows, skill icons, project tags
 - Headings: Syne 800 with letter-spacing: -0.03em
+- Avoid random or surreal project thumbnails. If imagery quality is uncertain, prefer abstract/product-like visuals that still plausibly match the case study.
+- The portfolio should feel like one person's coherent brand, not a collection of mismatched sections.
+- Keep the hero cleaner than the rest of the page. If the hero feels cluttered, remove elements rather than adding more.
+- Project thumbnails should feel intentionally art-directed. One strong coded preview is better than four unrelated AI images.
+- Avoid turning every lower section into the same centered block. Introduce at least one asymmetric or editorial composition change in the About, Experience, or Contact area so the page does not read like a standard template stack.
+- The Experience section should read like a designed timeline or case-history surface, not just plain text paragraphs on a dark background.
 
 ═══════════════════════════════════════
 ICON QUALITY RULES
@@ -136,3 +149,9 @@ SELF-CHECK BEFORE OUTPUT
 □ No "0" values anywhere
 □ Every <img> has onerror fallback
 □ Icons use concise premium inline SVGs, not emoji or Unicode placeholders
+□ Project imagery matches project meaning
+□ No broken text, malformed words, or clipped titles anywhere
+□ Hero does not use busy background media behind key text
+□ Hero reads cleanly before any project cards are considered
+□ No project card depends on a low-confidence surreal AI image
+□ At least one lower-page section breaks the standard centered template rhythm

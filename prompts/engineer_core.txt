@@ -247,9 +247,10 @@ PRIMARY ACTION: "send / read messages"
 
 PRIMARY ACTION: "create / edit content"
   -> SHELL: EDITOR / CREATOR TOOL
-  -> Full-width toolbar at top (formatting, save, export buttons)
-  -> Large central editing area (textarea or contenteditable)
-  -> Optional: sidebar for pages/chapters/assets list
+  -> Three-panel workspace on desktop: outline/navigation (left) + editing canvas (center) + comments/settings inspector (right)
+  -> Topbar with formatting, save/publish/export actions integrated into the same product shell
+  -> Large central editing area (textarea or contenteditable) remains the focal area
+  -> Side panels should be visible by default on desktop, not hidden behind modals/drawers
   -> Status bar at bottom: word count, last saved, status
   -> KEYWORDS: editor, writer, notes, document, blog, CMS, code editor, builder
 
@@ -263,11 +264,12 @@ PRIMARY ACTION: "discover / explore content"
 
 PRIMARY ACTION: "fill out / submit information"
   -> SHELL: FORM / WIZARD
-  -> Centered card layout, max-width 600px
+  -> Centered or split wizard layout depending on archetype guidance, but never a tiny floating card
   -> Step indicator at top if multi-step (Step 1 of 3)
   -> Clean labeled inputs with validation states
   -> Progress bar for multi-step
   -> Success confirmation screen as final state
+  -> The main form surface should feel substantial and productized
   -> KEYWORDS: form, survey, quiz, wizard, onboarding, checkout, registration, apply, booking, reservation
 
 GLOBAL ZERO-VALUE BAN (applies to ALL archetypes): NEVER render "0", "0%", "0 users", "$0" (except intentionally free tiers), or any zero-value placeholder as a metric, stat, counter, or data point anywhere on the page. ALL numbers displayed to users MUST be realistic, non-zero, positive values. Hardcode realistic sample data: user counts in thousands, percentages above 80%, revenue in realistic ranges, ratings 4.5+. If any visible metric shows a bare "0" value, the entire page scores 0/10 on data_completeness. This is the single most common scoring failure — treat it as a critical defect.

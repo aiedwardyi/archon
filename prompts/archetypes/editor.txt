@@ -17,6 +17,7 @@ A base.css file is injected automatically. It provides:
 - Animations, hover/focus states, responsive breakpoints
 
 DO NOT duplicate these in style.css. Use style.css only for prompt-specific overrides.
+Do not replace the provided three-panel workspace with a single centered document shell.
 
 ═══════════════════════════════════════
 YOUR index.html MUST LINK base.css FIRST
@@ -34,23 +35,42 @@ REQUIRED WORKSPACE STRUCTURE
 - Product/editor name at left.
 - Save state, publish button, and at least 2 utility actions at right.
 - Include one visible "last saved" status and one collaborator/presence cue.
+- Topbar must feel structurally integrated with the workspace below. Avoid a floating disconnected control strip.
+- Topbar should share the same alignment grid as the three columns beneath it.
 
 2. THREE-PANEL LAYOUT
 - Left sidebar for outline, views, or document navigation.
 - Center editor canvas as the main focal area.
 - Right inspector/comments panel for metadata, comments, or publishing settings.
 - The center panel must dominate visually.
+- Column widths and vertical alignment must feel intentional. Avoid mismatched top edges or panels that look pasted beside the canvas.
+- On desktop, the left sidebar and right inspector must both be persistently visible in the screenshot. Do not hide them behind drawers, overlay panels, toggles, or off-canvas interactions as the default state.
+- Do not leave either side panel mostly empty. The user should immediately see useful populated outline rows on the left and useful comments/settings cards on the right.
+- Reuse `.workspace-grid`, `.sidebar`, `.editor-main`, and `.inspector` as the default desktop structure.
+- Do not turn outline/comments into modals, overlays, popovers, or hidden panels for the primary screenshot.
+- Do not constrain `.editor-main` to a single narrow centered column by removing the visible side panels.
 
 3. TOOLBAR
 - Formatting or content controls with active states.
 - At least 6 controls such as heading, bold, highlight, slash command, comment, export.
 - One active control must be visibly selected.
+- Toolbar controls should feel grouped and premium, not like default pill buttons repeated in a row.
+- Do not center a generic floating toolbar as the main identity move. The topbar should feel productized and integrated, with stronger brand/title treatment and more distinctive action group styling.
+- Keep the topbar concise. Fewer, better-grouped actions beat a long row of similar circular buttons.
 
 4. DOCUMENT CANVAS
 - Large editorial-style title, subtitle/meta row, and multiple content blocks.
 - Use real-looking structured content, not lorem ipsum.
 - Include mixed block types: paragraph, checklist, quote, metric card, inline callout, or embed preview.
 - Show a clear editing affordance such as a selected block, insertion marker, floating action, or comment anchor.
+- No broken copy, clipped metadata, malformed inline HTML, or accidental raw markup. Text integrity is mandatory.
+- Use one strong accent color system with restrained highlights for comments, active tools, and publish status.
+- Document title must feel dramatic and editorial. Do not undersize it.
+- Include at least one clearly visible inline editor affordance near content: comment marker, slash trigger, selected block edge, inline chip, or floating insertion control.
+- The document should not read like a static article screenshot. Make at least two active editing states obvious at a glance: selected text/tooling, comment target, insertion handle, slash prompt, or publish/save feedback.
+- Do not solve this archetype with a mostly white or beige document page plus a few colored buttons. The chrome and canvas need deliberate contrast so the workspace feels like a premium product, not a print preview.
+- Avoid fake decorative collaborator cursors, random colored bars, or novelty markers that do not improve the editing workflow. Prefer real product cues like active comments, selection highlights, status chips, slash-menu hints, or review markers.
+- Inline collaboration markers should be subtle and product-like. Do not place loud standalone name tags such as "Alice" or "Bob" floating inside the document body.
 
 5. SUPPORTING PANELS
 - Left outline with 4+ sections and one active row.
@@ -67,6 +87,9 @@ INTERACTION & POLISH RULES
 - Use layered panels, subtle shadows, and contrast between chrome and canvas. Leverage the provided CSS variables (--bg, --panel, --panel-alt, --border) and layout classes to establish clear visual hierarchy and depth. Specifically, use `--panel-alt` for elements that appear 'above' `--panel` (e.g., modals, active cards), and `--border` for subtle separators or outlines. Ensure consistent padding, margins, and alignment throughout the UI for a polished feel.
 - Apply the provided font families consistently: Manrope for general UI text, Fraunces for prominent titles (e.g., document title), and JetBrains Mono for metadata or code-like elements. Ensure Fraunces titles are significantly larger and potentially bolder than surrounding text, and JetBrains Mono is used at a smaller size with potentially muted color for technical details. These distinct font choices must actively contribute to visual hierarchy and content differentiation, making editorial titles feel grand and technical text precise.
 - Avoid generic dashboard KPI rows unless they support the editing workflow.
+- The editor should feel like a real collaborative writing/product brief tool, not a dashboard disguised as a document page.
+- Favor warm editorial neutrals or a strong productized dark workspace. Avoid bland mid-tone UI that feels like default enterprise software.
+- Default to a strong productized dark workspace or a high-contrast editorial shell. Avoid washed-out beige app chrome unless the prompt explicitly calls for it.
 
 ═══════════════════════════════════════
 CONTENT RULES
@@ -76,6 +99,15 @@ CONTENT RULES
 - Document content must match the prompt domain and look intentionally authored.
 - Sidebar labels, comment snippets, and inspector controls should be specific, not generic.
 - Prefer a premium editorial/product feel over SaaS-marketing sections.
+- Comments, status chips, toolbar states, and publish settings must agree with one another. Avoid contradictory UI states.
+- If using editable content blocks, they must still appear polished and production-like in the static screenshot.
+- The right inspector must feel useful and information-rich, not like two generic cards with labels.
+- The workspace should feel more like Notion/Linear-quality product chrome than a beige document export. Use clearer panel contrast, stronger toolbar grouping, and visibly active collaboration states.
+- Avoid generic primary blue on cream as the entire visual identity. Use a more intentional, premium palette with stronger panel separation and at least one richer accent treatment for active collaboration/publish states.
+- The topbar and side panels should contribute to the visual identity, not just frame the document. If the UI looks like a document on a beige page, redesign the shell.
+- Do not implement the main outline/comments experience as hidden overlay panels on desktop. Persistent visible structure is required for the benchmark screenshot.
+- Use one disciplined accent family only. Do not scatter multiple unrelated saturated colors across comments, cursors, bars, chips, and buttons.
+- Avoid writing style.css that redefines the app into a new single-column layout. Keep overrides focused on polish, not replacing the base layout contract.
 
 ═══════════════════════════════════════
 SELF-CHECK BEFORE OUTPUT
@@ -90,5 +122,14 @@ SELF-CHECK BEFORE OUTPUT
 □ Right panel has 2+ populated cards
 □ At least one editor-specific interaction cue is visible
 □ No empty placeholder blocks or zero-valued metadata
+□ No malformed markup, clipped text, or broken content blocks
+□ Topbar and workspace columns feel visually integrated
+□ Title feels editorial and large enough to anchor the page
+□ At least one inline editor affordance is clearly visible near the content
+□ At least two active editing/collaboration states are visible at first glance
+□ The workspace chrome has clear contrast and does not look like a beige print-preview shell
+□ Left and right side panels are visibly open and populated on desktop
+□ No decorative fake-cursor clutter or multi-color accent spam
+□ No loud inline name tags floating in the body content
+□ style.css does not replace the three-panel workspace with a single-column app shell
 □ style.css only contains overrides
-```

@@ -36,6 +36,8 @@ STRUCTURAL REQUIREMENTS (NON-NEGOTIABLE)
 ═══════════════════════════════════════
 
 1. DARK THEME — NON-NEGOTIABLE. Background #0d1117, sidebar #161b22, cards #1c2128.
+- This archetype is a broad analytics / operations dashboard, not a live trading terminal.
+- Avoid crypto exchange branding, ticker rows, trade buttons on every row, candlestick language, or market-terminal motifs unless the user explicitly asked for a finance product.
 
 2. SIDEBAR — 220px fixed left. NEVER collapsible. Contains:
    - .sidebar-logo (icon + app name, 60px height)
@@ -46,6 +48,7 @@ STRUCTURAL REQUIREMENTS (NON-NEGOTIABLE)
 3. HEADER BAR — .header-bar (60px, sticky top). Contains:
    - .page-title (e.g. "Portfolio Overview")
    - .header-actions: .header-search (search icon + placeholder text), .header-icon-btn (bell icon for notifications), .header-avatar
+- The page title and labels should read like analytics, platform health, customer success, operations, or portfolio management, not like a brokerage trading screen.
 
 4. MAIN CONTENT — .main-content > .content-area
 
@@ -55,7 +58,7 @@ REQUIRED SECTIONS (inside .content-area)
 
 1. KPI CARDS — .kpi-grid with exactly 4 .kpi-card:
    - Each: .kpi-label, .kpi-value (large number), .kpi-delta (up/down with arrow + percentage)
-   - Values MUST be realistic, positive, and varied (e.g., currency, percentage, count, duration). Ensure they represent meaningful, actionable metrics for a dashboard.
+   - Values MUST be realistic, positive, and varied (e.g., ARR, active accounts, completion rate, avg. response time, total managed value, projects shipped). Ensure they represent meaningful, actionable metrics for a broad dashboard rather than only market prices.
    - ZERO-VALUE BAN: never "0", "$0", "0%" – all values must be non-zero and convey active, dynamic data.
    - Use .kpi-delta--up for positive, .kpi-delta--down for negative
    - One .kpi-card MUST be visually distinct with an elevated treatment (e.g., using .card-elevated from base.css, or custom layered shadows) to highlight a primary metric.
@@ -80,7 +83,7 @@ REQUIRED SECTIONS (inside .content-area)
    - tbody: 8+ rows with realistic data
    - .cell-primary for asset names
    - .cell-positive / .cell-negative for price changes (include + or - prefix)
-   - Action column: Each 'Trade' cell MUST contain a keyboard-focusable interactive element (`<button>` or `<a>`) with the text "Trade", ideally accompanied by a small, relevant icon (e.g., arrow, exchange icon). Ensure visible hover and active states for these interactive elements.
+   - Action column: use context-appropriate actions like "Open", "Review", "Assign", "View", or "Inspect". Do not default to "Trade" unless the user's prompt is explicitly financial trading.
    - font-variant-numeric: tabular-nums on all numbers
    - NEVER use double currency symbols ($$)
 
@@ -90,6 +93,7 @@ REQUIRED SECTIONS (inside .content-area)
    - Mix of .activity-icon--buy, --sell, --info
 
 Use .grid-2col to arrange chart + activity feed side by side, or table + activity feed.
+- Prefer one non-market secondary module such as alerts, team activity, customer health, operational incidents, or project delivery status to keep the dashboard distinct from fintech.
 
 ═══════════════════════════════════════
 DATA & CONTENT RULES
@@ -101,7 +105,7 @@ DATA & CONTENT RULES
 - Table rows: minimum 8 rows with varied data
 - Activity timestamps: realistic, varied ("just now", "5 min ago", "2 hours ago")
 - Domain context: adapt accent color in style.css if needed (green for crypto/finance, blue for SaaS analytics)
-- Optional: a compact ticker/price bar at the top of main content is OK if it fits the domain (crypto, stocks)
+- Do not add a ticker strip, watchlist, or trading rail unless the user's prompt explicitly asks for a market/trading product.
 - Table rows MUST have hover state (background lighten on hover — already in base.css)
 - KPI cards hover state: subtle lift + accent border glow (already in base.css)
 - Chart period buttons: one must have active/selected state
@@ -122,4 +126,5 @@ SELF-CHECK BEFORE OUTPUT
 □ Activity feed with 5+ timestamped entries
 □ No "0" values, no "$$", no empty sections
 □ Font is Inter throughout, numbers use tabular-nums
+□ The page reads like a broad dashboard, not a trading terminal
 □ style.css is ONLY overrides (≤80 lines)

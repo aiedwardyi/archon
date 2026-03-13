@@ -1,0 +1,309 @@
+/* Custom styles for TradeFlow Dashboard */
+
+:root {
+    /* Custom accent color for stock green/red if needed, or use base.css defaults */
+    --accent-rgb: 16, 185, 129; /* Using base.css --accent */
+    --accent-danger-rgb: 239, 68, 68; /* Using base.css --danger */
+}
+
+
+.noise-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.045;
+    background-image: url('data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\' opacity=\'0.1\'><filter id=\'n\'><feTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\'' numOctaves=\'4\' stitchTiles=\'stitch\'/><feColorMatrix type=\'saturate\' values=\'0\'/></filter><rect width=\'200\' height=\'200\' filter=\'url(%23n)\'/></svg>');
+    background-repeat: repeat;
+    mix-blend-mode: overlay;
+}
+
+
+/* Typography overrides for specific elements as per reference */
+.outfit {
+    font-family: 'Outfit', sans-serif;
+}
+
+
+.jetbrains-mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+
+/* Header Bar specific adjustments */
+.header-bar .portfolio-value {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    line-height: 1.2;
+    margin-right: 16px; /* Spacing before avatar */
+}
+
+
+.header-bar .portfolio-value .value-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+
+.header-bar .portfolio-value .value-amount {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text);
+}
+
+
+/* KPI Card specific elevation */
+.kpi-card.card-elevated {
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4), 0 24px 60px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255,255,255,0.08);
+    border-color: rgba(var(--accent-rgb), 0.6);
+    transform: translateY(-3px);
+}
+
+
+/* Chart specific styles */
+.chart-controls {
+    display: flex;
+    gap: var(--space-md);
+    align-items: center;
+}
+
+
+.chart-period-btn-group {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+
+.chart-card .chart-period-btn {
+    font-family: 'Inter', sans-serif;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+}
+
+
+.chart-card .chart-period-btn:hover {
+    background: rgba(255,255,255,0.08);
+    color: var(--text);
+    transform: translateY(-1px);
+}
+
+
+.chart-card .chart-period-btn.active {
+    background: var(--accent);
+    color: var(--bg);
+    box-shadow: 0 2px 6px rgba(var(--accent-rgb), 0.4);
+    font-weight: 600;
+    border-color: var(--accent);
+}
+
+
+.interactive-chips {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+
+.interactive-chip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: var(--card-elevated);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+
+.interactive-chip:hover {
+    background: var(--card-bg);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-1px);
+}
+
+
+.interactive-chip svg {
+    color: var(--text-muted);
+    transition: color 0.2s ease;
+}
+
+
+.interactive-chip:hover svg {
+    color: var(--accent);
+}
+
+
+.chart-svg-container {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 31.25%; /* 16:5 aspect ratio (5/16 * 100) */
+    overflow: hidden;
+}
+
+
+.line-chart-stock {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+
+.line-chart-stock .grid line {
+    stroke: rgba(var(--accent-rgb), 0.1);
+    stroke-width: 0.5px;
+}
+
+
+.chart-area-fill {
+    opacity: 0.8;
+}
+
+
+.chart-line-path {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation: draw-chart 1.5s ease forwards;
+}
+
+
+.axis-label {
+    font-size: 11px;
+    fill: var(--text-muted);
+}
+
+
+@keyframes draw-chart {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+
+/* Table action buttons */
+.data-table .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgba(var(--accent-rgb), 0.1);
+    border: 1px solid rgba(var(--accent-rgb), 0.3);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+
+.data-table .action-btn:hover {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.4);
+}
+
+
+.data-table .action-btn svg {
+    color: var(--accent);
+    transition: color 0.2s ease;
+}
+
+
+.data-table .action-btn:hover svg {
+    color: var(--bg);
+}
+
+
+/* Price flash animations */
+@keyframes positive-flash {
+    0% { background-color: rgba(var(--accent-rgb), 0.2); }
+    100% { background-color: transparent; }
+}
+
+
+@keyframes negative-flash {
+    0% { background-color: rgba(var(--accent-danger-rgb), 0.2); }
+    100% { background-color: transparent; }
+}
+
+
+.price.positive-flash {
+    animation: positive-flash 0.8s ease-out forwards;
+}
+
+
+.price.negative-flash {
+    animation: negative-flash 0.8s ease-out forwards;
+}
+
+
+/* Activity feed / Watchlist specific adjustments */
+.activity-feed .activity-text .price, .activity-feed .activity-text .cell-positive, .activity-feed .activity-text .cell-negative {
+    margin-left: 8px;
+}
+
+
+@media (max-width: 1024px) {
+    .chart-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-md);
+    }
+    .chart-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+
+
+@media (max-width: 768px) {
+    .header-bar .header-actions {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+    .header-bar .portfolio-value {
+        order: -1;
+        width: 100%;
+        align-items: flex-start;
+        margin-bottom: var(--space-sm);
+    }
+    .header-bar .header-search {
+        flex-grow: 1;
+    }
+    .chart-controls {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .chart-period-btn-group {
+        flex-wrap: wrap;
+    }
+}

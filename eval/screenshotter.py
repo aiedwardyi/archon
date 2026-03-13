@@ -2,6 +2,7 @@
 Playwright Python — navigate to preview URL, take full-page and viewport screenshots.
 """
 
+import argparse
 import asyncio
 import logging
 from pathlib import Path
@@ -131,3 +132,32 @@ def capture_sync(url: str, output_path: Path, **kwargs) -> Path:
         viewport_height=kwargs.pop("viewport_height", 900),
     )
     return asyncio.run(s.capture(url, output_path, **kwargs))
+
+
+def _build_arg_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Capture a screenshot for a local benchmark or preview URL.")
+    parser.add_argument("url")
+    parser.add_argument("output_path")
+    parser.add_argument("--wait-seconds", type=float, default=0.5)
+    parser.add_argument("--viewport-width", type=int, default=1440)
+    parser.add_argument("--viewport-height", type=int, default=900)
+    parser.add_argument("--viewport-only", action="store_true")
+    return parser
+
+
+def main() -> int:
+    parser = _build_arg_parser()
+    args = parser.parse_args()
+    capture_sync(
+        args.url,
+        Path(args.output_path),
+        wait_seconds=args.wait_seconds,
+        viewport_width=args.viewport_width,
+        viewport_height=args.viewport_height,
+        full_page=not args.viewport_only,
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

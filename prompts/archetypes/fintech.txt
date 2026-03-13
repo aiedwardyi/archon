@@ -37,21 +37,30 @@ STRUCTURAL REQUIREMENTS
 - Background must feel premium and financial, not gaming neon.
 - Use emerald for gains, red for losses, restrained cyan or blue for secondary actions only.
 - Numbers MUST use JetBrains Mono explicitly, with precise alignment and consistent spacing to enhance readability and a professional, data-driven feel.
+- Apply a dedicated numeric class or explicit selector to every price, KPI value, delta, chart axis label, and table number. Do not rely on passive inheritance for fintech numerics.
 - Typography must be crisp and legible. Use Inter for all UI text, varying weights (400, 500, 600) to establish clear hierarchy without excessive font size changes. Ensure generous line-height for readability and a professional, data-driven feel.
 - Implement a consistent, layered depth system. Use `box-shadow` for panels and cards to create a sense of elevation, `border-radius` for soft corners, and subtle linear gradients on backgrounds or interactive elements to add dimension. Avoid flat designs; every major element should have a perceived Z-index.
+- This archetype should feel more like a market terminal, brokerage, or trading workspace than a generic admin dashboard. Lean into market data density, execution cues, and price-action context.
 
 2. TOPBAR
 - Brand at left, market status + 2-3 action buttons at right.
 - Include a "Live market" chip and at least one timeframe/filter control.
 
+2B. NAVIGATION SHELL
+- Include a visible left rail or compact sidebar on desktop with 4-6 finance-specific destinations such as Overview, Markets, Watchlist, Orders, Portfolio, Alerts.
+- The left rail should feel like part of a trading workspace, not a generic admin sidebar. Keep it compact, dark, and information-dense.
+- Fintech should still feel distinct from dashboard by making the center pane chart- and market-first, but it must retain a clear persistent workspace navigation shell.
+
 3. TICKER ROW
 - 4-6 ticker cards with symbol, price, delta, and mini sparkline.
 - Values must be realistic, varied, and non-zero.
 - Deltas must mix gains and losses.
+- Ticker row should be obviously market-focused at first glance. Symbols, deltas, and sparklines should visually separate this archetype from a generic KPI dashboard.
 
 4. KPI GRID
 - Exactly 4 KPI cards: portfolio value, day P/L, win rate, open positions.
 - Large tabular numbers, delta badges, and one supporting line per card.
+- Prefer execution- and market-specific labels such as buying power, day P/L, open positions, win rate, net exposure, filled orders.
 
 5. HERO CHART PANEL
 - One large chart-first focal panel above the fold.
@@ -63,6 +72,7 @@ STRUCTURAL REQUIREMENTS
 - Asset table with 6+ rows and columns for asset, price, change, holdings, value, signal.
 - Watchlist or order-book style side panel.
 - News/activity feed with 4+ timestamped items and source tags.
+- Include at least one unmistakably fintech-specific micro-surface below the fold: order book ladder, recent trades tape, analyst sentiment strip, or watchlist with sparklines.
 
 ═══════════════════════════════════════
 CONTENT RULES
@@ -71,9 +81,13 @@ CONTENT RULES
 - ZERO-VALUE BAN: never show 0, 0%, $0, empty charts, or blank rows.
 - Every number must look market-realistic: $12,482.14, +3.42%, 18.7 BTC, etc.
 - Use mixed positive and negative deltas with clear semantic color.
+- Keep emerald/green and red semantic accents restrained and premium. Avoid radioactive greens, glowing lime pills, or oversaturated CTA chips.
 - At least one panel should feel elevated and premium with layered shadow, inset highlight, and a subtle glow edge.
 - Include at least one explicit click target per major surface: range pills, trade button, watch action, filter chip.
 - Avoid generic dashboard filler like lorem ipsum or vague metrics.
+- Do not let this archetype collapse into a generic analytics dashboard with only finance labels swapped in. The composition should clearly communicate trading, investing, or market monitoring.
+- If you animate or refresh numbers with JavaScript, ONLY target elements that have valid numeric `data-count` or `data-price` attributes. Never include label-only KPI cards, win-rate text, or non-price values in a generic price-update loop.
+- Never reset a numeric element to `$0` or `0` before deriving its formatting rules unless the animation code already captured the original formatting. Guard every numeric update with `Number.isFinite(...)` and leave the existing text untouched if parsing fails.
 
 ═══════════════════════════════════════
 SELF-CHECK BEFORE OUTPUT
@@ -88,4 +102,6 @@ SELF-CHECK BEFORE OUTPUT
 □ Watchlist/order panel is present
 □ News/activity feed has 4+ timestamped items
 □ No empty chart, blank panel, or generic placeholder copy
+□ The page feels like a trading or market-monitoring product, not a general dashboard
 □ style.css only contains overrides, not a duplicate system
+□ No KPI, ticker, or table value can ever render as NaN, undefined, or blank during animation/update logic
