@@ -1,0 +1,93 @@
+.section-hero {
+    background-image: linear-gradient(rgba(12, 12, 13, 0.8), rgba(12, 12, 13, 0.8)), url('/api/assets/147/1/hero_background.png');
+    background-size: cover;
+    background-position: center;
+    padding-top: calc(var(--space-xl) * 2);
+    padding-bottom: var(--space-xl);
+    position: relative;
+    overflow: hidden;
+}
+
+
+.section-skills {
+    background-image: linear-gradient(rgba(12, 12, 13, 0.8), rgba(12, 12, 13, 0.8)), url('/api/assets/147/1/skills_illustration.png');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}
+
+
+.hero-eyebrow,
+.section-eyebrow {
+    color: var(--accent);
+}
+
+
+.hero-title {
+    font-family: 'Syne', monospace;
+    letter-spacing: -0.04em;
+}
+
+
+.skill-icon,
+.contact-icon {
+    font-size: 1.8rem;
+    background: rgba(var(--accent-rgb), 0.15);
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    color: var(--accent);
+}
+
+
+.project-tag {
+    background-color: rgba(var(--accent-rgb), 0.2);
+    color: var(--accent);
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: 500;
+}
+
+
+.project-tech-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    font-size: 0.85em;
+}
+
+
+.tech-badge {
+    background-color: var(--surface-elevated);
+    color: var(--text-secondary);
+    padding: 0.2em 0.6em;
+    border-radius: 3px;
+    font-family: 'Inter', monospace;
+}
+
+
+.timeline-dot {
+    background-color: var(--accent);
+}
+
+
+.timeline-title {
+    font-family: 'Syne', monospace;
+}
+
+
+.social-link:hover {
+    color: var(--accent);
+}
+
+
+.form-input:focus,
+.form-textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.3);
+}

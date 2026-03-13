@@ -21,12 +21,14 @@
       "discovery_ingest": true
     },
     {
-      "project_id": 169,
+      "project_id": 147,
       "version": 1,
       "archetype": "portfolio",
       "benchmark_path": "eval/benchmark_builds/eval-best-portfolio",
       "priority": 90,
       "label": "eval-best-portfolio",
+      "prompt_summary": "Build a creative developer portfolio with project showcase, skills section, and contact form",
+      "notes": "Top-tier portfolio benchmark. Key traits: strong hero hierarchy, polished dark developer-brand presentation, clean project-card rhythm, and a dependable premium feel without the broken assets seen in weaker portfolio references.",
       "eval_score": 83.5,
       "discovery_ingest": true
     },
@@ -154,6 +156,24 @@
       "discovery_ingest": false
     },
     {
+      "project_id": 220,
+      "version": 1,
+      "archetype": "form",
+      "benchmark_path": "eval/benchmark_builds/legacy-ai-automation-onboarding-wizard",
+      "priority": 95,
+      "label": "legacy-ai-automation-onboarding-wizard",
+      "prompt_summary": "Build a premium multi-step onboarding wizard for an AI automation platform with plan selection, workspace details, integrations, validation, and success state",
+      "prompt_hints": [
+        "premium multi-step onboarding wizard",
+        "ai automation platform",
+        "plan selection",
+        "integrations",
+        "success state"
+      ],
+      "notes": "Strong modern form-flow reference. Key traits: richer onboarding coverage, clearer plan and integration steps, polished success/failure state handling, and a more productized setup feel than the simpler utility wizards.",
+      "discovery_ingest": false
+    },
+    {
       "project_id": 15,
       "version": 1,
       "published_slug": "ff7-v1-yxni",
@@ -265,6 +285,23 @@
         "code portfolio"
       ],
       "notes": "Decent portfolio reference. Key traits: nice green-accent code aesthetic, strong structure, and appealing font direction, but broken text and card imagery keep it as a secondary benchmark only.",
+      "discovery_ingest": false
+    },
+    {
+      "project_id": 233,
+      "version": 1,
+      "archetype": "editor",
+      "benchmark_path": "eval/benchmark_builds/legacy-briefai-product-brief-editor",
+      "priority": 100,
+      "label": "legacy-briefai-product-brief-editor",
+      "prompt_summary": "Build a collaborative product brief editor with formatting toolbar, document outline, inline comments, and publish controls",
+      "prompt_hints": [
+        "collaborative product brief editor",
+        "document editor",
+        "inline comments",
+        "publish controls"
+      ],
+      "notes": "Top-tier literal editor benchmark. Key traits: strong three-panel editor workspace, premium editorial typography, clear collaboration and comment states, and a polished publish inspector that feels like a real content tool rather than a generic dashboard.",
       "discovery_ingest": false
     },
     {
@@ -619,12 +656,12 @@
       "project_id": 144,
       "version": 1,
       "published_slug": "gamma-beta-v1-n4np",
-      "archetype": "editor",
+      "archetype": "utility",
       "benchmark_path": "eval/benchmark_builds/legacy-precision-calculator-ui",
       "priority": 98,
       "label": "legacy-precision-calculator-ui",
       "prompt_summary": "Build a premium precision calculator app with cinematic launch screen, responsive keypad interactions, HUD stats, animated history panel, and polished error/toast feedback.",
-      "notes": "Global interaction benchmark. Key traits: cinematic entry transition, tactile button press feedback, polished HUD/status treatment, animated side-panel reveal, premium error/toast states, and a strong sense of motion without feeling gimmicky.",
+      "notes": "Global interaction benchmark. Key traits: cinematic entry transition, tactile button press feedback, polished HUD/status treatment, animated side-panel reveal, premium error/toast states, and a strong sense of motion without feeling gimmicky. Useful across archetypes, but not a literal editor-layout reference.",
       "global_guidance": true,
       "discovery_ingest": false
     },

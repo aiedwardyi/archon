@@ -1,0 +1,203 @@
+/* Custom styles for AI Automation Platform Onboarding Wizard */
+
+/* Custom color variables (if base.css doesn't provide enough variation for the theme) */
+/* Assuming base.css --accent is bright teal/lime, and --bg is deep blue/purple */
+:root {
+  --custom-accent-bg-checked: rgba(var(--accent-rgb), 0.08); /* Light accent background for checked states */
+  --custom-accent-shadow: rgba(var(--accent-rgb), 0.4); /* Accent shadow */
+  --custom-error-bg: rgba(255, 0, 60, 0.1);
+}
+
+
+/* Logo styling */
+.wizard-side .logo {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 32px; padding: 0 24px;
+}
+
+.wizard-side .logo svg { color: var(--accent); }
+
+.wizard-side .logo-text {
+  font-family: 'Sora', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--text);
+}
+
+
+/* Plan Selection Grid & Cards */
+.plan-selection-grid {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;
+}
+
+.plan-card {
+  padding: 20px; border: 1px solid var(--border); background: var(--surface-alt);
+  transition: all 0.2s ease-in-out; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+.plan-card:hover {
+  border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 8px 25px var(--custom-accent-shadow);
+}
+
+.plan-card input[type="radio"]:checked + .card-content {
+  border-color: var(--accent); background: var(--custom-accent-bg-checked);
+  box-shadow: 0 0 0 2px var(--accent); transform: translateY(-1px);
+}
+
+.plan-card input[type="radio"]:checked + .card-content h3 { color: var(--accent); }
+
+.plan-card .card-content { border: 2px solid transparent; padding: 10px; }
+ /* Override base.css padding */
+.plan-card h3 { font-family: 'Sora', sans-serif; font-size: 1.2rem; margin-bottom: 8px; color: var(--text); }
+
+.plan-card .plan-price {
+  font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 12px;
+}
+
+.plan-card .plan-price span { font-size: 0.9rem; font-weight: 500; color: var(--text-muted); }
+
+.plan-card ul { list-style: none; padding: 0; margin: 0; }
+
+.plan-card li { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 6px; }
+
+.plan-card li svg { color: var(--accent); width: 16px; height: 16px; flex-shrink: 0; }
+
+
+/* Integration Grid & Cards */
+.integration-grid { grid-template-columns: 1fr; gap: 20px; }
+
+.integration-card { padding: 16px; border: 1px solid var(--border); background: var(--surface-alt); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4); }
+
+.toggle-chip {
+  display: flex; align-items: center; gap: 12px; padding: 8px 12px; border: 1px solid var(--border);
+  background: var(--surface); transition: all 0.2s ease;
+}
+
+.toggle-chip:hover { background: var(--surface-alt); border-color: var(--accent); }
+
+.toggle-chip .toggle-icon {
+  width: 28px; height: 28px; border-radius: 6px; background: var(--bg); color: var(--text-muted);
+  transition: all 0.2s ease; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+}
+
+.toggle-chip input[type="checkbox"]:checked ~ .toggle-icon {
+  background: var(--accent); color: var(--bg); box-shadow: 0 0 0 3px var(--custom-accent-shadow);
+}
+
+.toggle-chip .toggle-text { font-weight: 600; color: var(--text); flex-grow: 1; }
+
+.integration-desc { font-size: 0.85rem; color: var(--text-muted); margin-left: 52px; }
+
+.api-key-field { margin-top: 15px; padding-left: 52px; }
+
+
+/* Review Summary Grid */
+.summary-details-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1px; background: var(--border); border-radius: 8px; overflow: hidden;
+}
+
+.summary-detail-item {
+  background: var(--surface-alt); padding: 12px 16px; flex-direction: column; gap: 4px; display: flex;
+}
+
+.summary-detail-item.full-width { grid-column: 1 / -1; }
+
+.summary-detail-item .summary-label {
+  font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted);
+}
+
+.summary-detail-item .summary-value {
+  font-family: 'Inter', sans-serif; font-size: 0.9rem; color: var(--text); font-weight: 500;
+}
+
+
+/* State Cards */
+.state-card .state-content {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px 24px; text-align: center; gap: 16px;
+}
+
+.state-card h2 { font-family: 'Sora', sans-serif; font-size: 1.75rem; color: var(--text); margin-bottom: 0; }
+
+.state-card p { color: var(--text-muted); max-width: 400px; }
+
+
+/* Spinner, Progress Bar, Log Container */
+.spinner {
+  width: 48px; height: 48px; border: 4px solid rgba(var(--accent-rgb), 0.2);
+  border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite;
+  box-shadow: 0 0 15px var(--custom-accent-shadow);
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+
+.progress-meter { background: linear-gradient(90deg, var(--accent), var(--accent-soft)); }
+
+
+.log-container {
+  max-width: 450px; max-height: 200px; overflow-y: auto; margin-top: 20px; padding: 12px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-muted); line-height: 1.6;
+}
+
+.log-line { padding: 2px 0; opacity: 0; animation: fadeIn 0.3s forwards; color: var(--text); }
+
+.log-line.skeleton {
+  background: linear-gradient(90deg, var(--surface-alt) 25%, var(--border) 50%, var(--surface-alt) 75%);
+  background-size: 200% 100%; animation: shimmer 1.5s infinite; height: 1em; border-radius: 4px;
+}
+
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+
+/* Success/Error Icons */
+.success-icon svg { color: var(--accent); animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards; }
+
+.error-icon svg { color: var(--error); animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards; }
+
+@keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); } }
+
+
+/* Success Panel */
+.success-panel {
+  background: var(--custom-accent-bg-checked); border: 1px solid var(--accent); border-radius: 10px;
+  padding: 20px; margin-top: 20px; width: 100%; max-width: 400px; box-shadow: 0 0 20px var(--custom-accent-shadow);
+}
+
+.success-panel h3 { font-family: 'Sora', sans-serif; font-size: 1.1rem; color: var(--accent); margin-bottom: 12px; }
+
+.success-panel ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+
+.success-panel li a {
+  display: block; padding: 8px 12px; background: rgba(var(--accent-rgb), 0.15); border-radius: 6px;
+  color: var(--accent); text-decoration: none; font-weight: 500; transition: all 0.2s ease;
+}
+
+.success-panel li a:hover { background: rgba(var(--accent-rgb), 0.25); transform: translateX(3px); }
+
+
+/* Error Details */
+.error-details {
+  background: var(--custom-error-bg); border: 1px solid var(--error); border-radius: 8px;
+  padding: 12px 16px; margin-top: 15px; width: 100%; max-width: 400px;
+}
+
+.error-details .mono-text {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--error); word-break: break-all;
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .wizard-frame { flex-direction: column; }
+  .wizard-side { width: 100%; border-right: none; border-bottom: 1px solid var(--border); padding-bottom: 24px; }
+  .wizard-side .logo { justify-content: center; margin-bottom: 24px; }
+  .step-rail { justify-content: center; }
+  .wizard-main { padding: 24px 16px; }
+  .plan-selection-grid { grid-template-columns: 1fr; }
+  .field-grid.two-col { grid-template-columns: 1fr; }
+  .integration-desc, .api-key-field { margin-left: 0; padding-left: 0; }
+  .form-actions { flex-direction: column; gap: 10px; }
+  .form-actions button { width: 100%; justify-content: center; }
+  .summary-details-grid { grid-template-columns: 1fr; }
+}
