@@ -7,7 +7,7 @@ DESIGN KIT: base.css IS ALREADY PROVIDED
 
 A base.css file is injected automatically. It provides:
 - CSS variables: --bg (#0d1117), --sidebar-bg, --card-bg, --card-elevated, --accent (#10b981 emerald), --danger, --warning, --text, --text-secondary, --text-muted, --border
-- Font: Inter (400, 500, 600, 700) — font-variant-numeric: tabular-nums on body
+- Fonts: Inter for UI copy, Space Grotesk for brand/display headings, JetBrains Mono for numeric surfaces
 - Layout: .dashboard-layout (flex), .sidebar (220px fixed), .main-content (margin-left:220px), .content-area, .header-bar
 - Sidebar: .sidebar-logo, .sidebar-nav, .sidebar-group, .sidebar-group-label, .sidebar-item, .sidebar-item.active, .sidebar-user
 - Header: .header-bar, .page-title, .header-actions, .header-search, .header-icon-btn, .header-avatar
@@ -29,7 +29,7 @@ In <head>:
   <link rel="stylesheet" href="./base.css">
   <link rel="stylesheet" href="./style.css">
 
-DO NOT add Google Fonts @import — base.css already imports Inter.
+DO NOT add font imports in style.css — base.css already imports the UI, display, and mono families for this kit.
 
 ═══════════════════════════════════════
 STRUCTURAL REQUIREMENTS (NON-NEGOTIABLE)
@@ -49,6 +49,7 @@ STRUCTURAL REQUIREMENTS (NON-NEGOTIABLE)
    - .page-title (e.g. "Portfolio Overview")
    - .header-actions: .header-search (search icon + placeholder text), .header-icon-btn (bell icon for notifications), .header-avatar
 - The page title and labels should read like analytics, platform health, customer success, operations, or portfolio management, not like a brokerage trading screen.
+- Use the provided display font for the brand, page title, and section titles. Use the mono family for KPI values, deltas, table numerics, timestamps, and chart labels.
 
 4. MAIN CONTENT — .main-content > .content-area
 
@@ -94,6 +95,7 @@ REQUIRED SECTIONS (inside .content-area)
 
 Use .grid-2col to arrange chart + activity feed side by side, or table + activity feed.
 - Prefer one non-market secondary module such as alerts, team activity, customer health, operational incidents, or project delivery status to keep the dashboard distinct from fintech.
+- The desktop right rail should not feel empty. Stack at least two subsections or give the feed an internal split (for example alerts + activity, customers at risk + deployments, or incidents + approvals) so the secondary column carries real visual weight.
 
 ═══════════════════════════════════════
 DATA & CONTENT RULES
@@ -110,6 +112,7 @@ DATA & CONTENT RULES
 - KPI cards hover state: subtle lift + accent border glow (already in base.css)
 - Chart period buttons: one must have active/selected state
 - Depth polish target: include 1 elevated card treatment using layered shadows (shadow + subtle inner highlight), not flat surfaces only
+- Use styled initials, local assets, or inline SVG avatars. Do not use remote placeholder avatar/image services.
 
 ═══════════════════════════════════════
 SELF-CHECK BEFORE OUTPUT
@@ -125,6 +128,6 @@ SELF-CHECK BEFORE OUTPUT
 □ Data table with 8+ rows, sticky header
 □ Activity feed with 5+ timestamped entries
 □ No "0" values, no "$$", no empty sections
-□ Font is Inter throughout, numbers use tabular-nums
+□ Brand/page titles use the display font, UI text uses the UI sans, and numbers use the mono family
 □ The page reads like a broad dashboard, not a trading terminal
 □ style.css is ONLY overrides (≤80 lines)

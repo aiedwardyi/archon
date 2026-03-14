@@ -12,6 +12,7 @@
   --text-muted: #6f7f95;
   --border: rgba(255, 255, 255, 0.08);
   --shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  --shadow-elevated: 0 28px 58px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(16, 185, 129, 0.12);
   --radius: 18px;
 }
 
@@ -29,11 +30,38 @@ body {
     var(--bg);
   color: var(--text);
   font-family: 'Inter', sans-serif;
+  line-height: 1.6;
+}
+
+::selection {
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--text);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(16, 185, 129, 0.28) rgba(255, 255, 255, 0.04);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.24);
+  border-radius: 999px;
 }
 
 .fintech-shell {
   min-height: 100vh;
   padding: 28px;
+  max-width: 1480px;
+  margin: 0 auto;
 }
 
 .topbar,
@@ -54,6 +82,12 @@ body {
 .panel-title,
 .kpi-value {
   font-family: 'Space Grotesk', sans-serif;
+}
+
+.page-title,
+.chart-title,
+.panel-title {
+  letter-spacing: -0.04em;
 }
 
 .topbar-actions,
@@ -90,7 +124,7 @@ body {
   background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
   border-color: rgba(255,255,255,0.15);
   transform: translateY(-2px); /* Subtle lift effect */
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45); /* Slightly enhanced shadow */
+  box-shadow: var(--shadow-elevated);
 }
 
 .ticker-card,
@@ -115,7 +149,7 @@ body {
 }
 
 .dashboard-grid {
-  grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
+  grid-template-columns: minmax(0, 1.7fr) minmax(340px, 0.98fr);
   align-items: start;
 }
 
@@ -177,15 +211,27 @@ body {
   letter-spacing: 0.08em;
 }
 
+.asset-table td,
+.feed-time,
+.watch-price,
+.watch-delta {
+  font-variant-numeric: tabular-nums;
+}
+
 .news-feed,
 .watchlist {
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
 .feed-item,
 .watch-item {
   padding: 14px 16px;
+}
+
+.watchlist,
+.news-feed {
+  align-content: start;
 }
 
 a:focus-visible,

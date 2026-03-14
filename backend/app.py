@@ -36,6 +36,32 @@ from utils.reference_build_registry import (
 from utils.watson_discovery import DiscoveryClient
 from utils.image_asset_catalog import catalog_design_assets
 from utils.asset_filler import fill_missing_assets
+from utils.offline_engineer_scaffold import build_vite_react_ts_scaffold
+from utils.componentized_runtime import (
+    build_componentized_preview,
+    collect_componentized_direct_dependencies,
+    collect_componentized_editable_files,
+    collect_existing_code_context,
+    collect_selected_code_context,
+    ensure_componentized_workspace_support,
+    extract_feature_inventory,
+    extract_visual_dna,
+    infer_scaffold_mode,
+    is_componentized_workspace,
+    relative_mount_root,
+    rewrite_componentized_asset_api_urls,
+    rewrite_preview_file_references,
+    stage_componentized_design_assets,
+    summarize_componentized_build_error,
+)
+from utils.componentized_quality import (
+    collect_quality_issue_codes,
+    evaluate_componentized_density,
+    evaluate_componentized_multi_file_completeness,
+    evaluate_componentized_semantic_completeness,
+    group_componentized_build_errors_by_file,
+    parse_componentized_build_errors,
+)
 nlu_agent = NLUAgent()
 discovery_client = DiscoveryClient()
 
@@ -185,6 +211,1119 @@ def add_log(message: str, log_type: str = "info", project_id: int = None):
 
 def get_version_dir(project_id: int, version: int) -> Path:
     return PUBLIC_DIR / str(project_id) / f"v{version}"
+
+
+def get_plan_data_for_version(project_id: int, version: int) -> Dict[str, Any] | None:
+    return read_json_file(get_version_dir(project_id, version) / "last_plan.json")
+
+
+def build_componentized_version(version_dir: Path) -> Dict[str, Any]:
+    code_dir = version_dir / "code"
+    result = build_componentized_preview(code_dir)
+    write_json_file(version_dir / "last_preview_build.json", result)
+    return result
+
+
+def get_preview_target(project_id: int, version: int) -> tuple[Path | None, str]:
+    version_dir = get_version_dir(project_id, version)
+    code_dir = version_dir / "code"
+    plan_data = get_plan_data_for_version(project_id, version)
+
+    if is_componentized_workspace(code_dir, plan_data=plan_data):
+        dist_index = code_dir / "dist" / "index.html"
+        if not dist_index.exists():
+            build_componentized_version(version_dir)
+        if dist_index.exists():
+            return dist_index, "componentized_app"
+        return None, "componentized_app"
+
+    html_file = code_dir / "src" / "index.html"
+    if html_file.exists():
+        return html_file, "legacy_single_page"
+    if code_dir.exists():
+        html_files = list(code_dir.rglob("*.html"))
+        if html_files:
+            return html_files[0], infer_scaffold_mode(code_dir, plan_data=plan_data)
+    return None, infer_scaffold_mode(code_dir, plan_data=plan_data)
+
+
+def resolve_version_file(project_id: int, version: int, asset_path: str) -> Path | None:
+    code_dir = (get_version_dir(project_id, version) / "code").resolve()
+    target = (code_dir / asset_path).resolve()
+    try:
+        target.relative_to(code_dir)
+    except ValueError:
+        return None
+    if not target.exists() or not target.is_file():
+        return None
+    return target
+
+
+def load_componentized_base_css(ui_archetype: str | None) -> str | None:
+    if not ui_archetype:
+        return None
+    kit_archetype = DESIGN_KIT_ALIASES.get(ui_archetype, ui_archetype)
+    css_path = REPO_ROOT / "prompts" / "archetypes" / f"{kit_archetype}.css"
+    if not css_path.exists():
+        return None
+    return css_path.read_text(encoding="utf-8")
+
+
+def build_design_context(
+    *,
+    version_dir: Path,
+    design_assets: list[dict[str, Any]],
+    project_id: int,
+    version: int,
+    scaffold_mode: str,
+) -> str:
+    if not design_assets:
+        return ""
+
+    asset_lines: list[str] = []
+    if scaffold_mode == "componentized_app":
+        staged_assets = stage_componentized_design_assets(version_dir, design_assets)
+        for asset in staged_assets:
+            asset_lines.append(f"  - {asset['key']} ({asset['purpose']}): {asset['path']}")
+        if not asset_lines:
+            return ""
+        return (
+            "\n\nDESIGN ASSETS - USE THESE LOCAL APP ASSETS:\n"
+            + "\n".join(asset_lines)
+            + "\nIMPORTANT: Use these exact local paths in <img> tags or CSS background-image. "
+              "Do not emit backend API asset URLs in componentized apps.\n"
+        )
+
+    for asset in design_assets:
+        asset_version = version
+        if asset.get("local_path"):
+            lp = asset["local_path"].replace("\\", "/")
+            parts = lp.split("/")
+            for part in parts:
+                if part.startswith("v") and part[1:].isdigit():
+                    asset_version = int(part[1:])
+                    break
+        img_url = f"/api/assets/{project_id}/{asset_version}/{asset['key']}.png" if asset.get("local_path") else asset["url"]
+        asset_lines.append(f"  - {asset['key']} ({asset['purpose']}): {img_url}")
+    return (
+        "\n\nDESIGN ASSETS - USE THESE IMAGE URLs IN THE HTML:\n"
+        + "\n".join(asset_lines)
+        + "\nIMPORTANT: Use these exact URLs in <img> tags or CSS background-image. Do not use placeholder images.\n"
+    )
+
+
+def build_product_brief_context(version_dir: Path) -> str:
+    prd_data = read_json_file(version_dir / "last_prd.json") or {}
+    prd = prd_data.get("prd", prd_data) if isinstance(prd_data, dict) else {}
+    if not isinstance(prd, dict):
+        return ""
+
+    lines: list[str] = []
+    title = str(prd.get("document_title") or "").strip()
+    detected_intent = str(prd.get("detected_intent") or "").strip()
+    primary_user_action = str(prd.get("primary_user_action") or "").strip()
+    visual_direction = str(prd.get("visual_direction") or "").strip()
+    archetype_hint = str(prd.get("archetype_hint") or "").strip()
+    overview = str(prd.get("overview") or "").strip()
+    tone_keywords = prd.get("tone_keywords") or []
+    target_users = prd.get("target_users") or []
+
+    if title:
+        lines.append(f"Project: {title}")
+    if detected_intent:
+        lines.append(f"Detected intent: {detected_intent}")
+    if primary_user_action:
+        lines.append(f"Primary user action: {primary_user_action}")
+    if archetype_hint:
+        lines.append(f"Archetype hint: {archetype_hint}")
+    if visual_direction:
+        lines.append(f"Visual direction: {visual_direction}")
+    if tone_keywords:
+        lines.append(f"Tone keywords: {', '.join(str(item) for item in tone_keywords[:5])}")
+    if target_users:
+        lines.append(f"Target users: {', '.join(str(item) for item in target_users[:3])}")
+    if overview:
+        lines.append(f"Overview: {overview}")
+
+    if not lines:
+        return ""
+
+    return "\n\nPRODUCT BRIEF CONTEXT:\n" + "\n".join(lines) + "\n"
+
+
+def build_visual_direction_context(version_dir: Path) -> str:
+    path = version_dir / "last_visual_direction.txt"
+    if not path.exists():
+        return ""
+    try:
+        text = path.read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
+    if not text:
+        return ""
+    return (
+        "\n\nVISUAL DIRECTION - TREAT THIS AS THE BINDING DESIGN SYSTEM:\n"
+        f"{text}\n"
+    )
+
+
+def load_or_extract_iteration_artifact(
+    version_dir: Path,
+    *,
+    filename: str,
+    extractor,
+) -> dict[str, Any]:
+    artifact_path = version_dir / filename
+    artifact_data = read_json_file(artifact_path)
+    if isinstance(artifact_data, dict):
+        return artifact_data
+
+    code_dir = version_dir / "code"
+    extracted = extractor(code_dir) if code_dir.exists() else {}
+    if isinstance(extracted, dict) and extracted:
+        write_json_file(artifact_path, extracted)
+    return extracted if isinstance(extracted, dict) else {}
+
+
+QUALITY_PLACEHOLDER_DOMAINS = (
+    "api.dicebear.com",
+    "ui-avatars.com",
+    "placehold.co",
+    "via.placeholder.com",
+    "picsum.photos",
+)
+
+SELF_REVIEW_ISSUE_MAP = {
+    "spacing_layout": "spacing_rhythm",
+    "typography": "typography_hierarchy",
+    "color_depth": "weak_surface_depth",
+    "interactivity": "dense_shell_interactivity",
+    "content_authenticity": "content_authenticity",
+    "polish_flow": "polish_flow",
+}
+
+
+def extract_componentized_self_review_issues(self_review: Any) -> list[str]:
+    if not self_review:
+        return []
+
+    scores = getattr(self_review, "scores", None)
+    weak_dimensions = getattr(self_review, "weak_dimensions", None) or []
+    issues: list[str] = []
+
+    for dimension, issue in SELF_REVIEW_ISSUE_MAP.items():
+        score = getattr(scores, dimension, None) if scores is not None else None
+        if isinstance(score, int) and score < 8:
+            issues.append(issue)
+
+    for raw_name in weak_dimensions:
+        if not isinstance(raw_name, str):
+            continue
+        normalized = raw_name.strip().lower().replace("-", "_").replace(" ", "_")
+        mapped = SELF_REVIEW_ISSUE_MAP.get(normalized)
+        if mapped:
+            issues.append(mapped)
+
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for issue in issues:
+        if issue in seen:
+            continue
+        seen.add(issue)
+        deduped.append(issue)
+    return deduped
+
+
+def build_componentized_self_review_context(self_review: Any) -> str:
+    if not self_review:
+        return ""
+
+    scores = getattr(self_review, "scores", None)
+    if scores is None:
+        return ""
+
+    weak_dimensions = getattr(self_review, "weak_dimensions", None) or []
+    next_pass = getattr(self_review, "next_pass", None) or ""
+
+    score_lines = [
+        f"- spacing_layout: {getattr(scores, 'spacing_layout', 'n/a')}/10",
+        f"- typography: {getattr(scores, 'typography', 'n/a')}/10",
+        f"- color_depth: {getattr(scores, 'color_depth', 'n/a')}/10",
+        f"- interactivity: {getattr(scores, 'interactivity', 'n/a')}/10",
+        f"- content_authenticity: {getattr(scores, 'content_authenticity', 'n/a')}/10",
+        f"- polish_flow: {getattr(scores, 'polish_flow', 'n/a')}/10",
+    ]
+
+    weak_line = ", ".join(str(item) for item in weak_dimensions if item) or "none"
+    next_pass_line = str(next_pass).strip() or "none"
+    return (
+        "MODEL SELF-REVIEW FOR THE CURRENT BUILD:\n"
+        + "\n".join(score_lines)
+        + f"\n- weak_dimensions: {weak_line}\n"
+        + f"- next_pass: {next_pass_line}"
+    )
+
+
+def get_missing_componentized_contract_paths(files: list[Any]) -> list[str]:
+    required = set(get_componentized_required_contract_paths())
+    present = {
+        str(getattr(file_artifact, "path", "")).replace("\\", "/").strip("/")
+        for file_artifact in files or []
+    }
+    return sorted(path for path in required if path not in present)
+
+
+def get_componentized_required_contract_paths() -> list[str]:
+    return [
+        "package.json",
+        "index.html",
+        "src/main.tsx",
+        "src/App.tsx",
+    ]
+
+
+COMPONENTIZED_CONTRACT_MIN_LENGTHS = {
+    "package.json": 60,
+    "index.html": 120,
+    "src/main.tsx": 80,
+    "src/App.tsx": 120,
+}
+
+
+def validate_componentized_contract_outputs(
+    files: list[Any],
+    *,
+    ui_archetype: str | None = None,
+) -> dict[str, Any]:
+    normalized_files = {
+        str(getattr(file_artifact, "path", "")).replace("\\", "/").strip("/"): str(getattr(file_artifact, "content", "") or "")
+        for file_artifact in files or []
+        if str(getattr(file_artifact, "path", "")).strip()
+    }
+    violations: list[dict[str, str]] = []
+    required_paths = get_componentized_required_contract_paths()
+
+    if not normalized_files:
+        violations.append(
+            {
+                "path": "*",
+                "code": "empty_output",
+                "message": "The response returned no files for the componentized workspace.",
+            }
+        )
+
+    for rel_path in required_paths:
+        content = normalized_files.get(rel_path)
+        if content is None:
+            violations.append(
+                {
+                    "path": rel_path,
+                    "code": "missing_file",
+                    "message": f"The required workspace file `{rel_path}` is missing.",
+                }
+            )
+            continue
+
+        stripped = content.strip()
+        if not stripped:
+            violations.append(
+                {
+                    "path": rel_path,
+                    "code": "empty_file",
+                    "message": f"The required workspace file `{rel_path}` is empty.",
+                }
+            )
+            continue
+
+        min_length = COMPONENTIZED_CONTRACT_MIN_LENGTHS.get(rel_path, 40)
+        if len(stripped) < min_length:
+            violations.append(
+                {
+                    "path": rel_path,
+                    "code": "too_short",
+                    "message": f"The required workspace file `{rel_path}` is too short to be a real implementation.",
+                }
+            )
+
+    package_json = normalized_files.get("package.json", "")
+    if package_json:
+        lowered = package_json.lower()
+        if '"build"' not in lowered or "vite build" not in lowered:
+            violations.append(
+                {
+                    "path": "package.json",
+                    "code": "missing_build_script",
+                    "message": "package.json must include a real build script for the Vite workspace.",
+                }
+            )
+
+    index_html = normalized_files.get("index.html", "")
+    if index_html:
+        lowered = index_html.lower()
+        if "<!doctype html" not in lowered:
+            violations.append(
+                {
+                    "path": "index.html",
+                    "code": "no_doctype",
+                    "message": "index.html must declare a doctype.",
+                }
+            )
+        if 'id="root"' not in lowered and "id='root'" not in lowered:
+            violations.append(
+                {
+                    "path": "index.html",
+                    "code": "no_root_container",
+                    "message": "index.html must include a root mounting container.",
+                }
+            )
+
+    main_source = normalized_files.get("src/main.tsx", "")
+    if main_source:
+        lowered = main_source.lower()
+        if "import app from" not in lowered and 'from "./app"' not in lowered:
+            violations.append(
+                {
+                    "path": "src/main.tsx",
+                    "code": "no_app_import",
+                    "message": "src/main.tsx must import App from the local workspace.",
+                }
+            )
+        if "createroot" not in lowered and "reactdom.render" not in lowered:
+            violations.append(
+                {
+                    "path": "src/main.tsx",
+                    "code": "no_root_mount",
+                    "message": "src/main.tsx must mount the React app into the root container.",
+                }
+            )
+
+    app_source = normalized_files.get("src/App.tsx", "")
+    if app_source:
+        lowered = app_source.lower()
+        if "export default" not in lowered:
+            violations.append(
+                {
+                    "path": "src/App.tsx",
+                    "code": "no_component_export",
+                    "message": "src/App.tsx must export a default React component.",
+                }
+            )
+        if "return" not in lowered and "<main" not in lowered and "<div" not in lowered and "<section" not in lowered:
+            violations.append(
+                {
+                    "path": "src/App.tsx",
+                    "code": "jsx_stub",
+                    "message": "src/App.tsx must render real JSX, not an empty stub.",
+                }
+            )
+        if ui_archetype in {"dashboard", "fintech"}:
+            required_markers = ("kpi", "chart", "watch", "table", "portfolio", "activity")
+            if sum(1 for marker in required_markers if marker in lowered) < 2:
+                violations.append(
+                    {
+                        "path": "src/App.tsx",
+                        "code": "thin_app_shell",
+                        "message": "The main app shell is too thin for a dense app-like archetype.",
+                    }
+                )
+
+    missing_paths = sorted(
+        {
+            violation["path"]
+            for violation in violations
+            if violation["code"] == "missing_file"
+        }
+    )
+    return {
+        "passed": not violations,
+        "violations": violations,
+        "missing_paths": missing_paths,
+        "required_paths": required_paths,
+    }
+
+
+def format_componentized_contract_violations(contract_validation: dict[str, Any] | None) -> str:
+    if not contract_validation:
+        return ""
+    violations = contract_validation.get("violations") or []
+    if not violations:
+        return ""
+    lines = []
+    for violation in violations:
+        path = violation.get("path") or "*"
+        code = violation.get("code") or "contract_violation"
+        message = violation.get("message") or "Unknown contract issue."
+        lines.append(f"- [{code}] {path}: {message}")
+    return "\n".join(lines)
+
+
+def enforce_componentized_internal_scope(allowed_files: list[str], outputs: list[Any]) -> None:
+    from scripts.safe_write import enforce_iteration_scope
+
+    enforce_iteration_scope(allowed_files, outputs)
+
+
+def detect_componentized_quality_issues(code_dir: Path, *, ui_archetype: str | None) -> list[str]:
+    context = collect_existing_code_context(
+        code_dir,
+        max_files=96,
+        max_chars_per_file=16_000,
+    ) or ""
+    if not context:
+        return []
+
+    normalized = context.lower()
+    issues: list[str] = []
+    display_font_markers = (
+        "space grotesk",
+        "outfit",
+        "manrope",
+        "dm sans",
+        "plus jakarta",
+        "cabinet grotesk",
+        "general sans",
+        "satoshi",
+        "switzer",
+        "clash",
+    )
+    mono_markers = (
+        "jetbrains mono",
+        "fira code",
+        "ibm plex mono",
+        "font-variant-numeric",
+        "tabular-nums",
+        "data-mono",
+        "font-mono",
+    )
+
+    if (
+        ui_archetype in {"dashboard", "fintech", "editor", "kanban", "chat"}
+        and ("intersectionobserver" in normalized or "hidden-section" in normalized)
+        and ("opacity: 0" in normalized or "visibility: hidden" in normalized)
+    ):
+        issues.append("first_paint_visibility")
+
+    if any(domain in normalized for domain in QUALITY_PLACEHOLDER_DOMAINS):
+        issues.append("external_placeholder_assets")
+
+    hover_count = normalized.count(":hover")
+    font_family_count = normalized.count("font-family")
+    title_scale_too_small = bool(
+        re.search(
+            r"\.(?:page-title|brand-name|chart-title)\s*\{[^{}]*font-size:\s*(?:1\.\d+rem|2[0-9]px|30px|31px)\b",
+            normalized,
+            re.DOTALL,
+        )
+    )
+    elevated_surface_present = bool(
+        re.search(
+            r"\.(?:card|kpi-card|panel|main-chart-area|hero-chart)\s*\{[^{}]*(?:linear-gradient|radial-gradient)",
+            normalized,
+            re.DOTALL,
+        )
+    )
+    layered_shadow_present = bool(re.search(r"box-shadow\s*:\s*[^;]+,[^;]+;", normalized))
+    if ui_archetype in {"dashboard", "fintech", "editor", "kanban", "chat"}:
+        if not any(marker in normalized for marker in display_font_markers) or font_family_count < 2 or title_scale_too_small:
+            issues.append("typography_hierarchy")
+        if hover_count < 6 or "focus-visible" not in normalized:
+            issues.append("polish_flow")
+
+    if ui_archetype in {"dashboard", "fintech"}:
+        interaction_signal_count = sum(
+            normalized.count(token)
+            for token in ("onclick", "onchange", "onsubmit", "usestate(", "setinterval", "settimeout")
+        )
+        if interaction_signal_count < 6:
+            issues.append("dense_shell_interactivity")
+        if not any(token in normalized for token in mono_markers):
+            issues.append("numeric_data_typography")
+        support_rail_signal_count = sum(
+            1 for token in ("watchlist", "activity-feed", "news-feed", "alerts", "feed-item", "watch-item") if token in normalized
+        )
+        if support_rail_signal_count < 2:
+            issues.append("panel_stacking")
+
+    if ui_archetype in {"dashboard", "fintech"}:
+        gradient_signal_count = normalized.count("linear-gradient") + normalized.count("radial-gradient")
+        if gradient_signal_count < 2 or normalized.count("box-shadow") < 5 or not elevated_surface_present or not layered_shadow_present:
+            issues.append("weak_surface_depth")
+    elif "linear-gradient" not in normalized and "radial-gradient" not in normalized and normalized.count("box-shadow") < 2:
+        issues.append("weak_surface_depth")
+
+    return issues
+
+
+def format_density_audit_context(density_audit: dict[str, Any] | None) -> str:
+    if not density_audit:
+        return ""
+
+    metric_lines = []
+    for key, value in (density_audit.get("metrics") or {}).items():
+        metric_lines.append(f"- {key}: {value}")
+
+    weakness_lines = [
+        f"- [{item.get('code')}] {item.get('message')}"
+        for item in (density_audit.get("weaknesses") or [])
+        if item.get("code") or item.get("message")
+    ]
+
+    return (
+        "LOCAL DENSITY AUDIT:\n"
+        f"- score: {density_audit.get('score')}/{density_audit.get('threshold')}\n"
+        f"- passed: {density_audit.get('passed')}\n"
+        + ("\n".join(metric_lines) + "\n" if metric_lines else "")
+        + ("Weaknesses:\n" + "\n".join(weakness_lines) if weakness_lines else "Weaknesses: none")
+    ).strip()
+
+
+def format_semantic_evaluation_context(semantic_evaluation: dict[str, Any] | None) -> str:
+    if not semantic_evaluation:
+        return ""
+
+    dimension_lines = []
+    for key, payload in (semantic_evaluation.get("dimensions") or {}).items():
+        issues = payload.get("issues") or []
+        issue_text = "; ".join(issues) if issues else "ok"
+        dimension_lines.append(f"- {key}: {payload.get('score')}/{payload.get('max')} ({issue_text})")
+
+    return (
+        "LOCAL SEMANTIC EVALUATION:\n"
+        f"- score: {semantic_evaluation.get('score')}/{semantic_evaluation.get('threshold', 100)}\n"
+        f"- grade: {semantic_evaluation.get('grade')}\n"
+        f"- passed: {semantic_evaluation.get('passed')}\n"
+        + "\n".join(dimension_lines)
+    ).strip()
+
+
+def format_multi_file_evaluation_context(multi_file_evaluation: dict[str, Any] | None) -> str:
+    if not multi_file_evaluation:
+        return ""
+
+    weak_lines = []
+    for report in (multi_file_evaluation.get("weak_files") or [])[:8]:
+        weakness_text = "; ".join(report.get("weaknesses") or []) or "no details"
+        weak_lines.append(
+            f"- {report.get('path')} [{report.get('role')}] {report.get('score')}/100: {weakness_text}"
+        )
+
+    strong_lines = []
+    for report in (multi_file_evaluation.get("strong_files") or [])[:6]:
+        strong_lines.append(
+            f"- {report.get('path')} [{report.get('role')}] {report.get('score')}/100"
+        )
+
+    body = [
+        "LOCAL MULTI-FILE CONTENT EVALUATION:",
+        f"- overall_score: {multi_file_evaluation.get('overall_score')}",
+        f"- threshold: {multi_file_evaluation.get('threshold')}",
+        f"- content_files: {multi_file_evaluation.get('content_files')}",
+        f"- passed: {multi_file_evaluation.get('passed')}",
+    ]
+    if weak_lines:
+        body.append("Weak files:")
+        body.extend(weak_lines)
+    if strong_lines:
+        body.append("Strong files (leave untouched unless needed for coherence):")
+        body.extend(strong_lines)
+    return "\n".join(body).strip()
+
+
+def build_componentized_shell_polish_guidance(ui_archetype: str | None) -> str:
+    if ui_archetype == "dashboard":
+        return (
+            "APP-SHELL POLISH TARGET FOR DASHBOARD:\n"
+            "- Keep the product reading like analytics or operations, not a trading terminal.\n"
+            "- Use the display font for the brand, page title, panel titles, and other short high-importance headings. Keep the UI sans for controls/body copy and the mono family for KPI values, chart labels, table numerics, and timestamps.\n"
+            "- The desktop page title should land in a real display range, roughly 36-44px, and the KPI row should arrive within about 24-32px of the header. Do not leave a dead vertical gap before the first data cards.\n"
+            "- The header bar should feel like a real command surface: title plus status/action cluster, with a subtle tint or blur instead of a flat strip.\n"
+            "- Strengthen depth with three surface levels: page backdrop, standard panel, and one clearly elevated highlight card or panel. Prefer layered shadows and soft gradients over flat slabs.\n"
+            "- Charts should feel authored, not default library output: use a thicker line or richer area fill, clearer axis treatment, and a more intentional control rail than plain ghost buttons.\n"
+            "- The desktop support rail must carry real visual weight. Stack at least two secondary modules or split the right rail into clearly separated subsections instead of leaving one lonely side card.\n"
+            "- Nav items, chips, table rows, badges, and action links need visible hover and active states.\n"
+            "- Replace any remote avatar placeholders with styled initials, local assets, or inline SVG treatments.\n"
+        )
+    if ui_archetype == "fintech":
+        return (
+            "APP-SHELL POLISH TARGET FOR FINTECH:\n"
+            "- Keep the shell chart-first and market-focused. It should feel like a brokerage or monitoring workspace, not a generic admin dashboard.\n"
+            "- Use the display font for the brand, page title, chart title, and key section headers. Keep the UI sans for controls and JetBrains Mono or equivalent for all prices, deltas, holdings, timestamps, and chart labels.\n"
+            "- The desktop page title should read like a headline, roughly 36-44px, with a compact header-to-KPI transition instead of a large blank strip above the first cards.\n"
+            "- Push a stronger page-to-panel depth stack with tinted panels, layered shadows, subtle gradients, and at least one elevated hero surface.\n"
+            "- Numeric styling must be visually obvious: high-value figures should read with heavier mono weight, tabular numerals, and tight tracking instead of disappearing into the same body texture.\n"
+            "- The hero chart should feel premium, not default: richer axis styling, thicker strokes or stronger candlestick bodies, and a clearly differentiated panel treatment from the surrounding cards.\n"
+            "- The hero chart should dominate the center, while the desktop right rail should hold at least two stacked support modules such as watchlist plus news/activity or watchlist plus order flow.\n"
+            "- Range pills, trade buttons, nav destinations, and table rows need crisp hover and active states that read immediately.\n"
+            "- Replace any remote avatar placeholders with styled initials, local assets, or inline SVG treatments.\n"
+        )
+    if ui_archetype in {"editor", "kanban", "chat"}:
+        return (
+            "APP-SHELL POLISH TARGET FOR WORKSPACES:\n"
+            "- Keep one stronger display treatment for brand and panel titles, a readable UI sans for controls, and a clear mono or tabular style wherever dense data appears.\n"
+            "- Multi-panel desktop layouts need differentiated surface depth so the work area, sidebars, and floating controls do not collapse into one flat sheet.\n"
+        )
+    return ""
+
+
+CONTENT_REFINEMENT_ISSUES = {
+    "dense_shell_interactivity",
+    "kpi_sparse",
+    "chart_missing",
+    "chart_underdeveloped",
+    "table_sparse",
+    "side_panel_thin",
+    "panel_stacking",
+    "interactive_controls",
+    "text_density",
+    "placeholder_text",
+    "numeric_authenticity",
+    "content_uniqueness",
+    "contextual_labeling",
+    "data_specificity",
+    "semantic_variety",
+    "temporal_realism",
+    "metric_completeness",
+    "content_authenticity",
+}
+
+SHELL_REFINEMENT_ISSUES = {
+    "first_paint_visibility",
+    "external_placeholder_assets",
+    "spacing_rhythm",
+    "typography_hierarchy",
+    "weak_surface_depth",
+    "polish_flow",
+    "numeric_data_typography",
+}
+
+CONTENT_FIX_ISSUES = {
+    "placeholder_text",
+    "numeric_authenticity",
+    "content_uniqueness",
+    "contextual_labeling",
+    "data_specificity",
+    "semantic_variety",
+    "temporal_realism",
+    "metric_completeness",
+    "content_authenticity",
+}
+
+
+def build_componentized_content_fix_prompt(
+    *,
+    task_description_with_assets: str,
+    ui_archetype: str | None = None,
+    semantic_evaluation: dict[str, Any] | None = None,
+    multi_file_evaluation: dict[str, Any] | None = None,
+) -> str:
+    semantic_section = format_semantic_evaluation_context(semantic_evaluation)
+    multi_file_section = format_multi_file_evaluation_context(multi_file_evaluation)
+    audit_sections = "\n\n".join(section for section in (semantic_section, multi_file_section) if section)
+    audit_block = f"\n\n{audit_sections}\n" if audit_sections else ""
+    archetype_shell_section = build_componentized_shell_polish_guidance(ui_archetype)
+    shell_block = f"\n\n{archetype_shell_section}\n" if archetype_shell_section else ""
+    return (
+        task_description_with_assets
+        + "\n\nTARGETED CONTENT FIX PASS:\n"
+          "The workspace already builds. Do not redesign the shell.\n"
+          "Preserve layout, palette, spacing, imports, exports, component signatures, hooks, and file boundaries.\n"
+          "Patch only the weak content-bearing files already identified by local evaluation.\n"
+          "Prioritize data-bearing page or data files that seed content. If a component only renders props, keep its structure and only add missing contextual labels or subtitles when needed.\n"
+          "Do not rewrite shared CSS unless a direct label, badge, or numeric treatment fix absolutely requires a tiny supporting style edit.\n"
+          "Return only the files that changed.\n"
+        + audit_block
+        + shell_block
+        + "TARGETED CONTENT REMEDIATION:\n"
+          "- Replace generic labels, duplicate rows, and repeated copy with domain-specific seeded content.\n"
+          "- Replace round placeholder numbers with plausible non-round values, mixed deltas, and varied entities.\n"
+          "- Add missing context labels such as date ranges, update moments, comparison copy, and table subtitles.\n"
+          "- Add realistic timestamps, recency cues, or dated entries where the audit calls for temporal realism.\n"
+          "- Strengthen the KPI layer with specific labels and supporting context, but keep the current shell composition intact.\n\n"
+          "Hard rules while fixing content:\n"
+          "- Do not flatten the app back into a single file.\n"
+          "- Do not rewrite unrelated style files or shell layout files unless they are explicitly in scope.\n"
+          "- If a weak component receives seeded data from App/page/data files, fix the upstream seeded data first.\n"
+          "- Keep the app buildable with `npm run build`.\n"
+    )
+
+
+def build_componentized_refinement_prompt(
+    *,
+    task_description_with_assets: str,
+    issues: list[str],
+    ui_archetype: str | None = None,
+    self_review: Any = None,
+    density_audit: dict[str, Any] | None = None,
+    semantic_evaluation: dict[str, Any] | None = None,
+    multi_file_evaluation: dict[str, Any] | None = None,
+) -> str:
+    issue_guidance = {
+        "first_paint_visibility": (
+            "- First-paint visibility: above-the-fold content must be visible immediately. "
+            "Do not keep the primary shell, topbar, hero, KPI row, or initial cards at opacity 0 while waiting for JS or scroll observers."
+        ),
+        "external_placeholder_assets": (
+            "- External placeholder assets: remove avatar/image placeholder services and replace them with styled initials, gradients, local generated assets, or inline SVG treatments."
+        ),
+        "dense_shell_interactivity": (
+            "- Dense-shell interactivity: dashboards and finance shells need working range selectors, filters, sortable data, tab switches, watchlist state, or equivalent real controls."
+        ),
+        "kpi_sparse": (
+            "- KPI density: build out a real four-card KPI row with seeded labels, values, deltas, and supporting sparkline or trend cues."
+        ),
+        "chart_missing": (
+            "- Primary chart region: add or restore a real chart panel with visible axes, seeded values, and a clear chart container."
+        ),
+        "chart_underdeveloped": (
+            "- Chart detail: keep the existing shell, but make the chart region richer with clearer axes, more data points, and supporting labels or tooltips."
+        ),
+        "table_sparse": (
+            "- Table density: expand holdings, transaction, or comparison tables so they feel publishable rather than skeletal."
+        ),
+        "side_panel_thin": (
+            "- Supporting panel density: add a stronger watchlist, activity feed, alerts list, or adjacent data panel with real entries."
+        ),
+        "panel_stacking": (
+            "- Panel stacking: add enough distinct data regions so the center does not feel like a polished shell with empty space."
+        ),
+        "interactive_controls": (
+            "- Interactive controls: add working filters, tabs, range selectors, or sorting controls that visibly change the UI."
+        ),
+        "text_density": (
+            "- Content density: increase headings, captions, labels, secondary annotations, and seeded supporting copy inside the app shell."
+        ),
+        "numeric_data_typography": (
+            "- Numeric data typography: finance and dashboard shells must use a monospace or tabular numeric treatment for KPI values, prices, deltas, table numbers, and chart labels."
+        ),
+        "placeholder_text": (
+            "- Placeholder cleanup: replace every generic label, user stub, metric placeholder, or synthetic title with domain-specific seeded content."
+        ),
+        "numeric_authenticity": (
+            "- Numeric authenticity: replace round placeholder numbers with plausible non-round values, mixed positive and negative deltas, and richer seeded metrics. For finance shells, avoid repeated trailing .00 values across every KPI and holding unless the domain truly requires it."
+        ),
+        "content_uniqueness": (
+            "- Content uniqueness: make repeated rows, cards, or entries distinct. Avoid duplicated names, values, and timestamps."
+        ),
+        "contextual_labeling": (
+            "- Contextual labeling: add clear chart subtitles, update labels, comparison copy, and table context such as ranges or update moments. KPI bands should include labels like vs. yesterday, net of fees, refreshed 5 min ago, or similar real context."
+        ),
+        "data_specificity": (
+            "- Data specificity: use real-looking entities, names, tickers, IDs, sectors, transaction types, and company labels appropriate to the product."
+        ),
+        "semantic_variety": (
+            "- Semantic variety: introduce more status diversity, category variation, sector spread, or mixed outcomes in the data."
+        ),
+        "temporal_realism": (
+            "- Temporal realism: add believable dates, timestamps, and recency language with varied values instead of repeated placeholders."
+        ),
+        "metric_completeness": (
+            "- Metric completeness: ensure the KPI layer has specific labels, values, deltas, and context that match the app archetype."
+        ),
+        "spacing_rhythm": (
+            "- Spacing rhythm: strengthen section spacing, internal card padding, max-width discipline, and grid balance. "
+            "Avoid cramped clusters and repeated centered blocks with identical spacing."
+        ),
+        "typography_hierarchy": (
+            "- Typography hierarchy: introduce a more intentional type system with distinct heading treatment, stronger label styling, and clearer contrast between display, body, and numeric text. Promote the desktop page title or hero heading into a true display scale instead of a small utility heading. For dashboard and fintech shells, panel titles should feel editorial rather than default H3s, and numeric surfaces should use visibly intentional mono/tabular styling with stronger weight."
+        ),
+        "weak_surface_depth": (
+            "- Surface depth: strengthen layering with deliberate page/surface/elevated states, subtle gradients or tints, and more convincing shadows, borders, or soft glows. Cards should not read like flat dark rectangles; add at least one clearly elevated hero surface and richer panel treatments. Give the primary chart panel and support-rail modules their own tone shift or shadow treatment so they do not collapse into one flat sheet."
+        ),
+        "content_authenticity": (
+            "- Content authenticity: replace generic labels or filler with domain-specific names, metrics, microcopy, and section language that fit the product type."
+        ),
+        "polish_flow": (
+            "- Polish and flow: add high-signal finish details such as section rhythm, overlap transitions, sticky sub-bars, badge treatments, selection styling, scrollbar styling, decorative dividers, quote treatments, or richer hover states where appropriate."
+        ),
+    }
+    lines = [issue_guidance[issue] for issue in issues if issue in issue_guidance]
+    guidance_block = "\n".join(lines)
+    self_review_block = build_componentized_self_review_context(self_review)
+    self_review_section = f"\n\n{self_review_block}\n" if self_review_block else ""
+    density_section = format_density_audit_context(density_audit)
+    semantic_section = format_semantic_evaluation_context(semantic_evaluation)
+    multi_file_section = format_multi_file_evaluation_context(multi_file_evaluation)
+    archetype_shell_section = build_componentized_shell_polish_guidance(ui_archetype)
+    audit_sections = "\n\n".join(section for section in (density_section, semantic_section, multi_file_section) if section)
+    audit_block = f"\n\n{audit_sections}\n" if audit_sections else ""
+    shell_block = f"\n\n{archetype_shell_section}\n" if archetype_shell_section else ""
+    return (
+        task_description_with_assets
+        + "\n\nQUALITY REFINEMENT PASS:\n"
+          "The current componentized workspace builds, but it still has weak quality signals.\n"
+          "Preserve the app identity, structure, and seeded content unless a change is required to improve quality.\n"
+          "Focus only on the weak areas below and keep the app buildable with `npm run build`.\n"
+          "If weak files are listed in the local multi-file evaluation, patch those files first and avoid rewriting strong files.\n\n"
+        + self_review_section
+        + audit_block
+        + shell_block
+        + "TARGETED FIXES:\n"
+        + guidance_block
+        + "\n\nHard rules while refining:\n"
+          "- Keep component files valid React modules only.\n"
+          "- Do not paste CSS after TypeScript or JSX code.\n"
+          "- Keep the first viewport visibly populated on initial load.\n"
+          "- Do not introduce external placeholder image/avatar services.\n"
+          "- If `src/base.css` exists and the weak areas are typography, depth, or polish related, refine `src/base.css` and the relevant shell CSS first before rewriting unrelated components.\n"
+          "- Preserve imports, exports, component signatures, layout structure, and existing file boundaries unless a weak-file fix requires a direct supporting edit.\n"
+          "- Improve polish and interactions without flattening the existing shell.\n"
+    )
+
+
+def select_componentized_content_fix_scope(
+    code_dir: Path,
+    *,
+    weak_file_paths: list[str],
+) -> list[str]:
+    editable_files = collect_componentized_editable_files(code_dir)
+    if not editable_files:
+        return []
+
+    selected: set[str] = set()
+    for rel_path in weak_file_paths:
+        normalized = rel_path.replace("\\", "/").strip("/")
+        if normalized:
+            selected.add(normalized)
+
+    for rel_path in editable_files:
+        normalized = rel_path.replace("\\", "/").strip("/")
+        if normalized in {"src/App.tsx", "index.html"}:
+            selected.add(normalized)
+            continue
+        if normalized == "src/index.css":
+            selected.add(normalized)
+            continue
+        if normalized.startswith(("src/pages/", "src/data/")):
+            selected.add(normalized)
+            continue
+        path = code_dir / normalized
+        try:
+            content = path.read_text(encoding="utf-8", errors="replace").lower()
+        except OSError:
+            continue
+        if "const initial" in content or "usestate<" in content or "usestate(" in content:
+            selected.add(normalized)
+
+    scoped = [path for path in editable_files if path in selected]
+    if not scoped:
+        scoped = [path for path in editable_files if path.startswith(("src/pages/", "src/data/")) or path == "src/App.tsx"]
+    return extend_componentized_scope(
+        code_dir,
+        scoped[:12],
+        include_style_targets=False,
+    )
+
+
+def select_componentized_refinement_scope(
+    code_dir: Path,
+    issues: list[str],
+    *,
+    weak_file_paths: list[str] | None = None,
+) -> list[str]:
+    editable_files = collect_componentized_editable_files(code_dir)
+    if not editable_files:
+        return []
+
+    shell_sensitive = any(issue in SHELL_REFINEMENT_ISSUES for issue in issues)
+    content_focused = bool(weak_file_paths) and not shell_sensitive
+
+    preferred_files = ["index.html", "src/main.tsx", "src/App.tsx"]
+    if shell_sensitive:
+        preferred_files.extend(
+            [
+                "src/base.css",
+                "src/index.css",
+                "src/styles.css",
+                "src/styles/style.css",
+            ]
+        )
+    selected = {path for path in preferred_files if (code_dir / path).exists()}
+    for rel_path in weak_file_paths or []:
+        normalized = rel_path.replace("\\", "/").strip("/")
+        if normalized:
+            selected.add(normalized)
+
+    issue_patterns = {
+        "first_paint_visibility": ("intersectionobserver", "hidden-section", "opacity: 0", "visibility: hidden", "fade-in"),
+        "external_placeholder_assets": tuple(domain.lower() for domain in QUALITY_PLACEHOLDER_DOMAINS),
+        "dense_shell_interactivity": ("onclick", "onchange", "onsubmit", "usestate", "setinterval", "settimeout"),
+        "spacing_rhythm": ("padding", "gap", "max-width", "grid-template", "section", "content-area"),
+        "typography_hierarchy": ("font-family", "font-size", "letter-spacing", "line-height", "@import", "label", "eyebrow", "space grotesk", "jetbrains mono", "outfit"),
+        "weak_surface_depth": ("box-shadow", "linear-gradient", "radial-gradient", "background:", ":root", "backdrop-filter"),
+        "content_authenticity": ("title", "subtitle", "description", "headline", "label", "copy", "caption"),
+        "polish_flow": ("::selection", "scrollbar", "badge", "divider", "separator", "quote", "border-radius", "box-shadow", "focus-visible", ":hover"),
+        "kpi_sparse": ("portfolio value", "revenue", "kpi", "metric", "delta", "sparkline"),
+        "chart_missing": ("chart", "recharts", "sparkline", "polyline", "candlestick"),
+        "chart_underdeveloped": ("chart", "tooltip", "range", "axis", "grid"),
+        "table_sparse": ("table", "holdings", "transactions", "rows", "columns"),
+        "side_panel_thin": ("watchlist", "activity", "alerts", "notification"),
+        "panel_stacking": ("section", "panel", "card", "widget"),
+        "interactive_controls": ("onclick", "onchange", "filter", "sort", "selectedrange", "tab"),
+        "text_density": ("subtitle", "caption", "label", "description", "summary"),
+        "placeholder_text": ("metric 1", "user 1", "sample", "placeholder", "chart title"),
+        "numeric_authenticity": ("$10,000", "$100,000", "50%", "100%", "round"),
+        "content_uniqueness": ("initial", "map(", "transactions", "watchlist", "holdings"),
+        "contextual_labeling": ("updated", "showing", "vs.", "last month", "last week"),
+        "data_specificity": ("aapl", "msft", "nvda", "transaction", "sector", "status"),
+        "semantic_variety": ("active", "pending", "completed", "buy", "sell", "hold"),
+        "temporal_realism": ("ago", "mar", "apr", "2026", "timestamp"),
+        "metric_completeness": ("portfolio value", "day p&l", "ytd return", "revenue", "arr"),
+    }
+
+    for rel_path in editable_files:
+        path = code_dir / rel_path
+        try:
+            content = path.read_text(encoding="utf-8", errors="replace").lower()
+        except OSError:
+            continue
+
+        for issue in issues:
+            patterns = issue_patterns.get(issue, ())
+            if any(pattern in content for pattern in patterns):
+                selected.add(rel_path)
+                break
+
+    if content_focused:
+        for rel_path in editable_files:
+            if rel_path == "src/App.tsx" or rel_path.startswith("src/pages/"):
+                selected.add(rel_path)
+    elif weak_file_paths or "dense_shell_interactivity" in issues or any(
+        issue in issues for issue in ("content_authenticity", "spacing_rhythm", "typography_hierarchy", "polish_flow", "text_density")
+    ):
+        for rel_path in editable_files:
+            if rel_path.startswith(("src/components/", "src/pages/", "src/data/")):
+                selected.add(rel_path)
+            if len(selected) >= 10:
+                break
+
+    scoped = [path for path in editable_files if path in selected]
+    if not scoped:
+        scoped = editable_files[:8]
+    if content_focused:
+        return extend_componentized_scope(
+            code_dir,
+            scoped[:12],
+            include_style_targets=False,
+        )
+    return extend_componentized_scope(code_dir, scoped[:12])
+
+
+def extend_componentized_scope(
+    code_dir: Path,
+    rel_paths: list[str],
+    *,
+    include_style_targets: bool = True,
+    include_direct_support: bool = False,
+) -> list[str]:
+    scoped = {path.replace("\\", "/").strip("/") for path in rel_paths if path}
+    common_targets = ["index.html", "src/main.tsx", "src/App.tsx"]
+    for rel_path in common_targets:
+        scoped.add(rel_path)
+
+    if include_style_targets:
+        common_style_targets = [
+            "src/base.css",
+            "src/index.css",
+            "src/style.css",
+            "src/styles.css",
+        ]
+        for rel_path in common_style_targets:
+            scoped.add(rel_path)
+
+        styles_dir = code_dir / "src" / "styles"
+        if styles_dir.exists():
+            for path in styles_dir.rglob("*"):
+                if path.is_file():
+                    scoped.add(path.relative_to(code_dir).as_posix())
+
+    if include_direct_support:
+        for rel_path in collect_componentized_direct_dependencies(
+            code_dir,
+            sorted(scoped),
+            max_depth=2,
+        ):
+            scoped.add(rel_path)
+
+    return sorted(scoped)
+
+
+def build_componentized_build_repair_prompt(
+    *,
+    task_description_with_assets: str,
+    build_errors: list[dict[str, Any]],
+) -> str:
+    grouped = group_componentized_build_errors_by_file(build_errors)
+    error_blocks: list[str] = []
+    for rel_path, file_errors in grouped.items():
+        bullet_lines = []
+        for item in file_errors:
+            location = f" line {item.get('line')}" if item.get("line") else ""
+            bullet_lines.append(
+                f"- [{item.get('error_class')}] {item.get('message')}{location}"
+            )
+        error_blocks.append(f"{rel_path}\n" + "\n".join(bullet_lines))
+
+    return (
+        task_description_with_assets
+        + "\n\nBUILD REPAIR PASS:\n"
+          "The current componentized workspace must build cleanly with `npm run build`.\n"
+          "Use the actual build failures below. Repair only the broken files and any directly affected support files.\n"
+          "Do not redesign, refactor, or expand the product.\n\n"
+          "Hard rules while repairing:\n"
+          "- Classify each fix by the reported error class before you change code.\n"
+          "- Keep imports, exports, component signatures, hooks, layout structure, and styling direction intact unless a direct fix requires a local adjustment.\n"
+          "- Do not use explicit local import extensions like `./App.tsx` or `./data.ts`.\n"
+          "- If base.css is used, import it only from `src/main.tsx` as `import \"./base.css\";`.\n"
+          "- Make the minimum coherent fix needed.\n"
+          "- If a file depends on another broken local file, return both together.\n"
+          "- Re-check each returned file for valid imports, balanced braces, valid JSX, closed comments, and buildable exports before returning JSON.\n\n"
+          "BUILD ERRORS BY FILE:\n"
+        + "\n\n".join(error_blocks)
+    )
+
+
+def build_componentized_contract_recovery_prompt(
+    *,
+    task_description_with_assets: str,
+    missing_paths: list[str],
+    contract_validation: dict[str, Any] | None = None,
+) -> str:
+    required_lines = "\n".join(f"- {path}" for path in missing_paths)
+    violation_block = format_componentized_contract_violations(contract_validation)
+    violations_section = (
+        "\n\nDetected contract violations:\n" + violation_block
+        if violation_block
+        else ""
+    )
+    return (
+        task_description_with_assets
+        + "\n\nCOMPONENTIZED CONTRACT RECOVERY PASS:\n"
+          "The prior response did not satisfy the minimum React + TypeScript app contract.\n"
+          "Return a valid multi-file Vite workspace now.\n"
+          "Do not return zero files. Do not omit the required entry files.\n"
+          "Do not return placeholder scaffolds or analysis.\n"
+          "Use real seeded app content that matches the task.\n\n"
+          "Required files for this recovery pass:\n"
+        + required_lines
+        + violations_section
+        + "\n\nHard rules while recovering the contract:\n"
+          "- Output only real file contents for the requested files.\n"
+          "- Keep imports valid and extensionless for local source files.\n"
+          "- Ensure src/main.tsx mounts src/App.tsx and imports ./base.css only from src/main.tsx when base.css exists.\n"
+          "- Ensure the workspace can proceed to `npm run build` after support-file normalization.\n"
+          "- Prefer a dense, app-like shell over a brochure page.\n"
+    )
+
+
+def build_componentized_scaffold_seed_context() -> str:
+    scaffold = build_vite_react_ts_scaffold(app_dir="seed-componentized-app")
+    lines: list[str] = []
+    for path, content in sorted(scaffold.files.items()):
+        rel_path = path.replace("\\", "/").split("/", 1)[-1]
+        if rel_path.startswith(("README", ".gitignore")):
+            continue
+        lines.append(f"--- FILE: {rel_path} ---\n{content}")
+    return "\n\n".join(lines)
 
 
 def rewrite_seed_version(version_dir: Path, original_project_id: int, new_project_id: int):
@@ -521,6 +1660,8 @@ def run_full_pipeline_async(
         # Load existing code from nearest ancestor that has code on disk
         existing_code = None
         ancestor_version_dir = None
+        iteration_visual_dna: dict[str, Any] | None = None
+        iteration_feature_inventory: dict[str, Any] | None = None
         session_check = get_session()
         try:
             current_exec = session_check.get(Execution, execution_id)
@@ -531,19 +1672,19 @@ def run_full_pipeline_async(
                 if not ancestor_exec:
                     break
                 ancestor_dir = get_version_dir(project_id, ancestor_exec.version) / "code"
-                candidate = ancestor_dir / "src" / "index.html"
-                if not candidate.exists():
-                    html_files = list(ancestor_dir.rglob("*.html"))
-                    candidate = html_files[0] if html_files else None
-                if candidate and Path(candidate).exists():
-                    html_content = Path(candidate).read_text(encoding="utf-8", errors="replace")
-                    css_candidate = ancestor_dir / "src" / "style.css"
-                    if css_candidate.exists():
-                        css_content = css_candidate.read_text(encoding="utf-8", errors="replace")
-                        existing_code = f"<!-- src/index.html -->\n{html_content}\n\n/* src/style.css */\n{css_content}"
-                    else:
-                        existing_code = html_content
+                existing_code = collect_existing_code_context(ancestor_dir)
+                if existing_code:
                     ancestor_version_dir = get_version_dir(project_id, ancestor_exec.version)
+                    iteration_visual_dna = load_or_extract_iteration_artifact(
+                        ancestor_version_dir,
+                        filename="last_visual_dna.json",
+                        extractor=extract_visual_dna,
+                    )
+                    iteration_feature_inventory = load_or_extract_iteration_artifact(
+                        ancestor_version_dir,
+                        filename="last_feature_inventory.json",
+                        extractor=extract_feature_inventory,
+                    )
                     add_log(f"Build Agent: Loading v{ancestor_exec.version} for context...", project_id=project_id)
                     break
                 ancestor_id = ancestor_exec.parent_execution_id
@@ -587,12 +1728,17 @@ def run_full_pipeline_async(
             context_input = f"Full conversation history:\n{history_text}\n\nLatest request: {task_description}"
         context_input += f"\n\n{nlu_context_str}"
         if existing_code:
-            # Extract app title from previous HTML to preserve it
+            # Extract app title from previous files to preserve it when possible.
             import re as _re
             title_match = _re.search(r"<title[^>]*>(.*?)</title>", existing_code, _re.IGNORECASE)
             prev_title = title_match.group(1).strip() if title_match else None
-            title_note = f" The app is currently named \"{prev_title}\" Ã¢â‚¬â€ preserve this name unless the user explicitly asks to change it." if prev_title else ""
-            context_input += f"\n\nNOTE: This is an iteration on an existing app. The current HTML is provided to the engineer. The PRD should reflect ONLY the changes requested, not rebuild from scratch.{title_note}"
+            title_note = f' The app is currently named "{prev_title}" - preserve this name unless the user explicitly asks to change it.' if prev_title else ""
+            context_input += (
+                "\n\nNOTE: This is an iteration on an existing app. "
+                "The current codebase is provided to the engineer as multi-file context. "
+                "The PRD should reflect ONLY the changes requested, not rebuild from scratch."
+                f"{title_note}"
+            )
 
         prd_artifact = pm_agent.generate_prd(context_input)
 
@@ -650,6 +1796,37 @@ def run_full_pipeline_async(
         )
 
         design_assets = []
+        previous_visual_direction = ""
+        if ancestor_version_dir:
+            previous_visual_direction_path = ancestor_version_dir / "last_visual_direction.txt"
+            if previous_visual_direction_path.exists():
+                try:
+                    previous_visual_direction = previous_visual_direction_path.read_text(encoding="utf-8")
+                except OSError:
+                    previous_visual_direction = ""
+
+        try:
+            from agents.design_agent import DesignAgent
+
+            prd_data = read_json_file(version_dir / "last_prd.json") or {}
+            design_agent = DesignAgent()
+            visual_direction = design_agent.generate_visual_direction(
+                prd_data,
+                plan_dict=flat_plan,
+                existing_visual_direction=previous_visual_direction if is_iteration else None,
+                reference_images=reference_images or None,
+                nlu_context=nlu_context,
+            )
+            if visual_direction:
+                (version_dir / "last_visual_direction.txt").write_text(
+                    visual_direction.strip() + "\n",
+                    encoding="utf-8",
+                )
+                add_log("Design Agent: Visual direction ready.", project_id=project_id)
+        except Exception as design_direction_err:
+            print(f"DesignAgent visual direction failed (non-fatal): {design_direction_err}")
+            add_log("Design Agent: Visual direction skipped, continuing...", project_id=project_id)
+
         if is_iteration and ancestor_version_dir:
             ancestor_assets_file = ancestor_version_dir / "last_design_assets.json"
             if ancestor_assets_file.exists():
@@ -666,7 +1843,6 @@ def run_full_pipeline_async(
         else:
             add_log("Design Agent: Generating visuals...", project_id=project_id)
             try:
-                from agents.design_agent import DesignAgent
                 prd_data = read_json_file(version_dir / "last_prd.json") or {}
                 design_agent = DesignAgent()
                 assets_dir = version_dir / "assets"
@@ -770,7 +1946,7 @@ def run_full_pipeline_async(
 
         add_log("Build Agent: Writing your code...", project_id=project_id)
 
-        if is_iteration and ancestor_version_dir:
+        if is_iteration and ancestor_version_dir and (engineer_task.scaffold_mode or "legacy_single_page") != "componentized_app":
             ancestor_base_css = ancestor_version_dir / "code" / "src" / "base.css"
             current_src_dir = version_dir / "code" / "src"
             current_base_css = current_src_dir / "base.css"
@@ -781,28 +1957,18 @@ def run_full_pipeline_async(
 
         from agents.engineer_agent import EngineerAgent
         engineer = EngineerAgent(genai_client)
-        # Inject design assets into engineer prompt if available
-        design_context = ""
-        if design_assets:
-            asset_lines = []
-            for a in design_assets:
-                # Use local served path if downloaded; fall back to Azure URL
-                # Extract actual version from local_path (may point to ancestor)
-                asset_version = version
-                if a.get("local_path"):
-                    lp = a["local_path"].replace("\\", "/")
-                    parts = lp.split("/")
-                    for i, part in enumerate(parts):
-                        if part.startswith("v") and part[1:].isdigit():
-                            asset_version = int(part[1:])
-                            break
-                img_url = f"/api/assets/{project_id}/{asset_version}/{a['key']}.png" if a.get("local_path") else a["url"]
-                line = "  - " + a["key"] + " (" + a["purpose"] + "): " + img_url
-                asset_lines.append(line)
-            design_context = "\n\nDESIGN ASSETS - USE THESE IMAGE URLs IN THE HTML:\n" + "\n".join(asset_lines) + "\nIMPORTANT: Use these exact URLs in <img> tags or CSS background-image. Do not use placeholder images.\n"
-            task_description_with_assets = task_description + design_context
-        else:
-            task_description_with_assets = task_description
+        componentized_mode = (engineer_task.scaffold_mode or "legacy_single_page") == "componentized_app"
+        base_css_content = load_componentized_base_css(engineer_task.ui_archetype) if componentized_mode else None
+        design_context = build_design_context(
+            version_dir=version_dir,
+            design_assets=design_assets,
+            project_id=project_id,
+            version=version,
+            scaffold_mode="componentized_app" if componentized_mode else "legacy_single_page",
+        )
+        product_brief_context = build_product_brief_context(version_dir)
+        visual_direction_context = build_visual_direction_context(version_dir)
+        task_description_with_assets = task_description + product_brief_context + visual_direction_context + design_context
 
         result = engineer.run(
             engineer_task,
@@ -810,7 +1976,124 @@ def run_full_pipeline_async(
             existing_code=existing_code,
             reference_images=reference_images or None,
             reference_code=reference_code,
+            iteration_visual_dna=iteration_visual_dna,
+            iteration_feature_inventory=iteration_feature_inventory,
         )
+
+        if componentized_mode and not is_iteration:
+            contract_validation = validate_componentized_contract_outputs(
+                result.files,
+                ui_archetype=engineer_task.ui_archetype,
+            )
+            missing_contract_paths = contract_validation["missing_paths"]
+            contract_attempt = 0
+            while not contract_validation["passed"] and contract_attempt < 2:
+                add_log(
+                    "Build Agent: Componentized scaffold contract was incomplete; requesting a repaired workspace.",
+                    project_id=project_id,
+                )
+                attempt_note = (
+                    "Your previous response omitted or under-filled required workspace files for a buildable app.\n"
+                    if contract_attempt == 0
+                    else "Your previous response still returned an incomplete, empty, or stubbed workspace.\n"
+                )
+                violation_block = format_componentized_contract_violations(contract_validation)
+                contract_prompt = (
+                    task_description_with_assets
+                    + "\n\nCOMPONENTIZED CONTRACT ENFORCEMENT:\n"
+                    + attempt_note
+                    + "Return a COMPLETE componentized workspace now.\n"
+                    + "Do not return an empty or near-empty files array.\n"
+                    + f"Missing required files: {missing_contract_paths or 'none'}\n"
+                    + ("Contract violations:\n" + violation_block + "\n" if violation_block else "")
+                    + "At minimum, include package.json, index.html, src/main.tsx, and src/App.tsx, plus any supporting components/styles needed for the requested product.\n"
+                    + "If the product is a dashboard or fintech app, the returned workspace must already mount a populated first screen with real KPIs, a chart region, and at least one supporting data panel.\n"
+                )
+                contract_result = engineer.run(
+                    engineer_task,
+                    user_prompt=contract_prompt,
+                    existing_code=existing_code,
+                    reference_images=reference_images or None,
+                    reference_code=reference_code,
+                    iteration_visual_dna=iteration_visual_dna,
+                    iteration_feature_inventory=iteration_feature_inventory,
+                )
+                if contract_result.files:
+                    result = contract_result
+                contract_validation = validate_componentized_contract_outputs(
+                    result.files,
+                    ui_archetype=engineer_task.ui_archetype,
+                )
+                missing_contract_paths = contract_validation["missing_paths"]
+                contract_attempt += 1
+            contract_validation = validate_componentized_contract_outputs(
+                result.files,
+                ui_archetype=engineer_task.ui_archetype,
+            )
+            missing_contract_paths = contract_validation["missing_paths"]
+            if not result.files or not contract_validation["passed"]:
+                recovery_scope = get_componentized_required_contract_paths()
+                recovery_task = engineer_task.model_copy(update={"output_files": recovery_scope})
+                recovery_existing_code = existing_code
+                recovery_result = engineer.run(
+                    recovery_task,
+                    user_prompt=build_componentized_contract_recovery_prompt(
+                        task_description_with_assets=task_description_with_assets,
+                        missing_paths=missing_contract_paths or recovery_scope,
+                        contract_validation=contract_validation,
+                    ),
+                    existing_code=recovery_existing_code,
+                    reference_images=reference_images or None,
+                    reference_code=reference_code,
+                    iteration_visual_dna=iteration_visual_dna,
+                    iteration_feature_inventory=iteration_feature_inventory,
+                )
+                recovery_validation = validate_componentized_contract_outputs(
+                    recovery_result.files,
+                    ui_archetype=engineer_task.ui_archetype,
+                )
+                if not recovery_result.files or not recovery_validation["passed"]:
+                    recovery_existing_code = build_componentized_scaffold_seed_context()
+                    recovery_result = engineer.run(
+                        recovery_task,
+                        user_prompt=build_componentized_contract_recovery_prompt(
+                            task_description_with_assets=task_description_with_assets,
+                            missing_paths=missing_contract_paths or recovery_scope,
+                            contract_validation=contract_validation,
+                        )
+                        + "\n\nRECOVERY SEED WORKSPACE:\n"
+                          "A minimal Vite + React + TypeScript scaffold is provided below. "
+                          "Use it as the starting point and replace the generic placeholder screen with the requested product.\n",
+                        existing_code=recovery_existing_code,
+                        reference_images=reference_images or None,
+                        reference_code=reference_code,
+                        iteration_visual_dna=iteration_visual_dna,
+                        iteration_feature_inventory=iteration_feature_inventory,
+                    )
+                if recovery_result.files:
+                    merged_files: dict[str, Any] = {
+                        str(file_artifact.path).replace("\\", "/").strip("/"): file_artifact
+                        for file_artifact in result.files
+                    }
+                    for file_artifact in recovery_result.files:
+                        merged_files[str(file_artifact.path).replace("\\", "/").strip("/")] = file_artifact
+                    result = recovery_result.model_copy(update={"files": list(merged_files.values())})
+                contract_validation = validate_componentized_contract_outputs(
+                    result.files,
+                    ui_archetype=engineer_task.ui_archetype,
+                )
+                missing_contract_paths = contract_validation["missing_paths"]
+            if not result.files or not contract_validation["passed"]:
+                missing_list = ", ".join(missing_contract_paths) if missing_contract_paths else "none"
+                violation_block = format_componentized_contract_violations(contract_validation)
+                raise ValueError(
+                    "Componentized scaffold contract was not satisfied after enforcement "
+                    f"(missing: {missing_list}, files_generated: {len(result.files)}, violations: {violation_block or 'none'})."
+                )
+
+        if componentized_mode:
+            for file_artifact in result.files:
+                file_artifact.content = rewrite_componentized_asset_api_urls(file_artifact.content)
 
         from scripts.safe_write import safe_write_text, enforce_iteration_scope
         allow_dir = version_dir / "code"
@@ -832,6 +2115,406 @@ def run_full_pipeline_async(
                     raise
                 print(f"Build Agent: Skipped {file_artifact.path} ({skip_err})")
                 print(f"Skipped file: {skip_err}")
+
+        preview_build = None
+        build_repair: dict[str, Any] = {
+            "triggered": False,
+            "status": "skipped",
+            "errors": [],
+            "scoped_files": [],
+        }
+        quality_refinement: dict[str, Any] = {
+            "triggered": False,
+            "issues": [],
+            "status": "skipped",
+        }
+        content_refinement: dict[str, Any] = {
+            "triggered": False,
+            "issues": [],
+            "status": "skipped",
+            "weak_files": [],
+        }
+        if componentized_mode:
+            workspace_support = ensure_componentized_workspace_support(
+                version_dir / "code",
+                base_css_content=base_css_content if not is_iteration else None,
+            )
+            if workspace_support["created_files"] or workspace_support["rewritten_files"]:
+                add_log(
+                    "Build Agent: Normalized componentized workspace support files.",
+                    project_id=project_id,
+                )
+            add_log("Build Agent: Preparing componentized preview...", project_id=project_id)
+            preview_build = build_componentized_version(version_dir)
+            if preview_build.get("status") == "success":
+                build_repair["status"] = "not_needed"
+                add_log("Build Agent: Componentized preview build ready.", project_id=project_id)
+            else:
+                reason = preview_build.get("reason") or "unknown build failure"
+                add_log(
+                    f"Build Agent: Componentized preview build failed ({reason}).",
+                    log_type="warning",
+                    project_id=project_id,
+                )
+                build_errors = parse_componentized_build_errors(preview_build, code_dir=version_dir / "code")
+                build_repair["errors"] = build_errors
+                narrow_repair_scope = [
+                    error["path"]
+                    for error in build_errors
+                    if (version_dir / "code" / str(error.get("path") or "")).exists()
+                ]
+                include_style_targets = any(
+                    str(error.get("path") or "").endswith(".css")
+                    or str(error.get("error_class") or "") == "asset"
+                    for error in build_errors
+                )
+                repair_scope = extend_componentized_scope(
+                    version_dir / "code",
+                    narrow_repair_scope or collect_componentized_editable_files(version_dir / "code"),
+                    include_style_targets=include_style_targets,
+                    include_direct_support=True,
+                )
+                build_repair["scoped_files"] = repair_scope
+                repair_existing_code = collect_selected_code_context(version_dir / "code", repair_scope) or collect_existing_code_context(version_dir / "code")
+                if repair_existing_code and repair_scope:
+                    add_log("Build Agent: Running automatic build-repair pass...", project_id=project_id)
+                    build_repair["triggered"] = True
+                    build_repair["status"] = "started"
+                    repair_task = engineer_task.model_copy(update={"output_files": repair_scope})
+                    repair_prompt = (
+                        build_componentized_build_repair_prompt(
+                            task_description_with_assets=task_description_with_assets,
+                            build_errors=build_errors,
+                        )
+                        if build_errors
+                        else (
+                            task_description_with_assets
+                            + "\n\nBUILD REPAIR PASS:\n"
+                              "The current componentized workspace must build cleanly with `npm run build`.\n"
+                              "Preserve the visual direction, required sections, and seeded content unless a change is required to fix the build.\n"
+                              "Fix only the files necessary to resolve these errors.\n\n"
+                              "Hard rules while repairing:\n"
+                              "- Do not use explicit local import extensions like `./App.tsx` or `./data.ts`.\n"
+                              "- If base.css is used, import it only from `src/main.tsx` as `import \"./base.css\";`.\n"
+                              "- Do not import base.css from components or nested files.\n"
+                              "- Make the minimum fix needed. Do not refactor, redesign, add features, or change behavior unrelated to the failing error.\n"
+                              "- If contamination crosses file boundaries, return every affected file together so the workspace is coherent.\n"
+                              "- Re-check each repaired file for language containment, imports at top, balanced braces/brackets, closed comments, and valid exports before returning JSON.\n"
+                              "- Prefer fixes that keep the app building under Vite without adding unnecessary dependencies.\n\n"
+                              "BUILD ERRORS:\n"
+                            + summarize_componentized_build_error(preview_build)
+                        )
+                    )
+                    repair_result = engineer.run(
+                        repair_task,
+                        user_prompt=repair_prompt,
+                        existing_code=repair_existing_code,
+                        reference_images=reference_images or None,
+                        reference_code=reference_code,
+                        iteration_visual_dna=iteration_visual_dna,
+                        iteration_feature_inventory=iteration_feature_inventory,
+                    )
+                    for file_artifact in repair_result.files:
+                        file_artifact.content = rewrite_componentized_asset_api_urls(file_artifact.content)
+                    try:
+                        enforce_componentized_internal_scope(repair_scope, repair_result.files)
+                    except ValueError as repair_scope_err:
+                        build_repair["status"] = "scope_violation"
+                        build_repair["error"] = str(repair_scope_err)
+                        add_log(
+                            f"Build Agent: Automatic repair returned files outside scope ({repair_scope_err}).",
+                            log_type="warning",
+                            project_id=project_id,
+                        )
+                    else:
+                        for file_artifact in repair_result.files:
+                            rec = safe_write_text(
+                                allowlist_dir=allow_dir,
+                                relative_path=file_artifact.path,
+                                content=file_artifact.content,
+                            )
+                            writes.append(rec)
+                            add_log(f"Build Agent: Repaired {file_artifact.path}", project_id=project_id)
+                        ensure_componentized_workspace_support(
+                            version_dir / "code",
+                            base_css_content=base_css_content if not is_iteration else None,
+                        )
+                        preview_build = build_componentized_version(version_dir)
+                        if preview_build.get("status") == "success":
+                            result = repair_result
+                            build_repair["status"] = "success"
+                            add_log("Build Agent: Automatic repair restored a working preview.", project_id=project_id)
+                        else:
+                            build_repair["status"] = "failed"
+                            reason = preview_build.get("reason") or "unknown build failure"
+                            add_log(
+                                f"Build Agent: Automatic repair still failed ({reason}).",
+                                log_type="warning",
+                                project_id=project_id,
+                            )
+
+            if preview_build.get("status") == "success":
+                density_audit = evaluate_componentized_density(
+                    version_dir / "code",
+                    ui_archetype=engineer_task.ui_archetype,
+                )
+                semantic_evaluation = evaluate_componentized_semantic_completeness(
+                    version_dir / "code",
+                    ui_archetype=engineer_task.ui_archetype,
+                )
+                multi_file_evaluation = evaluate_componentized_multi_file_completeness(
+                    version_dir / "code",
+                    ui_archetype=engineer_task.ui_archetype,
+                )
+                refinement_issues = detect_componentized_quality_issues(
+                    version_dir / "code",
+                    ui_archetype=engineer_task.ui_archetype,
+                )
+                refinement_issues.extend(
+                    collect_quality_issue_codes(
+                        density_audit=density_audit,
+                        semantic_evaluation=semantic_evaluation,
+                        multi_file_evaluation=multi_file_evaluation,
+                    )
+                )
+                refinement_issues.extend(extract_componentized_self_review_issues(result.self_review))
+                refinement_issues = list(dict.fromkeys(refinement_issues))
+                weak_file_paths = [
+                    str(report.get("path") or "")
+                    for report in (multi_file_evaluation.get("weak_files") or [])
+                    if report.get("path")
+                ]
+                content_fix_issues = [
+                    issue
+                    for issue in collect_quality_issue_codes(
+                        density_audit=density_audit,
+                        semantic_evaluation=semantic_evaluation,
+                        multi_file_evaluation=multi_file_evaluation,
+                    )
+                    if issue in CONTENT_FIX_ISSUES
+                ]
+                if content_fix_issues or weak_file_paths:
+                    content_refinement = {
+                        "triggered": True,
+                        "issues": content_fix_issues,
+                        "status": "started",
+                        "weak_files": weak_file_paths,
+                        "semantic_evaluation": semantic_evaluation,
+                        "multi_file_evaluation": multi_file_evaluation,
+                    }
+                    add_log("Build Agent: Running targeted content-fix pass...", project_id=project_id)
+                    content_scope = select_componentized_content_fix_scope(
+                        version_dir / "code",
+                        weak_file_paths=weak_file_paths,
+                    )
+                    content_existing_code = collect_selected_code_context(version_dir / "code", content_scope)
+                    if content_existing_code and content_scope:
+                        backup_dir = version_dir / ".content-refinement-backup"
+                        if backup_dir.exists():
+                            shutil.rmtree(backup_dir, ignore_errors=True)
+                        shutil.copytree(version_dir / "code", backup_dir)
+                        content_task = engineer_task.model_copy(update={"output_files": content_scope})
+                        content_result = engineer.run(
+                            content_task,
+                            user_prompt=build_componentized_content_fix_prompt(
+                                task_description_with_assets=task_description_with_assets,
+                                ui_archetype=engineer_task.ui_archetype,
+                                semantic_evaluation=semantic_evaluation,
+                                multi_file_evaluation=multi_file_evaluation,
+                            ),
+                            existing_code=content_existing_code,
+                            reference_images=reference_images or None,
+                            reference_code=reference_code,
+                            iteration_visual_dna=iteration_visual_dna,
+                            iteration_feature_inventory=iteration_feature_inventory,
+                        )
+                        for file_artifact in content_result.files:
+                            file_artifact.content = rewrite_componentized_asset_api_urls(file_artifact.content)
+                        try:
+                            enforce_componentized_internal_scope(content_scope, content_result.files)
+                        except ValueError as content_scope_err:
+                            content_refinement["status"] = "scope_violation"
+                            content_refinement["error"] = str(content_scope_err)
+                            add_log(
+                                f"Build Agent: Content-fix skipped because it returned files outside scope ({content_scope_err}).",
+                                log_type="warning",
+                                project_id=project_id,
+                            )
+                            shutil.rmtree(backup_dir, ignore_errors=True)
+                        else:
+                            for file_artifact in content_result.files:
+                                rec = safe_write_text(
+                                    allowlist_dir=allow_dir,
+                                    relative_path=file_artifact.path,
+                                    content=file_artifact.content,
+                                )
+                                writes.append(rec)
+                                add_log(f"Build Agent: Content-fixed {file_artifact.path}", project_id=project_id)
+                            ensure_componentized_workspace_support(
+                                version_dir / "code",
+                                base_css_content=base_css_content if not is_iteration else None,
+                            )
+                            content_preview_build = build_componentized_version(version_dir)
+                            if content_preview_build.get("status") == "success":
+                                result = content_result
+                                preview_build = content_preview_build
+                                content_refinement["status"] = "success"
+                                density_audit = evaluate_componentized_density(
+                                    version_dir / "code",
+                                    ui_archetype=engineer_task.ui_archetype,
+                                )
+                                semantic_evaluation = evaluate_componentized_semantic_completeness(
+                                    version_dir / "code",
+                                    ui_archetype=engineer_task.ui_archetype,
+                                )
+                                multi_file_evaluation = evaluate_componentized_multi_file_completeness(
+                                    version_dir / "code",
+                                    ui_archetype=engineer_task.ui_archetype,
+                                )
+                                weak_file_paths = [
+                                    str(report.get("path") or "")
+                                    for report in (multi_file_evaluation.get("weak_files") or [])
+                                    if report.get("path")
+                                ]
+                                add_log("Build Agent: Content-fix pass applied cleanly.", project_id=project_id)
+                                shutil.rmtree(backup_dir, ignore_errors=True)
+                            else:
+                                content_refinement["status"] = "reverted"
+                                reason = content_preview_build.get("reason") or "unknown build failure"
+                                add_log(
+                                    f"Build Agent: Content-fix pass failed ({reason}); restoring prior workspace.",
+                                    log_type="warning",
+                                    project_id=project_id,
+                                )
+                                shutil.rmtree(version_dir / "code", ignore_errors=True)
+                                shutil.copytree(backup_dir, version_dir / "code")
+                                shutil.rmtree(backup_dir, ignore_errors=True)
+                refinement_issues = detect_componentized_quality_issues(
+                    version_dir / "code",
+                    ui_archetype=engineer_task.ui_archetype,
+                )
+                refinement_issues.extend(
+                    collect_quality_issue_codes(
+                        density_audit=density_audit,
+                        semantic_evaluation=semantic_evaluation,
+                        multi_file_evaluation=multi_file_evaluation,
+                    )
+                )
+                refinement_issues.extend(extract_componentized_self_review_issues(result.self_review))
+                refinement_issues = list(dict.fromkeys(refinement_issues))
+                if refinement_issues:
+                    quality_refinement = {
+                        "triggered": True,
+                        "issues": refinement_issues,
+                        "status": "started",
+                        "first_pass_self_review": result.self_review.model_dump() if result.self_review else None,
+                        "density_audit": density_audit,
+                        "semantic_evaluation": semantic_evaluation,
+                        "multi_file_evaluation": multi_file_evaluation,
+                        "weak_files": weak_file_paths,
+                    }
+                    add_log("Build Agent: Running automatic quality-refinement pass...", project_id=project_id)
+                    refinement_scope = select_componentized_refinement_scope(
+                        version_dir / "code",
+                        refinement_issues,
+                        weak_file_paths=weak_file_paths,
+                    )
+                    refinement_existing_code = collect_selected_code_context(version_dir / "code", refinement_scope)
+                    if refinement_existing_code and refinement_scope:
+                        backup_dir = version_dir / ".quality-refinement-backup"
+                        if backup_dir.exists():
+                            shutil.rmtree(backup_dir, ignore_errors=True)
+                        shutil.copytree(version_dir / "code", backup_dir)
+
+                        refinement_task = engineer_task.model_copy(update={"output_files": refinement_scope})
+                        refinement_prompt = build_componentized_refinement_prompt(
+                            task_description_with_assets=task_description_with_assets,
+                            issues=refinement_issues,
+                            ui_archetype=engineer_task.ui_archetype,
+                            self_review=result.self_review,
+                            density_audit=density_audit,
+                            semantic_evaluation=semantic_evaluation,
+                            multi_file_evaluation=multi_file_evaluation,
+                        )
+                        refinement_result = engineer.run(
+                            refinement_task,
+                            user_prompt=refinement_prompt,
+                            existing_code=refinement_existing_code,
+                            reference_images=reference_images or None,
+                            reference_code=reference_code,
+                            iteration_visual_dna=iteration_visual_dna,
+                            iteration_feature_inventory=iteration_feature_inventory,
+                        )
+                        for file_artifact in refinement_result.files:
+                            file_artifact.content = rewrite_componentized_asset_api_urls(file_artifact.content)
+                        try:
+                            enforce_componentized_internal_scope(refinement_scope, refinement_result.files)
+                        except ValueError as refinement_scope_err:
+                            quality_refinement["status"] = "scope_violation"
+                            quality_refinement["error"] = str(refinement_scope_err)
+                            add_log(
+                                f"Build Agent: Quality-refinement skipped because it returned files outside scope ({refinement_scope_err}).",
+                                log_type="warning",
+                                project_id=project_id,
+                            )
+                            shutil.rmtree(backup_dir, ignore_errors=True)
+                        else:
+                            for file_artifact in refinement_result.files:
+                                rec = safe_write_text(
+                                    allowlist_dir=allow_dir,
+                                    relative_path=file_artifact.path,
+                                    content=file_artifact.content,
+                                )
+                                writes.append(rec)
+                                add_log(f"Build Agent: Refined {file_artifact.path}", project_id=project_id)
+
+                            ensure_componentized_workspace_support(
+                                version_dir / "code",
+                                base_css_content=base_css_content if not is_iteration else None,
+                            )
+                            refined_preview_build = build_componentized_version(version_dir)
+                            if refined_preview_build.get("status") == "success":
+                                result = refinement_result
+                                preview_build = refined_preview_build
+                                quality_refinement["status"] = "success"
+                                quality_refinement["final_self_review"] = (
+                                    refinement_result.self_review.model_dump() if refinement_result.self_review else None
+                                )
+                                quality_refinement["final_density_audit"] = evaluate_componentized_density(
+                                    version_dir / "code",
+                                    ui_archetype=engineer_task.ui_archetype,
+                                )
+                                quality_refinement["final_semantic_evaluation"] = evaluate_componentized_semantic_completeness(
+                                    version_dir / "code",
+                                    ui_archetype=engineer_task.ui_archetype,
+                                )
+                                quality_refinement["final_multi_file_evaluation"] = evaluate_componentized_multi_file_completeness(
+                                    version_dir / "code",
+                                    ui_archetype=engineer_task.ui_archetype,
+                                )
+                                add_log("Build Agent: Quality-refinement pass applied cleanly.", project_id=project_id)
+                                shutil.rmtree(backup_dir, ignore_errors=True)
+                            else:
+                                quality_refinement["status"] = "reverted"
+                                reason = refined_preview_build.get("reason") or "unknown build failure"
+                                add_log(
+                                    f"Build Agent: Quality-refinement pass failed ({reason}); restoring prior workspace.",
+                                    log_type="warning",
+                                    project_id=project_id,
+                                )
+                                shutil.rmtree(version_dir / "code", ignore_errors=True)
+                                shutil.copytree(backup_dir, version_dir / "code")
+                                shutil.rmtree(backup_dir, ignore_errors=True)
+                else:
+                    quality_refinement = {
+                        "triggered": False,
+                        "issues": [],
+                        "status": "not_needed",
+                        "density_audit": density_audit,
+                        "semantic_evaluation": semantic_evaluation,
+                        "multi_file_evaluation": multi_file_evaluation,
+                    }
+
         add_log("Build complete.", project_id=project_id)
         state["result_ready"] = True
 
@@ -848,6 +2531,26 @@ def run_full_pipeline_async(
         except Exception as asset_fill_err:
             print(f"Asset filler failed (non-fatal): {asset_fill_err}")
 
+        code_dir = version_dir / "code"
+        if code_dir.exists():
+            write_json_file(version_dir / "last_visual_dna.json", extract_visual_dna(code_dir))
+            write_json_file(version_dir / "last_feature_inventory.json", extract_feature_inventory(code_dir))
+            if componentized_mode:
+                write_json_file(
+                    version_dir / "last_density_audit.json",
+                    evaluate_componentized_density(code_dir, ui_archetype=engineer_task.ui_archetype),
+                )
+                write_json_file(
+                    version_dir / "last_semantic_evaluation.json",
+                    evaluate_componentized_semantic_completeness(code_dir, ui_archetype=engineer_task.ui_archetype),
+                )
+                write_json_file(
+                    version_dir / "last_multi_file_evaluation.json",
+                    evaluate_componentized_multi_file_completeness(code_dir, ui_archetype=engineer_task.ui_archetype),
+                )
+        if result.change_manifest:
+            write_json_file(version_dir / "last_change_manifest.json", result.change_manifest.model_dump())
+
         execution_result = {
             "kind": "execution_result",
             "agent_role": "engineer",
@@ -863,7 +2566,13 @@ def run_full_pipeline_async(
                 "action": "engineer_execution",
                 "task_id": engineer_task.id,
                 "summary": result.summary,
+                "self_review": result.self_review.model_dump() if result.self_review else None,
+                "change_manifest": result.change_manifest.model_dump() if result.change_manifest else None,
                 "files_generated": len(result.files),
+                "preview_build": preview_build,
+                "build_repair": build_repair,
+                "content_refinement": content_refinement,
+                "quality_refinement": quality_refinement,
                 "writes": [
                     {"path": str(rec.path), "sha256": rec.sha256, "bytes": rec.bytes}
                     for rec in writes
@@ -1943,34 +3652,34 @@ PREVIEW_PLACEHOLDER = """<!DOCTYPE html>
 @app.route("/api/preview/<int:project_id>/<int:version>", methods=["GET"])
 def get_preview(project_id: int, version: int):
     code_dir = get_version_dir(project_id, version) / "code"
-    html_file = code_dir / "src" / "index.html"
-
-    target = None
-    if html_file.exists():
-        target = html_file
-    elif code_dir.exists():
-        html_files = list(code_dir.rglob("*.html"))
-        if html_files:
-            target = html_files[0]
+    target, scaffold_mode = get_preview_target(project_id, version)
 
     if target:
         html = target.read_text(encoding="utf-8", errors="replace")
-        src_dir = code_dir / "src"
-        if src_dir.exists():
-            for css_path in sorted(src_dir.glob("*.css")):
-                css = css_path.read_text(encoding="utf-8", errors="replace")
-                link_tag = f'<link rel="stylesheet" href="./{css_path.name}">'
-                if link_tag in html:
-                    html = html.replace(link_tag, f"<style>{css}</style>")
-                elif "</head>" in html:
-                    html = html.replace("</head>", f"<style>{css}</style>\n</head>")
-            for js_path in sorted(src_dir.glob("*.js")):
-                js = js_path.read_text(encoding="utf-8", errors="replace")
-                script_tag = f'<script src="./{js_path.name}">'
-                if script_tag in html:
-                    html = html.replace(f'{script_tag}</script>', f"<script>{js}</script>")
-                elif "</body>" in html:
-                    html = html.replace("</body>", f"<script>{js}</script>\n</body>")
+        if scaffold_mode == "legacy_single_page":
+            src_dir = target.parent
+            if src_dir.exists():
+                for css_path in sorted(src_dir.glob("*.css")):
+                    css = css_path.read_text(encoding="utf-8", errors="replace")
+                    link_tag = f'<link rel="stylesheet" href="./{css_path.name}">'
+                    if link_tag in html:
+                        html = html.replace(link_tag, f"<style>{css}</style>")
+                    elif "</head>" in html:
+                        html = html.replace("</head>", f"<style>{css}</style>\n</head>")
+                for js_path in sorted(src_dir.glob("*.js")):
+                    js = js_path.read_text(encoding="utf-8", errors="replace")
+                    script_tag = f'<script src="./{js_path.name}">'
+                    if script_tag in html:
+                        html = html.replace(f'{script_tag}</script>', f"<script>{js}</script>")
+                    elif "</body>" in html:
+                        html = html.replace("</body>", f"<script>{js}</script>\n</body>")
+        else:
+            mount_prefix = f"/api/preview-files/{project_id}/{version}"
+            html = rewrite_preview_file_references(
+                html,
+                mount_prefix=mount_prefix,
+                root_dir=relative_mount_root(code_dir, target),
+            )
         # Normalize local asset paths so preview can always resolve them through the backend.
         html = re.sub(
             r'((?:src|href)=["\'])(?:\./|\.\./)?assets/([^"\']+)(["\'])',
@@ -1987,6 +3696,16 @@ def get_preview(project_id: int, version: int):
         return Response(html, mimetype="text/html")
 
     return Response(PREVIEW_PLACEHOLDER, mimetype="text/html", status=200)
+
+
+@app.route("/api/preview-files/<int:project_id>/<int:version>/<path:asset_path>", methods=["GET"])
+def get_preview_file(project_id: int, version: int, asset_path: str):
+    target = resolve_version_file(project_id, version, asset_path)
+    if not target:
+        return jsonify({"error": "Preview asset not found"}), 404
+
+    guessed_type = mimetypes.guess_type(str(target))[0] or "application/octet-stream"
+    return send_file(target, mimetype=guessed_type)
 
 
 @app.route("/api/projects/<int:project_id>/versions/<int:version>/debug-files", methods=["GET"])
@@ -2205,7 +3924,16 @@ def project_chat(project_id: int):
                     overview = prd.get("overview", "")
                     features = ", ".join(prd.get("core_features_mvp", []))
                     stack = ", ".join(prd.get("technical_stack_recommendation", []))
-                    project_context = f"Project: {title}\nOverview: {overview}\nFeatures: {features}\nStack: {stack}"
+                    detected_intent = prd.get("detected_intent", "")
+                    visual_direction = prd.get("visual_direction", "")
+                    project_context = (
+                        f"Project: {title}\n"
+                        f"Intent: {detected_intent}\n"
+                        f"Visual direction: {visual_direction}\n"
+                        f"Overview: {overview}\n"
+                        f"Features: {features}\n"
+                        f"Stack: {stack}"
+                    )
         finally:
             db.close()
 
@@ -2350,7 +4078,16 @@ def publish_version(project_id: int, version: int):
 
             published_dir = REPO_ROOT / "published" / slug
             published_dir.mkdir(parents=True, exist_ok=True)
-            shutil.copytree(code_dir, published_dir, dirs_exist_ok=True)
+            plan_data = get_plan_data_for_version(project_id, version)
+            if is_componentized_workspace(code_dir, plan_data=plan_data):
+                build_componentized_version(get_version_dir(project_id, version))
+                dist_dir = code_dir / "dist"
+                if dist_dir.exists():
+                    shutil.copytree(dist_dir, published_dir, dirs_exist_ok=True)
+                else:
+                    return jsonify({"error": "Componentized app build is not ready for publishing"}), 409
+            else:
+                shutil.copytree(code_dir, published_dir, dirs_exist_ok=True)
 
             execution.published_slug = slug
             session.commit()
@@ -2369,25 +4106,61 @@ def serve_published(slug: str):
         return "Invalid slug", 400
 
     published_dir = REPO_ROOT / "published" / slug
-    html_file = published_dir / "src" / "index.html"
+    html_file = published_dir / "index.html"
 
     if not html_file.exists():
-        html_files = list(published_dir.rglob("*.html"))
-        html_file = html_files[0] if html_files else None
+        src_html_file = published_dir / "src" / "index.html"
+        if src_html_file.exists():
+            html_file = src_html_file
+        else:
+            html_files = list(published_dir.rglob("*.html"))
+            html_file = html_files[0] if html_files else None
 
     if not html_file:
         return "Published app not found", 404
 
     html = Path(html_file).read_text(encoding="utf-8", errors="replace")
     src_dir = Path(html_file).parent
-    for css_path in sorted(src_dir.glob("*.css")):
-        css = css_path.read_text(encoding="utf-8", errors="replace")
-        link_tag = f'<link rel="stylesheet" href="./{css_path.name}">'
-        if link_tag in html:
-            html = html.replace(link_tag, f"<style>{css}</style>")
-        elif "</head>" in html:
-            html = html.replace("</head>", f"<style>{css}</style>\n</head>")
+    if src_dir.name == "src":
+        for css_path in sorted(src_dir.glob("*.css")):
+            css = css_path.read_text(encoding="utf-8", errors="replace")
+            link_tag = f'<link rel="stylesheet" href="./{css_path.name}">'
+            if link_tag in html:
+                html = html.replace(link_tag, f"<style>{css}</style>")
+            elif "</head>" in html:
+                html = html.replace("</head>", f"<style>{css}</style>\n</head>")
+        for js_path in sorted(src_dir.glob("*.js")):
+            js = js_path.read_text(encoding="utf-8", errors="replace")
+            script_tag = f'<script src="./{js_path.name}">'
+            if script_tag in html:
+                html = html.replace(f'{script_tag}</script>', f"<script>{js}</script>")
+            elif "</body>" in html:
+                html = html.replace("</body>", f"<script>{js}</script>\n</body>")
+    html = rewrite_preview_file_references(
+        html,
+        mount_prefix=f"/published/{slug}",
+        root_dir=relative_mount_root(published_dir, Path(html_file)),
+    )
     return Response(html, mimetype="text/html")
+
+
+@app.route("/published/<slug>/<path:asset_path>", methods=["GET"])
+def serve_published_file(slug: str, asset_path: str):
+    if not all(c.isalnum() or c in "-_" for c in slug):
+        return "Invalid slug", 400
+
+    published_dir = (REPO_ROOT / "published" / slug).resolve()
+    target = (published_dir / asset_path).resolve()
+    try:
+        target.relative_to(published_dir)
+    except ValueError:
+        return "Invalid asset path", 400
+
+    if not target.exists() or not target.is_file():
+        return "Published asset not found", 404
+
+    guessed_type = mimetypes.guess_type(str(target))[0] or "application/octet-stream"
+    return send_file(target, mimetype=guessed_type)
 
 
 

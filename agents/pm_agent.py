@@ -16,6 +16,12 @@ Convert the client's raw requirements into a clean, professional Product Require
 Output must include these sections:
 - document_title: Clear project name
 - version: Use "0.1" for initial draft
+- detected_intent: One sentence describing the true product intent
+- archetype_hint: Best-fit product archetype (dashboard, ecommerce, portfolio, editor, game, fintech, etc.)
+- primary_user_action: The main thing users do in this product
+- visual_direction: A specific visual direction for this build (materials, palette bias, typography personality, mood)
+- tone_keywords: 3-5 concise style words
+- prompt_quality_score: integer 0-100 for request specificity and ambition
 - overview: High-level description (2-3 sentences)
 - goals: Success criteria (3-5 bullet points)
 - non_goals: Explicit exclusions (3-5 bullet points)
@@ -30,6 +36,8 @@ Output must include these sections:
 - open_questions: Client clarifications needed (5-10 questions)
 
 Be thorough, professional, and specific. Do NOT generate app content (e.g., meal plans). Only write requirements.
+Infer missing product identity details when the user is vague, but keep them plausible.
+The visual_direction should be concrete enough that a planner can derive a strong UI quality target from it.
 
 For regenerate_images: set False when the request is about layout, text, spacing, functionality, or code only, or when the user says not to generate images. Set True when new visuals, new image sections, or a different visual theme are requested, or for first builds. Default to False on iterations unless visual changes are clearly needed.
 """

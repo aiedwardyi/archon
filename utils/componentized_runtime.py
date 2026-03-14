@@ -1,0 +1,1482 @@
+from __future__ import annotations
+
+import json
+import os
+import re
+import shutil
+import subprocess
+from pathlib import Path
+from typing import Any
+
+from utils.offline_engineer_scaffold import build_vite_react_ts_scaffold
+
+
+TEXT_EXTENSIONS = {
+    ".css",
+    ".html",
+    ".js",
+    ".jsx",
+    ".json",
+    ".md",
+    ".mjs",
+    ".ts",
+    ".tsx",
+    ".txt",
+    ".yml",
+    ".yaml",
+}
+
+TEXT_FILENAMES = {
+    ".gitignore",
+    "index.html",
+    "package-lock.json",
+    "package.json",
+    "README.md",
+    "tsconfig.json",
+    "tsconfig.node.json",
+    "vite.config.ts",
+}
+
+SKIP_DIRS = {
+    ".git",
+    ".vite",
+    "__pycache__",
+    "assets",
+    "dist",
+    "node_modules",
+}
+
+API_ASSET_URL_RE = re.compile(r"/api/assets/\d+/\d+/([^\"'()\s>]+)")
+LOCAL_CODE_IMPORT_RE = re.compile(r'((?:from\s+|import\s*\(\s*|import\s+)[\"\'])(\.\.?/[^\"\']+?)\.(tsx|ts|jsx|js)([\"\'])')
+BASE_CSS_IMPORT_LINE_RE = re.compile(r'^\s*import\s+[\"\'][^\"\']*base\.css[\"\'];?\s*$\n?', re.MULTILINE)
+BASE_CSS_IMPORT_ANY_RE = re.compile(r'import\s+[\"\'][^\"\']*base\.css[\"\'];?\s*')
+MAIN_BASE_CSS_IMPORT_RE = re.compile(
+    r'^\s*import\s+[\"\'][^\"\']*base\.css[\"\'];?\s*(?:/\*.*\*/)?\s*$',
+    re.MULTILINE,
+)
+INLINE_COMMENT_RUNON_RE = re.compile(
+    r"//\s*([^\n]*?)(?=(?:import\b|const|let|var|function|export\b|return\b|interface\b|type\b|class\b|use[A-Z]\w*|[A-Z][A-Za-z0-9_]*\s*[.(<]))"
+)
+INLINE_BLOCK_COMMENT_CODE_BLEED_RE = re.compile(
+    r"/\*\s*(?P<comment>[^*]*?)\s{2,}(?P<prop>[A-Za-z_$][\w$]*)\s*:\s*(?P<prefix>[^*]*?)\*/\s*\n\s*",
+    re.MULTILINE,
+)
+BLOCK_COMMENT_CONTROL_FLOW_BLEED_RE = re.compile(
+    r"/\*\s*(?P<comment>[^*]*?)\s+(?P<code>(?:if\s*\([^*]+\)\s*\{|for\s*\([^*]+\)\s*\{|while\s*\([^*]+\)\s*\{|return\b[^*;{}]*[;{]|const\s+[A-Za-z_$][\w$]*\s*=|let\s+[A-Za-z_$][\w$]*\s*=|var\s+[A-Za-z_$][\w$]*\s*=|set[A-Z]\w*\s*\([^*]*\)))\s*\*/",
+    re.MULTILINE,
+)
+INTERFACE_FIELD_COMMENT_BLEED_RE = re.compile(
+    r"(?P<field>[A-Za-z_$][\w$]*\??\s*:\s*[^;{}\n]+;)\s*/\*\s*(?P<comment>[^*]*?)\}\s*\*/\s*\n(?=\s*(?:interface|type)\b)",
+    re.MULTILINE,
+)
+RUNON_NATURAL_LANGUAGE_NOTE_RE = re.compile(
+    r"(?:(?<=;)|(?<=\n)|^)\s*(?:Return|Note|Explanation)\s*\((?P<note>[^)\n]{2,160})\)\s*(?=(?:const\b|let\b|var\b|return\b|set[A-Z]\w*\b|[A-Za-z_$][\w$]*\s*=))",
+    re.MULTILINE,
+)
+RUNON_EXPLANATORY_LABEL_RE = re.compile(
+    r"(?m)^(?P<label>[A-Za-z][A-Za-z0-9/&,\- ':]+(?:\([^)\n]{1,120}\))?)\s{2,}(?=(?:[)}]\s*)*(?:const\b|let\b|var\b|function\b|return\b|set[A-Z]\w*\b|[A-Za-z_$][\w$]*\s*=|[)}]))"
+)
+BARE_SECTION_LABEL_RE = re.compile(
+    r"(?m)^(?P<label>[A-Za-z][A-Za-z0-9/&,\- ':]+(?:\([^)\n]{1,120}\))?)\s*$\n(?=\s*(?:const|let|var|function|export|type|interface|class|return|if|for|while|switch|set[A-Z]\w*\(|[A-Za-z_$][\w$]*\(|[)}]))"
+)
+URL_PROTOCOL_COMMENT_BLEED_RE = re.compile(r"(?P<scheme>https?):/\*\s*")
+ATTR_VALUE_ORPHAN_COMMENT_CLOSE_RE = re.compile(
+    r"(?P<attr>[A-Za-z_:][-A-Za-z0-9_:.]*)=(?P<quote>[\"'])\s*\*/\s*"
+)
+TRAILING_SECTION_LINE_COMMENT_RE = re.compile(
+    r"(?P<stmt>(?:\)\s*;|}\s*;))\s*//\s*(?P<label>[^*\n]{2,120}?)\s*\*/\s*(?=\r?\n\s*(?:const|function|export|type|interface|class))",
+    re.MULTILINE,
+)
+ORPHAN_COMMENT_CLOSE_AFTER_STATEMENT_RE = re.compile(
+    r"(?P<stmt>(?:\)\s*;|}\s*;))\s*\*/(?=\s*(?:\r?\n\s*)?(?:const|function|export|type|interface|class|return|$))",
+    re.MULTILINE,
+)
+COMMENT_SPLIT_IDENTIFIER_RE = re.compile(
+    r"/\*\s*(?P<comment>[^*]*?)\s{2,}(?P<prefix>[a-z][A-Za-z0-9_$]{1,32})\s*\*/\s*\n(?P<suffix>[A-Z][A-Za-z0-9_$]{1,64})(?P<rest>[^\n]*)",
+    re.MULTILINE,
+)
+DECLARATION_BOUNDARY_RE = re.compile(
+    r"(?<=})(?=(?:interface\b|type\b|const\b|let\b|var\b|function\b|export\b|class\b|return\b))"
+)
+PACKAGE_IMPORT_RE = re.compile(
+    r'^\s*(?:import(?:.+?\sfrom\s+)?|export.+?\sfrom\s+)[\"\']([^\"\']+)[\"\']',
+    re.MULTILINE,
+)
+LOCAL_CSS_IMPORT_RE = re.compile(r'^\s*import\s+[\"\'](\.?\.?/[^\"\']+\.css)[\"\'];?', re.MULTILINE)
+LOCAL_REL_IMPORT_RE = re.compile(
+    r'(?:from\s+[\"\'](?P<from>\.{1,2}/[^\"\']+)[\"\']|import\s*\(\s*[\"\'](?P<dynamic>\.{1,2}/[^\"\']+)[\"\']\s*\)|import\s+[\"\'](?P<bare>\.{1,2}/[^\"\']+)[\"\'])'
+)
+EMPTY_CURRENCY_FORMAT_ARG_RE = re.compile(
+    r"formatCurrency\(\s*(?P<value>[^,\n]+?)\s*,\s*['\"]\s*['\"]\s*\)"
+)
+FORMAT_CURRENCY_GUARD_RE = re.compile(r"currency\s*:\s*currency\b")
+GOOGLE_FONT_IMPORT_RE = re.compile(r"https://fonts\.googleapis\.com/[^\s\"')]+")
+CSS_VARIABLE_RE = re.compile(r"(--[\w-]+)\s*:\s*([^;}{]+);")
+HEX_COLOR_RE = re.compile(r"#[0-9a-fA-F]{3,8}\b")
+KEYFRAME_RE = re.compile(r"@keyframes\s+([A-Za-z_][\w-]*)")
+FONT_FAMILY_RE = re.compile(r"font-family\s*:\s*([^;}{]+);")
+BORDER_RADIUS_RE = re.compile(r"border-radius\s*:\s*([^;}{]+);")
+BOX_SHADOW_RE = re.compile(r"box-shadow\s*:\s*([^;}{]+);")
+MEDIA_QUERY_RE = re.compile(r"@media[^{]*?(?:max|min)-width\s*:\s*([0-9]+px)", re.IGNORECASE)
+JS_EVENT_HANDLER_RE = re.compile(r"\bon(Click|Change|Submit|Input|KeyDown|KeyUp|MouseEnter|MouseLeave|Focus|Blur)\s*=")
+DOM_EVENT_LISTENER_RE = re.compile(r"addEventListener\(\s*['\"]([a-z]+)['\"]")
+CSS_BLOCK_RE = re.compile(r"(?P<selector>[^{}]+)\{(?P<body>[^{}]*)\}", re.MULTILINE)
+GOOGLE_FONT_IMPORT_LINE_RE = re.compile(r"^\s*@import\s+url\([^)]+fonts\.googleapis\.com[^)]*\)\s*;\s*$", re.MULTILINE)
+
+SAFE_COMPONENTIZED_DEPENDENCIES = {
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.564.0",
+    "recharts": "2.15.0",
+}
+
+DISPLAY_SELECTOR_HINTS = (
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    ".page-title",
+    ".section-title",
+    ".chart-title",
+    ".panel-title",
+    ".topbar-brand",
+    ".logo-text",
+    ".feed-header",
+)
+
+OVERRIDE_DISPLAY_FONT_RE = re.compile(r"(--font-display\s*:\s*)'Inter'[^;]*;", re.IGNORECASE)
+NUMERIC_SELECTOR_HINTS = (
+    ".kpi-value",
+    ".kpi-delta",
+    ".ticker-price",
+    ".ticker-delta",
+    ".watch-price",
+    ".watch-delta",
+    ".feed-time",
+    ".asset-table td",
+    ".table-number",
+    ".numeric",
+    ".price",
+    ".delta",
+)
+MAIN_CSS_IMPORT_LINE_RE = re.compile(r'^\s*import\s+["\'](?P<path>\./[^"\']+\.css)["\'];?\s*(?:/\*.*\*/)?\s*$')
+MAIN_ENTRY_PREFERRED_CSS_ORDER = ("./base.css", "./index.css", "./style.css", "./styles.css")
+COMPONENTIZED_UTILITY_FALLBACKS: dict[str, str] = {
+    "font-display": "font-family: var(--font-display, 'Space Grotesk', 'Inter', sans-serif); letter-spacing: -0.02em;",
+    "font-body": "font-family: var(--font-body, 'Inter', sans-serif);",
+    "font-mono": "font-family: var(--font-mono, 'JetBrains Mono', monospace); font-variant-numeric: tabular-nums;",
+    "text-color-primary-text": "color: var(--color-primary-text, var(--text, #f4f8fc));",
+    "text-color-secondary-text": "color: var(--color-secondary-text, var(--text-secondary, #b8c6d8));",
+    "text-color-muted-text": "color: var(--color-muted-text, var(--text-muted, #6f7f95));",
+    "text-color-primary-accent": "color: var(--color-primary-accent, var(--accent, #10b981));",
+    "text-color-success": "color: var(--color-success, var(--accent, #10b981));",
+    "text-color-danger": "color: var(--color-danger, #f87171);",
+    "text-h1": "font-family: var(--font-display, 'Space Grotesk', 'Inter', sans-serif); font-size: var(--font-size-h1, clamp(2.5rem, 4vw, 3.5rem)); line-height: 1.05;",
+    "text-h2": "font-family: var(--font-display, 'Space Grotesk', 'Inter', sans-serif); font-size: var(--font-size-h2, clamp(1.875rem, 3vw, 2.5rem)); line-height: 1.1;",
+    "text-h3": "font-family: var(--font-display, 'Space Grotesk', 'Inter', sans-serif); font-size: var(--font-size-h3, clamp(1.25rem, 2vw, 1.75rem)); line-height: 1.2;",
+    "top-1/2": "top: 50%;",
+    "-translate-y-1/2": "transform: translateY(-50%);",
+}
+COMPONENTIZED_UTILITY_FALLBACK_MARKER = "/* Generated componentized utility fallbacks */"
+
+
+def infer_scaffold_mode(code_dir: Path, plan_data: dict[str, Any] | None = None) -> str:
+    if plan_data:
+        for milestone in plan_data.get("milestones", []):
+            for task in milestone.get("tasks", []):
+                if task.get("execution_hint") == "engineer":
+                    mode = str(task.get("scaffold_mode") or "").strip()
+                    if mode:
+                        return mode
+
+    package_json = code_dir / "package.json"
+    if package_json.exists():
+        return "componentized_app"
+    return "legacy_single_page"
+
+
+def is_componentized_workspace(code_dir: Path, plan_data: dict[str, Any] | None = None) -> bool:
+    return infer_scaffold_mode(code_dir, plan_data=plan_data) == "componentized_app"
+
+
+def collect_existing_code_context(
+    code_dir: Path,
+    *,
+    max_files: int = 48,
+    max_chars_per_file: int = 24_000,
+) -> str | None:
+    if not code_dir.exists():
+        return None
+
+    rendered: list[str] = []
+    file_count = 0
+
+    for path in sorted(code_dir.rglob("*")):
+        if not path.is_file():
+            continue
+        rel = path.relative_to(code_dir).as_posix()
+        if any(part in SKIP_DIRS for part in path.relative_to(code_dir).parts[:-1]):
+            continue
+        if rel.startswith("assets/"):
+            continue
+
+        name = path.name
+        if path.suffix.lower() not in TEXT_EXTENSIONS and name not in TEXT_FILENAMES:
+            continue
+
+        try:
+            content = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+
+        if len(content) > max_chars_per_file:
+            content = content[:max_chars_per_file] + "\n/* TRUNCATED FOR CONTEXT */\n"
+
+        rendered.append(f"--- FILE: {rel} ---\n{content}\n--- END FILE ---")
+        file_count += 1
+        if file_count >= max_files:
+            rendered.append("--- NOTE: Additional files omitted for context size. ---")
+            break
+
+    if not rendered:
+        return None
+    return "\n\n".join(rendered)
+
+
+def collect_selected_code_context(
+    code_dir: Path,
+    rel_paths: list[str],
+    *,
+    max_chars_per_file: int = 24_000,
+) -> str | None:
+    rendered: list[str] = []
+    for rel_path in rel_paths:
+        normalized = rel_path.replace("\\", "/").strip("/")
+        if not normalized:
+            continue
+        path = code_dir / normalized
+        if not path.exists() or not path.is_file():
+            continue
+        try:
+            content = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        if len(content) > max_chars_per_file:
+            content = content[:max_chars_per_file] + "\n/* TRUNCATED FOR CONTEXT */\n"
+        rendered.append(f"--- FILE: {normalized} ---\n{content}\n--- END FILE ---")
+    if not rendered:
+        return None
+    return "\n\n".join(rendered)
+
+
+def _collect_workspace_text_blob(code_dir: Path, *, max_chars_per_file: int = 24_000) -> str:
+    if not code_dir.exists():
+        return ""
+
+    chunks: list[str] = []
+    for rel_path in collect_componentized_editable_files(code_dir):
+        path = code_dir / rel_path
+        try:
+            content = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        if len(content) > max_chars_per_file:
+            content = content[:max_chars_per_file]
+        chunks.append(content)
+    return "\n".join(chunks)
+
+
+def _limited_sorted_set(values: Any, *, limit: int) -> list[str]:
+    seen: list[str] = []
+    for value in values:
+        normalized = str(value).strip()
+        if not normalized or normalized in seen:
+            continue
+        seen.append(normalized)
+        if len(seen) >= limit:
+            break
+    return sorted(seen)
+
+
+def extract_visual_dna(code_dir: Path) -> dict[str, Any]:
+    combined = _collect_workspace_text_blob(code_dir)
+    if not combined:
+        return {
+            "google_font_imports": [],
+            "font_families": [],
+            "css_variables": {},
+            "hex_colors": [],
+            "keyframes": [],
+            "radius_values": [],
+            "shadow_values": [],
+        }
+
+    css_variables: dict[str, str] = {}
+    for name, value in CSS_VARIABLE_RE.findall(combined):
+        if name not in css_variables and len(css_variables) < 48:
+            css_variables[name] = " ".join(value.strip().split())
+
+    return {
+        "google_font_imports": _limited_sorted_set(GOOGLE_FONT_IMPORT_RE.findall(combined), limit=8),
+        "font_families": _limited_sorted_set(
+            (" ".join(match.strip().split()) for match in FONT_FAMILY_RE.findall(combined)),
+            limit=16,
+        ),
+        "css_variables": css_variables,
+        "hex_colors": _limited_sorted_set((value.lower() for value in HEX_COLOR_RE.findall(combined)), limit=32),
+        "keyframes": _limited_sorted_set(KEYFRAME_RE.findall(combined), limit=24),
+        "radius_values": _limited_sorted_set(
+            (" ".join(match.strip().split()) for match in BORDER_RADIUS_RE.findall(combined)),
+            limit=16,
+        ),
+        "shadow_values": _limited_sorted_set(
+            (" ".join(match.strip().split()) for match in BOX_SHADOW_RE.findall(combined)),
+            limit=16,
+        ),
+    }
+
+
+def extract_feature_inventory(code_dir: Path) -> dict[str, Any]:
+    combined = _collect_workspace_text_blob(code_dir)
+    normalized = combined.lower()
+    if not combined:
+        return {
+            "event_handlers": [],
+            "responsive_breakpoints": [],
+            "detected_features": [],
+            "polish_features": [],
+        }
+
+    event_handlers = {
+        event.lower()
+        for event in JS_EVENT_HANDLER_RE.findall(combined)
+    }
+    event_handlers.update(DOM_EVENT_LISTENER_RE.findall(normalized))
+
+    feature_patterns = {
+        "tabs": ("data-tab", "activetab", "role=\"tab\"", "tablist"),
+        "filters": ("filtered", "setfilter", "categoryfilter", "filterpill"),
+        "search": ("searchquery", "setsearch", "searchterm", "searchinput", 'aria-label="search', 'placeholder="search'),
+        "cart": ("addtocart", "cartitems", "setcart", "subtotal"),
+        "wishlist": ("wishlist", "saveditems"),
+        "loyalty": ("loyalty", "reward points", "rewards tier", "points balance"),
+        "modal_or_dialog": ("modal", "dialog", "aria-modal"),
+        "drawer_or_sheet": ("drawer", "sheet", "slideover"),
+        "accordion": ("accordion", "expandedindex", "faq-item"),
+        "carousel": ("carousel", "current slide", "setcurrentslide"),
+        "toast_notifications": ("toast", "notification", "showtoast"),
+        "form_validation": ("onsubmit", "seterrors", "validation", "error message"),
+        "mobile_nav": ("mobilemenu", "nav-open", "setismenuopen", "hamburger"),
+        "scroll_reveal": ("intersectionobserver", "scrollreveal", "reveal-on-scroll"),
+        "chart_state": ("recharts", "chart", "selectedrange", "sparkline", "tooltip"),
+        "table_sorting": ("sortconfig", "sortkey", "sortdirection", "sortable"),
+        "table_filtering": ("filteredrows", "filteredtransactions", "filteredcustomers"),
+        "range_selector": ("7d", "30d", "90d", "1y", "selectedrange"),
+        "watchlist": ("watchlist", "watch list"),
+        "game_loop": ("streak", "score", "nextquestion", "difficulty"),
+    }
+
+    detected_features = [
+        feature
+        for feature, signals in feature_patterns.items()
+        if any(signal in normalized for signal in signals)
+    ]
+
+    polish_patterns = {
+        "custom_scrollbar": ("::-webkit-scrollbar", "scrollbar-width"),
+        "selection_styling": ("::selection",),
+        "sticky_header": ("position: sticky", "sticky top"),
+        "count_up_numbers": ("countup", "requestanimationframe", "animatevalue"),
+        "animated_gradients": ("linear-gradient", "radial-gradient", "background-size"),
+    }
+    polish_features = [
+        feature
+        for feature, signals in polish_patterns.items()
+        if any(signal in normalized for signal in signals)
+    ]
+
+    return {
+        "event_handlers": _limited_sorted_set(event_handlers, limit=16),
+        "responsive_breakpoints": _limited_sorted_set(MEDIA_QUERY_RE.findall(combined), limit=12),
+        "detected_features": detected_features[:24],
+        "polish_features": polish_features[:16],
+    }
+
+
+def build_componentized_preview(
+    code_dir: Path,
+    *,
+    timeout_seconds: int = 180,
+) -> dict[str, Any]:
+    package_json = code_dir / "package.json"
+    if not package_json.exists():
+        return {
+            "status": "skipped",
+            "reason": "package.json not found",
+            "dist_index": None,
+        }
+
+    npm_cmd = "npm.cmd" if os.name == "nt" else "npm"
+    env = os.environ.copy()
+    env.setdefault("CI", "1")
+
+    commands: list[list[str]] = []
+    install_required = not (code_dir / "node_modules").exists()
+    if install_required:
+        commands.append([npm_cmd, "install"])
+    commands.append([npm_cmd, "run", "build"])
+
+    logs: list[dict[str, Any]] = []
+    try:
+        for command in commands:
+            completed = subprocess.run(
+                command,
+                cwd=code_dir,
+                capture_output=True,
+                text=True,
+                timeout=timeout_seconds,
+                env=env,
+                check=False,
+            )
+            logs.append(
+                {
+                    "command": command,
+                    "returncode": completed.returncode,
+                    "stdout": completed.stdout[-12_000:],
+                    "stderr": completed.stderr[-12_000:],
+                }
+            )
+            if completed.returncode != 0:
+                if install_required and command[:2] == [npm_cmd, "install"] and "ERESOLVE" in (completed.stderr or ""):
+                    retry_command = [npm_cmd, "install", "--legacy-peer-deps"]
+                    retry = subprocess.run(
+                        retry_command,
+                        cwd=code_dir,
+                        capture_output=True,
+                        text=True,
+                        timeout=timeout_seconds,
+                        env=env,
+                        check=False,
+                    )
+                    logs.append(
+                        {
+                            "command": retry_command,
+                            "returncode": retry.returncode,
+                            "stdout": retry.stdout[-12_000:],
+                            "stderr": retry.stderr[-12_000:],
+                        }
+                    )
+                    if retry.returncode == 0:
+                        continue
+                if command[:3] == [npm_cmd, "run", "build"] and _should_retry_with_vite_build(completed, code_dir):
+                    retry_command = [npm_cmd, "exec", "vite", "build"]
+                    retry = subprocess.run(
+                        retry_command,
+                        cwd=code_dir,
+                        capture_output=True,
+                        text=True,
+                        timeout=timeout_seconds,
+                        env=env,
+                        check=False,
+                    )
+                    logs.append(
+                        {
+                            "command": retry_command,
+                            "returncode": retry.returncode,
+                            "stdout": retry.stdout[-12_000:],
+                            "stderr": retry.stderr[-12_000:],
+                        }
+                    )
+                    if retry.returncode == 0:
+                        continue
+                return {
+                    "status": "error",
+                    "reason": f"{' '.join(command)} failed",
+                    "dist_index": None,
+                    "logs": logs,
+                }
+    except FileNotFoundError:
+        return {
+            "status": "error",
+            "reason": f"{npm_cmd} not found",
+            "dist_index": None,
+            "logs": logs,
+        }
+    except subprocess.TimeoutExpired as exc:
+        return {
+            "status": "error",
+            "reason": f"Build timed out after {timeout_seconds}s",
+            "dist_index": None,
+            "logs": logs + [{"command": exc.cmd, "returncode": None, "stdout": "", "stderr": "timeout"}],
+        }
+
+    dist_index = code_dir / "dist" / "index.html"
+    if dist_index.exists():
+        _make_dist_index_portable(dist_index)
+    return {
+        "status": "success" if dist_index.exists() else "error",
+        "reason": None if dist_index.exists() else "dist/index.html not found after build",
+        "dist_index": str(dist_index) if dist_index.exists() else None,
+        "logs": logs,
+    }
+
+
+def _should_retry_with_vite_build(completed: subprocess.CompletedProcess[str], code_dir: Path) -> bool:
+    stdout = completed.stdout or ""
+    stderr = completed.stderr or ""
+    combined = f"{stdout}\n{stderr}"
+    if "The TypeScript Compiler - Version" not in combined:
+        return False
+    if (code_dir / "tsconfig.json").exists():
+        return False
+    return True
+
+
+def collect_componentized_editable_files(code_dir: Path) -> list[str]:
+    editable_files: list[str] = []
+    if not code_dir.exists():
+        return editable_files
+
+    for path in sorted(code_dir.rglob("*")):
+        if not path.is_file():
+            continue
+        rel = path.relative_to(code_dir)
+        if any(part in SKIP_DIRS for part in rel.parts[:-1]):
+            continue
+        name = path.name
+        if path.suffix.lower() not in TEXT_EXTENSIONS and name not in TEXT_FILENAMES:
+            continue
+        editable_files.append(rel.as_posix())
+    return editable_files
+
+
+def collect_componentized_direct_dependencies(
+    code_dir: Path,
+    rel_paths: list[str],
+    *,
+    max_depth: int = 1,
+) -> list[str]:
+    root = code_dir.resolve()
+    discovered: set[str] = set()
+    pending: list[tuple[str, int]] = [
+        (path.replace("\\", "/").strip("/"), 0) for path in rel_paths if path
+    ]
+    seen: set[str] = set()
+
+    while pending:
+        rel_path, depth = pending.pop(0)
+        if rel_path in seen or depth >= max_depth:
+            seen.add(rel_path)
+            continue
+        seen.add(rel_path)
+
+        source_path = code_dir / rel_path
+        if not source_path.exists() or not source_path.is_file():
+            continue
+        try:
+            source = source_path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+
+        for raw_import in _iter_local_import_specifiers(source):
+            resolved_rel = _resolve_local_import_path(code_dir, rel_path, raw_import)
+            if not resolved_rel or resolved_rel in seen:
+                continue
+            discovered.add(resolved_rel)
+            pending.append((resolved_rel, depth + 1))
+
+    return sorted(discovered)
+
+
+def _backfill_componentized_utility_classes(code_dir: Path) -> list[str]:
+    base_css_path = code_dir / "src" / "base.css"
+    if not base_css_path.exists():
+        return []
+
+    referenced_tokens: set[str] = set()
+    for rel_path in collect_componentized_editable_files(code_dir):
+        if not rel_path.endswith((".ts", ".tsx", ".js", ".jsx")):
+            continue
+        path = code_dir / rel_path
+        try:
+            source = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for token in COMPONENTIZED_UTILITY_FALLBACKS:
+            if token in source:
+                referenced_tokens.add(token)
+
+    if not referenced_tokens:
+        return []
+
+    try:
+        existing_css = base_css_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+
+    block_lines: list[str] = []
+    for token in sorted(referenced_tokens):
+        selector = "." + token.replace("/", "\\/")
+        if selector in existing_css:
+            continue
+        block_lines.append(f"{selector} {{ {COMPONENTIZED_UTILITY_FALLBACKS[token]} }}")
+
+    if not block_lines:
+        return []
+
+    append_block = COMPONENTIZED_UTILITY_FALLBACK_MARKER + "\n" + "\n".join(block_lines) + "\n"
+    updated_css = existing_css.rstrip() + "\n\n" + append_block
+    base_css_path.write_text(updated_css, encoding="utf-8")
+    return ["src/base.css"]
+
+
+def rewrite_componentized_asset_api_urls(text: str) -> str:
+    return API_ASSET_URL_RE.sub(lambda m: f"/generated-assets/{Path(m.group(1)).name}", text)
+
+
+def _iter_local_import_specifiers(source: str) -> list[str]:
+    imports: list[str] = []
+    for match in LOCAL_REL_IMPORT_RE.finditer(source):
+        specifier = (
+            match.group("from")
+            or match.group("dynamic")
+            or match.group("bare")
+            or ""
+        ).strip()
+        if specifier:
+            imports.append(specifier.replace("\\", "/"))
+    return imports
+
+
+def _resolve_local_import_path(code_dir: Path, rel_path: str, specifier: str) -> str | None:
+    source_dir = (code_dir / rel_path).parent
+    raw_target = (source_dir / specifier).resolve()
+    try:
+        raw_target.relative_to(code_dir.resolve())
+    except ValueError:
+        return None
+
+    candidates: list[Path] = [raw_target]
+    if raw_target.suffix:
+        if raw_target.suffix in TEXT_EXTENSIONS and raw_target.exists():
+            return raw_target.relative_to(code_dir).as_posix()
+    else:
+        for suffix in (".ts", ".tsx", ".js", ".jsx", ".css"):
+            candidates.append(raw_target.with_suffix(suffix))
+        if raw_target.is_dir() or not raw_target.exists():
+            for index_name in ("index.ts", "index.tsx", "index.js", "index.jsx", "index.css"):
+                candidates.append(raw_target / index_name)
+
+    root = code_dir.resolve()
+    for candidate in candidates:
+        try:
+            candidate.resolve().relative_to(root)
+        except ValueError:
+            continue
+        if candidate.exists() and candidate.is_file():
+            return candidate.relative_to(code_dir).as_posix()
+    return None
+
+
+def stage_componentized_design_assets(version_dir: Path, design_assets: list[dict[str, Any]]) -> list[dict[str, str]]:
+    public_dir = version_dir / "code" / "public" / "generated-assets"
+    public_dir.mkdir(parents=True, exist_ok=True)
+
+    staged_assets: list[dict[str, str]] = []
+    for asset in design_assets:
+        key = str(asset.get("key") or "asset").strip() or "asset"
+        purpose = str(asset.get("purpose") or "Design asset").strip() or "Design asset"
+        local_path = asset.get("local_path")
+        if local_path:
+            src = Path(local_path)
+            if not src.is_absolute():
+                src = (version_dir.parent.parent.parent / src).resolve()
+            if src.exists() and src.is_file():
+                suffix = src.suffix or ".png"
+                filename = f"{key}{suffix.lower()}"
+                dest = public_dir / filename
+                shutil.copy2(src, dest)
+                staged_assets.append({
+                    "key": key,
+                    "purpose": purpose,
+                    "path": f"/generated-assets/{filename}",
+                })
+                continue
+
+        url = str(asset.get("url") or "").strip()
+        if url:
+            staged_assets.append({
+                "key": key,
+                "purpose": purpose,
+                "path": url,
+            })
+    return staged_assets
+
+
+def ensure_componentized_workspace_support(
+    code_dir: Path,
+    *,
+    base_css_content: str | None = None,
+) -> dict[str, list[str]]:
+    code_dir.mkdir(parents=True, exist_ok=True)
+
+    created_files: list[str] = []
+    rewritten_files: list[str] = []
+    extracted_css_chunks: list[str] = []
+
+    for rel_path, content in _componentized_support_files().items():
+        target = code_dir / rel_path
+        if not target.exists():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(content, encoding="utf-8")
+            created_files.append(rel_path)
+
+    if base_css_content:
+        base_css_path = code_dir / "src" / "base.css"
+        if not base_css_path.exists():
+            base_css_path.parent.mkdir(parents=True, exist_ok=True)
+            base_css_path.write_text(base_css_content, encoding="utf-8")
+            created_files.append("src/base.css")
+        else:
+            original_base = base_css_path.read_text(encoding="utf-8", errors="replace")
+            updated_base = _normalize_componentized_base_css(original_base, reference_css=base_css_content)
+            if updated_base != original_base:
+                base_css_path.write_text(updated_base, encoding="utf-8")
+                rewritten_files.append("src/base.css")
+
+        main_path = code_dir / "src" / "main.tsx"
+        if main_path.exists():
+            original_main = main_path.read_text(encoding="utf-8", errors="replace")
+            updated_main = _normalize_componentized_main_entry(
+                _ensure_css_import(original_main, './base.css')
+            )
+            if updated_main != original_main:
+                main_path.write_text(updated_main, encoding="utf-8")
+                rewritten_files.append("src/main.tsx")
+
+    for rel_path in collect_componentized_editable_files(code_dir):
+        path = code_dir / rel_path
+        original = path.read_text(encoding="utf-8", errors="replace")
+        updated = _normalize_componentized_file(rel_path, original)
+        if rel_path.endswith((".tsx", ".jsx")):
+            updated, extracted_css = _extract_componentized_css_tail(updated)
+            if extracted_css:
+                extracted_css_chunks.append(extracted_css)
+        if updated != original:
+            path.write_text(updated, encoding="utf-8")
+            rewritten_files.append(rel_path)
+
+    if extracted_css_chunks:
+        index_css_path = code_dir / "src" / "index.css"
+        index_css_path.parent.mkdir(parents=True, exist_ok=True)
+        existing_css = index_css_path.read_text(encoding="utf-8", errors="replace") if index_css_path.exists() else ""
+        appended_css = "\n\n".join(chunk.strip() for chunk in extracted_css_chunks if chunk.strip()).strip()
+        if appended_css:
+            combined_css = existing_css.rstrip() + ("\n\n" if existing_css.strip() else "") + appended_css + "\n"
+            index_css_path.write_text(combined_css, encoding="utf-8")
+            if "src/index.css" not in rewritten_files:
+                rewritten_files.append("src/index.css")
+
+    created_files.extend(_backfill_missing_local_css_imports(code_dir))
+    rewritten_files.extend(_normalize_componentized_design_overrides(code_dir))
+    rewritten_files.extend(_backfill_componentized_utility_classes(code_dir))
+
+    synced_dependencies = _sync_componentized_package_dependencies(code_dir)
+    if synced_dependencies:
+        rewritten_files.append("package.json")
+
+    return {
+        "created_files": created_files,
+        "rewritten_files": rewritten_files,
+    }
+
+
+def summarize_componentized_build_error(build_result: dict[str, Any], *, max_chars: int = 4000) -> str:
+    if not build_result:
+        return "No build logs were captured."
+
+    chunks: list[str] = []
+    reason = str(build_result.get("reason") or "").strip()
+    if reason:
+        chunks.append(f"Reason: {reason}")
+
+    for log in (build_result.get("logs") or [])[-3:]:
+        command = " ".join(log.get("command") or [])
+        stdout = str(log.get("stdout") or "").strip()
+        stderr = str(log.get("stderr") or "").strip()
+        block = [f"$ {command}"]
+        if stdout:
+            block.append(stdout[-1500:])
+        if stderr:
+            block.append(stderr[-1500:])
+        chunks.append("\n".join(block))
+
+    summary = "\n\n".join(chunks).strip()
+    if len(summary) > max_chars:
+        summary = summary[-max_chars:]
+    return summary or "No build logs were captured."
+
+
+def relative_mount_root(code_dir: Path, target: Path) -> str:
+    rel_parent = target.relative_to(code_dir).parent.as_posix()
+    return "" if rel_parent == "." else rel_parent
+
+
+def rewrite_preview_file_references(
+    html: str,
+    *,
+    mount_prefix: str,
+    root_dir: str,
+) -> str:
+    def _src_href_repl(match: re.Match[str]) -> str:
+        prefix, raw_path, suffix = match.groups()
+        value = raw_path.strip()
+        lower = value.lower()
+        if lower.startswith(("http://", "https://", "data:", "mailto:", "tel:", "#", "/api/", "/published/")):
+            return match.group(0)
+        if lower.endswith((".css", ".js", ".mjs", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".ico")):
+            normalized = _normalize_asset_path(value, root_dir)
+            return f"{prefix}{mount_prefix}/{normalized}{suffix}"
+        return match.group(0)
+
+    html = re.sub(r'((?:src|href)=["\'])([^"\']+)(["\'])', _src_href_repl, html, flags=re.IGNORECASE)
+
+    html = re.sub(
+        r'(url\(["\']?)(/assets/[^)"\']+)(["\']?\))',
+        lambda m: f"{m.group(1)}{mount_prefix}/{_normalize_asset_path(m.group(2), root_dir)}{m.group(3)}",
+        html,
+        flags=re.IGNORECASE,
+    )
+    html = re.sub(
+        r'(url\(["\']?)(?:\./|\.\./)?([^)"\']+\.(?:png|jpg|jpeg|gif|webp|svg|ico|css|js|mjs))(["\']?\))',
+        lambda m: f"{m.group(1)}{mount_prefix}/{_normalize_asset_path(m.group(2), root_dir)}{m.group(3)}",
+        html,
+        flags=re.IGNORECASE,
+    )
+    return html
+
+
+def _normalize_asset_path(raw_path: str, root_dir: str) -> str:
+    value = raw_path.split("?", 1)[0].split("#", 1)[0]
+    if value.startswith("/assets/"):
+        prefix = f"{root_dir}/" if root_dir else ""
+        return f"{prefix}{value.lstrip('/')}".strip("/")
+    if value.startswith("/"):
+        prefix = f"{root_dir}/" if root_dir else ""
+        return f"{prefix}{value.lstrip('/')}".strip("/")
+
+    value = value.replace("\\", "/")
+    while value.startswith("./"):
+        value = value[2:]
+    while value.startswith("../"):
+        value = value[3:]
+
+    if root_dir:
+        return f"{root_dir}/{value}".strip("/")
+    return value.strip("/")
+
+
+def write_preview_build_manifest(version_dir: Path, data: dict[str, Any]) -> None:
+    path = version_dir / "last_preview_build.json"
+    path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def _componentized_support_files() -> dict[str, str]:
+    scaffold = build_vite_react_ts_scaffold(app_dir="componentized-support").files
+    prefix = "componentized-support/"
+    keep = {
+        "package.json",
+        "index.html",
+        "vite.config.ts",
+        "tsconfig.json",
+        "tsconfig.node.json",
+        "src/main.tsx",
+        "src/App.tsx",
+        "src/vite-env.d.ts",
+        "src/index.css",
+    }
+    files: dict[str, str] = {}
+    for path, content in scaffold.items():
+        normalized = path.replace("\\", "/")
+        if normalized.startswith(prefix):
+            normalized = normalized[len(prefix):]
+        if normalized in keep:
+            files[normalized] = content
+
+    files["src/index.css"] = "/* App-specific overrides live here. Keep this file intentionally minimal. */\n"
+
+    files["public/vite.svg"] = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">'
+        '<rect width="64" height="64" rx="16" fill="#111827"/>'
+        '<path d="M18 44L32 14L46 44H38L32 30L26 44H18Z" fill="#10B981"/>'
+        "</svg>\n"
+    )
+    return files
+
+
+def _backfill_missing_local_css_imports(code_dir: Path) -> list[str]:
+    created: list[str] = []
+    for rel_path in collect_componentized_editable_files(code_dir):
+        if not rel_path.endswith((".ts", ".tsx", ".js", ".jsx")):
+            continue
+        source_path = code_dir / rel_path
+        try:
+            source = source_path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for raw_import in LOCAL_CSS_IMPORT_RE.findall(source):
+            import_path = raw_import.replace("\\", "/")
+            target = (source_path.parent / import_path).resolve()
+            try:
+                target.relative_to(code_dir.resolve())
+            except ValueError:
+                continue
+            if target.exists():
+                continue
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("/* Generated fallback stylesheet to satisfy a referenced local CSS import. */\n", encoding="utf-8")
+            created.append(target.relative_to(code_dir).as_posix())
+    return created
+
+
+def _ensure_css_import(source: str, import_path: str) -> str:
+    if import_path in source:
+        return source
+    lines = source.splitlines()
+    import_line = f'import "{import_path}";'
+    insert_at = 0
+    for idx, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("import "):
+            insert_at = idx + 1
+    lines.insert(insert_at, import_line)
+    return "\n".join(lines) + ("\n" if source.endswith("\n") else "")
+
+
+def _normalize_componentized_file(rel_path: str, source: str) -> str:
+    updated = rewrite_componentized_asset_api_urls(source)
+
+    if rel_path == "index.html":
+        updated = _normalize_componentized_index_html(updated)
+    elif rel_path == "package.json":
+        updated = _normalize_componentized_package_json(updated)
+    elif rel_path in {"tsconfig.json", "tsconfig.node.json"}:
+        updated = _normalize_componentized_tsconfig(updated)
+    elif rel_path == "src/index.css":
+        updated = _normalize_componentized_index_css(updated)
+    elif rel_path.endswith((".ts", ".tsx", ".js", ".jsx")):
+        updated = LOCAL_CODE_IMPORT_RE.sub(r"\1\2\4", updated)
+        updated = _repair_interface_field_comment_bleed(updated)
+        updated = _repair_inline_block_comment_code_bleed(updated)
+        updated = _repair_block_comment_control_flow_bleed(updated)
+        updated = _normalize_run_on_inline_comments(updated)
+        updated = _repair_componentized_comment_split_identifiers(updated)
+        updated = _normalize_componentized_declaration_boundaries(updated)
+        updated = _normalize_run_on_natural_language_notes(updated)
+        updated = _normalize_run_on_explanatory_labels(updated)
+        updated = _normalize_bare_section_labels(updated)
+        updated = _repair_componentized_comment_url_bleed(updated)
+        updated = _normalize_run_on_imports(updated)
+        updated = _normalize_componentized_currency_formatting(updated)
+        if rel_path.replace("\\", "/") == "src/main.tsx":
+            updated = _normalize_componentized_main_entry(updated)
+            updated = _ensure_css_import(updated, "./base.css")
+            updated = _normalize_componentized_main_entry(updated)
+        elif "base.css" in updated:
+            updated = BASE_CSS_IMPORT_ANY_RE.sub("", updated)
+            updated = BASE_CSS_IMPORT_LINE_RE.sub("", updated)
+
+    return updated
+
+
+def _normalize_componentized_package_json(source: str) -> str:
+    try:
+        data = json.loads(source)
+    except json.JSONDecodeError:
+        return source
+
+    if not isinstance(data, dict):
+        return source
+
+    scripts = data.setdefault("scripts", {})
+    if isinstance(scripts, dict):
+        build_value = str(scripts.get("build") or "").strip()
+        if not build_value or "tsc" in build_value:
+            scripts["build"] = "vite build"
+        scripts.setdefault("dev", "vite")
+        scripts.setdefault("preview", "vite preview")
+
+    normalized = json.dumps(data, indent=2, ensure_ascii=False)
+    return normalized + "\n"
+
+
+def _sync_componentized_package_dependencies(code_dir: Path) -> list[str]:
+    package_json_path = code_dir / "package.json"
+    if not package_json_path.exists():
+        return []
+
+    try:
+        data = json.loads(package_json_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+
+    if not isinstance(data, dict):
+        return []
+
+    dependencies = data.setdefault("dependencies", {})
+    dev_dependencies = data.setdefault("devDependencies", {})
+    if not isinstance(dependencies, dict) or not isinstance(dev_dependencies, dict):
+        return []
+
+    detected_packages: set[str] = set()
+    for rel_path in collect_componentized_editable_files(code_dir):
+        if not rel_path.endswith((".ts", ".tsx", ".js", ".jsx")):
+            continue
+        path = code_dir / rel_path
+        try:
+            source = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for match in PACKAGE_IMPORT_RE.finditer(source):
+            specifier = match.group(1).strip()
+            if not specifier or specifier.startswith((".", "/", "node:")):
+                continue
+            package_name = _root_package_name(specifier)
+            if package_name in SAFE_COMPONENTIZED_DEPENDENCIES:
+                detected_packages.add(package_name)
+
+    added: list[str] = []
+    for package_name in sorted(detected_packages):
+        if package_name in dependencies or package_name in dev_dependencies:
+            continue
+        dependencies[package_name] = SAFE_COMPONENTIZED_DEPENDENCIES[package_name]
+        added.append(package_name)
+
+    if not added:
+        return []
+
+    normalized = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
+    package_json_path.write_text(normalized, encoding="utf-8")
+    return added
+
+
+def _normalize_componentized_tsconfig(source: str) -> str:
+    try:
+        data = json.loads(source)
+    except json.JSONDecodeError:
+        return source
+
+    if not isinstance(data, dict):
+        return source
+
+    compiler_options = data.setdefault("compilerOptions", {})
+    if isinstance(compiler_options, dict):
+        compiler_options["noUnusedLocals"] = False
+        compiler_options["noUnusedParameters"] = False
+        compiler_options.setdefault("allowImportingTsExtensions", True)
+
+    normalized = json.dumps(data, indent=2, ensure_ascii=False)
+    return normalized + "\n"
+
+
+def _normalize_componentized_index_css(source: str) -> str:
+    stripped = source.strip()
+    if (
+        "font-family: system-ui" in stripped
+        and ".page {" in stripped
+        and ".card {" in stripped
+    ):
+        return "/* App-specific overrides live here. Keep this file intentionally minimal. */\n"
+    updated = re.sub(r"^\s*@extend\s+[^;]+;\s*$\n?", "", source, flags=re.MULTILINE)
+    return updated
+
+
+def _normalize_componentized_design_overrides(code_dir: Path) -> list[str]:
+    base_css_path = code_dir / "src" / "base.css"
+    if not base_css_path.exists():
+        return []
+
+    try:
+        base_css = base_css_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+
+    base_lower = base_css.lower()
+    has_display_font = "space grotesk" in base_lower or "outfit" in base_lower
+    has_mono_font = "jetbrains mono" in base_lower
+    if not has_display_font and not has_mono_font:
+        return []
+
+    rewritten: list[str] = []
+    for rel_path in collect_componentized_editable_files(code_dir):
+        normalized = rel_path.replace("\\", "/")
+        if not normalized.endswith(".css") or normalized == "src/base.css":
+            continue
+        if normalized not in {"src/index.css", "src/style.css", "src/styles.css"} and not normalized.startswith("src/styles/"):
+            continue
+
+        path = code_dir / normalized
+        try:
+            source = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+
+        updated = _normalize_componentized_override_css(
+            source,
+            has_display_font=has_display_font,
+            has_mono_font=has_mono_font,
+        )
+        if updated != source:
+            path.write_text(updated, encoding="utf-8")
+            rewritten.append(normalized)
+
+    return rewritten
+
+
+def _normalize_componentized_base_css(source: str, *, reference_css: str) -> str:
+    updated = source
+    reference_lines = GOOGLE_FONT_IMPORT_LINE_RE.findall(reference_css)
+    if reference_lines:
+        reference_import_block = "\n".join(line.strip() for line in reference_lines if line.strip())
+        if reference_import_block:
+            updated = GOOGLE_FONT_IMPORT_LINE_RE.sub("", updated).lstrip()
+            updated = f"{reference_import_block}\n\n{updated}".lstrip()
+
+    reference_lower = reference_css.lower()
+    has_display_font = "space grotesk" in reference_lower or "outfit" in reference_lower
+    has_mono_font = "jetbrains mono" in reference_lower
+
+    updated = _normalize_componentized_override_css(
+        updated,
+        has_display_font=has_display_font,
+        has_mono_font=has_mono_font,
+    )
+
+    updated_lower = updated.lower()
+    appended_rules: list[str] = []
+    if has_display_font and "space grotesk" not in updated_lower:
+        appended_rules.append(
+            ".page-title, .topbar-brand, .panel-title, .chart-title, .section-title, .feed-header, h1, h2, h3 {\n"
+            "  font-family: 'Space Grotesk', 'Inter', sans-serif;\n"
+            "}\n"
+        )
+    if has_mono_font and "jetbrains mono" not in updated_lower:
+        appended_rules.append(
+            ".kpi-value, .kpi-delta, .ticker-price, .ticker-delta, .watch-price, .watch-delta, .feed-time, .asset-table td, .table-number, .numeric-value {\n"
+            "  font-family: 'JetBrains Mono', monospace;\n"
+            "  font-variant-numeric: tabular-nums;\n"
+            "}\n"
+        )
+    if appended_rules:
+        updated = updated.rstrip() + "\n\n" + "\n".join(rule.rstrip() for rule in appended_rules) + "\n"
+
+    return updated
+
+
+def _normalize_componentized_override_css(
+    source: str,
+    *,
+    has_display_font: bool,
+    has_mono_font: bool,
+) -> str:
+    updated = source
+
+    if has_mono_font:
+        updated = updated.replace("Roboto Mono", "JetBrains Mono")
+        updated = updated.replace("Fira Code", "JetBrains Mono")
+
+    if has_display_font:
+        updated = OVERRIDE_DISPLAY_FONT_RE.sub(r"\1'Space Grotesk', 'Inter', sans-serif;", updated)
+        updated = _rewrite_override_selector_font_family(
+            updated,
+            selector_hints=DISPLAY_SELECTOR_HINTS,
+            font_family="'Space Grotesk', 'Inter', sans-serif",
+        )
+    if has_mono_font:
+        updated = _rewrite_override_selector_font_family(
+            updated,
+            selector_hints=NUMERIC_SELECTOR_HINTS,
+            font_family="'JetBrains Mono', monospace",
+        )
+
+    return updated
+
+
+def _rewrite_override_selector_font_family(
+    source: str,
+    *,
+    selector_hints: tuple[str, ...],
+    font_family: str,
+) -> str:
+    def _repl(match: re.Match[str]) -> str:
+        selector = match.group("selector")
+        selector_lower = selector.lower()
+        if not any(hint in selector_lower for hint in selector_hints):
+            return match.group(0)
+
+        body = match.group("body")
+        if "font-family" in body.lower():
+            body = re.sub(r"font-family\s*:\s*[^;]+;", f"font-family: {font_family};", body, flags=re.IGNORECASE)
+        else:
+            stripped = body.rstrip()
+            joiner = "\n" if stripped else ""
+            body = f"{stripped}{joiner}  font-family: {font_family};\n"
+        return f"{selector}{{{body}}}"
+
+    return CSS_BLOCK_RE.sub(_repl, source)
+
+
+def _normalize_componentized_index_html(source: str) -> str:
+    title_match = re.search(r"<title[^>]*>(.*?)</title>", source, re.IGNORECASE | re.DOTALL)
+    title = title_match.group(1).strip() if title_match else "App"
+    if not title:
+        title = "App"
+    return (
+        "<!doctype html>\n"
+        '<html lang="en">\n'
+        "  <head>\n"
+        '    <meta charset="UTF-8" />\n'
+        '    <link rel="icon" type="image/svg+xml" href="/vite.svg" />\n'
+        '    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n'
+        f"    <title>{title}</title>\n"
+        "  </head>\n"
+        "  <body>\n"
+        '    <div id="root"></div>\n'
+        '    <script type="module" src="/src/main.tsx"></script>\n'
+        "  </body>\n"
+        "</html>\n"
+    )
+
+
+def _normalize_run_on_inline_comments(source: str) -> str:
+    if "//" not in source:
+        return source
+    return INLINE_COMMENT_RUNON_RE.sub(lambda m: f"/* {m.group(1).strip()} */\n", source)
+
+
+def _repair_interface_field_comment_bleed(source: str) -> str:
+    def _repl(match: re.Match[str]) -> str:
+        comment = " ".join(match.group("comment").replace("}", " ").split()).strip()
+        comment_block = f" /* {comment} */" if comment else ""
+        return f"{match.group('field')}{comment_block}\n}}\n"
+
+    return INTERFACE_FIELD_COMMENT_BLEED_RE.sub(_repl, source)
+
+
+def _repair_inline_block_comment_code_bleed(source: str) -> str:
+    def _repl(match: re.Match[str]) -> str:
+        comment = " ".join(match.group("comment").split()).strip()
+        prop = match.group("prop").strip()
+        prefix = " ".join(match.group("prefix").split()).strip()
+        comment_block = f"/* {comment} */\n" if comment else ""
+        if prefix:
+            return f"{comment_block}{prop}: {prefix}"
+        return f"{comment_block}{prop}: "
+
+    return INLINE_BLOCK_COMMENT_CODE_BLEED_RE.sub(_repl, source)
+
+
+def _repair_block_comment_control_flow_bleed(source: str) -> str:
+    def _repl(match: re.Match[str]) -> str:
+        comment = " ".join(match.group("comment").split()).strip()
+        code = " ".join(match.group("code").split()).strip()
+        comment_block = f"/* {comment} */\n" if comment else ""
+        return f"{comment_block}{code}"
+
+    return BLOCK_COMMENT_CONTROL_FLOW_BLEED_RE.sub(_repl, source)
+
+
+def _normalize_run_on_natural_language_notes(source: str) -> str:
+    return RUNON_NATURAL_LANGUAGE_NOTE_RE.sub(
+        lambda match: f"/* {match.group('note').strip()} */\n",
+        source,
+    )
+
+
+def _normalize_run_on_explanatory_labels(source: str) -> str:
+    return RUNON_EXPLANATORY_LABEL_RE.sub(
+        lambda match: f"/* {match.group('label').strip()} */\n",
+        source,
+    )
+
+
+def _normalize_bare_section_labels(source: str) -> str:
+    return BARE_SECTION_LABEL_RE.sub(
+        lambda match: f"/* {match.group('label').strip()} */\n",
+        source,
+    )
+
+
+def _repair_componentized_comment_url_bleed(source: str) -> str:
+    updated = URL_PROTOCOL_COMMENT_BLEED_RE.sub(
+        lambda match: f"{match.group('scheme')}://",
+        source,
+    )
+    updated = ATTR_VALUE_ORPHAN_COMMENT_CLOSE_RE.sub(
+        lambda match: f"{match.group('attr')}={match.group('quote')}",
+        updated,
+    )
+
+    def _rewrite_section_comment(match: re.Match[str]) -> str:
+        label = " ".join(match.group("label").split()).strip()
+        if not label:
+            return match.group("stmt") + "\n"
+        return f"{match.group('stmt')}\n/* {label} */\n"
+
+    updated = TRAILING_SECTION_LINE_COMMENT_RE.sub(_rewrite_section_comment, updated)
+    updated = ORPHAN_COMMENT_CLOSE_AFTER_STATEMENT_RE.sub(
+        lambda match: match.group("stmt"),
+        updated,
+    )
+    return updated
+
+
+def _repair_componentized_comment_split_identifiers(source: str) -> str:
+    def _repl(match: re.Match[str]) -> str:
+        comment = " ".join(match.group("comment").split()).strip()
+        prefix = match.group("prefix").strip()
+        suffix = match.group("suffix").strip()
+        rest = match.group("rest") or ""
+        comment_block = f"/* {comment} */\n" if comment else ""
+        return f"{comment_block}{prefix}{suffix}{rest}"
+
+    return COMMENT_SPLIT_IDENTIFIER_RE.sub(_repl, source)
+
+
+def _normalize_componentized_declaration_boundaries(source: str) -> str:
+    return DECLARATION_BOUNDARY_RE.sub("\n", source)
+
+
+def _normalize_componentized_currency_formatting(source: str) -> str:
+    updated = EMPTY_CURRENCY_FORMAT_ARG_RE.sub(
+        lambda match: f"formatCurrency({match.group('value').strip()})",
+        source,
+    )
+    return FORMAT_CURRENCY_GUARD_RE.sub(
+        "currency: /^[A-Za-z]{3}$/.test(currency) ? currency.toUpperCase() : 'USD'",
+        updated,
+    )
+
+
+def _normalize_run_on_imports(source: str) -> str:
+    updated = re.sub(
+        r";\s*(?=(?:import\b|const\b|let\b|var\b|function\b|export\b|return\b|if\b|for\b|while\b|switch\b|type\b|interface\b|class\b|use[A-Z]\w*\b|ReactDOM\b|createRoot\b))",
+        ";\n",
+        source,
+    )
+    updated = re.sub(r"(?<=['\"])\s*(?=import\b)", "\n", updated)
+    updated = re.sub(
+        r"\*/\s*(?=(?:const\b|let\b|var\b|function\b|export\b|return\b|if\b|for\b|while\b|switch\b|type\b|interface\b|class\b|use[A-Z]\w*\b|ReactDOM\b|createRoot\b))",
+        "*/\n",
+        updated,
+    )
+    updated = re.sub(r"}\s+(?=return\b)", "}\n", updated)
+    return updated
+
+
+CSS_TAIL_SELECTOR_RE = re.compile(
+    r"(?m)^(?:\.[A-Za-z_][\w-]*|#[A-Za-z_][\w-]*|:root|body|html|@media\b[^{]*)\s*\{"
+)
+
+
+def _extract_componentized_css_tail(source: str) -> tuple[str, str]:
+    if "{" not in source or ("return" not in source and "export default" not in source):
+        return source, ""
+
+    search_start = max(
+        source.rfind("return ("),
+        source.rfind("return("),
+        source.rfind("export default function"),
+        source.rfind("const App"),
+        0,
+    )
+    match = CSS_TAIL_SELECTOR_RE.search(source, pos=max(search_start, 0))
+    if not match:
+        return source, ""
+
+    css_start = match.start()
+    tail = source[css_start:]
+    export_tail = ""
+    export_match = re.search(r"export default\s+[A-Za-z0-9_$.]+\s*;\s*$", tail, flags=re.DOTALL)
+    if export_match:
+        export_tail = export_match.group(0).strip()
+        tail = tail[:export_match.start()]
+
+    css_tail = tail.strip()
+    if not css_tail:
+        return source, ""
+
+    cleaned = source[:css_start].rstrip()
+    if export_tail:
+        cleaned = cleaned + "\n\n" + export_tail
+    cleaned = cleaned.rstrip() + "\n"
+    return cleaned, css_tail
+
+
+def _normalize_componentized_main_entry(source: str) -> str:
+    updated = re.sub(
+        r"//\s*([^\n]*?)(?=(?:import\b|ReactDOM\b|createRoot\b|root\.render\b|const\b|let\b|var\b))",
+        lambda m: f"/* {m.group(1).strip()} */\n",
+        source,
+    )
+    updated = re.sub(r";\s*(?=import\b)", ";\n", updated)
+    updated = re.sub(r";\s*(?=(?:ReactDOM\b|createRoot\b|root\.render\b|const\b|let\b|var\b))", ";\n", updated)
+    updated = MAIN_BASE_CSS_IMPORT_RE.sub('import "./base.css";', updated)
+    return _normalize_componentized_main_css_order(updated)
+
+
+def _normalize_componentized_main_css_order(source: str) -> str:
+    lines = source.splitlines()
+    js_imports: list[str] = []
+    css_imports: list[str] = []
+    other_lines: list[str] = []
+
+    for line in lines:
+        stripped = line.strip()
+        css_match = MAIN_CSS_IMPORT_LINE_RE.match(line)
+        if css_match:
+            css_imports.append(css_match.group("path"))
+        elif stripped.startswith("import "):
+            js_imports.append(line.rstrip())
+        else:
+            other_lines.append(line)
+
+    if not css_imports:
+        return source
+
+    ordered_css_imports: list[str] = []
+    seen_css: set[str] = set()
+    for import_path in MAIN_ENTRY_PREFERRED_CSS_ORDER:
+        if import_path in css_imports and import_path not in seen_css:
+            ordered_css_imports.append(f'import "{import_path}";')
+            seen_css.add(import_path)
+    for import_path in css_imports:
+        if import_path not in seen_css:
+            ordered_css_imports.append(f'import "{import_path}";')
+            seen_css.add(import_path)
+
+    rebuilt_lines = [*js_imports, *ordered_css_imports]
+    if other_lines:
+        if rebuilt_lines and any(line.strip() for line in other_lines):
+            rebuilt_lines.append("")
+        rebuilt_lines.extend(other_lines)
+
+    rebuilt = "\n".join(rebuilt_lines).rstrip() + "\n"
+    return rebuilt
+
+
+def _make_dist_index_portable(dist_index: Path) -> None:
+    html = dist_index.read_text(encoding="utf-8", errors="replace")
+    updated = re.sub(r'((?:src|href)=["\'])/assets/', r"\1./assets/", html, flags=re.IGNORECASE)
+    updated = re.sub(r'((?:src|href)=["\'])/generated-assets/', r"\1./generated-assets/", updated, flags=re.IGNORECASE)
+    updated = re.sub(r'((?:src|href)=["\'])/vite\.svg', r"\1./vite.svg", updated, flags=re.IGNORECASE)
+    if updated != html:
+        dist_index.write_text(updated, encoding="utf-8")
+
+
+def _root_package_name(specifier: str) -> str:
+    if specifier.startswith("@"):
+        parts = specifier.split("/")
+        return "/".join(parts[:2]) if len(parts) >= 2 else specifier
+    return specifier.split("/", 1)[0]

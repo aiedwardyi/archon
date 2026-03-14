@@ -41,12 +41,13 @@ class PlannerAgent:
             iteration_note = (
                 "\n\nITERATION MODE:\n"
                 "- This is v2+ (an iteration). The engineer task must include a minimal, non-empty output_files scope\n"
-                "- output_files must list ONLY the files to modify (repo-relative, e.g. src/index.html)\n"
+                "- output_files must list ONLY the files to modify (repo-relative, e.g. src/index.html or src/components/Hero.tsx)\n"
                 "- Do NOT include unrelated files. Only expand scope if the user explicitly requests a broad refactor\n"
-                "- For iterations, all changes must go into src/index.html and src/style.css only. "
-                "Do not create new files like game.js or game.css. "
-                "New functionality (scripts, extra styles) must be added inline in index.html using <script> and <style> tags\n"
-                '- output_files: ["src/index.html", "src/style.css"]\n'
+                "- Preserve the existing app architecture. "
+                "Legacy single-page builds should usually modify src/index.html and src/style.css only. "
+                "Componentized app builds may touch root config files and nested src/* files when required.\n"
+                '- Example legacy output_files: ["src/index.html", "src/style.css"]\n'
+                '- Example componentized output_files: ["src/App.tsx", "src/components/Hero.tsx", "src/styles/app.css"]\n'
             )
         context_note = ""
         if project_context:
@@ -135,6 +136,14 @@ class PlannerAgent:
         return f"""# {prd.document_title}
 
 **Version:** {prd.version}
+
+## Product Intent
+Detected intent: {getattr(prd, "detected_intent", "") or "(not provided)"}
+Archetype hint: {getattr(prd, "archetype_hint", "") or "(not provided)"}
+Primary user action: {getattr(prd, "primary_user_action", "") or "(not provided)"}
+Visual direction: {getattr(prd, "visual_direction", "") or "(not provided)"}
+Tone keywords: {", ".join(getattr(prd, "tone_keywords", []) or []) or "(not provided)"}
+Prompt quality score: {getattr(prd, "prompt_quality_score", 0)}
 
 ## Overview
 {prd.overview}

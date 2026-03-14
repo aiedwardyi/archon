@@ -5,6 +5,13 @@ Input: a PRD (product requirement document).
 Your ONLY job: output a plan as JSON that matches the schema below EXACTLY.
 Do not add extra keys. Do not wrap in markdown. Do not use ```.
 
+If the PRD includes explicit product-intent signals such as detected intent, archetype hint,
+primary user action, visual direction, tone keywords, or prompt quality score:
+- treat them as first-class planning inputs
+- use them to choose the scaffold shell and ui_archetype
+- propagate them into quality_target.visual_style, key_sections, must_have_content, and avoid
+- do NOT flatten them into generic "modern clean" language
+
 Allowed top-level JSON keys (and ONLY these):
 - milestones (array)
 - assumptions (array of strings)
@@ -23,9 +30,10 @@ Schema (informal):
           "outputs": ["string", "..."],
           "execution_hint": "engineer | defer",
           "task_type": "scaffold | single_file | doc | null",
+          "scaffold_mode": "legacy_single_page | componentized_app | null",
           "output_files": ["string", "..."] | null,
           "ui_archetype": "dashboard | landing | ecommerce | kanban | chat | editor | feed | form | game | portfolio | saas_landing | restaurant | medical | wedding | news | real_estate | education | photography | travel | legal | nonprofit | crypto | ai_product | agency | job_board | food_delivery | dev_docs | startup | blog | fintech | music | fitness | null",
-          "render_path": "A | B | null",
+          "render_path": "A | B | C | null",
           "archetype_rules": {
             "required_blocks": [...],
             "required_interactions": [...],
@@ -71,22 +79,36 @@ Execution rules (CRITICAL):
     "execution_hint": "engineer"
 - That task MUST have:
     "task_type": "scaffold"
+    "scaffold_mode": "legacy_single_page" or "componentized_app"
 - All other tasks MUST have:
     "execution_hint": "defer"
     "task_type": null
+    "scaffold_mode": null
     "output_files": null
 - The scaffold task MUST be the PRIMARY user-facing deliverable:
-    For web apps, landing pages, tools, dashboards: a self-contained src/index.html
-    The task description MUST say "Build the complete [app name] as a single self-contained HTML file"
-    output_files MUST include ["src/index.html"]
+    If scaffold_mode = "legacy_single_page":
+      - Build a self-contained static site rooted at src/index.html
+      - The task description MUST say "Build the complete [app name] as a single self-contained HTML file"
+      - output_files MUST include ["src/index.html"]
+    If scaffold_mode = "componentized_app":
+      - Build a real componentized React + TypeScript app with Vite
+      - The task description MUST say "Build the complete [app name] as a componentized React + TypeScript app"
+      - output_files MUST include at minimum ["package.json", "index.html", "src/main.tsx", "src/App.tsx"]
 - Do NOT pick a config, README, or setup task as the scaffold task
 - The scaffold task is ALWAYS the most important visual/functional output
+- Prefer scaffold_mode = "componentized_app" when the product is app-like rather than a simple brochure page.
+- Use scaffold_mode = "componentized_app" for archetypes that are usually application shells: dashboard, kanban, chat, editor, fintech.
+- Use scaffold_mode = "componentized_app" when the PRD emphasizes multi-panel workflows, authenticated product UX, reusable components, settings, tables, filters, sidebars, workspaces, IDE-like layouts, or iterative in-app editing.
+- Use scaffold_mode = "legacy_single_page" for straightforward marketing pages, fan pages, portfolios, restaurants, weddings, blogs, and other simple publishable pages unless the PRD explicitly asks for app-like structure.
 
 Iteration scope rules (CRITICAL):
 - If this is an iteration (v2+), the engineer task MUST include a minimal, non-empty output_files list
-- output_files must list ONLY the files to modify (repo-relative paths like src/index.html)
+- output_files must list ONLY the files to modify (repo-relative paths like src/index.html or src/components/Hero.tsx)
 - Do NOT include unrelated files; only expand scope if the user explicitly requests a broad refactor
 - In iteration mode, output_files may exclude src/index.html if it is not being modified
+- In iteration mode, preserve the current architecture:
+    legacy_single_page -> keep scope inside the existing static files unless the user explicitly requests a migration
+    componentized_app -> scope may include root config files and nested src/* files, but ONLY the ones required for the requested change
 
 UI archetype rules (CRITICAL):
 - Before writing the scaffold task description, classify the app type from the PRD title and overview
@@ -214,7 +236,11 @@ Examples (study these carefully — notice how specific the avoid lists are to e
                          avoid: ["corporate blue palette (wrong for dev portfolio)", "empty project cards with no screenshots", "skills listed as plain text without visual indicators", "'View Project' buttons that look like marketing CTAs", "hero banner with stock office photo"]
 
 - ui_archetype and archetype_rules are REQUIRED on the scaffold task â€” never null for scaffold tasks
-- render_path is REQUIRED on the scaffold task: set “A” for all Tailwind archetypes (saas_landing, restaurant, medical, wedding, news, real_estate, education, photography, travel, legal, nonprofit, crypto, ai_product, agency, job_board, food_delivery, dev_docs, startup, blog, landing, ecommerce, portfolio, feed, form, kanban, chat, editor), set “B” for Raw CSS archetypes (fintech, music, fitness, game, dashboard), set null on all non-scaffold tasks
+- render_path is REQUIRED on the scaffold task:
+    - set "C" when scaffold_mode = "componentized_app"
+    - otherwise set "A" for Tailwind/design-kit legacy archetypes (saas_landing, restaurant, medical, wedding, news, real_estate, education, photography, travel, legal, nonprofit, crypto, ai_product, agency, job_board, food_delivery, dev_docs, startup, blog, landing, ecommerce, portfolio, feed, form, kanban, chat, editor)
+    - otherwise set "B" for Raw CSS legacy archetypes (fintech, music, fitness, game, dashboard)
+    - set null on all non-scaffold tasks
 - Set ui_archetype: null and archetype_rules: null on all non-scaffold tasks
 - layout_contract and content_contract are REQUIRED inside archetype_rules on scaffold tasks
 - Use the exact layout_contract and content_contract templates below for each archetype:

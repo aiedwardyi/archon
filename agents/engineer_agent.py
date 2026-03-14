@@ -74,7 +74,7 @@ def _deduplicate_files(files: list[FileArtifact]) -> list[FileArtifact]:
 def _fix_backslashes_in_strings(candidate: str) -> str:
     """Walk the JSON char-by-char; inside string values, replace invalid
     \\X escapes with \\\\X (literal backslash + char) so json.loads succeeds."""
-    _VALID_ESCAPES = set('"\\\/bfnrtu')
+    _VALID_ESCAPES = {'"', "\\", "/", "b", "f", "n", "r", "t", "u"}
     out: list[str] = []
     in_string = False
     i = 0
@@ -477,6 +477,8 @@ class EngineerAgent:
         existing_code: str = None,
         reference_images: list[str] | None = None,
         reference_code: dict[str, Any] | None = None,
+        iteration_visual_dna: dict[str, Any] | None = None,
+        iteration_feature_inventory: dict[str, Any] | None = None,
     ) -> EngineeringResult:
         if task.execution_hint != "engineer":
             raise ValueError("EngineerAgent called with non-executable task")
@@ -488,12 +490,35 @@ class EngineerAgent:
             return _build_offline_engineering_result(task_id=str(task.id))
 
         archetype = task.ui_archetype
+        scaffold_mode = task.scaffold_mode or "legacy_single_page"
         kit_archetype = DESIGN_KIT_ALIASES.get(archetype, archetype)
         archetypes_dir = PROMPTS_DIR / "archetypes"
         archetype_txt = archetypes_dir / f"{kit_archetype}.txt" if kit_archetype else None
         archetype_css = archetypes_dir / f"{kit_archetype}.css" if kit_archetype else None
 
-        if archetype_txt and archetype_txt.exists():
+        if scaffold_mode == "componentized_app":
+            prompt = (PROMPTS_DIR / "engineer_componentized.txt").read_text(encoding="utf-8")
+            if archetype_txt and archetype_txt.exists():
+                prompt += (
+                    "\n\n--- DESIGN KIT REFERENCE ---\n"
+                    "Translate these archetype requirements into a componentized React app.\n"
+                    "Reuse the layout rhythm, content density, interaction expectations, and visual direction.\n"
+                    "Do NOT revert to single-page HTML, but do preserve the same polish bar.\n"
+                    f"{archetype_txt.read_text(encoding='utf-8')}\n"
+                    "--- END DESIGN KIT REFERENCE ---"
+                )
+            if archetype_css and archetype_css.exists():
+                prompt += (
+                    "\n\n--- BASE CSS REFERENCE ---\n"
+                    "A base design-system stylesheet will be available at src/base.css in the workspace.\n"
+                    "Use these tokens, classes, and visual primitives as the design language foundation.\n"
+                    "Prefer the provided shell and class vocabulary directly in JSX before inventing new wrapper classes.\n"
+                    "Import src/base.css from src/main.tsx before app-specific styles.\n"
+                    "Do NOT inline this stylesheet into App.tsx or a <style> tag.\n"
+                    f"{archetype_css.read_text(encoding='utf-8')}\n"
+                    "--- END BASE CSS REFERENCE ---"
+                )
+        elif archetype_txt and archetype_txt.exists():
             prompt = (PROMPTS_DIR / "engineer_core.txt").read_text(encoding="utf-8")
             prompt += "\n\n" + archetype_txt.read_text(encoding="utf-8")
         else:
@@ -513,6 +538,20 @@ class EngineerAgent:
 
         iteration_context = ""
         if existing_code:
+            visual_dna_block = ""
+            if iteration_visual_dna:
+                visual_dna_block = (
+                    "--- VISUAL DNA LOCK (preserve unless the request explicitly asks for a redesign) ---\n"
+                    f"{json.dumps(iteration_visual_dna, indent=2, ensure_ascii=False)}\n"
+                    "--- END VISUAL DNA LOCK ---\n\n"
+                )
+            feature_inventory_block = ""
+            if iteration_feature_inventory:
+                feature_inventory_block = (
+                    "--- FEATURE PRESERVATION LOCK (keep these features working unless explicitly replaced) ---\n"
+                    f"{json.dumps(iteration_feature_inventory, indent=2, ensure_ascii=False)}\n"
+                    "--- END FEATURE PRESERVATION LOCK ---\n\n"
+                )
             iteration_context = (
                 f"=== ITERATION MODE — STRICT SURGICAL EDIT RULES ===\n"
                 f"You are modifying an EXISTING application. Follow these rules:\n"
@@ -525,6 +564,8 @@ class EngineerAgent:
                 f"5. If the change request is ambiguous, make the smallest edit that\n"
                 f"   satisfies the intent.\n"
                 f"=== END ITERATION RULES ===\n\n"
+                f"{visual_dna_block}"
+                f"{feature_inventory_block}"
                 f"--- EXISTING CODE (base to iterate on) ---\n"
                 f"{existing_code}\n"
                 f"--- END EXISTING CODE ---\n\n"
@@ -579,6 +620,7 @@ class EngineerAgent:
                 f"visual_style: {qt.visual_style}\n"
                 f"key_sections: {qt.key_sections}\n"
                 f"must_have_content: {qt.must_have_content}\n"
+                f"interactivity: {qt.interactivity}\n"
                 f"avoid: {qt.avoid}\n"
                 f"--- END QUALITY TARGET ---\n"
             )
@@ -593,8 +635,10 @@ class EngineerAgent:
             f"description: {task.description}\n"
             f"depends_on: {task.depends_on}\n"
             f"outputs: {task.outputs}\n"
+            f"scaffold_mode: {scaffold_mode}\n"
             f"output_files: {task.output_files}\n"
             f"task_type: {task.task_type}\n"
+            f"render_path: {task.render_path}\n"
             f"{archetype_block}"
             f"{quality_target_block}"
             f"--- TASK END ---"
@@ -633,8 +677,8 @@ class EngineerAgent:
                 self.client = get_genai_client()
             result = _run_gemini(self.client, contents, ref_images=ref_images or None)
 
-        # Inject design kit CSS as a file artifact (initial build only)
-        if css_kit_content and not existing_code:
+        # Inject design kit CSS as a file artifact (legacy initial build only)
+        if scaffold_mode != "componentized_app" and css_kit_content and not existing_code:
             result.files.insert(0, FileArtifact(
                 path="src/base.css",
                 content=css_kit_content,
@@ -657,6 +701,8 @@ class EngineerAgent:
                 reference_kit_archetype = DESIGN_KIT_ALIASES.get(reference_archetype, reference_archetype)
 
         should_strip_saas_images = (
+            scaffold_mode != "componentized_app"
+            and
             kit_archetype == "saas_landing"
             and (reference_code is None or reference_kit_archetype == "saas_landing")
         )
