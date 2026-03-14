@@ -8,7 +8,11 @@ Short status update for the active branch:
 - Added visual direction persistence plus iteration identity locks so later edits preserve fonts, colors, spacing direction, and key interactive patterns.
 - Added local recovery and quality gates: required-file contract checks, build-repair pass, density audit, semantic completeness checks, and targeted multi-file refinement/content fixes.
 - Added curated benchmark/style-family routing so fan-page prompts can intentionally borrow the stronger cinematic collector shell across franchises while keeping content specific to the requested world.
-- Current gap: the new app pipeline is more stable than `main`, but dashboard and fintech outputs still need quality recovery to beat prior reference builds.
+- Added fan-page-aware density/semantic evaluation so archive-style game outputs are no longer forced through finance/dashboard heuristics.
+- Added deterministic recovery for malformed support files and install-time JSON failures before the model-based repair loop runs.
+- Added preview-safe generated-asset routing so componentized fan-page images now resolve through preview-served HTML, JS, and CSS instead of breaking at runtime.
+- Added stricter dashboard/fintech density guards and runtime normalization for chart-helper scope plus safe dependency syncing so componentized previews recover more reliably before quality scoring.
+- Current gap: the new app pipeline is more stable than `main`, but dashboard/fintech outputs still need quality recovery to beat prior reference builds, especially on density, typography, motion, and surface depth.
 
 ## Completed Phases
 

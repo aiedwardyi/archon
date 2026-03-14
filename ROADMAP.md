@@ -181,7 +181,11 @@ Current work on `feat/componentized-builder-pipeline`:
 - Added persisted visual direction, visual DNA extraction, and feature inventory locks so later iterations preserve identity instead of rewriting the app loosely.
 - Added local contract recovery, build repair, density audit, semantic completeness checks, and targeted refinement/content-fix passes for weak app outputs.
 - Added curated benchmark routing plus reusable style-family selection so adjacent fan-page prompts can reuse the stronger cinematic collector shell instead of relying only on literal franchise matches.
-- Current branch status: build stability is materially improved, but dashboard and fintech quality still trail prior best outputs and need more polish on density, typography, and surface depth.
+- Added fan-page-aware quality scoring so cinematic archives are no longer penalized by dashboard KPI/chart/table rules during refinement.
+- Added deterministic support-file recovery for malformed componentized workspaces, including `package.json` salvage before install and broader build-repair scope for support/config files.
+- Added preview-safe generated-asset routing so componentized fan-page bundles now resolve local design images correctly through preview-served HTML, JS, and CSS.
+- Added stricter dashboard/fintech density gates plus runtime normalization for chart-helper scope and safe dependency syncing so fresh componentized previews fail less often and preserve richer shell behavior.
+- Current branch status: build stability is materially improved, fan-page benchmark routing is cleaner, and image-heavy outputs are rendering much closer to target; active work is now concentrated on remaining dashboard/fintech polish on density, typography, motion, and surface depth.
 
 ### Phase 9 — Pipeline Page & Classifier Improvements (⬜ Planned)
 - ✅ Classifier too sensitive — opinion questions triggering builds

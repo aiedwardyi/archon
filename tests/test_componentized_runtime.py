@@ -28,6 +28,7 @@ from utils.componentized_runtime import (
     infer_scaffold_mode,
     rewrite_componentized_asset_api_urls,
     rewrite_preview_file_references,
+    rewrite_preview_runtime_asset_references,
     stage_componentized_design_assets,
 )
 from utils.componentized_quality import (
@@ -227,7 +228,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         html = (
             '<link rel="stylesheet" href="/assets/index-abc.css">'
             '<script type="module" src="/assets/index-abc.js"></script>'
-            '<img src="/generated-assets/hero.png">'
+            '<img src="generated-assets/hero.png">'
         )
 
         preview_html = rewrite_preview_file_references(
@@ -247,6 +248,22 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertIn('/published/demo-app/assets/index-abc.css', published_html)
         self.assertIn('/published/demo-app/assets/index-abc.js', published_html)
         self.assertIn('/published/demo-app/generated-assets/hero.png', published_html)
+
+    def test_rewrite_preview_runtime_asset_references_rewrites_bundle_literals(self):
+        bundle = (
+            'const hero="generated-assets/hero.png";'
+            'const map="/generated-assets/world_map.png";'
+            'const css=\'url(generated-assets/hero.png)\';'
+        )
+
+        rewritten = rewrite_preview_runtime_asset_references(
+            bundle,
+            mount_prefix="/api/preview-files/7/3",
+            root_dir="dist",
+        )
+
+        self.assertIn('/api/preview-files/7/3/dist/generated-assets/hero.png', rewritten)
+        self.assertIn('/api/preview-files/7/3/dist/generated-assets/world_map.png', rewritten)
 
     def test_build_componentized_preview_skips_without_package_json(self):
         code_dir = _case_dir("componentized-runtime-build")
@@ -276,8 +293,8 @@ class ComponentizedRuntimeTests(unittest.TestCase):
 
         rewritten = rewrite_componentized_asset_api_urls(source)
 
-        self.assertIn('/generated-assets/hero_background.png', rewritten)
-        self.assertIn('/generated-assets/world_map.png', rewritten)
+        self.assertIn('generated-assets/hero_background.png', rewritten)
+        self.assertIn('generated-assets/world_map.png', rewritten)
         self.assertNotIn('/api/assets/77/2/', rewritten)
 
     def test_extract_visual_dna_collects_tokens_from_workspace(self):
@@ -431,7 +448,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             if 'import "./index.css";' in main_source:
                 self.assertLess(main_source.index('import "./base.css";'), main_source.index('import "./index.css";'))
             app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
-            self.assertIn('/generated-assets/hero.png', app_source)
+            self.assertIn('generated-assets/hero.png', app_source)
             self.assertNotIn('base.css', app_source)
             index_css = (code_dir / "src" / "index.css").read_text(encoding="utf-8")
             self.assertNotIn("font-family: system-ui", index_css)
@@ -557,6 +574,35 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertIn("/* SVG (SVG Y-axis is inverted) */", app_source)
             self.assertIn("const scaleY = (value: number) =>", app_source)
             self.assertNotIn("\nSVG (SVG Y-axis is inverted)  const scaleY", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_hoists_chart_helpers_outside_map_callbacks(self):
+        code_dir = _case_dir("componentized-runtime-chart-helper-scope")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  const data = [{ high: 120, low: 90, open: 100, close: 110 }];\n"
+                "  return (\n"
+                "    <svg>\n"
+                "      {data.map((candle, index) => {\n"
+                "        const xPos = index * 10;\n"
+                "        const scaleY = (value: number) => 300 - value;\n"
+                "        return <line key={index} x1={xPos} y1={scaleY(candle.high)} x2={xPos} y2={scaleY(candle.low)} />;\n"
+                "      })}\n"
+                "      {[90, 120].map((value) => <text key={value} y={scaleY(value)}>{value}</text>)}\n"
+                "    </svg>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertEqual(app_source.count("const scaleY = (value: number) => 300 - value;"), 1)
+            self.assertLess(app_source.index("const scaleY = (value: number) => 300 - value;"), app_source.index("return ("))
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
@@ -733,6 +779,8 @@ class ComponentizedRuntimeTests(unittest.TestCase):
 
             main_source = (code_dir / "src" / "main.tsx").read_text(encoding="utf-8")
             polish_guard = (code_dir / "src" / "polish-guard.css").read_text(encoding="utf-8")
+            polish_runtime = (code_dir / "src" / "polish-guard.ts").read_text(encoding="utf-8")
+            self.assertIn('import "./polish-guard";', main_source)
             self.assertIn('import "./polish-guard.css";', main_source)
             self.assertGreater(
                 main_source.index('import "./polish-guard.css";'),
@@ -741,6 +789,37 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertIn(".topbar-brand", polish_guard)
             self.assertIn(".kpi-value", polish_guard)
             self.assertIn("Runtime shell polish guard for fintech", polish_guard)
+            self.assertIn("requestAnimationFrame", polish_runtime)
+            self.assertIn(".kpi-value", polish_runtime)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_adds_runtime_guard_even_when_css_guard_exists(self):
+        code_dir = _case_dir("componentized-runtime-polish-guard-existing-css")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "main.tsx").write_text(
+                "import React from 'react';\n"
+                "import ReactDOM from 'react-dom/client';\n"
+                "import App from './App';\n"
+                'import "./polish-guard.css";\n'
+                "import './style.css';\n"
+                "ReactDOM.createRoot(document.getElementById('root')!).render(<App />);\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return <div className=\"fintech-shell\"><div className=\"kpi-value\">$123,456.78</div></div>;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "style.css").write_text(".fintech-shell { color: white; }\n", encoding="utf-8")
+            (code_dir / "src" / "polish-guard.css").write_text("/* existing css */\n", encoding="utf-8")
+
+            ensure_componentized_workspace_support(code_dir, ui_archetype="fintech")
+
+            main_source = (code_dir / "src" / "main.tsx").read_text(encoding="utf-8")
+            self.assertIn('import "./polish-guard";', main_source)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
@@ -765,8 +844,10 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             ensure_componentized_workspace_support(code_dir, ui_archetype="portfolio")
 
             main_source = (code_dir / "src" / "main.tsx").read_text(encoding="utf-8")
+            self.assertNotIn('import "./polish-guard";', main_source)
             self.assertNotIn('import "./polish-guard.css";', main_source)
             self.assertFalse((code_dir / "src" / "polish-guard.css").exists())
+            self.assertFalse((code_dir / "src" / "polish-guard.ts").exists())
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
@@ -790,6 +871,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertIn("import App from './App';", main_source)
             self.assertIn('import "./base.css";', main_source)
             self.assertIn('import "./style.css";', main_source)
+            self.assertEqual(main_source.count('base.css'), 1)
             self.assertLess(main_source.index('import "./base.css";'), main_source.index('import "./style.css";'))
             self.assertNotIn("../base.css", main_source)
             self.assertNotIn("./App.tsx", main_source)
@@ -828,6 +910,74 @@ class ComponentizedRuntimeTests(unittest.TestCase):
 
             package_json = (code_dir / "package.json").read_text(encoding="utf-8")
             self.assertIn('"lucide-react": "^0.564.0"', package_json)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_syncs_heroicons_dependency(self):
+        code_dir = _case_dir("componentized-runtime-safe-heroicons")
+        try:
+            (code_dir / "package.json").write_text(
+                '{\n'
+                '  "name": "demo-app",\n'
+                '  "dependencies": {\n'
+                '    "react": "^18.2.0",\n'
+                '    "react-dom": "^18.2.0"\n'
+                "  }\n"
+                '}\n',
+                encoding="utf-8",
+            )
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "main.tsx").write_text(
+                "import ReactDOM from 'react-dom/client';\n"
+                "import App from './App';\n"
+                "ReactDOM.createRoot(document.getElementById('root')!).render(<App />);\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "App.tsx").write_text(
+                "import { BellIcon } from '@heroicons/react/24/solid';\n"
+                "export default function App() { return <BellIcon />; }\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            package_json = (code_dir / "package.json").read_text(encoding="utf-8")
+            self.assertIn('"@heroicons/react": "^2.2.0"', package_json)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_literal_escape_noise_in_package_json(self):
+        code_dir = _case_dir("componentized-runtime-package-json-escape-noise")
+        try:
+            (code_dir / "package.json").write_text(
+                '{\n'
+                '  "name": "demo-app",\n'
+                '  "private": true,\n'
+                '  "version": "0.0.0",\\n  "type": "module",\n'
+                '  "scripts": {\n'
+                '    "build": "tsc -b && vite build"\n'
+                "  }\n"
+                '}\n',
+                encoding="utf-8",
+            )
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "main.tsx").write_text(
+                "import ReactDOM from 'react-dom/client';\n"
+                "import App from './App';\n"
+                "ReactDOM.createRoot(document.getElementById('root')!).render(<App />);\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() { return <div>Hello</div>; }\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            package_json = (code_dir / "package.json").read_text(encoding="utf-8")
+            self.assertIn('"type": "module"', package_json)
+            self.assertNotIn("\\n", package_json)
+            self.assertIn('"build": "vite build"', package_json)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
@@ -1111,10 +1261,34 @@ class ComponentizedRuntimeTests(unittest.TestCase):
                 ],
             )
 
-            self.assertEqual(staged[0]["path"], "/generated-assets/hero_background.png")
+            self.assertEqual(staged[0]["path"], "generated-assets/hero_background.png")
             self.assertTrue((version_dir / "code" / "public" / "generated-assets" / "hero_background.png").exists())
         finally:
             shutil.rmtree(version_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_aliases_missing_generated_asset_names(self):
+        code_dir = _case_dir("componentized-runtime-generated-asset-aliases")
+        try:
+            (code_dir / "public" / "generated-assets").mkdir(parents=True)
+            (code_dir / "public" / "generated-assets" / "hero_background.png").write_bytes(b"hero")
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return <img src='/generated-assets/world_map.png' alt='World Map' />;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            result = ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("generated-assets/world_map.png", app_source)
+            self.assertNotIn("/generated-assets/world_map.png", app_source)
+            alias_path = code_dir / "public" / "generated-assets" / "world_map.png"
+            self.assertTrue(alias_path.exists())
+            self.assertIn("public/generated-assets/world_map.png", result["created_files"])
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
 
     def test_density_audit_flags_sparse_dashboard_shells(self):
         code_dir = _case_dir("componentized-quality-density")
@@ -1144,6 +1318,178 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_density_audit_requires_multiple_support_modules_for_strict_dashboards(self):
+        code_dir = _case_dir("componentized-quality-support-modules")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            (code_dir / "src" / "base.css").write_text(
+                "body { font-family: Inter, sans-serif; }\n"
+                ".kpi-value, .price { font-variant-numeric: tabular-nums; }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "components" / "PerformanceChart.tsx").write_text(
+                "const performanceSeries = [\n"
+                "  { x: 'Mon', y: 182441 },\n"
+                "  { x: 'Tue', y: 183206 },\n"
+                "  { x: 'Wed', y: 183998 },\n"
+                "  { x: 'Thu', y: 184221 },\n"
+                "  { x: 'Fri', y: 184928 },\n"
+                "  { x: 'After Hours', y: 185104 },\n"
+                "  { x: 'Open', y: 184762 },\n"
+                "];\n"
+                "export default function PerformanceChart() {\n"
+                "  const selectedRange = '1M';\n"
+                "  return (\n"
+                "    <section className='chart card'>\n"
+                "      <h2>Portfolio Performance Chart</h2>\n"
+                "      <p>Updated 5 minutes ago vs. prior close.</p>\n"
+                "      <div className='range-group'>\n"
+                "        <button onClick={() => null}>1D</button><button onClick={() => null}>1W</button><button onClick={() => null}>{selectedRange}</button><button onClick={() => null}>YTD</button>\n"
+                "      </div>\n"
+                "      <svg viewBox='0 0 700 320'>{performanceSeries.map((point) => <text key={point.x}>{point.x}:{point.y}</text>)}</svg>\n"
+                "    </section>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "App.tsx").write_text(
+                "import PerformanceChart from './components/PerformanceChart';\n"
+                "const kpis = [\n"
+                "  { label: 'Portfolio Value', value: '$184,928.43', delta: '+2.4%', sparkline: [12, 14, 13, 15, 17, 18, 19] },\n"
+                "  { label: 'Day P&L', value: '+$2,184.12', delta: '+1.3%', sparkline: [4, 5, 6, 7, 8, 8, 9] },\n"
+                "  { label: 'Cash Balance', value: '$18,441.09', delta: '-0.6%', sparkline: [7, 6, 6, 5, 5, 4, 4] },\n"
+                "  { label: 'Win Rate', value: '63.8%', delta: '+4.2%', sparkline: [42, 48, 51, 56, 58, 61, 64] },\n"
+                "];\n"
+                "const holdings = [\n"
+                "  { symbol: 'NVDA', name: 'NVIDIA Corporation', price: '$906.18', value: '$28,114.82', shares: '31.03', status: 'Active' },\n"
+                "  { symbol: 'MSFT', name: 'Microsoft Corporation', price: '$418.22', value: '$22,190.14', shares: '53.06', status: 'Active' },\n"
+                "  { symbol: 'AMZN', name: 'Amazon.com Inc.', price: '$178.91', value: '$16,997.32', shares: '94.99', status: 'Buy' },\n"
+                "  { symbol: 'AVGO', name: 'Broadcom Inc.', price: '$1,322.18', value: '$15,866.16', shares: '12.00', status: 'Hold' },\n"
+                "  { symbol: 'TSM', name: 'Taiwan Semiconductor', price: '$164.55', value: '$12,670.35', shares: '77.00', status: 'Active' },\n"
+                "  { symbol: 'SHOP', name: 'Shopify Inc.', price: '$84.36', value: '$8,604.72', shares: '102.00', status: 'Buy' },\n"
+                "];\n"
+                "const watchlist = [\n"
+                "  { symbol: 'META', price: '$512.42', change: '+1.8%', thesis: 'Ad momentum holding into Q2' },\n"
+                "  { symbol: 'ASML', price: '$947.10', change: '+0.9%', thesis: 'EUV order book stays firm' },\n"
+                "  { symbol: 'SNOW', price: '$188.33', change: '-0.7%', thesis: 'Consumption trends stabilizing' },\n"
+                "  { symbol: 'TTD', price: '$87.64', change: '+2.1%', thesis: 'CTV budgets firming up' },\n"
+                "];\n"
+                "export default function App() {\n"
+                "  return (\n"
+                "    <main>\n"
+                "      <section className='hero card'>\n"
+                "        <h1>Atlas Capital Terminal</h1>\n"
+                "        <p>Cross-asset overview with refreshed pricing, conviction notes, and intraday positioning context for the growth sleeve.</p>\n"
+                "        <div className='controls'>\n"
+                "          <button>1D</button><button>1W</button><button>1M</button><button>YTD</button>\n"
+                "          <button>Sort by Momentum</button>\n"
+                "        </div>\n"
+                "      </section>\n"
+                "      <section className='kpi-grid'>\n"
+                "        {kpis.map((item) => <article key={item.label} className='card kpi-card'><span>{item.label}</span><strong className='kpi-value'>{item.value}</strong><em>{item.delta}</em><small>{item.sparkline.join(', ')}</small></article>)}\n"
+                "      </section>\n"
+                "      <PerformanceChart />\n"
+                "      <section className='table card'>\n"
+                "        <h2>Core Holdings</h2>\n"
+                "        <p>Showing 6 of 6 active positions in the momentum sleeve.</p>\n"
+                "        <table><thead><tr><th>Symbol</th><th>Name</th><th>Price</th><th>Value</th><th>Shares</th><th>Status</th></tr></thead><tbody>{holdings.map((row) => <tr key={row.symbol}><td>{row.symbol}</td><td>{row.name}</td><td className='price'>{row.price}</td><td>{row.value}</td><td>{row.shares}</td><td>{row.status}</td></tr>)}</tbody></table>\n"
+                "      </section>\n"
+                "      <section className='watchlist card'>\n"
+                "        <h2>Market Movers Watchlist</h2>\n"
+                "        <p>Names flagged by the desk for near-term earnings and rotation risk.</p>\n"
+                "        {watchlist.map((item) => <article key={item.symbol}><h3>{item.symbol}</h3><div className='price'>{item.price}</div><div>{item.change}</div><p>{item.thesis}</p></article>)}\n"
+                "      </section>\n"
+                "    </main>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            audit = evaluate_componentized_density(code_dir, ui_archetype="dashboard")
+
+            self.assertFalse(audit["passed"])
+            self.assertGreaterEqual(audit["score"], 60)
+            self.assertEqual(audit["metrics"]["support_module_count"], 1)
+            weakness_codes = {item["code"] for item in audit["weaknesses"]}
+            self.assertIn("side_panel_thin", weakness_codes)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_density_audit_uses_fanpage_heuristics_for_game_archives(self):
+        code_dir = _case_dir("componentized-quality-fanpage-density")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "const featuredCharacters = [\n"
+                "  { name: 'Cloud Strife', image: '/generated-assets/cloud.png', role: 'Ex-SOLDIER', stats: { hp: 1783, attack: 126, defense: 91, speed: 104 } },\n"
+                "  { name: 'Tifa Lockhart', image: '/generated-assets/tifa.png', role: 'Monk', stats: { hp: 1640, attack: 118, defense: 88, speed: 112 } },\n"
+                "  { name: 'Barret Wallace', image: '/generated-assets/barret.png', role: 'Heavy Gunner', stats: { hp: 1938, attack: 132, defense: 104, speed: 72 } },\n"
+                "];\n"
+                "export default function App() {\n"
+                "  return (\n"
+                "    <main>\n"
+                "      <section id='hero'>\n"
+                "        <img src='/generated-assets/hero_midgar.png' alt='Midgar hero backdrop' />\n"
+                "        <h1>Legends of Midgar</h1>\n"
+                "      </section>\n"
+                "      <section id='characters'>\n"
+                "        <h2>Character Dossiers</h2>\n"
+                "        {featuredCharacters.map((character) => <article key={character.name} className='character-card'><h3>{character.name}</h3><div>HP</div><div>ATK</div><div>DEF</div><div>SPD</div></article>)}\n"
+                "      </section>\n"
+                "      <section id='arsenal'><h2>Weapons Archive</h2><div>Buster Sword</div><div>Gatling Gun</div></section>\n"
+                "      <section id='world'><h2>World Map</h2><div>Midgar</div><div>Junon</div></section>\n"
+                "      <section id='lore'><h2>Lore Chronicle</h2><p>The lifestream remembers every chapter.</p></section>\n"
+                "    </main>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            audit = evaluate_componentized_density(code_dir, ui_archetype="game_ff7")
+
+            self.assertTrue(audit["passed"])
+            weakness_codes = {item["code"] for item in audit["weaknesses"]}
+            self.assertNotIn("kpi_sparse", weakness_codes)
+            self.assertNotIn("chart_missing", weakness_codes)
+            self.assertNotIn("table_sparse", weakness_codes)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_density_audit_counts_page_embedded_svg_charts_as_chart_regions(self):
+        code_dir = _case_dir("componentized-quality-page-chart-density")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "const chartData = [\n"
+                "  { x: 'Mon', open: 101, high: 109, low: 98, close: 105 },\n"
+                "  { x: 'Tue', open: 105, high: 111, low: 103, close: 109 },\n"
+                "  { x: 'Wed', open: 109, high: 114, low: 107, close: 112 },\n"
+                "  { x: 'Thu', open: 112, high: 118, low: 110, close: 116 },\n"
+                "  { x: 'Fri', open: 116, high: 121, low: 114, close: 119 },\n"
+                "  { x: 'AH', open: 119, high: 123, low: 118, close: 121 },\n"
+                "  { x: 'Open', open: 121, high: 124, low: 120, close: 122 },\n"
+                "];\n"
+                "export default function App() {\n"
+                "  return (\n"
+                "    <main>\n"
+                "      <section className='chart-panel'>\n"
+                "        <h2 className='chart-title'>AAPL Candlestick Chart</h2>\n"
+                "        <svg className='candlestick-chart' viewBox='0 0 800 300'>{chartData.map((point) => <text key={point.x} className='axis-label'>{point.x}:{point.open}:{point.high}:{point.low}:{point.close}</text>)}</svg>\n"
+                "      </section>\n"
+                "    </main>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            audit = evaluate_componentized_density(code_dir, ui_archetype="dashboard")
+
+            self.assertGreaterEqual(audit["metrics"]["chart_regions"], 1)
+            weakness_codes = {item["code"] for item in audit["weaknesses"]}
+            self.assertNotIn("chart_missing", weakness_codes)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_semantic_evaluation_flags_placeholder_content(self):
         code_dir = _case_dir("componentized-quality-semantic")
         try:
@@ -1170,6 +1516,39 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertEqual(evaluation["threshold"], 70)
             self.assertLess(evaluation["score"], 60)
             self.assertIn("Placeholder content is still visible in the app copy.", evaluation["findings"])
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_semantic_evaluation_does_not_require_kpis_for_game_archives(self):
+        code_dir = _case_dir("componentized-quality-fanpage-semantic")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "const companions = [\n"
+                "  { name: 'Agumon', image: '/generated-assets/agumon.png', type: 'Vaccine', role: 'Partner Digimon' },\n"
+                "  { name: 'Gabumon', image: '/generated-assets/gabumon.png', type: 'Data', role: 'Loyal Scout' },\n"
+                "  { name: 'Tai Kamiya', image: '/generated-assets/tai.png', type: 'Human', role: 'DigiDestined Leader' },\n"
+                "];\n"
+                "export default function App() {\n"
+                "  return (\n"
+                "    <main>\n"
+                "      <section><h1>Digital World Compendium</h1><p>Archive Edition</p></section>\n"
+                "      <section><h2>Character Profiles</h2>{companions.map((entry) => <article key={entry.name}><h3>{entry.name}</h3><p>{entry.role}</p><span>{entry.type}</span></article>)}</section>\n"
+                "      <section><h2>Evolution Gallery</h2><p>Agumon, Greymon, MetalGreymon.</p></section>\n"
+                "      <section><h2>World Map</h2><p>File Island, Server Continent, Primary Village.</p></section>\n"
+                "      <section><h2>Lore Archive</h2><p>The Digital World expands with every data storm.</p></section>\n"
+                "    </main>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            evaluation = evaluate_componentized_semantic_completeness(code_dir, ui_archetype="game")
+
+            self.assertTrue(evaluation["passed"])
+            self.assertEqual(evaluation["dimensions"]["metric_completeness"]["score"], 10)
+            self.assertNotIn("The app is missing a convincing KPI layer.", evaluation["findings"])
+            self.assertNotIn("The app needs real timestamps or dates.", evaluation["findings"])
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
@@ -1284,6 +1663,30 @@ class ComponentizedRuntimeTests(unittest.TestCase):
 
             self.assertEqual(len(errors), 1)
             self.assertEqual(errors[0]["path"], "src/App.tsx")
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_parse_componentized_build_errors_detects_package_json_install_parse_failures(self):
+        code_dir = _case_dir("componentized-quality-package-json-build-errors")
+        try:
+            build_result = {
+                "logs": [
+                    {
+                        "stdout": "",
+                        "stderr": (
+                            "npm error code EJSONPARSE\n"
+                            "npm error JSON.parse Invalid package.json: JSONParseError: Expected double-quoted property name in JSON at position 79\n"
+                            "npm error JSON.parse Failed to parse JSON data.\n"
+                        ),
+                    }
+                ]
+            }
+
+            errors = parse_componentized_build_errors(build_result, code_dir=code_dir)
+
+            self.assertEqual(len(errors), 1)
+            self.assertEqual(errors[0]["path"], "package.json")
+            self.assertEqual(errors[0]["error_class"], "syntax")
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
@@ -1476,6 +1879,56 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertNotIn("src/components/NewsFeed.tsx", scope)
             self.assertNotIn("index.html", scope)
             self.assertNotIn("src/main.tsx", scope)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_select_componentized_build_repair_scope_includes_support_files_for_package_json_errors(self):
+        code_dir = _case_dir("componentized-build-repair-support-scope")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            (code_dir / "package.json").write_text('{"name":"demo"}\n', encoding="utf-8")
+            (code_dir / "vite.config.ts").write_text("export default {};\n", encoding="utf-8")
+            (code_dir / "tsconfig.json").write_text('{"compilerOptions":{}}\n', encoding="utf-8")
+            (code_dir / "tsconfig.node.json").write_text('{"compilerOptions":{}}\n', encoding="utf-8")
+            (code_dir / "index.html").write_text("<!doctype html><html><body><div id='root'></div></body></html>\n", encoding="utf-8")
+            (code_dir / "src" / "vite-env.d.ts").write_text("/// <reference types='vite/client' />\n", encoding="utf-8")
+            (code_dir / "src" / "main.tsx").write_text(
+                "import ReactDOM from 'react-dom/client';\n"
+                "import App from './App';\n"
+                "ReactDOM.createRoot(document.getElementById('root')!).render(<App />);\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "App.tsx").write_text(
+                "import './style.css';\nexport default function App() { return <div>Hello</div>; }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "style.css").write_text(".app { color: red; }\n", encoding="utf-8")
+            (code_dir / "src" / "components" / "Sidebar.tsx").write_text(
+                "export default function Sidebar() { return <aside>Side</aside>; }\n",
+                encoding="utf-8",
+            )
+
+            scope = select_componentized_build_repair_scope(
+                code_dir,
+                [
+                    {
+                        "path": "package.json",
+                        "line": None,
+                        "error_class": "syntax",
+                        "message": "Invalid package.json: JSONParseError",
+                    }
+                ],
+            )
+
+            self.assertIn("package.json", scope)
+            self.assertIn("vite.config.ts", scope)
+            self.assertIn("tsconfig.json", scope)
+            self.assertIn("tsconfig.node.json", scope)
+            self.assertIn("src/vite-env.d.ts", scope)
+            self.assertIn("index.html", scope)
+            self.assertIn("src/main.tsx", scope)
+            self.assertIn("src/App.tsx", scope)
+            self.assertNotIn("src/components/Sidebar.tsx", scope)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 

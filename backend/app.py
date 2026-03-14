@@ -52,6 +52,7 @@ from utils.componentized_runtime import (
     relative_mount_root,
     rewrite_componentized_asset_api_urls,
     rewrite_preview_file_references,
+    rewrite_preview_runtime_asset_references,
     stage_componentized_design_assets,
     summarize_componentized_build_error,
 )
@@ -246,6 +247,17 @@ def get_preview_target(project_id: int, version: int) -> tuple[Path | None, str]
         if html_files:
             return html_files[0], infer_scaffold_mode(code_dir, plan_data=plan_data)
     return None, infer_scaffold_mode(code_dir, plan_data=plan_data)
+
+
+def inject_preview_base_href(html: str, *, mount_prefix: str, root_dir: str) -> str:
+    base_target = f"{mount_prefix}/{root_dir}".strip("/")
+    if not base_target or "<base " in html.lower():
+        return html
+
+    base_tag = f'<base href="/{base_target}/">'
+    if "</head>" in html:
+        return html.replace("</head>", f"  {base_tag}\n</head>", 1)
+    return base_tag + html
 
 
 def resolve_version_file(project_id: int, version: int, asset_path: str) -> Path | None:
@@ -1007,7 +1019,7 @@ def build_componentized_refinement_prompt(
             "- Table density: expand holdings, transaction, or comparison tables so they feel publishable rather than skeletal."
         ),
         "side_panel_thin": (
-            "- Supporting panel density: add a stronger watchlist, activity feed, alerts list, or adjacent data panel with real entries."
+            "- Supporting panel density: strict dashboard and finance shells should carry at least two distinct support modules, such as watchlist plus activity, alerts plus news, or allocation plus movers, each with real entries."
         ),
         "panel_stacking": (
             "- Panel stacking: add enough distinct data regions so the center does not feel like a polished shell with empty space."
@@ -1219,7 +1231,7 @@ def select_componentized_refinement_scope(
         "chart_missing": ("chart", "recharts", "sparkline", "polyline", "candlestick"),
         "chart_underdeveloped": ("chart", "tooltip", "range", "axis", "grid"),
         "table_sparse": ("table", "holdings", "transactions", "rows", "columns"),
-        "side_panel_thin": ("watchlist", "activity", "alerts", "notification"),
+        "side_panel_thin": ("watchlist", "activity", "alerts", "notification", "news", "allocation", "movers", "briefing"),
         "panel_stacking": ("section", "panel", "card", "widget"),
         "interactive_controls": ("onclick", "onchange", "filter", "sort", "selectedrange", "tab"),
         "text_density": ("subtitle", "caption", "label", "description", "summary"),
@@ -1280,9 +1292,17 @@ def select_componentized_build_repair_scope(
     if not editable_files:
         return []
 
+    support_targets = {
+        "package.json",
+        "vite.config.ts",
+        "tsconfig.json",
+        "tsconfig.node.json",
+        "src/vite-env.d.ts",
+    }
     selected: set[str] = set()
     include_style_targets = False
     include_common_targets = False
+    include_direct_support = False
 
     for error in build_errors:
         rel_path = _normalize_componentized_rel_path(str(error.get("path") or ""))
@@ -1290,6 +1310,10 @@ def select_componentized_build_repair_scope(
             continue
         selected.add(rel_path)
         error_class = str(error.get("error_class") or "")
+        if rel_path in support_targets:
+            include_common_targets = True
+            include_direct_support = True
+            selected.update(path for path in support_targets if path in editable_files)
         if error_class in {"syntax", "import", "asset"}:
             selected.update(
                 _select_componentized_related_files(
@@ -1331,7 +1355,7 @@ def select_componentized_build_repair_scope(
         code_dir,
         scoped[:12],
         include_style_targets=include_style_targets,
-        include_direct_support=include_style_targets,
+        include_direct_support=include_style_targets or include_direct_support,
         include_common_targets=include_common_targets,
     )
 
@@ -3847,6 +3871,11 @@ def get_preview(project_id: int, version: int):
                 mount_prefix=mount_prefix,
                 root_dir=relative_mount_root(code_dir, target),
             )
+            html = inject_preview_base_href(
+                html,
+                mount_prefix=mount_prefix,
+                root_dir=relative_mount_root(code_dir, target),
+            )
         # Normalize local asset paths so preview can always resolve them through the backend.
         html = re.sub(
             r'((?:src|href)=["\'])(?:\./|\.\./)?assets/([^"\']+)(["\'])',
@@ -3872,6 +3901,28 @@ def get_preview_file(project_id: int, version: int, asset_path: str):
         return jsonify({"error": "Preview asset not found"}), 404
 
     guessed_type = mimetypes.guess_type(str(target))[0] or "application/octet-stream"
+    suffix = target.suffix.lower()
+    if suffix in {".js", ".mjs", ".css"}:
+        preview_target, scaffold_mode = get_preview_target(project_id, version)
+        if scaffold_mode == "componentized_app":
+            mount_prefix = f"/api/preview-files/{project_id}/{version}"
+            preview_root = (
+                relative_mount_root(get_version_dir(project_id, version) / "code", preview_target)
+                if preview_target is not None
+                else Path(asset_path).parts[0] if Path(asset_path).parts else ""
+            )
+            try:
+                content = target.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                content = ""
+            if content:
+                content = rewrite_preview_runtime_asset_references(
+                    content,
+                    mount_prefix=mount_prefix,
+                    root_dir=preview_root,
+                )
+                return Response(content, mimetype=guessed_type)
+
     return send_file(target, mimetype=guessed_type)
 
 

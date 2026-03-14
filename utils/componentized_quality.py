@@ -9,11 +9,35 @@ from utils.componentized_runtime import collect_componentized_editable_files
 
 APP_LIKE_ARCHETYPES = {"dashboard", "fintech", "editor", "kanban", "chat"}
 STRICT_APP_ARCHETYPES = {"dashboard", "fintech"}
+FANPAGE_ARCHETYPE_PREFIXES = ("game", "fan_page")
 CONTENT_BEARING_ROLES = {"kpi", "chart", "table", "feed", "data", "page"}
 KPI_ROLES = {"kpi", "page", "data"}
 CHART_ROLES = {"chart", "page", "data"}
 TABLE_ROLES = {"table", "page", "data"}
 FEED_ROLES = {"feed", "page", "data"}
+FANPAGE_CATEGORY_HINTS: dict[str, tuple[str, ...]] = {
+    "characters": ("character", "characters", "party", "roster", "operatives", "companions"),
+    "arsenal": ("weapon", "weapons", "arsenal", "materia", "abilities", "summon"),
+    "world": ("world map", "map", "location", "region", "atlas", "gaia", "midgar"),
+    "lore": ("lore", "story", "history", "tribute", "archive", "timeline", "legend"),
+    "collection": ("collector", "gallery", "cards", "card", "evolution", "digivolve"),
+}
+FANPAGE_STAT_HINTS = (
+    "hp", "atk", "attack", "def", "defense", "mag", "magic", "spd", "speed",
+    "strength", "agility", "rarity", "type", "role",
+)
+FANPAGE_HERO_HINTS = (
+    "hero", "full-bleed", "masthead", "featured", "spotlight", "scroll-indicator",
+)
+SUPPORT_MODULE_HINTS: dict[str, tuple[str, ...]] = {
+    "watchlist": ("watchlist", "market movers", "movers", "top movers", "ticker tape"),
+    "activity": ("activity", "recent activity", "recent transactions", "recent trades", "execution log"),
+    "alerts": ("alerts", "alert center", "notifications", "risk alert", "triggered"),
+    "news": ("news", "headlines", "market brief", "briefing", "top stories"),
+    "allocation": ("allocation", "sector allocation", "exposure", "portfolio mix", "breakdown"),
+    "comparison": ("benchmark", "comparison", "heatmap", "winners", "losers", "top performers"),
+    "orders": ("open orders", "order flow", "trade ideas", "rebalance"),
+}
 
 PLACEHOLDER_PATTERNS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"\bmetric\s+\d+\b", re.IGNORECASE), "generic metric label"),
@@ -141,8 +165,13 @@ INLINE_DATA_ARRAY_RE = re.compile(
     r"(?:const|let|var)\s+[A-Za-z0-9_]+\s*(?::[^=]+)?=\s*\[(?:.|\n){0,4000}?\]",
     re.IGNORECASE,
 )
+ENTITY_NAME_RE = re.compile(r"\bname\s*:\s*['\"]([A-Z][A-Za-z0-9' -]{2,40})['\"]")
 BUILD_ERROR_PATH_RE = re.compile(
     r"(?P<path>(?:[A-Za-z]:)?[^:\n]+?\.(?:tsx|ts|jsx|js|css|html)):(?P<line>\d+)(?::(?P<column>\d+))?",
+    re.IGNORECASE,
+)
+PACKAGE_JSON_PARSE_RE = re.compile(
+    r"(?:npm error\s+code\s+ejsonparse|invalid package\.json|jsonparseerror)",
     re.IGNORECASE,
 )
 
@@ -361,6 +390,70 @@ def _is_suspicious_round_number(raw_value: str) -> bool:
     return False
 
 
+def _normalize_archetype(ui_archetype: str | None) -> str:
+    return str(ui_archetype or "").strip().lower()
+
+
+def _quality_family(ui_archetype: str | None) -> str:
+    normalized = _normalize_archetype(ui_archetype)
+    if normalized in STRICT_APP_ARCHETYPES or normalized in APP_LIKE_ARCHETYPES:
+        return "data_app"
+    if normalized.startswith(FANPAGE_ARCHETYPE_PREFIXES) or "fan" in normalized:
+        return "fanpage"
+    return "generic"
+
+
+def _fanpage_blob(records: list[dict[str, Any]]) -> str:
+    return "\n".join(record["content"].lower() for record in records)
+
+
+def _fanpage_category_count(records: list[dict[str, Any]]) -> int:
+    blob = _fanpage_blob(records)
+    found = {
+        category
+        for category, hints in FANPAGE_CATEGORY_HINTS.items()
+        if any(hint in blob for hint in hints)
+    }
+    return len(found)
+
+
+def _fanpage_entity_names(records: list[dict[str, Any]]) -> set[str]:
+    names: set[str] = set()
+    for record in records:
+        for match in ENTITY_NAME_RE.findall(record["content"]):
+            normalized = " ".join(match.split()).strip()
+            if normalized:
+                names.add(normalized)
+    return names
+
+
+def _fanpage_stat_count(records: list[dict[str, Any]]) -> int:
+    blob = _fanpage_blob(records)
+    return sum(blob.count(hint) for hint in FANPAGE_STAT_HINTS)
+
+
+def _fanpage_media_count(records: list[dict[str, Any]]) -> int:
+    blob = _fanpage_blob(records)
+    return blob.count("/generated-assets/") + blob.count("<img") + blob.count("image:")
+
+
+def _has_fanpage_hero_media(records: list[dict[str, Any]]) -> bool:
+    blob = _fanpage_blob(records)
+    return any(hint in blob for hint in FANPAGE_HERO_HINTS) and _fanpage_media_count(records) >= 1
+
+
+def _fanpage_contextual_hits(records: list[dict[str, Any]]) -> int:
+    blob = _fanpage_blob(records)
+    hits = 0
+    if _fanpage_category_count(records) >= 3:
+        hits += 1
+    if any(token in blob for token in ("section", "chapter", "archive", "dossier", "compendium")):
+        hits += 1
+    if any(token in blob for token in ("type", "role", "rarity", "evolution", "location", "abilities")):
+        hits += 1
+    return hits
+
+
 def evaluate_componentized_density(code_dir: Path, *, ui_archetype: str | None = None) -> dict[str, Any]:
     records = collect_componentized_file_records(code_dir)
     classifications = [classify_componentized_content_file(record["path"], record["content"]) for record in records]
@@ -378,83 +471,173 @@ def evaluate_componentized_density(code_dir: Path, *, ui_archetype: str | None =
             "weaknesses": [{"code": "empty_content_workspace", "message": "No content-bearing app files were detected."}],
         }
 
-    kpi_count = _estimate_kpi_count(content_records)
-    chart_regions = _count_roles(classifications, "chart")
-    chart_points = _estimate_chart_data_points(content_records)
-    table_rows, table_columns = _estimate_table_shape(content_records)
-    feed_entries = _estimate_feed_entries(content_records)
     panel_count = _estimate_panel_count(content_records)
     interactive_controls = _estimate_interactive_control_count(content_records)
     text_density = len(_combined_visible_text(content_records))
     numeric_typography = _has_numeric_typography(records)
+    family = _quality_family(ui_archetype)
 
     score = 0
     weaknesses: list[dict[str, str]] = []
 
-    if kpi_count >= 4:
-        score += 20
-    elif kpi_count >= 2:
-        score += 10
-        weaknesses.append({"code": "kpi_sparse", "message": "KPI coverage is present but still below a full four-card row."})
-    else:
-        weaknesses.append({"code": "kpi_sparse", "message": "The app does not yet present a convincing populated KPI row."})
+    kpi_count = 0
+    chart_regions = 0
+    chart_points = 0
+    table_rows = 0
+    table_columns = 0
+    feed_entries = 0
+    support_module_count = 0
 
-    if chart_regions >= 1 and chart_points >= 7:
-        score += 20
-    elif chart_regions >= 1:
-        score += 10
-        weaknesses.append({"code": "chart_underdeveloped", "message": "A chart region exists, but it looks underdeveloped or low-detail."})
-    else:
-        weaknesses.append({"code": "chart_missing", "message": "The app shell is missing a clear primary chart region."})
+    if family == "fanpage":
+        hero_media = _has_fanpage_hero_media(content_records)
+        character_count = len(_fanpage_entity_names(content_records))
+        category_count = _fanpage_category_count(content_records)
+        stat_block_count = _fanpage_stat_count(content_records)
+        media_count = _fanpage_media_count(content_records)
 
-    if table_rows >= 6 and table_columns >= 4:
-        score += 15
-    elif table_rows >= 3 and table_columns >= 3:
-        score += 8
-        weaknesses.append({"code": "table_sparse", "message": "The data table exists, but it is too shallow for a publishable app shell."})
-    else:
-        weaknesses.append({"code": "table_sparse", "message": "The app needs a richer holdings or data table with multiple rows and columns."})
+        if hero_media:
+            score += 15
+        else:
+            weaknesses.append({"code": "panel_stacking", "message": "The page needs a stronger hero treatment with clear lead media."})
 
-    if feed_entries >= 4:
-        score += 10
-    elif feed_entries >= 1:
-        score += 5
-        weaknesses.append({"code": "side_panel_thin", "message": "The supporting watchlist or activity panel is present but too thin."})
-    else:
-        weaknesses.append({"code": "side_panel_thin", "message": "The shell needs a watchlist, activity feed, or supporting panel with real entries."})
+        if character_count >= 3:
+            score += 20
+        elif character_count >= 2:
+            score += 10
+            weaknesses.append({"code": "text_density", "message": "The fan page needs a fuller character showcase with more distinct featured entries."})
+        else:
+            weaknesses.append({"code": "text_density", "message": "The fan page needs a clearer featured-character showcase."})
 
-    if panel_count >= 5:
-        score += 10
-    elif panel_count >= 3:
-        score += 5
-        weaknesses.append({"code": "panel_stacking", "message": "The app needs more distinct content panels or sections."})
-    else:
-        weaknesses.append({"code": "panel_stacking", "message": "The shell does not have enough stacked content regions."})
+        if category_count >= 3:
+            score += 20
+        elif category_count >= 2:
+            score += 10
+            weaknesses.append({"code": "panel_stacking", "message": "The fan page needs more worldbuilding sections such as lore, maps, arsenal, or gallery content."})
+        else:
+            weaknesses.append({"code": "panel_stacking", "message": "The fan page needs richer worldbuilding modules beyond the hero and roster."})
 
-    if interactive_controls >= 3:
-        score += 10
-    elif interactive_controls >= 1:
-        score += 5
-        weaknesses.append({"code": "interactive_controls", "message": "Interactive controls exist but feel too limited for this app type."})
-    else:
-        weaknesses.append({"code": "interactive_controls", "message": "The app needs more real range selectors, filters, tabs, or stateful controls."})
+        if stat_block_count >= 8:
+            score += 10
+        elif stat_block_count >= 4:
+            score += 5
+            weaknesses.append({"code": "interactive_controls", "message": "Character stat treatments exist but need more density or motion."})
+        else:
+            weaknesses.append({"code": "interactive_controls", "message": "Featured characters need stronger stat bars, badges, or supporting detail."})
 
-    if numeric_typography:
-        score += 5
-    else:
-        weaknesses.append({"code": "numeric_typography", "message": "Numeric data needs a clearer monospace or tabular treatment."})
+        if media_count >= 4:
+            score += 10
+        elif media_count >= 2:
+            score += 5
+            weaknesses.append({"code": "panel_stacking", "message": "The page could use more supporting media treatments across sections."})
+        else:
+            weaknesses.append({"code": "panel_stacking", "message": "The page needs more visual support media across the archive sections."})
 
-    if text_density >= 1800:
-        score += 10
-    elif text_density >= 900:
-        score += 5
-        weaknesses.append({"code": "text_density", "message": "The app has some seeded content, but the center still reads thin."})
-    else:
-        weaknesses.append({"code": "text_density", "message": "The content shell is too light and still reads like a scaffold."})
+        if panel_count >= 4:
+            score += 10
+        elif panel_count >= 3:
+            score += 5
+            weaknesses.append({"code": "panel_stacking", "message": "The fan page needs more distinct stacked content regions."})
+        else:
+            weaknesses.append({"code": "panel_stacking", "message": "The shell is missing enough distinct content regions for a premium fan page."})
 
-    threshold = 70 if (ui_archetype or "").lower() in {"dashboard", "fintech"} else 60
+        if interactive_controls >= 1:
+            score += 5
+        else:
+            weaknesses.append({"code": "interactive_controls", "message": "The fan page needs at least one meaningful interactive element beyond anchor navigation."})
+
+        if text_density >= 1400:
+            score += 10
+        elif text_density >= 800:
+            score += 5
+            weaknesses.append({"code": "text_density", "message": "The page has the right structure but still needs richer supporting copy and labels."})
+        else:
+            weaknesses.append({"code": "text_density", "message": "The page still reads too light for a premium archive build."})
+
+        if numeric_typography:
+            score += 5
+    else:
+        kpi_count = _estimate_kpi_count(content_records)
+        chart_regions = _estimate_chart_region_count(content_records)
+        chart_points = _estimate_chart_data_points(content_records)
+        table_rows, table_columns = _estimate_table_shape(content_records)
+        feed_entries = _estimate_feed_entries(content_records)
+        support_module_count = _estimate_support_module_count(content_records)
+
+        if kpi_count >= 4:
+            score += 20
+        elif kpi_count >= 2:
+            score += 10
+            weaknesses.append({"code": "kpi_sparse", "message": "KPI coverage is present but still below a full four-card row."})
+        else:
+            weaknesses.append({"code": "kpi_sparse", "message": "The app does not yet present a convincing populated KPI row."})
+
+        if chart_regions >= 1 and chart_points >= 7:
+            score += 20
+        elif chart_regions >= 1:
+            score += 10
+            weaknesses.append({"code": "chart_underdeveloped", "message": "A chart region exists, but it looks underdeveloped or low-detail."})
+        else:
+            weaknesses.append({"code": "chart_missing", "message": "The app shell is missing a clear primary chart region."})
+
+        if table_rows >= 6 and table_columns >= 4:
+            score += 15
+        elif table_rows >= 3 and table_columns >= 3:
+            score += 8
+            weaknesses.append({"code": "table_sparse", "message": "The data table exists, but it is too shallow for a publishable app shell."})
+        else:
+            weaknesses.append({"code": "table_sparse", "message": "The app needs a richer holdings or data table with multiple rows and columns."})
+
+        if feed_entries >= 4:
+            score += 10
+        elif feed_entries >= 1:
+            score += 5
+            weaknesses.append({"code": "side_panel_thin", "message": "The supporting watchlist or activity panel is present but too thin."})
+        else:
+            weaknesses.append({"code": "side_panel_thin", "message": "The shell needs a watchlist, activity feed, or supporting panel with real entries."})
+
+        if support_module_count >= 2:
+            score += 5
+        elif support_module_count == 1:
+            score += 2
+            weaknesses.append({"code": "side_panel_thin", "message": "Strict app shells need at least two distinct support modules, such as watchlist plus activity or alerts plus news."})
+        else:
+            weaknesses.append({"code": "side_panel_thin", "message": "The shell needs multiple support modules such as watchlist, activity, alerts, allocation, or news."})
+
+        if panel_count >= 5:
+            score += 5
+        elif panel_count >= 3:
+            score += 2
+            weaknesses.append({"code": "panel_stacking", "message": "The app needs more distinct content panels or sections."})
+        else:
+            weaknesses.append({"code": "panel_stacking", "message": "The shell does not have enough stacked content regions."})
+
+        if interactive_controls >= 3:
+            score += 10
+        elif interactive_controls >= 1:
+            score += 5
+            weaknesses.append({"code": "interactive_controls", "message": "Interactive controls exist but feel too limited for this app type."})
+        else:
+            weaknesses.append({"code": "interactive_controls", "message": "The app needs more real range selectors, filters, tabs, or stateful controls."})
+
+        if numeric_typography:
+            score += 5
+        else:
+            weaknesses.append({"code": "numeric_typography", "message": "Numeric data needs a clearer monospace or tabular treatment."})
+
+        if text_density >= 1800:
+            score += 10
+        elif text_density >= 900:
+            score += 5
+            weaknesses.append({"code": "text_density", "message": "The app has some seeded content, but the center still reads thin."})
+        else:
+            weaknesses.append({"code": "text_density", "message": "The content shell is too light and still reads like a scaffold."})
+
+    threshold = 70 if _normalize_archetype(ui_archetype) in STRICT_APP_ARCHETYPES else 60
+    passed = score >= threshold
+    if family == "data_app" and _normalize_archetype(ui_archetype) in STRICT_APP_ARCHETYPES and support_module_count < 2:
+        passed = False
     return {
-        "passed": score >= threshold,
+        "passed": passed,
         "score": score,
         "threshold": threshold,
         "metrics": {
@@ -464,6 +647,7 @@ def evaluate_componentized_density(code_dir: Path, *, ui_archetype: str | None =
             "table_rows": table_rows,
             "table_columns": table_columns,
             "feed_entries": feed_entries,
+            "support_module_count": support_module_count,
             "panel_count": panel_count,
             "interactive_controls": interactive_controls,
             "text_density": text_density,
@@ -498,6 +682,7 @@ def evaluate_componentized_semantic_completeness(code_dir: Path, *, ui_archetype
     date_hits = DATE_RE.findall(visible_blob)
     relative_hits = RELATIVE_TIME_RE.findall(visible_blob)
     metric_labels = _metric_labels(content_records)
+    family = _quality_family(ui_archetype)
 
     dimensions = {
         "placeholder_text": {"score": 15, "max": 15, "issues": []},
@@ -514,7 +699,7 @@ def evaluate_componentized_semantic_completeness(code_dir: Path, *, ui_archetype
         dimensions["placeholder_text"]["score"] = 0 if len(placeholder_hits) >= 3 else 8
         dimensions["placeholder_text"]["issues"].append("Placeholder content is still visible in the app copy.")
 
-    if numbers:
+    if numbers and family == "data_app":
         ratio = len(roundish) / max(len(numbers), 1)
         if ratio > 0.6:
             dimensions["numeric_authenticity"]["score"] = 0
@@ -522,7 +707,7 @@ def evaluate_componentized_semantic_completeness(code_dir: Path, *, ui_archetype
         elif ratio > 0.3:
             dimensions["numeric_authenticity"]["score"] = 8
             dimensions["numeric_authenticity"]["issues"].append("Displayed values still feel too round or synthetic.")
-    elif (ui_archetype or "").lower() in {"dashboard", "fintech"}:
+    elif _normalize_archetype(ui_archetype) in STRICT_APP_ARCHETYPES:
         dimensions["numeric_authenticity"]["score"] = 0
         dimensions["numeric_authenticity"]["issues"].append("A data-heavy app should surface real seeded numbers.")
 
@@ -530,40 +715,55 @@ def evaluate_componentized_semantic_completeness(code_dir: Path, *, ui_archetype
         dimensions["content_uniqueness"]["score"] = 7 if duplicate_rows < 4 else 0
         dimensions["content_uniqueness"]["issues"].append("Several data rows or repeated objects look duplicated.")
 
-    if contextual_hits == 0:
-        dimensions["contextual_labeling"]["score"] = 3
-        dimensions["contextual_labeling"]["issues"].append("Charts, tables, or KPIs lack comparison or update context.")
-    elif contextual_hits == 1:
-        dimensions["contextual_labeling"]["score"] = 7
-        dimensions["contextual_labeling"]["issues"].append("More contextual labeling is needed around charts or tables.")
+    if family == "fanpage":
+        fanpage_context = _fanpage_contextual_hits(content_records)
+        if fanpage_context == 0:
+            dimensions["contextual_labeling"]["score"] = 6
+            dimensions["contextual_labeling"]["issues"].append("The fan page needs clearer section labels or supporting descriptors.")
+        elif fanpage_context == 1:
+            dimensions["contextual_labeling"]["score"] = 8
+            dimensions["contextual_labeling"]["issues"].append("The archive structure is present, but section labeling could be more deliberate.")
+    else:
+        if contextual_hits == 0:
+            dimensions["contextual_labeling"]["score"] = 3
+            dimensions["contextual_labeling"]["issues"].append("Charts, tables, or KPIs lack comparison or update context.")
+        elif contextual_hits == 1:
+            dimensions["contextual_labeling"]["score"] = 7
+            dimensions["contextual_labeling"]["issues"].append("More contextual labeling is needed around charts or tables.")
 
-    if len(tickers) < 2 and len(names) < 3 and (ui_archetype or "").lower() in {"dashboard", "fintech"}:
+    entity_names = names | _fanpage_entity_names(content_records)
+    if len(tickers) < 2 and len(entity_names) < 3 and _normalize_archetype(ui_archetype) in STRICT_APP_ARCHETYPES:
         dimensions["data_specificity"]["score"] = 2
         dimensions["data_specificity"]["issues"].append("The app needs more real names, entities, or ticker symbols.")
-    elif len(tickers) < 2 and len(names) < 2:
+    elif len(tickers) < 2 and len(entity_names) < 2:
         dimensions["data_specificity"]["score"] = 6
         dimensions["data_specificity"]["issues"].append("The app still needs more domain-specific entities.")
 
-    if len(statuses) < 2:
+    if family == "fanpage":
+        if _fanpage_category_count(content_records) < 2:
+            dimensions["semantic_variety"]["score"] = 4
+            dimensions["semantic_variety"]["issues"].append("Content categories do not vary enough across the page.")
+    elif len(statuses) < 2:
         dimensions["semantic_variety"]["score"] = 4
         dimensions["semantic_variety"]["issues"].append("Statuses or semantic categories do not vary enough.")
 
-    if not date_hits and not relative_hits:
-        dimensions["temporal_realism"]["score"] = 5
-        dimensions["temporal_realism"]["issues"].append("The app needs real timestamps or dates.")
-    elif len(set(date_hits)) < 2 and len(relative_hits) < 2:
-        dimensions["temporal_realism"]["score"] = 9
-        dimensions["temporal_realism"]["issues"].append("Dates exist, but temporal detail still feels thin.")
+    if family == "data_app":
+        if not date_hits and not relative_hits:
+            dimensions["temporal_realism"]["score"] = 5
+            dimensions["temporal_realism"]["issues"].append("The app needs real timestamps or dates.")
+        elif len(set(date_hits)) < 2 and len(relative_hits) < 2:
+            dimensions["temporal_realism"]["score"] = 9
+            dimensions["temporal_realism"]["issues"].append("Dates exist, but temporal detail still feels thin.")
 
-    if len(metric_labels) < 4 and (ui_archetype or "").lower() in {"dashboard", "fintech"}:
+    if len(metric_labels) < 4 and _normalize_archetype(ui_archetype) in STRICT_APP_ARCHETYPES:
         dimensions["metric_completeness"]["score"] = 4
         dimensions["metric_completeness"]["issues"].append("The KPI layer still feels incomplete or too generic.")
-    elif not metric_labels:
+    elif not metric_labels and family == "data_app":
         dimensions["metric_completeness"]["score"] = 0
         dimensions["metric_completeness"]["issues"].append("The app is missing a convincing KPI layer.")
 
     score = sum(int(dimension["score"]) for dimension in dimensions.values())
-    threshold = 70 if (ui_archetype or "").lower() in STRICT_APP_ARCHETYPES else 60
+    threshold = 70 if _normalize_archetype(ui_archetype) in STRICT_APP_ARCHETYPES else 60
     findings = [
         issue
         for dimension in dimensions.values()
@@ -709,6 +909,17 @@ def parse_componentized_build_errors(build_result: dict[str, Any] | None, *, cod
             }
         )
 
+    if PACKAGE_JSON_PARSE_RE.search(combined_logs):
+        errors.append(
+            {
+                "path": "package.json",
+                "line": None,
+                "column": None,
+                "error_class": "syntax",
+                "message": _extract_install_error_snippet(combined_logs, "package.json"),
+            }
+        )
+
     deduped: list[dict[str, Any]] = []
     seen: set[tuple[str, int | None, str]] = set()
     for error in errors:
@@ -718,6 +929,17 @@ def parse_componentized_build_errors(build_result: dict[str, Any] | None, *, cod
         seen.add(key)
         deduped.append(error)
     return deduped
+
+
+def _extract_install_error_snippet(logs: str, rel_path: str) -> str:
+    lines = [line.strip() for line in logs.splitlines() if line.strip()]
+    relevant = [
+        line
+        for line in lines
+        if "package.json" in line.lower() or "json.parse" in line.lower() or "ejsonparse" in line.lower()
+    ]
+    snippet = " ".join(relevant[:3]).strip()
+    return snippet or f"Install failed while parsing {rel_path}."
 
 
 def group_componentized_build_errors_by_file(errors: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
@@ -872,6 +1094,24 @@ def _estimate_chart_data_points(records: list[dict[str, Any]]) -> int:
     return count
 
 
+def _estimate_chart_region_count(records: list[dict[str, Any]]) -> int:
+    count = 0
+    chart_signals = ROLE_SIGNAL_PATTERNS["chart"] + ("<svg", "chart-panel", "chart-title", "axis-label", "candlestick-chart")
+    for record in records:
+        classification = classify_componentized_content_file(record["path"], record["content"])
+        if classification["role"] == "chart":
+            count += 1
+            continue
+        if classification["role"] not in CHART_ROLES:
+            continue
+        lower = record["content"].lower()
+        signal_hits = sum(1 for signal in chart_signals if signal in lower)
+        has_svg = "<svg" in lower
+        if (has_svg and signal_hits >= 2) or signal_hits >= 3:
+            count += 1
+    return count
+
+
 def _estimate_table_shape(records: list[dict[str, Any]]) -> tuple[int, int]:
     rows = 0
     columns: set[str] = set()
@@ -897,6 +1137,19 @@ def _estimate_feed_entries(records: list[dict[str, Any]]) -> int:
         count += len(DATE_RE.findall(content))
         count += len(re.findall(r"\b(?:watchlist|activity|alert|notification|transaction)\b", content, re.IGNORECASE)) // 2
     return count
+
+
+def _estimate_support_module_count(records: list[dict[str, Any]]) -> int:
+    found: set[str] = set()
+    for record in records:
+        classification = classify_componentized_content_file(record["path"], record["content"])
+        if classification["role"] not in {"feed", "chart", "table", "page", "data"}:
+            continue
+        haystack = f"{record['path']}\n{record['content']}".lower()
+        for category, hints in SUPPORT_MODULE_HINTS.items():
+            if any(hint in haystack for hint in hints):
+                found.add(category)
+    return len(found)
 
 
 def _estimate_panel_count(records: list[dict[str, Any]]) -> int:

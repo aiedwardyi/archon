@@ -51,7 +51,7 @@ LOCAL_CODE_IMPORT_RE = re.compile(r'((?:from\s+|import\s*\(\s*|import\s+)[\"\'])
 BASE_CSS_IMPORT_LINE_RE = re.compile(r'^\s*import\s+[\"\'][^\"\']*base\.css[\"\'];?\s*$\n?', re.MULTILINE)
 BASE_CSS_IMPORT_ANY_RE = re.compile(r'import\s+[\"\'][^\"\']*base\.css[\"\'];?\s*')
 MAIN_BASE_CSS_IMPORT_RE = re.compile(
-    r'^\s*import\s+[\"\'][^\"\']*base\.css[\"\'];?\s*(?:/\*.*\*/)?\s*$',
+    r'^\s*import\s+[\"\'][^\"\']*base\.css[\"\'];?\s*(?:(?:/\*.*\*/)|(?://.*))?\s*$',
     re.MULTILINE,
 )
 INLINE_COMMENT_RUNON_RE = re.compile(
@@ -118,6 +118,15 @@ GOOGLE_FONT_IMPORT_RE = re.compile(r"https://fonts\.googleapis\.com/[^\s\"')]+")
 CSS_VARIABLE_RE = re.compile(r"(--[\w-]+)\s*:\s*([^;}{]+);")
 HEX_COLOR_RE = re.compile(r"#[0-9a-fA-F]{3,8}\b")
 KEYFRAME_RE = re.compile(r"@keyframes\s+([A-Za-z_][\w-]*)")
+JSON_ESCAPE_NOISE_RE = re.compile(r"\\[nrt]")
+GENERATED_ASSET_REFERENCE_RE = re.compile(
+    r"(?:^|[\"'(\s=])(?:\./)?generated-assets/(?P<filename>[^\"')\s]+)",
+    re.IGNORECASE,
+)
+RUNTIME_GENERATED_ASSET_REFERENCE_RE = re.compile(
+    r'(?P<prefix>^|["\'(\s=,:])(?P<path>(?:\./)?/?generated-assets/(?P<subpath>[^"\'\s)]+))',
+    re.IGNORECASE,
+)
 FONT_FAMILY_RE = re.compile(r"font-family\s*:\s*([^;}{]+);")
 BORDER_RADIUS_RE = re.compile(r"border-radius\s*:\s*([^;}{]+);")
 BOX_SHADOW_RE = re.compile(r"box-shadow\s*:\s*([^;}{]+);")
@@ -128,6 +137,7 @@ CSS_BLOCK_RE = re.compile(r"(?P<selector>[^{}]+)\{(?P<body>[^{}]*)\}", re.MULTIL
 GOOGLE_FONT_IMPORT_LINE_RE = re.compile(r"^\s*@import\s+url\([^)]+fonts\.googleapis\.com[^)]*\)\s*;\s*$", re.MULTILINE)
 
 SAFE_COMPONENTIZED_DEPENDENCIES = {
+    "@heroicons/react": "^2.2.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.564.0",
     "recharts": "2.15.0",
@@ -164,9 +174,10 @@ NUMERIC_SELECTOR_HINTS = (
     ".price",
     ".delta",
 )
-MAIN_CSS_IMPORT_LINE_RE = re.compile(r'^\s*import\s+["\'](?P<path>\./[^"\']+\.css)["\'];?\s*(?:/\*.*\*/)?\s*$')
+MAIN_CSS_IMPORT_LINE_RE = re.compile(r'^\s*import\s+["\'](?P<path>\./[^"\']+\.css)["\'];?\s*(?:(?:/\*.*\*/)|(?://.*))?\s*$')
 MAIN_ENTRY_PREFERRED_CSS_ORDER = ("./base.css", "./index.css", "./style.css", "./styles.css")
 POLISH_GUARD_IMPORT = "./polish-guard.css"
+POLISH_GUARD_RUNTIME_IMPORT = "./polish-guard"
 POLISH_GUARD_ARCHETYPES = {"dashboard", "fintech"}
 COMPONENTIZED_UTILITY_FALLBACKS: dict[str, str] = {
     "font-display": "font-family: var(--font-display, 'Space Grotesk', 'Inter', sans-serif); letter-spacing: -0.02em;",
@@ -697,7 +708,73 @@ def _backfill_componentized_utility_classes(code_dir: Path) -> list[str]:
 
 
 def rewrite_componentized_asset_api_urls(text: str) -> str:
-    return API_ASSET_URL_RE.sub(lambda m: f"/generated-assets/{Path(m.group(1)).name}", text)
+    rewritten = API_ASSET_URL_RE.sub(lambda m: f"generated-assets/{Path(m.group(1)).name}", text)
+    return _normalize_componentized_generated_asset_paths(rewritten)
+
+
+def _normalize_componentized_generated_asset_paths(source: str) -> str:
+    return re.sub(r'([("\'=\s])\/generated-assets\/', r"\1generated-assets/", source)
+
+
+def _sync_componentized_generated_asset_references(code_dir: Path) -> list[str]:
+    public_dir = code_dir / "public" / "generated-assets"
+    if not public_dir.exists():
+        return []
+
+    existing_files = {
+        path.name.lower(): path
+        for path in public_dir.iterdir()
+        if path.is_file()
+    }
+    if not existing_files:
+        return []
+
+    referenced: set[str] = set()
+    for rel_path in collect_componentized_editable_files(code_dir):
+        path = code_dir / rel_path
+        try:
+            source = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        normalized = _normalize_componentized_generated_asset_paths(source)
+        if normalized != source:
+            path.write_text(normalized, encoding="utf-8")
+        for match in GENERATED_ASSET_REFERENCE_RE.finditer(normalized):
+            referenced.add(match.group("filename").strip())
+
+    created_aliases: list[str] = []
+    for filename in sorted(referenced):
+        lowered = filename.lower()
+        if lowered in existing_files:
+            continue
+        alias_source = _select_componentized_generated_asset_alias(filename, existing_files)
+        if not alias_source:
+            continue
+        dest = public_dir / filename
+        shutil.copy2(alias_source, dest)
+        existing_files[lowered] = dest
+        created_aliases.append(f"public/generated-assets/{filename}")
+    return created_aliases
+
+
+def _select_componentized_generated_asset_alias(
+    filename: str,
+    existing_files: dict[str, Path],
+) -> Path | None:
+    lowered = filename.lower()
+    priority_groups = [
+        ("map", "world", "atlas", "realm", "landscape", "background"),
+        ("hero", "background", "banner"),
+        ("portrait", "character", "monster", "tamer"),
+        ("weapon", "device", "artifact", "gear"),
+    ]
+    for group in priority_groups:
+        if not any(token in lowered for token in group):
+            continue
+        for existing_name, path in existing_files.items():
+            if any(token in existing_name for token in group):
+                return path
+    return next(iter(existing_files.values()), None)
 
 
 def _iter_local_import_specifiers(source: str) -> list[str]:
@@ -765,7 +842,7 @@ def stage_componentized_design_assets(version_dir: Path, design_assets: list[dic
                 staged_assets.append({
                     "key": key,
                     "purpose": purpose,
-                    "path": f"/generated-assets/{filename}",
+                    "path": f"generated-assets/{filename}",
                 })
                 continue
 
@@ -852,6 +929,7 @@ def ensure_componentized_workspace_support(
                 rewritten_files.append("src/index.css")
 
     created_files.extend(_backfill_missing_local_css_imports(code_dir))
+    created_files.extend(_sync_componentized_generated_asset_references(code_dir))
     rewritten_files.extend(_normalize_componentized_design_overrides(code_dir))
     rewritten_files.extend(_backfill_componentized_utility_classes(code_dir))
 
@@ -928,6 +1006,24 @@ def rewrite_preview_file_references(
         flags=re.IGNORECASE,
     )
     return html
+
+
+def rewrite_preview_runtime_asset_references(
+    content: str,
+    *,
+    mount_prefix: str,
+    root_dir: str,
+) -> str:
+    normalized_root = f"{mount_prefix}/{root_dir}".strip("/")
+    if not normalized_root:
+        return content
+
+    def _repl(match: re.Match[str]) -> str:
+        prefix = match.group("prefix")
+        subpath = match.group("subpath").lstrip("/")
+        return f"{prefix}/{normalized_root}/generated-assets/{subpath}"
+
+    return RUNTIME_GENERATED_ASSET_REFERENCE_RE.sub(_repl, content)
 
 
 def _normalize_asset_path(raw_path: str, root_dir: str) -> str:
@@ -1014,7 +1110,12 @@ def _backfill_missing_local_css_imports(code_dir: Path) -> list[str]:
 
 
 def _ensure_css_import(source: str, import_path: str) -> str:
-    if import_path in source:
+    return _ensure_main_side_effect_import(source, import_path)
+
+
+def _ensure_main_side_effect_import(source: str, import_path: str) -> str:
+    import_line_variants = {f'import "{import_path}";', f"import '{import_path}';"}
+    if any(line.strip() in import_line_variants for line in source.splitlines()):
         return source
     lines = source.splitlines()
     import_line = f'import "{import_path}";'
@@ -1028,14 +1129,15 @@ def _ensure_css_import(source: str, import_path: str) -> str:
 
 
 def _remove_css_import(source: str, import_path: str) -> str:
+    return _remove_main_side_effect_import(source, import_path)
+
+
+def _remove_main_side_effect_import(source: str, import_path: str) -> str:
     lines = source.splitlines()
     filtered = [
         line
         for line in lines
-        if not (
-            (match := MAIN_CSS_IMPORT_LINE_RE.match(line))
-            and match.group("path") == import_path
-        )
+        if line.strip() not in {f'import "{import_path}";', f"import '{import_path}';"}
     ]
     if filtered == lines:
         return source
@@ -1063,6 +1165,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_componentized_comment_split_identifiers(updated)
         updated = _repair_componentized_jsx_block_comment_bleed(updated)
         updated = _normalize_componentized_declaration_boundaries(updated)
+        updated = _hoist_componentized_chart_helper_declarations(updated)
         updated = _normalize_run_on_natural_language_notes(updated)
         updated = _normalize_run_on_explanatory_labels(updated)
         updated = _normalize_bare_section_labels(updated)
@@ -1081,13 +1184,14 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
 
 
 def _normalize_componentized_package_json(source: str) -> str:
+    candidate = _repair_json_escape_noise(source)
     try:
-        data = json.loads(source)
+        data = json.loads(candidate)
     except json.JSONDecodeError:
-        return source
+        return candidate
 
     if not isinstance(data, dict):
-        return source
+        return candidate
 
     scripts = data.setdefault("scripts", {})
     if isinstance(scripts, dict):
@@ -1099,6 +1203,53 @@ def _normalize_componentized_package_json(source: str) -> str:
 
     normalized = json.dumps(data, indent=2, ensure_ascii=False)
     return normalized + "\n"
+
+
+def _repair_json_escape_noise(source: str) -> str:
+    if "\\n" not in source and "\\r" not in source and "\\t" not in source:
+        return source
+
+    repaired: list[str] = []
+    in_string = False
+    escaped = False
+    idx = 0
+    while idx < len(source):
+        char = source[idx]
+        if in_string:
+            repaired.append(char)
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            idx += 1
+            continue
+
+        if char == '"':
+            in_string = True
+            repaired.append(char)
+            idx += 1
+            continue
+
+        if char == "\\" and idx + 1 < len(source):
+            next_char = source[idx + 1]
+            if next_char in {"n", "r"}:
+                repaired.append("\n")
+                idx += 2
+                continue
+            if next_char == "t":
+                repaired.append("\t")
+                idx += 2
+                continue
+
+        repaired.append(char)
+        idx += 1
+
+    repaired_source = "".join(repaired)
+    if repaired_source == source and JSON_ESCAPE_NOISE_RE.search(source):
+        return source.replace("\\n", "\n").replace("\\r", "\n").replace("\\t", "\t")
+    return repaired_source
 
 
 def _sync_componentized_package_dependencies(code_dir: Path) -> list[str]:
@@ -1231,8 +1382,10 @@ def _sync_componentized_polish_guard(
 ) -> tuple[list[str], list[str]]:
     normalized_archetype = (ui_archetype or "").strip().lower()
     guard_path = code_dir / "src" / "polish-guard.css"
+    runtime_path = code_dir / "src" / "polish-guard.ts"
     main_path = code_dir / "src" / "main.tsx"
     target_css = _build_componentized_polish_guard_css(normalized_archetype)
+    target_runtime = _build_componentized_polish_guard_runtime(normalized_archetype)
     created_files: list[str] = []
     rewritten_files: list[str] = []
 
@@ -1240,10 +1393,16 @@ def _sync_componentized_polish_guard(
         if guard_path.exists():
             guard_path.unlink()
             rewritten_files.append("src/polish-guard.css")
+        if runtime_path.exists():
+            runtime_path.unlink()
+            rewritten_files.append("src/polish-guard.ts")
         if main_path.exists():
             original_main = main_path.read_text(encoding="utf-8", errors="replace")
             updated_main = _normalize_componentized_main_entry(
-                _remove_css_import(original_main, POLISH_GUARD_IMPORT)
+                _remove_main_side_effect_import(
+                    _remove_css_import(original_main, POLISH_GUARD_IMPORT),
+                    POLISH_GUARD_RUNTIME_IMPORT,
+                )
             )
             if updated_main != original_main:
                 main_path.write_text(updated_main, encoding="utf-8")
@@ -1260,10 +1419,23 @@ def _sync_componentized_polish_guard(
             guard_path.write_text(target_css, encoding="utf-8")
             rewritten_files.append("src/polish-guard.css")
 
+    if target_runtime is not None:
+        if not runtime_path.exists():
+            runtime_path.write_text(target_runtime, encoding="utf-8")
+            created_files.append("src/polish-guard.ts")
+        else:
+            original_runtime = runtime_path.read_text(encoding="utf-8", errors="replace")
+            if original_runtime != target_runtime:
+                runtime_path.write_text(target_runtime, encoding="utf-8")
+                rewritten_files.append("src/polish-guard.ts")
+
     if main_path.exists():
         original_main = main_path.read_text(encoding="utf-8", errors="replace")
         updated_main = _normalize_componentized_main_entry(
-            _ensure_css_import(original_main, POLISH_GUARD_IMPORT)
+            _ensure_css_import(
+                _ensure_main_side_effect_import(original_main, POLISH_GUARD_RUNTIME_IMPORT),
+                POLISH_GUARD_IMPORT,
+            )
         )
         if updated_main != original_main:
             main_path.write_text(updated_main, encoding="utf-8")
@@ -1464,6 +1636,80 @@ def _build_componentized_polish_guard_css(ui_archetype: str) -> str | None:
         ".hero-chart,\n"
         ".asset-table-panel {\n"
         "  outline: 1px solid rgba(255, 255, 255, 0.02);\n"
+        "}\n"
+    )
+
+
+def _build_componentized_polish_guard_runtime(ui_archetype: str) -> str | None:
+    if ui_archetype not in POLISH_GUARD_ARCHETYPES:
+        return None
+
+    return (
+        f"// Runtime numeric polish guard for {ui_archetype} shells.\n"
+        "const COUNT_SELECTORS = [\n"
+        '  ".kpi-value",\n'
+        '  ".portfolio-value .value-amount",\n'
+        '  ".stat-value",\n'
+        '  ".numeric-value",\n'
+        '  ".price",\n'
+        '  ".delta",\n'
+        '  "[data-countup]"\n'
+        "] as const;\n\n"
+        "function parseCountValue(text: string): { value: number; prefix: string; suffix: string; decimals: number } | null {\n"
+        "  const trimmed = text.trim();\n"
+        "  if (!trimmed || /[A-Za-z]{3,}/.test(trimmed)) {\n"
+        "    return null;\n"
+        "  }\n"
+        "  const match = trimmed.match(/^([^\\d+-]*)([+-]?[\\d,]+(?:\\.\\d+)?)(.*)$/);\n"
+        "  if (!match) {\n"
+        "    return null;\n"
+        "  }\n"
+        "  const numeric = Number(match[2].replace(/,/g, ''));\n"
+        "  if (!Number.isFinite(numeric) || Math.abs(numeric) < 1) {\n"
+        "    return null;\n"
+        "  }\n"
+        "  const decimals = (match[2].split('.')[1] || '').length;\n"
+        "  return { value: numeric, prefix: match[1], suffix: match[3], decimals };\n"
+        "}\n\n"
+        "function formatCountValue(value: number, prefix: string, suffix: string, decimals: number): string {\n"
+        "  return `${prefix}${value.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}${suffix}`;\n"
+        "}\n\n"
+        "function animateCount(node: HTMLElement): void {\n"
+        "  if (node.dataset.guardCountAnimated === '1') {\n"
+        "    return;\n"
+        "  }\n"
+        "  const parsed = parseCountValue(node.textContent || '');\n"
+        "  if (!parsed) {\n"
+        "    return;\n"
+        "  }\n"
+        "  node.dataset.guardCountAnimated = '1';\n"
+        "  const target = parsed.value;\n"
+        "  const duration = 900;\n"
+        "  const start = performance.now();\n"
+        "  const initial = Math.max(0, target * 0.2);\n"
+        "  const step = (now: number) => {\n"
+        "    const progress = Math.min((now - start) / duration, 1);\n"
+        "    const eased = 1 - Math.pow(1 - progress, 3);\n"
+        "    const current = initial + (target - initial) * eased;\n"
+        "    node.textContent = formatCountValue(current, parsed.prefix, parsed.suffix, parsed.decimals);\n"
+        "    if (progress < 1) {\n"
+        "      window.requestAnimationFrame(step);\n"
+        "    } else {\n"
+        "      node.textContent = formatCountValue(target, parsed.prefix, parsed.suffix, parsed.decimals);\n"
+        "    }\n"
+        "  };\n"
+        "  window.requestAnimationFrame(step);\n"
+        "}\n\n"
+        "function applyCountGuard(root: ParentNode = document): void {\n"
+        "  const selector = COUNT_SELECTORS.join(',');\n"
+        "  root.querySelectorAll<HTMLElement>(selector).forEach((node) => animateCount(node));\n"
+        "}\n\n"
+        "if (typeof window !== 'undefined') {\n"
+        "  window.addEventListener('load', () => {\n"
+        "    applyCountGuard(document);\n"
+        "    const observer = new MutationObserver(() => applyCountGuard(document));\n"
+        "    observer.observe(document.body, { childList: true, subtree: true });\n"
+        "  }, { once: true });\n"
         "}\n"
     )
 
@@ -1694,6 +1940,64 @@ def _repair_componentized_jsx_block_comment_bleed(source: str) -> str:
 
 def _normalize_componentized_declaration_boundaries(source: str) -> str:
     return DECLARATION_BOUNDARY_RE.sub("\n", source)
+
+
+def _hoist_componentized_chart_helper_declarations(source: str) -> str:
+    lines = source.splitlines()
+    if not lines or ".map(" not in source or "return (" not in source:
+        return source
+
+    helper_candidates: list[tuple[int, int, str]] = []
+    for idx, line in enumerate(lines):
+        match = re.match(
+            r"^(?P<indent>\s*)const (?P<name>(?:scale|map)[XY]|[xy]Scale)\s*=\s*.+;\s*(?://.*)?$",
+            line,
+        )
+        if not match:
+            continue
+        helper_name = match.group("name")
+        if source.count(f"{helper_name}(") < 2:
+            continue
+
+        previous_window = "\n".join(lines[max(0, idx - 8):idx + 1])
+        next_window = "\n".join(lines[idx:min(len(lines), idx + 12)])
+        if ".map(" not in previous_window or "return" not in next_window:
+            continue
+
+        return_idx = None
+        for search_idx in range(idx - 1, -1, -1):
+            if re.match(r"^\s*return\s*\(\s*$", lines[search_idx]):
+                return_idx = search_idx
+                break
+        if return_idx is None:
+            continue
+
+        helper_candidates.append((idx, return_idx, line.strip()))
+
+    if not helper_candidates:
+        return source
+
+    removed_indexes = {candidate[0] for candidate in helper_candidates}
+    insertions: dict[int, list[str]] = {}
+    for _, return_idx, helper_line in helper_candidates:
+        return_indent = re.match(r"^(\s*)", lines[return_idx]).group(1)
+        insertions.setdefault(return_idx, [])
+        hoisted_line = f"{return_indent}{helper_line}"
+        if hoisted_line not in insertions[return_idx]:
+            insertions[return_idx].append(hoisted_line)
+
+    rebuilt: list[str] = []
+    for idx, line in enumerate(lines):
+        if idx in insertions:
+            rebuilt.extend(insertions[idx])
+        if idx in removed_indexes:
+            continue
+        rebuilt.append(line)
+
+    updated = "\n".join(rebuilt)
+    if source.endswith("\n"):
+        updated += "\n"
+    return updated
 
 
 def _normalize_componentized_field_aliases(source: str) -> str:
