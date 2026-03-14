@@ -95,6 +95,10 @@ COMMENT_SPLIT_IDENTIFIER_RE = re.compile(
     r"/\*\s*(?P<comment>[^*]*?)\s{2,}(?P<prefix>[a-z][A-Za-z0-9_$]{1,32})\s*\*/\s*\n(?P<suffix>[A-Z][A-Za-z0-9_$]{1,64})(?P<rest>[^\n]*)",
     re.MULTILINE,
 )
+JSX_BLOCK_COMMENT_BLEED_RE = re.compile(
+    r"(?P<open>\(\s*)/\*\s*(?P<comment>[^*]*?)\s{2,}(?P<jsx><[A-Za-z][\s\S]*?)\{(?P<prefix>[a-z][A-Za-z0-9_$]{1,32})\s*\*/\s*\n(?P<indent>[ \t]*)(?P<suffix>[A-Z][A-Za-z0-9_$]{1,64})(?P<rest>[^\n]*)",
+    re.MULTILINE,
+)
 DECLARATION_BOUNDARY_RE = re.compile(
     r"(?<=})(?=(?:interface\b|type\b|const\b|let\b|var\b|function\b|export\b|class\b|return\b))"
 )
@@ -162,6 +166,8 @@ NUMERIC_SELECTOR_HINTS = (
 )
 MAIN_CSS_IMPORT_LINE_RE = re.compile(r'^\s*import\s+["\'](?P<path>\./[^"\']+\.css)["\'];?\s*(?:/\*.*\*/)?\s*$')
 MAIN_ENTRY_PREFERRED_CSS_ORDER = ("./base.css", "./index.css", "./style.css", "./styles.css")
+POLISH_GUARD_IMPORT = "./polish-guard.css"
+POLISH_GUARD_ARCHETYPES = {"dashboard", "fintech"}
 COMPONENTIZED_UTILITY_FALLBACKS: dict[str, str] = {
     "font-display": "font-family: var(--font-display, 'Space Grotesk', 'Inter', sans-serif); letter-spacing: -0.02em;",
     "font-body": "font-family: var(--font-body, 'Inter', sans-serif);",
@@ -179,6 +185,12 @@ COMPONENTIZED_UTILITY_FALLBACKS: dict[str, str] = {
     "-translate-y-1/2": "transform: translateY(-50%);",
 }
 COMPONENTIZED_UTILITY_FALLBACK_MARKER = "/* Generated componentized utility fallbacks */"
+COMPONENTIZED_FIELD_ALIAS_GROUPS: tuple[tuple[str, ...], ...] = (
+    ("changePercent", "change24hPercent", "dayChangePercent"),
+    ("change", "change24h", "dayChange"),
+    ("price", "priceUsd", "assetPrice"),
+    ("value", "valueUsd", "totalValueUsd"),
+)
 
 
 def infer_scaffold_mode(code_dir: Path, plan_data: dict[str, Any] | None = None) -> str:
@@ -589,6 +601,59 @@ def collect_componentized_direct_dependencies(
     return sorted(discovered)
 
 
+def collect_componentized_reverse_dependents(
+    code_dir: Path,
+    rel_paths: list[str],
+    *,
+    max_depth: int = 1,
+) -> list[str]:
+    editable_files = collect_componentized_editable_files(code_dir)
+    if not editable_files:
+        return []
+
+    frontier = {
+        path.replace("\\", "/").strip("/")
+        for path in rel_paths
+        if path
+    }
+    discovered: set[str] = set()
+    root = code_dir.resolve()
+
+    depth = 0
+    while frontier and depth < max_depth:
+        next_frontier: set[str] = set()
+        for rel_path in editable_files:
+            normalized = rel_path.replace("\\", "/").strip("/")
+            if normalized in frontier or normalized in discovered:
+                continue
+            source_path = code_dir / normalized
+            if not source_path.exists() or not source_path.is_file():
+                continue
+            try:
+                source = source_path.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+
+            imported_paths: set[str] = set()
+            for raw_import in _iter_local_import_specifiers(source):
+                resolved_rel = _resolve_local_import_path(code_dir, normalized, raw_import)
+                if not resolved_rel:
+                    continue
+                try:
+                    (code_dir / resolved_rel).resolve().relative_to(root)
+                except ValueError:
+                    continue
+                imported_paths.add(resolved_rel)
+
+            if imported_paths.intersection(frontier):
+                discovered.add(normalized)
+                next_frontier.add(normalized)
+        frontier = next_frontier
+        depth += 1
+
+    return sorted(discovered)
+
+
 def _backfill_componentized_utility_classes(code_dir: Path) -> list[str]:
     base_css_path = code_dir / "src" / "base.css"
     if not base_css_path.exists():
@@ -718,6 +783,7 @@ def ensure_componentized_workspace_support(
     code_dir: Path,
     *,
     base_css_content: str | None = None,
+    ui_archetype: str | None = None,
 ) -> dict[str, list[str]]:
     code_dir.mkdir(parents=True, exist_ok=True)
 
@@ -731,6 +797,13 @@ def ensure_componentized_workspace_support(
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(content, encoding="utf-8")
             created_files.append(rel_path)
+
+    polish_created, polish_rewritten = _sync_componentized_polish_guard(
+        code_dir,
+        ui_archetype=ui_archetype,
+    )
+    created_files.extend(polish_created)
+    rewritten_files.extend(polish_rewritten)
 
     if base_css_content:
         base_css_path = code_dir / "src" / "base.css"
@@ -954,6 +1027,21 @@ def _ensure_css_import(source: str, import_path: str) -> str:
     return "\n".join(lines) + ("\n" if source.endswith("\n") else "")
 
 
+def _remove_css_import(source: str, import_path: str) -> str:
+    lines = source.splitlines()
+    filtered = [
+        line
+        for line in lines
+        if not (
+            (match := MAIN_CSS_IMPORT_LINE_RE.match(line))
+            and match.group("path") == import_path
+        )
+    ]
+    if filtered == lines:
+        return source
+    return "\n".join(filtered).rstrip() + "\n"
+
+
 def _normalize_componentized_file(rel_path: str, source: str) -> str:
     updated = rewrite_componentized_asset_api_urls(source)
 
@@ -967,11 +1055,13 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _normalize_componentized_index_css(updated)
     elif rel_path.endswith((".ts", ".tsx", ".js", ".jsx")):
         updated = LOCAL_CODE_IMPORT_RE.sub(r"\1\2\4", updated)
+        updated = _normalize_componentized_field_aliases(updated)
         updated = _repair_interface_field_comment_bleed(updated)
         updated = _repair_inline_block_comment_code_bleed(updated)
         updated = _repair_block_comment_control_flow_bleed(updated)
         updated = _normalize_run_on_inline_comments(updated)
         updated = _repair_componentized_comment_split_identifiers(updated)
+        updated = _repair_componentized_jsx_block_comment_bleed(updated)
         updated = _normalize_componentized_declaration_boundaries(updated)
         updated = _normalize_run_on_natural_language_notes(updated)
         updated = _normalize_run_on_explanatory_labels(updated)
@@ -1132,6 +1222,250 @@ def _normalize_componentized_design_overrides(code_dir: Path) -> list[str]:
             rewritten.append(normalized)
 
     return rewritten
+
+
+def _sync_componentized_polish_guard(
+    code_dir: Path,
+    *,
+    ui_archetype: str | None,
+) -> tuple[list[str], list[str]]:
+    normalized_archetype = (ui_archetype or "").strip().lower()
+    guard_path = code_dir / "src" / "polish-guard.css"
+    main_path = code_dir / "src" / "main.tsx"
+    target_css = _build_componentized_polish_guard_css(normalized_archetype)
+    created_files: list[str] = []
+    rewritten_files: list[str] = []
+
+    if target_css is None:
+        if guard_path.exists():
+            guard_path.unlink()
+            rewritten_files.append("src/polish-guard.css")
+        if main_path.exists():
+            original_main = main_path.read_text(encoding="utf-8", errors="replace")
+            updated_main = _normalize_componentized_main_entry(
+                _remove_css_import(original_main, POLISH_GUARD_IMPORT)
+            )
+            if updated_main != original_main:
+                main_path.write_text(updated_main, encoding="utf-8")
+                rewritten_files.append("src/main.tsx")
+        return created_files, rewritten_files
+
+    guard_path.parent.mkdir(parents=True, exist_ok=True)
+    if not guard_path.exists():
+        guard_path.write_text(target_css, encoding="utf-8")
+        created_files.append("src/polish-guard.css")
+    else:
+        original_css = guard_path.read_text(encoding="utf-8", errors="replace")
+        if original_css != target_css:
+            guard_path.write_text(target_css, encoding="utf-8")
+            rewritten_files.append("src/polish-guard.css")
+
+    if main_path.exists():
+        original_main = main_path.read_text(encoding="utf-8", errors="replace")
+        updated_main = _normalize_componentized_main_entry(
+            _ensure_css_import(original_main, POLISH_GUARD_IMPORT)
+        )
+        if updated_main != original_main:
+            main_path.write_text(updated_main, encoding="utf-8")
+            rewritten_files.append("src/main.tsx")
+
+    return created_files, rewritten_files
+
+
+def _build_componentized_polish_guard_css(ui_archetype: str) -> str | None:
+    if ui_archetype not in POLISH_GUARD_ARCHETYPES:
+        return None
+
+    if ui_archetype == "fintech":
+        accent_glow = "rgba(24, 144, 255, 0.32)"
+        accent_soft = "rgba(78, 168, 255, 0.16)"
+        topbar_tint = "rgba(8, 14, 24, 0.82)"
+        body_gradient = (
+            "radial-gradient(circle at top right, rgba(0, 122, 255, 0.16), transparent 28%),\n"
+            "    radial-gradient(circle at bottom left, rgba(26, 188, 156, 0.1), transparent 22%),"
+        )
+    else:
+        accent_glow = "rgba(79, 144, 255, 0.28)"
+        accent_soft = "rgba(79, 144, 255, 0.14)"
+        topbar_tint = "rgba(7, 12, 20, 0.78)"
+        body_gradient = (
+            "radial-gradient(circle at top right, rgba(61, 117, 255, 0.16), transparent 26%),\n"
+            "    radial-gradient(circle at bottom left, rgba(15, 193, 132, 0.08), transparent 24%),"
+        )
+
+    return (
+        f"/* Runtime shell polish guard for {ui_archetype} app shells. */\n"
+        ":root {\n"
+        "  color-scheme: dark;\n"
+        "  --guard-surface: rgba(255, 255, 255, 0.02);\n"
+        "  --guard-border-strong: rgba(255, 255, 255, 0.09);\n"
+        f"  --guard-accent-soft: {accent_soft};\n"
+        f"  --guard-accent-glow: {accent_glow};\n"
+        "  --guard-shadow-card: 0 18px 40px rgba(3, 8, 18, 0.34), 0 4px 14px rgba(3, 8, 18, 0.22);\n"
+        "  --guard-shadow-elevated: 0 22px 50px rgba(2, 6, 23, 0.42), 0 8px 18px rgba(2, 6, 23, 0.24);\n"
+        "}\n\n"
+        "body {\n"
+        f"  background: {body_gradient}\n"
+        "    var(--bg, #0a1018) !important;\n"
+        "}\n\n"
+        ".fintech-shell,\n"
+        ".dashboard-shell,\n"
+        ".main-content,\n"
+        ".content-area {\n"
+        "  position: relative;\n"
+        "}\n\n"
+        ".topbar,\n"
+        ".header-bar,\n"
+        ".sidebar {\n"
+        f"  background: linear-gradient(180deg, {topbar_tint}, rgba(8, 12, 18, 0.9)) !important;\n"
+        "  backdrop-filter: blur(18px);\n"
+        "  border-color: var(--guard-border-strong) !important;\n"
+        "}\n\n"
+        "h1,\n"
+        "h2,\n"
+        "h3,\n"
+        ".page-title,\n"
+        ".panel-title,\n"
+        ".chart-title,\n"
+        ".topbar-brand,\n"
+        ".logo-text,\n"
+        ".sidebar-group-label,\n"
+        ".feed-header {\n"
+        "  font-family: var(--font-display, 'Space Grotesk', 'Inter', sans-serif) !important;\n"
+        "}\n\n"
+        "h1,\n"
+        ".page-title,\n"
+        ".topbar-brand,\n"
+        ".logo-text {\n"
+        "  letter-spacing: -0.04em;\n"
+        "}\n\n"
+        "h1,\n"
+        ".page-title {\n"
+        "  font-size: clamp(2.1rem, 2vw + 1.25rem, 3rem) !important;\n"
+        "  line-height: 1.04 !important;\n"
+        "}\n\n"
+        ".topbar-brand,\n"
+        ".logo-text {\n"
+        "  font-size: clamp(1.1rem, 0.7vw + 0.95rem, 1.45rem) !important;\n"
+        "  font-weight: 700 !important;\n"
+        "}\n\n"
+        ".kpi-value,\n"
+        ".kpi-delta,\n"
+        ".ticker-price,\n"
+        ".ticker-delta,\n"
+        ".watch-price,\n"
+        ".watch-delta,\n"
+        ".portfolio-value .value-amount,\n"
+        ".chart-axis-label,\n"
+        ".feed-time,\n"
+        ".asset-table td,\n"
+        ".data-table td,\n"
+        ".table-number,\n"
+        ".numeric,\n"
+        ".numeric-value,\n"
+        ".price,\n"
+        ".delta {\n"
+        "  font-family: var(--font-mono, 'JetBrains Mono', monospace) !important;\n"
+        "  font-variant-numeric: tabular-nums !important;\n"
+        "}\n\n"
+        ".kpi-card,\n"
+        ".panel,\n"
+        ".card,\n"
+        ".chart-card,\n"
+        ".ticker-card,\n"
+        ".watchlist-panel,\n"
+        ".news-feed-panel,\n"
+        ".asset-table-panel,\n"
+        ".data-table,\n"
+        ".sidebar-item.active {\n"
+        "  border-color: var(--guard-border-strong) !important;\n"
+        "  box-shadow: var(--guard-shadow-card) !important;\n"
+        "}\n\n"
+        ".kpi-card,\n"
+        ".panel,\n"
+        ".chart-card,\n"
+        ".ticker-card,\n"
+        ".watchlist-panel,\n"
+        ".news-feed-panel,\n"
+        ".asset-table-panel,\n"
+        ".data-table {\n"
+        "  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012)),\n"
+        "    var(--card-bg, var(--surface, #111827)) !important;\n"
+        "}\n\n"
+        ".kpi-card:hover,\n"
+        ".panel:hover,\n"
+        ".chart-card:hover,\n"
+        ".ticker-card:hover,\n"
+        ".card:hover {\n"
+        "  transform: translateY(-3px);\n"
+        "  box-shadow: var(--guard-shadow-elevated) !important;\n"
+        "}\n\n"
+        ".kpi-card::before,\n"
+        ".panel::before,\n"
+        ".chart-card::before {\n"
+        "  content: \"\";\n"
+        "  position: absolute;\n"
+        "  inset: 0;\n"
+        "  border-radius: inherit;\n"
+        "  pointer-events: none;\n"
+        "  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent 30%);\n"
+        "  opacity: 0.55;\n"
+        "}\n\n"
+        ".kpi-card,\n"
+        ".panel,\n"
+        ".chart-card {\n"
+        "  position: relative;\n"
+        "  overflow: hidden;\n"
+        "}\n\n"
+        ".kpi-value {\n"
+        "  font-size: clamp(2rem, 1vw + 1.6rem, 2.9rem) !important;\n"
+        "  letter-spacing: -0.05em !important;\n"
+        "}\n\n"
+        ".kpi-label,\n"
+        ".data-table th,\n"
+        ".asset-table th,\n"
+        ".sidebar-group-label,\n"
+        ".value-label {\n"
+        "  text-transform: uppercase;\n"
+        "  letter-spacing: 0.09em !important;\n"
+        "}\n\n"
+        ".asset-table thead th,\n"
+        ".data-table thead th {\n"
+        "  background: rgba(255, 255, 255, 0.02);\n"
+        "}\n\n"
+        ".asset-table tbody tr:hover,\n"
+        ".data-table tbody tr:hover,\n"
+        ".watch-item:hover,\n"
+        ".feed-item:hover {\n"
+        "  background: rgba(255, 255, 255, 0.025);\n"
+        "}\n\n"
+        ".primary-btn,\n"
+        ".chart-period-btn.active,\n"
+        ".range-pill.active,\n"
+        ".interactive-chip,\n"
+        ".sidebar-item.active,\n"
+        ".status-chip,\n"
+        ".market-pill {\n"
+        "  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 10px 20px rgba(2, 6, 23, 0.22);\n"
+        "}\n\n"
+        ".primary-btn,\n"
+        ".chart-period-btn.active,\n"
+        ".range-pill.active,\n"
+        ".interactive-chip {\n"
+        "  background: linear-gradient(135deg, rgba(var(--accent-rgb, 16, 185, 129), 0.24), var(--guard-accent-soft)) !important;\n"
+        "  border-color: rgba(var(--accent-rgb, 16, 185, 129), 0.32) !important;\n"
+        "}\n\n"
+        ".hero-chart svg,\n"
+        ".chart-card svg,\n"
+        ".chart-content svg {\n"
+        "  filter: drop-shadow(0 10px 26px rgba(2, 6, 23, 0.24));\n"
+        "}\n\n"
+        ".chart-card,\n"
+        ".hero-chart,\n"
+        ".asset-table-panel {\n"
+        "  outline: 1px solid rgba(255, 255, 255, 0.02);\n"
+        "}\n"
+    )
 
 
 def _normalize_componentized_base_css(source: str, *, reference_css: str) -> str:
@@ -1344,8 +1678,33 @@ def _repair_componentized_comment_split_identifiers(source: str) -> str:
     return COMMENT_SPLIT_IDENTIFIER_RE.sub(_repl, source)
 
 
+def _repair_componentized_jsx_block_comment_bleed(source: str) -> str:
+    def _repl(match: re.Match[str]) -> str:
+        comment = " ".join(match.group("comment").split()).strip()
+        jsx = match.group("jsx").strip()
+        prefix = match.group("prefix").strip()
+        suffix = match.group("suffix").strip()
+        rest = match.group("rest") or ""
+        indent = match.group("indent") or ""
+        comment_block = f"{indent}/* {comment} */\n" if comment else ""
+        return f"(\n{comment_block}{indent}{jsx}{{{prefix}{suffix}{rest}"
+
+    return JSX_BLOCK_COMMENT_BLEED_RE.sub(_repl, source)
+
+
 def _normalize_componentized_declaration_boundaries(source: str) -> str:
     return DECLARATION_BOUNDARY_RE.sub("\n", source)
+
+
+def _normalize_componentized_field_aliases(source: str) -> str:
+    updated = source
+    for alias_group in COMPONENTIZED_FIELD_ALIAS_GROUPS:
+        canonical, *aliases = alias_group
+        if canonical not in updated:
+            continue
+        for alias in aliases:
+            updated = re.sub(rf"\b{re.escape(alias)}\b", canonical, updated)
+    return updated
 
 
 def _normalize_componentized_currency_formatting(source: str) -> str:
@@ -1447,14 +1806,18 @@ def _normalize_componentized_main_css_order(source: str) -> str:
 
     ordered_css_imports: list[str] = []
     seen_css: set[str] = set()
+    has_polish_guard = POLISH_GUARD_IMPORT in css_imports
+    filtered_css_imports = [path for path in css_imports if path != POLISH_GUARD_IMPORT]
     for import_path in MAIN_ENTRY_PREFERRED_CSS_ORDER:
-        if import_path in css_imports and import_path not in seen_css:
+        if import_path in filtered_css_imports and import_path not in seen_css:
             ordered_css_imports.append(f'import "{import_path}";')
             seen_css.add(import_path)
-    for import_path in css_imports:
+    for import_path in filtered_css_imports:
         if import_path not in seen_css:
             ordered_css_imports.append(f'import "{import_path}";')
             seen_css.add(import_path)
+    if has_polish_guard:
+        ordered_css_imports.append(f'import "{POLISH_GUARD_IMPORT}";')
 
     rebuilt_lines = [*js_imports, *ordered_css_imports]
     if other_lines:

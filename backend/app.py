@@ -41,6 +41,7 @@ from utils.componentized_runtime import (
     build_componentized_preview,
     collect_componentized_direct_dependencies,
     collect_componentized_editable_files,
+    collect_componentized_reverse_dependents,
     collect_existing_code_context,
     collect_selected_code_context,
     ensure_componentized_workspace_support,
@@ -500,6 +501,8 @@ def validate_componentized_contract_outputs(
         for file_artifact in files or []
         if str(getattr(file_artifact, "path", "")).strip()
     }
+    workspace_blob = "\n".join(normalized_files.values()).lower()
+    workspace_paths = set(normalized_files.keys())
     violations: list[dict[str, str]] = []
     required_paths = get_componentized_required_contract_paths()
 
@@ -537,6 +540,23 @@ def validate_componentized_contract_outputs(
 
         min_length = COMPONENTIZED_CONTRACT_MIN_LENGTHS.get(rel_path, 40)
         if len(stripped) < min_length:
+            if rel_path == "src/App.tsx" and ui_archetype in {"dashboard", "fintech"}:
+                required_markers = ("kpi", "chart", "watch", "watchlist", "table", "portfolio", "activity", "holdings")
+                workspace_marker_hits = sum(1 for marker in required_markers if marker in workspace_blob)
+                structural_paths = sum(
+                    1
+                    for path in workspace_paths
+                    if path.startswith(("src/pages/", "src/components/"))
+                    and any(token in path.lower() for token in ("dashboard", "chart", "kpi", "watch", "table", "activity", "holdings"))
+                )
+                stripped_lower = stripped.lower()
+                delegated_shell = (
+                    "./pages/" in stripped_lower
+                    and workspace_marker_hits >= 3
+                    and structural_paths >= 2
+                )
+                if delegated_shell:
+                    continue
             violations.append(
                 {
                     "path": rel_path,
@@ -596,7 +616,6 @@ def validate_componentized_contract_outputs(
                     "message": "src/main.tsx must mount the React app into the root container.",
                 }
             )
-
     app_source = normalized_files.get("src/App.tsx", "")
     if app_source:
         lowered = app_source.lower()
@@ -617,13 +636,20 @@ def validate_componentized_contract_outputs(
                 }
             )
         if ui_archetype in {"dashboard", "fintech"}:
-            required_markers = ("kpi", "chart", "watch", "table", "portfolio", "activity")
-            if sum(1 for marker in required_markers if marker in lowered) < 2:
+            required_markers = ("kpi", "chart", "watch", "watchlist", "table", "portfolio", "activity", "holdings")
+            workspace_marker_hits = sum(1 for marker in required_markers if marker in workspace_blob)
+            structural_paths = sum(
+                1
+                for path in workspace_paths
+                if path.startswith(("src/pages/", "src/components/"))
+                and any(token in path.lower() for token in ("dashboard", "chart", "kpi", "watch", "table", "activity", "holdings"))
+            )
+            if workspace_marker_hits < 3 and structural_paths < 2:
                 violations.append(
                     {
                         "path": "src/App.tsx",
                         "code": "thin_app_shell",
-                        "message": "The main app shell is too thin for a dense app-like archetype.",
+                        "message": "The componentized app shell is too thin for a dense app-like archetype.",
                     }
                 )
 
@@ -1070,6 +1096,57 @@ def build_componentized_refinement_prompt(
     )
 
 
+def _normalize_componentized_rel_path(rel_path: str) -> str:
+    return rel_path.replace("\\", "/").strip("/")
+
+
+def _select_componentized_related_files(
+    code_dir: Path,
+    rel_paths: list[str],
+    *,
+    dependency_depth: int = 1,
+    dependent_depth: int = 1,
+) -> set[str]:
+    selected = {
+        _normalize_componentized_rel_path(rel_path)
+        for rel_path in rel_paths
+        if _normalize_componentized_rel_path(rel_path)
+    }
+    if not selected:
+        return set()
+
+    dependencies = collect_componentized_direct_dependencies(
+        code_dir,
+        sorted(selected),
+        max_depth=dependency_depth,
+    )
+    selected.update(dependencies)
+
+    dependents = collect_componentized_reverse_dependents(
+        code_dir,
+        sorted(selected),
+        max_depth=dependent_depth,
+    )
+    selected.update(dependents)
+
+    # Pull one layer of upstream data/support from parent files so content fixes can
+    # patch the source of weak props without reopening the whole workspace.
+    parent_dependencies = collect_componentized_direct_dependencies(
+        code_dir,
+        sorted(dependents),
+        max_depth=1,
+    )
+    for rel_path in parent_dependencies:
+        normalized = _normalize_componentized_rel_path(rel_path)
+        if (
+            normalized.startswith("src/data/")
+            or normalized.endswith(".json")
+            or any(token in normalized for token in ("metrics", "transactions", "watchlist", "seed", "mock", "series", "dataset"))
+        ):
+            selected.add(normalized)
+    return selected
+
+
 def select_componentized_content_fix_scope(
     code_dir: Path,
     *,
@@ -1079,38 +1156,24 @@ def select_componentized_content_fix_scope(
     if not editable_files:
         return []
 
-    selected: set[str] = set()
-    for rel_path in weak_file_paths:
-        normalized = rel_path.replace("\\", "/").strip("/")
-        if normalized:
-            selected.add(normalized)
-
-    for rel_path in editable_files:
-        normalized = rel_path.replace("\\", "/").strip("/")
-        if normalized in {"src/App.tsx", "index.html"}:
-            selected.add(normalized)
-            continue
-        if normalized == "src/index.css":
-            selected.add(normalized)
-            continue
-        if normalized.startswith(("src/pages/", "src/data/")):
-            selected.add(normalized)
-            continue
-        path = code_dir / normalized
-        try:
-            content = path.read_text(encoding="utf-8", errors="replace").lower()
-        except OSError:
-            continue
-        if "const initial" in content or "usestate<" in content or "usestate(" in content:
-            selected.add(normalized)
+    selected = _select_componentized_related_files(
+        code_dir,
+        weak_file_paths,
+        dependency_depth=1,
+        dependent_depth=2,
+    )
 
     scoped = [path for path in editable_files if path in selected]
     if not scoped:
-        scoped = [path for path in editable_files if path.startswith(("src/pages/", "src/data/")) or path == "src/App.tsx"]
+        scoped = [
+            path for path in editable_files
+            if path.startswith(("src/pages/", "src/data/", "src/components/")) or path == "src/App.tsx"
+        ]
     return extend_componentized_scope(
         code_dir,
         scoped[:12],
         include_style_targets=False,
+        include_common_targets=False,
     )
 
 
@@ -1204,8 +1267,73 @@ def select_componentized_refinement_scope(
             code_dir,
             scoped[:12],
             include_style_targets=False,
+            include_common_targets=False,
         )
     return extend_componentized_scope(code_dir, scoped[:12])
+
+
+def select_componentized_build_repair_scope(
+    code_dir: Path,
+    build_errors: list[dict[str, Any]],
+) -> list[str]:
+    editable_files = collect_componentized_editable_files(code_dir)
+    if not editable_files:
+        return []
+
+    selected: set[str] = set()
+    include_style_targets = False
+    include_common_targets = False
+
+    for error in build_errors:
+        rel_path = _normalize_componentized_rel_path(str(error.get("path") or ""))
+        if not rel_path:
+            continue
+        selected.add(rel_path)
+        error_class = str(error.get("error_class") or "")
+        if error_class in {"syntax", "import", "asset"}:
+            selected.update(
+                _select_componentized_related_files(
+                    code_dir,
+                    [rel_path],
+                    dependency_depth=1,
+                    dependent_depth=1,
+                )
+            )
+        elif error_class in {"cross_file", "type"}:
+            selected.update(
+                _select_componentized_related_files(
+                    code_dir,
+                    [rel_path],
+                    dependency_depth=2,
+                    dependent_depth=2,
+                )
+            )
+        else:
+            selected.update(
+                _select_componentized_related_files(
+                    code_dir,
+                    [rel_path],
+                    dependency_depth=1,
+                    dependent_depth=2,
+                )
+            )
+
+        if rel_path in {"index.html", "src/main.tsx", "src/App.tsx"}:
+            include_common_targets = True
+        if rel_path.endswith(".css") or error_class == "asset":
+            include_style_targets = True
+
+    scoped = [path for path in editable_files if path in selected]
+    if not scoped:
+        scoped = [path for path in editable_files if path in {"index.html", "src/main.tsx", "src/App.tsx"}]
+
+    return extend_componentized_scope(
+        code_dir,
+        scoped[:12],
+        include_style_targets=include_style_targets,
+        include_direct_support=include_style_targets,
+        include_common_targets=include_common_targets,
+    )
 
 
 def extend_componentized_scope(
@@ -1214,11 +1342,13 @@ def extend_componentized_scope(
     *,
     include_style_targets: bool = True,
     include_direct_support: bool = False,
+    include_common_targets: bool = True,
 ) -> list[str]:
     scoped = {path.replace("\\", "/").strip("/") for path in rel_paths if path}
-    common_targets = ["index.html", "src/main.tsx", "src/App.tsx"]
-    for rel_path in common_targets:
-        scoped.add(rel_path)
+    if include_common_targets:
+        common_targets = ["index.html", "src/main.tsx", "src/App.tsx"]
+        for rel_path in common_targets:
+            scoped.add(rel_path)
 
     if include_style_targets:
         common_style_targets = [
@@ -1776,6 +1906,12 @@ def run_full_pipeline_async(
         write_json_file(version_dir / "last_plan.json", flat_plan)
         write_json_file(version_dir / "last_plan_artifact.json", plan_dict)
         effective_archetype = locked_ui_archetype or get_plan_ui_archetype(plan)
+        design_benchmark_style_context = get_archetype_benchmark_guidance(
+            effective_archetype or "",
+            prompt_text=task_description,
+            limit=3,
+            global_limit=1,
+        )
 
         add_log("Architecture Agent: Build plan ready.", project_id=project_id)
         milestone_count = len(plan.milestones)
@@ -1816,6 +1952,7 @@ def run_full_pipeline_async(
                 existing_visual_direction=previous_visual_direction if is_iteration else None,
                 reference_images=reference_images or None,
                 nlu_context=nlu_context,
+                benchmark_style_context=design_benchmark_style_context or None,
             )
             if visual_direction:
                 (version_dir / "last_visual_direction.txt").write_text(
@@ -1852,6 +1989,7 @@ def run_full_pipeline_async(
                     save_dir=assets_dir,
                     reference_images=reference_images or None,
                     nlu_context=nlu_context,
+                    benchmark_style_context=design_benchmark_style_context or None,
                 )
                 if design_assets:
                     write_json_file(version_dir / "last_design_assets.json", {"assets": design_assets})
@@ -1899,46 +2037,71 @@ def run_full_pipeline_async(
             detected_archetype = get_plan_ui_archetype(plan) or locked_ui_archetype
             engineer_kit_archetype = DESIGN_KIT_ALIASES.get(engineer_task.ui_archetype, engineer_task.ui_archetype)
             if detected_archetype:
-                canonical_archetype = DESIGN_KIT_ALIASES.get(detected_archetype, detected_archetype)
-                benchmark_guidance = get_archetype_benchmark_guidance(canonical_archetype)
+                benchmark_archetype = str(detected_archetype).strip()
+                benchmark_kit_archetype = DESIGN_KIT_ALIASES.get(benchmark_archetype, benchmark_archetype)
+                benchmark_guidance = get_archetype_benchmark_guidance(
+                    benchmark_archetype,
+                    prompt_text=task_description,
+                )
+                preferred_local_build = load_local_reference_build(
+                    benchmark_archetype,
+                    prompt_text=task_description,
+                )
+                if preferred_local_build and preferred_local_build.get("selection_reason") == "style_family":
+                    reference_code = {
+                        "html": preferred_local_build.get("html_code", ""),
+                        "css": preferred_local_build.get("css_code", ""),
+                        "score": preferred_local_build.get("eval_score") or preferred_local_build.get("label", "local-benchmark"),
+                        "archetype": benchmark_archetype,
+                        "benchmark_guidance": preferred_local_build.get("benchmark_guidance", benchmark_guidance),
+                        "style_family": preferred_local_build.get("style_family"),
+                    }
+                    print(
+                        f"[Benchmark] Using style-family local reference build for '{benchmark_archetype}' "
+                        f"(project {preferred_local_build.get('project_id')}, label: {preferred_local_build.get('label')})"
+                    )
                 try:
-                    best_build = discovery_client.query_best_build(canonical_archetype)
-                    if best_build and canonical_archetype == engineer_kit_archetype:
+                    best_build = None if reference_code is not None else discovery_client.query_best_build(benchmark_archetype)
+                    if best_build and benchmark_kit_archetype == engineer_kit_archetype:
                         reference_code = {
                             "html": best_build.get("html_code", ""),
                             "css": best_build.get("css_code", ""),
                             "score": best_build.get("eval_score", "N/A"),
-                            "archetype": canonical_archetype,
+                            "archetype": benchmark_archetype,
                             "benchmark_guidance": benchmark_guidance,
                         }
                         msg = (
-                            f"[Discovery] Found reference build for '{canonical_archetype}' "
+                            f"[Discovery] Found reference build for '{benchmark_archetype}' "
                             f"(score: {reference_code['score']})"
                         )
                         print(msg)
                     elif best_build:
                         print(
                             "[Discovery] Skipping reference build injection due to archetype mismatch: "
-                            f"discovery='{canonical_archetype}', engineer='{engineer_kit_archetype}'"
+                            f"discovery='{benchmark_archetype}', engineer='{engineer_kit_archetype}'"
                         )
                     else:
-                        msg = f"[Discovery] No reference build found for '{canonical_archetype}'"
+                        msg = f"[Discovery] No reference build found for '{benchmark_archetype}'"
                         print(msg)
                 except Exception as disc_err:
                     print(f"[Discovery] Query failed (non-fatal): {disc_err}")
 
-                if reference_code is None and canonical_archetype == engineer_kit_archetype:
-                    local_build = load_local_reference_build(canonical_archetype)
+                if reference_code is None and benchmark_kit_archetype == engineer_kit_archetype:
+                    local_build = preferred_local_build or load_local_reference_build(
+                        benchmark_archetype,
+                        prompt_text=task_description,
+                    )
                     if local_build:
                         reference_code = {
                             "html": local_build.get("html_code", ""),
                             "css": local_build.get("css_code", ""),
                             "score": local_build.get("eval_score") or local_build.get("label", "local-benchmark"),
-                            "archetype": canonical_archetype,
+                            "archetype": benchmark_archetype,
                             "benchmark_guidance": local_build.get("benchmark_guidance", benchmark_guidance),
+                            "style_family": local_build.get("style_family"),
                         }
                         print(
-                            f"[Benchmark] Using local reference build for '{canonical_archetype}' "
+                            f"[Benchmark] Using local reference build for '{benchmark_archetype}' "
                             f"(project {local_build.get('project_id')}, label: {local_build.get('label')})"
                         )
             else:
@@ -2138,6 +2301,7 @@ def run_full_pipeline_async(
             workspace_support = ensure_componentized_workspace_support(
                 version_dir / "code",
                 base_css_content=base_css_content if not is_iteration else None,
+                ui_archetype=engineer_task.ui_archetype,
             )
             if workspace_support["created_files"] or workspace_support["rewritten_files"]:
                 add_log(
@@ -2163,17 +2327,17 @@ def run_full_pipeline_async(
                     for error in build_errors
                     if (version_dir / "code" / str(error.get("path") or "")).exists()
                 ]
-                include_style_targets = any(
-                    str(error.get("path") or "").endswith(".css")
-                    or str(error.get("error_class") or "") == "asset"
-                    for error in build_errors
-                )
-                repair_scope = extend_componentized_scope(
+                repair_scope = select_componentized_build_repair_scope(
                     version_dir / "code",
-                    narrow_repair_scope or collect_componentized_editable_files(version_dir / "code"),
-                    include_style_targets=include_style_targets,
-                    include_direct_support=True,
+                    build_errors,
                 )
+                if not repair_scope:
+                    repair_scope = extend_componentized_scope(
+                        version_dir / "code",
+                        narrow_repair_scope or collect_componentized_editable_files(version_dir / "code"),
+                        include_style_targets=True,
+                        include_direct_support=True,
+                    )
                 build_repair["scoped_files"] = repair_scope
                 repair_existing_code = collect_selected_code_context(version_dir / "code", repair_scope) or collect_existing_code_context(version_dir / "code")
                 if repair_existing_code and repair_scope:
@@ -2238,6 +2402,7 @@ def run_full_pipeline_async(
                         ensure_componentized_workspace_support(
                             version_dir / "code",
                             base_css_content=base_css_content if not is_iteration else None,
+                            ui_archetype=engineer_task.ui_archetype,
                         )
                         preview_build = build_componentized_version(version_dir)
                         if preview_build.get("status") == "success":
@@ -2353,6 +2518,7 @@ def run_full_pipeline_async(
                             ensure_componentized_workspace_support(
                                 version_dir / "code",
                                 base_css_content=base_css_content if not is_iteration else None,
+                                ui_archetype=engineer_task.ui_archetype,
                             )
                             content_preview_build = build_componentized_version(version_dir)
                             if content_preview_build.get("status") == "success":
@@ -2471,6 +2637,7 @@ def run_full_pipeline_async(
                             ensure_componentized_workspace_support(
                                 version_dir / "code",
                                 base_css_content=base_css_content if not is_iteration else None,
+                                ui_archetype=engineer_task.ui_archetype,
                             )
                             refined_preview_build = build_componentized_version(version_dir)
                             if refined_preview_build.get("status") == "success":

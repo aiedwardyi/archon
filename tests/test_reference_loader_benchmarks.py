@@ -20,6 +20,15 @@ def test_fintech_benchmark_entries_have_resolvable_source_paths():
     assert source_paths["css_path"].exists()
 
 
+def test_ff7_benchmark_entries_use_variant_specific_registry_subset():
+    loader = ReferenceLoader()
+
+    assert loader._benchmark_archetype("game_ff7") == "game_ff7"
+    entries = get_sorted_reference_build_entries("game_ff7")
+    assert len(entries) > 0
+    assert str(entries[0].get("label", "")).startswith("legacy-ff7-")
+
+
 def test_editor_benchmark_entries_have_resolvable_source_paths():
     entries = get_sorted_reference_build_entries("editor")
 

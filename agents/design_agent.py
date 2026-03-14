@@ -95,6 +95,7 @@ class DesignAgent:
         save_dir: Path | None = None,
         reference_images: list[str] | None = None,
         nlu_context: dict | None = None,
+        benchmark_style_context: str | None = None,
     ) -> list[dict[str, Any]]:
         prompt_template = (PROMPTS_DIR / "design_agent.txt").read_text(encoding="utf-8")
         prd_summary = json.dumps(prd_dict, indent=2)[:3000]
@@ -117,7 +118,15 @@ class DesignAgent:
                 f"- entities: {', '.join(entity_terms) if entity_terms else '(none)'}\n"
                 "- Use relevant terms from these signals when crafting image prompts."
             )
-        text_content = f"{prompt_template}\n\nPRD:\n{prd_summary}{nlu_hint}"
+        benchmark_block = ""
+        if benchmark_style_context and benchmark_style_context.strip():
+            benchmark_block = (
+                "\n\nBENCHMARK STYLE CONTEXT:\n"
+                f"{benchmark_style_context.strip()}\n"
+                "Use this only for shell quality, atmosphere, motion, and image mood. "
+                "Do not copy franchise-specific content from it.\n"
+            )
+        text_content = f"{prompt_template}\n\nPRD:\n{prd_summary}{nlu_hint}{benchmark_block}"
 
         # Build multimodal content if reference images provided
         if reference_images:
@@ -173,6 +182,7 @@ class DesignAgent:
         existing_visual_direction: str | None = None,
         reference_images: list[str] | None = None,
         nlu_context: dict | None = None,
+        benchmark_style_context: str | None = None,
     ) -> str:
         prompt_template = (PROMPTS_DIR / "design_direction.txt").read_text(encoding="utf-8")
         prd_summary = json.dumps(prd_dict, indent=2)[:5000]
@@ -211,6 +221,13 @@ class DesignAgent:
             f"{existing_direction_block}"
             f"{nlu_hint}"
         )
+        if benchmark_style_context and benchmark_style_context.strip():
+            text_content += (
+                "\n\nBENCHMARK STYLE CONTEXT:\n"
+                f"{benchmark_style_context.strip()}\n"
+                "Treat this as reusable visual grammar and quality bar only. "
+                "Do not copy franchise-specific content or literal IP cues.\n"
+            )
 
         contents: str | list[types.Part] = text_content
         if reference_images:

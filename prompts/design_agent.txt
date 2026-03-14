@@ -39,6 +39,7 @@ STEP 2 - IF IMAGES ARE NEEDED, APPLY THESE RULES:
 - NEVER use names or concepts from unrelated apps or examples
 - All prompts must be detailed (80+ words) for best DALL-E 3 results
 - Do NOT generate logos, text, or UI elements - only visual art
+- If a BENCHMARK STYLE CONTEXT section is provided, use it only to steer image mood, framing, atmosphere, and polish level. Never copy literal franchise content from it unless the PRD itself asks for that world.
 
 CONTENT POLICY - IP HANDLING:
 - Do NOT include real franchise names, game titles, or IP names in prompts (e.g. avoid "Final Fantasy", "Pokemon")

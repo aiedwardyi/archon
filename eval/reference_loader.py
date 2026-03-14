@@ -108,8 +108,8 @@ class ReferenceLoader:
         return ARCHETYPE_ALIASES.get(str(archetype).strip().lower(), str(archetype).strip().lower())
 
     def _benchmark_archetype(self, archetype: str) -> str:
-        canonical = self._canonicalize_archetype(archetype)
-        return BENCHMARK_ARCHETYPE_ALIASES.get(canonical, canonical)
+        raw = str(archetype).strip().lower()
+        return BENCHMARK_ARCHETYPE_ALIASES.get(raw, raw)
 
     def _benchmark_cache_path(self, entry: dict[str, object]) -> Path:
         label = str(entry.get("label", "benchmark")).strip() or "benchmark"

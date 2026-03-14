@@ -13,12 +13,14 @@ sys.path.insert(0, str(REPO_ROOT / "backend"))
 from backend.app import (
     detect_componentized_quality_issues,
     extend_componentized_scope,
+    select_componentized_build_repair_scope,
     select_componentized_content_fix_scope,
     select_componentized_refinement_scope,
     validate_componentized_contract_outputs,
 )
 from utils.componentized_runtime import (
     build_componentized_preview,
+    collect_componentized_reverse_dependents,
     ensure_componentized_workspace_support,
     collect_existing_code_context,
     extract_feature_inventory,
@@ -94,6 +96,55 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         ]
 
         report = validate_componentized_contract_outputs(files, ui_archetype="fintech")
+
+        self.assertTrue(report["passed"])
+        self.assertEqual(report["violations"], [])
+
+    def test_validate_componentized_contract_outputs_accepts_delegated_dense_dashboard_shell(self):
+        files = [
+            SimpleNamespace(
+                path="package.json",
+                content='{"name":"demo","private":true,"version":"0.0.0","scripts":{"dev":"vite","build":"vite build"},"dependencies":{"react":"^18.3.1"}}',
+            ),
+            SimpleNamespace(
+                path="index.html",
+                content="<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\" /><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" /><title>Demo</title></head><body><div id=\"root\"></div><script type=\"module\" src=\"/src/main.tsx\"></script></body></html>",
+            ),
+            SimpleNamespace(
+                path="src/main.tsx",
+                content=(
+                    "import React from 'react';\n"
+                    "import ReactDOM from 'react-dom/client';\n"
+                    "import App from './App';\n"
+                    "ReactDOM.createRoot(document.getElementById('root')!).render(<App />);\n"
+                ),
+            ),
+            SimpleNamespace(
+                path="src/App.tsx",
+                content=(
+                    "import Dashboard from './pages/Dashboard';\n"
+                    "export default function App() {\n"
+                    "  return <Dashboard />;\n"
+                    "}\n"
+                ),
+            ),
+            SimpleNamespace(
+                path="src/pages/Dashboard.tsx",
+                content=(
+                    "import KpiCards from '../components/KpiCards';\n"
+                    "import HoldingsTable from '../components/HoldingsTable';\n"
+                    "import ActivityFeed from '../components/ActivityFeed';\n"
+                    "export default function Dashboard() {\n"
+                    "  return <main><KpiCards /><section className=\"chart-panel\" /><HoldingsTable /><ActivityFeed /></main>;\n"
+                    "}\n"
+                ),
+            ),
+            SimpleNamespace(path="src/components/KpiCards.tsx", content="export default function KpiCards() { return <section>KPI</section>; }\n"),
+            SimpleNamespace(path="src/components/HoldingsTable.tsx", content="export default function HoldingsTable() { return <section>Holdings Table</section>; }\n"),
+            SimpleNamespace(path="src/components/ActivityFeed.tsx", content="export default function ActivityFeed() { return <aside>Activity Feed</aside>; }\n"),
+        ]
+
+        report = validate_componentized_contract_outputs(files, ui_archetype="dashboard")
 
         self.assertTrue(report["passed"])
         self.assertEqual(report["violations"], [])
@@ -291,6 +342,44 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertIn("768px", inventory["responsive_breakpoints"])
             self.assertIn("custom_scrollbar", inventory["polish_features"])
             self.assertIn("selection_styling", inventory["polish_features"])
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_collect_componentized_reverse_dependents_finds_parent_chain(self):
+        code_dir = _case_dir("componentized-runtime-reverse-dependents")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            (code_dir / "src" / "pages").mkdir(parents=True)
+            (code_dir / "src" / "data").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "import Dashboard from './pages/Dashboard';\n"
+                "export default function App() { return <Dashboard />; }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "pages" / "Dashboard.tsx").write_text(
+                "import Watchlist from '../components/Watchlist';\n"
+                "import { watchlist } from '../data/watchlist';\n"
+                "export default function Dashboard() { return <Watchlist items={watchlist} />; }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "components" / "Watchlist.tsx").write_text(
+                "export default function Watchlist({ items }: { items: { symbol: string }[] }) { return <div>{items.length}</div>; }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "data" / "watchlist.ts").write_text(
+                "export const watchlist = [{ symbol: 'AAPL' }];\n",
+                encoding="utf-8",
+            )
+
+            dependents = collect_componentized_reverse_dependents(
+                code_dir,
+                ["src/components/Watchlist.tsx"],
+                max_depth=2,
+            )
+
+            self.assertIn("src/pages/Dashboard.tsx", dependents)
+            self.assertIn("src/App.tsx", dependents)
+            self.assertNotIn("src/data/watchlist.ts", dependents)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
@@ -620,6 +709,67 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_adds_polish_guard_for_fintech(self):
+        code_dir = _case_dir("componentized-runtime-polish-guard-fintech")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "main.tsx").write_text(
+                "import React from 'react';\n"
+                "import ReactDOM from 'react-dom/client';\n"
+                "import App from './App';\n"
+                "import './style.css';\n"
+                "ReactDOM.createRoot(document.getElementById('root')!).render(<App />);\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return <div className=\"fintech-shell\"><div className=\"topbar-brand\">Desk</div><div className=\"kpi-value\">$123,456.78</div></div>;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "style.css").write_text(".fintech-shell { color: white; }\n", encoding="utf-8")
+
+            ensure_componentized_workspace_support(code_dir, ui_archetype="fintech")
+
+            main_source = (code_dir / "src" / "main.tsx").read_text(encoding="utf-8")
+            polish_guard = (code_dir / "src" / "polish-guard.css").read_text(encoding="utf-8")
+            self.assertIn('import "./polish-guard.css";', main_source)
+            self.assertGreater(
+                main_source.index('import "./polish-guard.css";'),
+                main_source.index('import "./style.css";'),
+            )
+            self.assertIn(".topbar-brand", polish_guard)
+            self.assertIn(".kpi-value", polish_guard)
+            self.assertIn("Runtime shell polish guard for fintech", polish_guard)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_skips_polish_guard_for_non_app_density_archetypes(self):
+        code_dir = _case_dir("componentized-runtime-polish-guard-skip")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "main.tsx").write_text(
+                "import React from 'react';\n"
+                "import ReactDOM from 'react-dom/client';\n"
+                "import App from './App';\n"
+                "import './style.css';\n"
+                "ReactDOM.createRoot(document.getElementById('root')!).render(<App />);\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() { return <div>Hello</div>; }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "style.css").write_text(".app { color: red; }\n", encoding="utf-8")
+
+            ensure_componentized_workspace_support(code_dir, ui_archetype="portfolio")
+
+            main_source = (code_dir / "src" / "main.tsx").read_text(encoding="utf-8")
+            self.assertNotIn('import "./polish-guard.css";', main_source)
+            self.assertFalse((code_dir / "src" / "polish-guard.css").exists())
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_ensure_componentized_workspace_support_normalizes_one_line_main_entry_imports(self):
         code_dir = _case_dir("componentized-runtime-main-entry")
         try:
@@ -789,6 +939,54 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertNotIn(".shell {", app_source)
             self.assertIn("export default App;", app_source)
             self.assertIn(".shell {", index_css)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_jsx_block_comment_bleed_in_map(self):
+        code_dir = _case_dir("componentized-runtime-jsx-map-comment-bleed")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            (code_dir / "src" / "components" / "Topbar.tsx").write_text(
+                "import React from 'react';\n"
+                "const formatCurrency = (value: number) => `$${value.toFixed(2)}`;\n"
+                "export default function Topbar() {\n"
+                "  const tickerData = [{ symbol: 'SPY', price: 500.23, change: 0.85, isPositive: true }];\n"
+                "  return (    <div className=\"topbar-fixed\">      <div className=\"ticker-strip\">        {tickerData.concat(tickerData).map((ticker, index) => ( /* Duplicate for seamless scroll            <div key={index} className=\"ticker-card\">              <span className=\"symbol\">{ticker.symbol}</span>              <span className=\"price space-mono\">{format */\n"
+                "Currency(ticker.price)}</span>              <span className={`delta space-mono ${ticker.isPositive ? 'delta-positive' : 'delta-negative'}`}>{ticker.change}%</span>            </div>          ))}      </div>    </div>  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            topbar_source = (code_dir / "src" / "components" / "Topbar.tsx").read_text(encoding="utf-8")
+            self.assertIn("/* Duplicate for seamless scroll */", topbar_source)
+            self.assertIn("{formatCurrency(ticker.price)}", topbar_source)
+            self.assertNotIn("{format */", topbar_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_normalizes_dominant_field_aliases(self):
+        code_dir = _case_dir("componentized-runtime-field-aliases")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            (code_dir / "src" / "components" / "DashboardLayout.tsx").write_text(
+                "interface TickerData { symbol: string; change: number; changePercent: number; positive: boolean; }\n"
+                "const initialTickers: TickerData[] = [\n"
+                "  { symbol: 'AAPL', change: 1.29, changePercent: 0.74, positive: true },\n"
+                "  { symbol: 'AMZN', change: -1.43, change24hPercent: -0.79, positive: false },\n"
+                "];\n"
+                "export default function DashboardLayout() {\n"
+                "  return <div>{initialTickers.map((ticker) => <span key={ticker.symbol}>{ticker.changePercent.toFixed(2)}</span>)}</div>;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            layout_source = (code_dir / "src" / "components" / "DashboardLayout.tsx").read_text(encoding="utf-8")
+            self.assertIn("changePercent: -0.79", layout_source)
+            self.assertNotIn("change24hPercent", layout_source)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
@@ -1193,11 +1391,16 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             (code_dir / "src" / "pages").mkdir(parents=True)
             (code_dir / "src" / "base.css").write_text(":root { --accent: #10b981; }\n", encoding="utf-8")
             (code_dir / "src" / "App.tsx").write_text(
-                "const initialWatchlist = [{ symbol: 'AAPL', price: 187.42, time: 'Mar 14, 2026' }];\n"
-                "export default function App() { return <div />; }\n",
+                "import Dashboard from './pages/Dashboard';\n"
+                "export default function App() { return <Dashboard />; }\n",
                 encoding="utf-8",
             )
-            (code_dir / "src" / "pages" / "Dashboard.tsx").write_text("export default function Dashboard() { return <div />; }\n", encoding="utf-8")
+            (code_dir / "src" / "pages" / "Dashboard.tsx").write_text(
+                "import Watchlist from '../components/Watchlist';\n"
+                "import { watchlist } from '../data/watchlist';\n"
+                "export default function Dashboard() { return <Watchlist items={watchlist} />; }\n",
+                encoding="utf-8",
+            )
             (code_dir / "src" / "data" / "watchlist.ts").write_text(
                 "export const watchlist = [{ symbol: 'MSFT', price: 421.88, time: '2 hours ago' }];\n",
                 encoding="utf-8",
@@ -1217,7 +1420,62 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertIn("src/App.tsx", scope)
             self.assertIn("src/data/watchlist.ts", scope)
             self.assertIn("src/pages/Dashboard.tsx", scope)
+            self.assertNotIn("index.html", scope)
+            self.assertNotIn("src/main.tsx", scope)
             self.assertNotIn("src/base.css", scope)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_select_componentized_build_repair_scope_targets_broken_graph_only(self):
+        code_dir = _case_dir("componentized-build-repair-graph-scope")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            (code_dir / "src" / "pages").mkdir(parents=True)
+            (code_dir / "src" / "data").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "import Dashboard from './pages/Dashboard';\n"
+                "import NewsFeed from './components/NewsFeed';\n"
+                "export default function App() { return <><Dashboard /><NewsFeed /></>; }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "pages" / "Dashboard.tsx").write_text(
+                "import Table from '../components/Table';\n"
+                "export default function Dashboard() { return <Table />; }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "components" / "Table.tsx").write_text(
+                "import { Row } from './row';\n"
+                "export default function Table() { return <Row />; }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "components" / "row.tsx").write_text(
+                "export function Cell() { return <div>Cell</div>; }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "components" / "NewsFeed.tsx").write_text(
+                "export default function NewsFeed() { return <aside>News</aside>; }\n",
+                encoding="utf-8",
+            )
+
+            scope = select_componentized_build_repair_scope(
+                code_dir,
+                [
+                    {
+                        "path": "src/components/Table.tsx",
+                        "line": 1,
+                        "error_class": "cross_file",
+                        "message": "No matching export in \"./row\" for import \"Row\"",
+                    }
+                ],
+            )
+
+            self.assertIn("src/components/Table.tsx", scope)
+            self.assertIn("src/components/row.tsx", scope)
+            self.assertIn("src/pages/Dashboard.tsx", scope)
+            self.assertIn("src/App.tsx", scope)
+            self.assertNotIn("src/components/NewsFeed.tsx", scope)
+            self.assertNotIn("index.html", scope)
+            self.assertNotIn("src/main.tsx", scope)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 

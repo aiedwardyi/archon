@@ -7,6 +7,7 @@ Short status update for the active branch:
 - Updated planner/schema/backend flow to support multi-file scaffolds, multi-file iteration context, preview builds, and scoped file repair.
 - Added visual direction persistence plus iteration identity locks so later edits preserve fonts, colors, spacing direction, and key interactive patterns.
 - Added local recovery and quality gates: required-file contract checks, build-repair pass, density audit, semantic completeness checks, and targeted multi-file refinement/content fixes.
+- Added curated benchmark/style-family routing so fan-page prompts can intentionally borrow the stronger cinematic collector shell across franchises while keeping content specific to the requested world.
 - Current gap: the new app pipeline is more stable than `main`, but dashboard and fintech outputs still need quality recovery to beat prior reference builds.
 
 ## Completed Phases

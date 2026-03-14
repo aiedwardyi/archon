@@ -59,7 +59,35 @@ def test_suggest_reference_archetype_matches_ff7_prompt():
 
     assert match is not None
     assert match["project_id"] == 38
-    assert match["archetype"] == "game"
+    assert match["archetype"] == "game_ff7"
+
+
+def test_load_local_reference_build_returns_ff7_specific_benchmark_subset():
+    reference = load_local_reference_build("game_ff7")
+
+    assert reference is not None
+    assert reference["archetype"] == "game_ff7"
+    assert reference["project_id"] == 76
+    assert "Final Fantasy VII" in reference["html_code"]
+    assert "Cloud Strife" in reference["html_code"]
+    assert "Charmander" not in reference["html_code"]
+    assert "legacy-ff7-legends-of-midgar" in reference["benchmark_guidance"]
+    assert "legacy-pokemon-starters-fan-page" not in reference["benchmark_guidance"]
+
+
+def test_load_local_reference_build_uses_cinematic_family_for_digimon_prompt():
+    reference = load_local_reference_build(
+        "game",
+        prompt_text="build a premium Digimon fan page with character profiles, weapons, world map, and cinematic lore interactions",
+    )
+
+    assert reference is not None
+    assert reference["style_family"] == "cinematic_collector_fanpage"
+    assert reference["selection_reason"] == "style_family"
+    assert reference["project_id"] == 76
+    assert "STYLE FAMILY (cinematic_collector_fanpage)" in reference["benchmark_guidance"]
+    assert "legacy-ff7-legends-of-midgar" in reference["benchmark_guidance"]
+    assert "legacy-pokemon-starters-fan-page" not in reference["benchmark_guidance"]
 
 
 def test_get_archetype_benchmark_guidance_merges_multiple_game_examples():

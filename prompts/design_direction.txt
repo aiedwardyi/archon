@@ -13,6 +13,7 @@ CORE RULES
 - Be specific with exact hex colors, font names, spacing values, radii, shadow recipes, and motion behavior.
 - Avoid vague phrases like "modern clean", "premium", or "nice contrast" unless followed by exact implementation details.
 - If an EXISTING VISUAL DIRECTION is provided and the request is an iteration, preserve its identity unless the brief explicitly asks for a redesign.
+- If a BENCHMARK STYLE CONTEXT section is provided, use it as a reusable shell-quality reference for atmosphere, component language, spacing rhythm, motion, and density. Do not copy literal franchise content, names, or IP-specific motifs unless the brief itself asks for them.
 
 OUTPUT FORMAT
 

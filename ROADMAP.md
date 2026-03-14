@@ -180,6 +180,7 @@ Current work on `feat/componentized-builder-pipeline`:
 - Extended planner, schema, engineer, and backend contracts for multi-file generation, preview builds, and multi-file iteration context.
 - Added persisted visual direction, visual DNA extraction, and feature inventory locks so later iterations preserve identity instead of rewriting the app loosely.
 - Added local contract recovery, build repair, density audit, semantic completeness checks, and targeted refinement/content-fix passes for weak app outputs.
+- Added curated benchmark routing plus reusable style-family selection so adjacent fan-page prompts can reuse the stronger cinematic collector shell instead of relying only on literal franchise matches.
 - Current branch status: build stability is materially improved, but dashboard and fintech quality still trail prior best outputs and need more polish on density, typography, and surface depth.
 
 ### Phase 9 — Pipeline Page & Classifier Improvements (⬜ Planned)

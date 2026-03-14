@@ -577,6 +577,7 @@ class EngineerAgent:
                 f"[Discovery] EngineerAgent using reference build "
                 f"(score: {reference_code.get('score', 'N/A')})"
             )
+            style_family = str(reference_code.get("style_family", "")).strip()
             benchmark_guidance = str(reference_code.get("benchmark_guidance", "")).strip()
             benchmark_guidance_block = ""
             if benchmark_guidance:
@@ -585,11 +586,21 @@ class EngineerAgent:
                     f"{benchmark_guidance}\n"
                     "--- END BENCHMARK DESIGN TRAITS ---\n"
                 )
+            style_family_block = ""
+            if style_family:
+                style_family_block = (
+                    "--- STYLE FAMILY ---\n"
+                    f"{style_family}\n"
+                    "Treat this as reusable visual grammar and interaction language, not literal franchise content.\n"
+                    "Preserve the shell quality, card/button language, density, and motion patterns while rewriting all content to match the current brief.\n"
+                    "--- END STYLE FAMILY ---\n"
+                )
             reference_context = (
                 "=== REFERENCE BUILD (high-scoring example for this archetype) ===\n"
                 "Study this working example carefully. It scored well on design quality.\n"
                 "Use it as INSPIRATION for layout structure, visual patterns, and CSS techniques.\n"
                 "Do NOT copy it verbatim — create something original that matches or exceeds its quality.\n"
+                f"{style_family_block}"
                 f"{benchmark_guidance_block}"
                 "--- REFERENCE HTML ---\n"
                 f"{reference_code.get('html', '')}\n"
