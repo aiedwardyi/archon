@@ -173,6 +173,15 @@ enterprise UI (10 screens, light + dark mode, business language throughout).
 - ✅ Watson STT/TTS voice input/output in Enterprise UI
 - ✅ Centralized Gemini client (`utils/genai_client.py`) — supports Vertex AI + AI Studio
 
+### Branch Update — Componentized Builder Pipeline
+
+Current work on `feat/componentized-builder-pipeline`:
+- Added dual scaffold routing: simple requests stay on the legacy single-page path, app-like requests can use a componentized React + TypeScript + Vite workspace.
+- Extended planner, schema, engineer, and backend contracts for multi-file generation, preview builds, and multi-file iteration context.
+- Added persisted visual direction, visual DNA extraction, and feature inventory locks so later iterations preserve identity instead of rewriting the app loosely.
+- Added local contract recovery, build repair, density audit, semantic completeness checks, and targeted refinement/content-fix passes for weak app outputs.
+- Current branch status: build stability is materially improved, but dashboard and fintech quality still trail prior best outputs and need more polish on density, typography, and surface depth.
+
 ### Phase 9 — Pipeline Page & Classifier Improvements (⬜ Planned)
 - ✅ Classifier too sensitive — opinion questions triggering builds
 - Chat panel needs max-height + scrollable container

@@ -1,5 +1,14 @@
 # Current Sprint
 
+## Branch Alignment — `feat/componentized-builder-pipeline`
+
+Short status update for the active branch:
+- Added a dual-path builder: legacy single-page fallback remains, while app-like requests can now generate a componentized React + TypeScript + Vite workspace.
+- Updated planner/schema/backend flow to support multi-file scaffolds, multi-file iteration context, preview builds, and scoped file repair.
+- Added visual direction persistence plus iteration identity locks so later edits preserve fonts, colors, spacing direction, and key interactive patterns.
+- Added local recovery and quality gates: required-file contract checks, build-repair pass, density audit, semantic completeness checks, and targeted multi-file refinement/content fixes.
+- Current gap: the new app pipeline is more stable than `main`, but dashboard and fintech outputs still need quality recovery to beat prior reference builds.
+
 ## Completed Phases
 
 | Phase | Description | Status |
