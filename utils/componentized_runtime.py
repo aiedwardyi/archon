@@ -65,6 +65,10 @@ BLOCK_COMMENT_CONTROL_FLOW_BLEED_RE = re.compile(
     r"/\*\s*(?P<comment>[^*]*?)\s+(?P<code>(?:if\s*\([^*]+\)\s*\{|for\s*\([^*]+\)\s*\{|while\s*\([^*]+\)\s*\{|return\b[^*;{}]*[;{]|const\s+[A-Za-z_$][\w$]*\s*=|let\s+[A-Za-z_$][\w$]*\s*=|var\s+[A-Za-z_$][\w$]*\s*=|set[A-Z]\w*\s*\([^*]*\)))\s*\*/",
     re.MULTILINE,
 )
+UNTERMINATED_BLOCK_COMMENT_LINE_NOTE_RE = re.compile(
+    r"(?P<indent>[ \t]*)/\*\s*(?P<comment>[^*\n]{2,240}?)\s*//\s*(?P<tail>[^*\n]{2,240}?)\s+(?P<code>(?:console\.[A-Za-z_$][\w$]*\s*\(|return\b|const\b|let\b|var\b|if\s*\(|for\s*\(|while\s*\(|switch\s*\(|set[A-Z]\w*\s*\(|[A-Za-z_$][\w$]*\s*=|[A-Za-z_$][\w$]*\s*\())(?P<rest>[^\n]*)",
+    re.MULTILINE,
+)
 INTERFACE_FIELD_COMMENT_BLEED_RE = re.compile(
     r"(?P<field>[A-Za-z_$][\w$]*\??\s*:\s*[^;{}\n]+;)\s*/\*\s*(?P<comment>[^*]*?)\}\s*\*/\s*\n(?=\s*(?:interface|type)\b)",
     re.MULTILINE,
@@ -1161,6 +1165,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_interface_field_comment_bleed(updated)
         updated = _repair_inline_block_comment_code_bleed(updated)
         updated = _repair_block_comment_control_flow_bleed(updated)
+        updated = _repair_unterminated_block_comment_line_notes(updated)
         updated = _normalize_run_on_inline_comments(updated)
         updated = _repair_componentized_comment_split_identifiers(updated)
         updated = _repair_componentized_jsx_block_comment_bleed(updated)
@@ -1564,6 +1569,19 @@ def _build_componentized_polish_guard_css(ui_archetype: str) -> str | None:
         "  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012)),\n"
         "    var(--card-bg, var(--surface, #111827)) !important;\n"
         "}\n\n"
+        ".watchlist-panel,\n"
+        ".activity-panel,\n"
+        ".alerts-panel,\n"
+        ".alert-panel {\n"
+        "  background: linear-gradient(160deg, rgba(87, 153, 255, 0.12), rgba(255, 255, 255, 0.016) 42%),\n"
+        "    var(--card-bg, var(--surface, #111827)) !important;\n"
+        "}\n\n"
+        ".news-feed-panel,\n"
+        ".news-panel,\n"
+        ".briefing-panel {\n"
+        "  background: linear-gradient(160deg, rgba(255, 191, 87, 0.12), rgba(255, 255, 255, 0.016) 44%),\n"
+        "    var(--card-bg, var(--surface, #111827)) !important;\n"
+        "}\n\n"
         ".kpi-card:hover,\n"
         ".panel:hover,\n"
         ".chart-card:hover,\n"
@@ -1615,6 +1633,10 @@ def _build_componentized_polish_guard_css(ui_archetype: str) -> str | None:
         ".chart-period-btn.active,\n"
         ".range-pill.active,\n"
         ".interactive-chip,\n"
+        ".chart-action-btn,\n"
+        ".asset-table-action-btn,\n"
+        ".guard-accent-action,\n"
+        ".guard-tonal-action,\n"
         ".sidebar-item.active,\n"
         ".status-chip,\n"
         ".market-pill {\n"
@@ -1623,9 +1645,104 @@ def _build_componentized_polish_guard_css(ui_archetype: str) -> str | None:
         ".primary-btn,\n"
         ".chart-period-btn.active,\n"
         ".range-pill.active,\n"
-        ".interactive-chip {\n"
+        ".interactive-chip,\n"
+        ".chart-action-btn,\n"
+        ".asset-table-action-btn,\n"
+        ".guard-accent-action {\n"
         "  background: linear-gradient(135deg, rgba(var(--accent-rgb, 16, 185, 129), 0.24), var(--guard-accent-soft)) !important;\n"
         "  border-color: rgba(var(--accent-rgb, 16, 185, 129), 0.32) !important;\n"
+        "  color: var(--text, #f8fafc) !important;\n"
+        "}\n\n"
+        ".guard-tonal-action {\n"
+        "  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.028)) !important;\n"
+        "  border-color: rgba(255, 255, 255, 0.12) !important;\n"
+        "  color: var(--text, #f8fafc) !important;\n"
+        "}\n\n"
+        ".chart-action-btn,\n"
+        ".chart-timeframe-btn,\n"
+        ".chart-period-btn,\n"
+        ".interactive-chip,\n"
+        ".asset-table-action-btn,\n"
+        ".guard-accent-action,\n"
+        ".guard-tonal-action {\n"
+        "  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease, color 160ms ease !important;\n"
+        "}\n\n"
+        ".chart-action-btn:hover,\n"
+        ".chart-timeframe-btn:hover,\n"
+        ".chart-period-btn:hover,\n"
+        ".interactive-chip:hover,\n"
+        ".asset-table-action-btn:hover,\n"
+        ".guard-accent-action:hover,\n"
+        ".guard-tonal-action:hover {\n"
+        "  transform: translateY(-1px);\n"
+        "  box-shadow: 0 16px 28px rgba(2, 6, 23, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.08);\n"
+        "}\n\n"
+        ".chart-action-btn:active,\n"
+        ".chart-timeframe-btn:active,\n"
+        ".chart-period-btn:active,\n"
+        ".interactive-chip:active,\n"
+        ".asset-table-action-btn:active,\n"
+        ".guard-accent-action:active,\n"
+        ".guard-tonal-action:active {\n"
+        "  transform: translateY(0);\n"
+        "}\n\n"
+        ".news-feed-panel .news-items,\n"
+        ".news-panel .news-items,\n"
+        ".briefing-panel .news-items {\n"
+        "  display: grid;\n"
+        "  gap: 0.9rem;\n"
+        "}\n\n"
+        ".news-feed-panel .news-item,\n"
+        ".news-panel .news-item,\n"
+        ".briefing-panel .news-item,\n"
+        ".guard-news-secondary {\n"
+        "  position: relative;\n"
+        "  padding: 0.95rem 1rem;\n"
+        "  border: 1px solid rgba(255, 255, 255, 0.06);\n"
+        "  border-radius: 18px;\n"
+        "  background: linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.012));\n"
+        "}\n\n"
+        ".news-feed-panel .news-item:first-child,\n"
+        ".news-panel .news-item:first-child,\n"
+        ".briefing-panel .news-item:first-child,\n"
+        ".guard-news-lead {\n"
+        "  padding: 1.2rem 1.25rem;\n"
+        "  border-color: rgba(255, 255, 255, 0.12);\n"
+        "  background: linear-gradient(145deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.02) 62%), rgba(18, 24, 38, 0.92) !important;\n"
+        "  box-shadow: 0 18px 34px rgba(2, 6, 23, 0.22);\n"
+        "}\n\n"
+        ".news-item-title,\n"
+        ".feed-title {\n"
+        "  font-family: var(--font-display, 'Space Grotesk', 'Inter', sans-serif) !important;\n"
+        "  letter-spacing: -0.02em;\n"
+        "}\n\n"
+        ".news-feed-panel .news-item:first-child .news-item-title,\n"
+        ".news-panel .news-item:first-child .news-item-title,\n"
+        ".briefing-panel .news-item:first-child .news-item-title,\n"
+        ".guard-news-lead .news-item-title,\n"
+        ".guard-news-lead .feed-title {\n"
+        "  font-size: clamp(1.05rem, 0.55vw + 0.96rem, 1.38rem) !important;\n"
+        "  line-height: 1.22 !important;\n"
+        "  font-weight: 600 !important;\n"
+        "}\n\n"
+        ".news-item-meta,\n"
+        ".feed-meta {\n"
+        "  display: flex;\n"
+        "  flex-wrap: wrap;\n"
+        "  align-items: center;\n"
+        "  gap: 0.45rem 0.7rem;\n"
+        "}\n\n"
+        ".news-item-source,\n"
+        ".feed-source,\n"
+        ".news-tag,\n"
+        ".badge {\n"
+        "  text-transform: uppercase;\n"
+        "  letter-spacing: 0.08em;\n"
+        "  font-size: 0.7rem !important;\n"
+        "}\n\n"
+        ".news-item-time,\n"
+        ".feed-time {\n"
+        "  opacity: 0.82;\n"
         "}\n\n"
         ".hero-chart svg,\n"
         ".chart-card svg,\n"
@@ -1655,6 +1772,21 @@ def _build_componentized_polish_guard_runtime(ui_archetype: str) -> str | None:
         '  ".delta",\n'
         '  "[data-countup]"\n'
         "] as const;\n\n"
+        "const NEWS_PANEL_SELECTORS = [\n"
+        '  ".news-feed-panel",\n'
+        '  ".news-panel",\n'
+        '  ".briefing-panel"\n'
+        "] as const;\n\n"
+        "const ACTION_SELECTORS = [\n"
+        '  ".chart-action-btn",\n'
+        '  ".interactive-chip",\n'
+        '  ".asset-table-action-btn",\n'
+        '  ".primary-btn",\n'
+        '  "button"\n'
+        "] as const;\n\n"
+        "const NEWS_ITEM_SELECTOR = '.news-item, .feed-item, article, li';\n"
+        "const PRIMARY_ACTION_RE = /\\b(buy|trade|deposit|rebalance|review|add position|open)\\b/i;\n"
+        "const SECONDARY_ACTION_RE = /\\b(sell|withdraw|trim|hedge|close|reduce)\\b/i;\n\n"
         "function parseCountValue(text: string): { value: number; prefix: string; suffix: string; decimals: number } | null {\n"
         "  const trimmed = text.trim();\n"
         "  if (!trimmed || /[A-Za-z]{3,}/.test(trimmed)) {\n"
@@ -1704,10 +1836,45 @@ def _build_componentized_polish_guard_runtime(ui_archetype: str) -> str | None:
         "  const selector = COUNT_SELECTORS.join(',');\n"
         "  root.querySelectorAll<HTMLElement>(selector).forEach((node) => animateCount(node));\n"
         "}\n\n"
+        "function applyNewsHierarchyGuard(root: ParentNode = document): void {\n"
+        "  NEWS_PANEL_SELECTORS.forEach((selector) => {\n"
+        "    root.querySelectorAll<HTMLElement>(selector).forEach((panel) => {\n"
+        "      const items = Array.from(panel.querySelectorAll<HTMLElement>(NEWS_ITEM_SELECTOR)).filter((item) => {\n"
+        "        return Boolean((item.textContent || '').trim());\n"
+        "      });\n"
+        "      items.forEach((item, index) => {\n"
+        "        item.classList.toggle('guard-news-lead', index === 0);\n"
+        "        item.classList.toggle('guard-news-secondary', index > 0);\n"
+        "      });\n"
+        "    });\n"
+        "  });\n"
+        "}\n\n"
+        "function applyActionGuard(root: ParentNode = document): void {\n"
+        "  const selector = ACTION_SELECTORS.join(',');\n"
+        "  root.querySelectorAll<HTMLElement>(selector).forEach((node) => {\n"
+        "    const text = (node.textContent || '').replace(/\\s+/g, ' ').trim();\n"
+        "    if (!text) {\n"
+        "      return;\n"
+        "    }\n"
+        "    if (PRIMARY_ACTION_RE.test(text)) {\n"
+        "      node.classList.add('guard-accent-action');\n"
+        "      node.classList.remove('guard-tonal-action');\n"
+        "      return;\n"
+        "    }\n"
+        "    if (SECONDARY_ACTION_RE.test(text)) {\n"
+        "      node.classList.add('guard-tonal-action');\n"
+        "    }\n"
+        "  });\n"
+        "}\n\n"
+        "function applyPolishGuard(root: ParentNode = document): void {\n"
+        "  applyCountGuard(root);\n"
+        "  applyNewsHierarchyGuard(root);\n"
+        "  applyActionGuard(root);\n"
+        "}\n\n"
         "if (typeof window !== 'undefined') {\n"
         "  window.addEventListener('load', () => {\n"
-        "    applyCountGuard(document);\n"
-        "    const observer = new MutationObserver(() => applyCountGuard(document));\n"
+        "    applyPolishGuard(document);\n"
+        "    const observer = new MutationObserver(() => applyPolishGuard(document));\n"
         "    observer.observe(document.body, { childList: true, subtree: true });\n"
         "  }, { once: true });\n"
         "}\n"
@@ -1865,6 +2032,21 @@ def _repair_block_comment_control_flow_bleed(source: str) -> str:
         return f"{comment_block}{code}"
 
     return BLOCK_COMMENT_CONTROL_FLOW_BLEED_RE.sub(_repl, source)
+
+
+def _repair_unterminated_block_comment_line_notes(source: str) -> str:
+    def _repl(match: re.Match[str]) -> str:
+        comment = " ".join(
+            " ".join(part.split()).strip()
+            for part in (match.group("comment"), match.group("tail"))
+            if part and part.strip()
+        ).strip()
+        indent = match.group("indent")
+        code = f"{match.group('code')}{match.group('rest')}".lstrip()
+        comment_block = f"{indent}/* {comment} */\n" if comment else ""
+        return f"{comment_block}{indent}{code}"
+
+    return UNTERMINATED_BLOCK_COMMENT_LINE_NOTE_RE.sub(_repl, source)
 
 
 def _normalize_run_on_natural_language_notes(source: str) -> str:

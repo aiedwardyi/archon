@@ -185,7 +185,8 @@ Current work on `feat/componentized-builder-pipeline`:
 - Added deterministic support-file recovery for malformed componentized workspaces, including `package.json` salvage before install and broader build-repair scope for support/config files.
 - Added preview-safe generated-asset routing so componentized fan-page bundles now resolve local design images correctly through preview-served HTML, JS, and CSS.
 - Added stricter dashboard/fintech density gates plus runtime normalization for chart-helper scope and safe dependency syncing so fresh componentized previews fail less often and preserve richer shell behavior.
-- Current branch status: build stability is materially improved, fan-page benchmark routing is cleaner, and image-heavy outputs are rendering much closer to target; active work is now concentrated on remaining dashboard/fintech polish on density, typography, motion, and surface depth.
+- Added deterministic dashboard/fintech polish guards so preview-time depth, support-module hierarchy, and action affordance can improve without another broad prompt rewrite.
+- Current branch status: build stability is materially improved, fan-page benchmark routing is cleaner, and image-heavy outputs are rendering much closer to target; the latest fintech validation recovered to 72.5 after the runtime/polish fixes, while dashboard still needs a clean retry after the latest validation hit the 900s build timeout before preview.
 
 ### Phase 9 — Pipeline Page & Classifier Improvements (⬜ Planned)
 - ✅ Classifier too sensitive — opinion questions triggering builds

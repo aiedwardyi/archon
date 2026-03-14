@@ -606,6 +606,33 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_repairs_unterminated_block_comment_line_notes(self):
+        code_dir = _case_dir("componentized-runtime-unterminated-block-comment-line-note")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            chart_path = code_dir / "src" / "components" / "ChartContainer.tsx"
+            chart_path.write_text(
+                "import React, { useEffect } from 'react';\n"
+                "const ChartContainer: React.FC = () => {\n"
+                "  useEffect(() => {    /* This effect is mostly for demonstration;    // actual chart interaction would involve a charting library.    console.log('range');  }, []);\n"
+                "  return <section className=\"chart-card\">ready</section>;\n"
+                "};\n"
+                "export default ChartContainer;\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            chart_source = chart_path.read_text(encoding="utf-8")
+            self.assertIn(
+                "/* This effect is mostly for demonstration; actual chart interaction would involve a charting library. */",
+                chart_source,
+            )
+            self.assertIn("console.log('range');  }, []);", chart_source)
+            self.assertNotIn("/* This effect is mostly for demonstration;    //", chart_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_ensure_componentized_workspace_support_repairs_control_flow_comment_bleed(self):
         code_dir = _case_dir("componentized-runtime-control-flow-comment-bleed")
         try:
@@ -788,9 +815,13 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             )
             self.assertIn(".topbar-brand", polish_guard)
             self.assertIn(".kpi-value", polish_guard)
+            self.assertIn(".guard-news-lead", polish_guard)
+            self.assertIn(".guard-accent-action", polish_guard)
             self.assertIn("Runtime shell polish guard for fintech", polish_guard)
             self.assertIn("requestAnimationFrame", polish_runtime)
             self.assertIn(".kpi-value", polish_runtime)
+            self.assertIn("applyNewsHierarchyGuard", polish_runtime)
+            self.assertIn("applyActionGuard", polish_runtime)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
