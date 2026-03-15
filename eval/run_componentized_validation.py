@@ -89,6 +89,46 @@ def _load_plan_data(version_dir: Path) -> dict | None:
     return data if isinstance(data, dict) else None
 
 
+def _first_nonempty_line(text: str) -> str | None:
+    for line in text.splitlines():
+        line = line.strip()
+        if line:
+            return line
+    return None
+
+
+def _classify_preview_failure(preview_build: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not isinstance(preview_build, dict):
+        return None
+    if preview_build.get("status") == "success":
+        return None
+
+    reason = str(preview_build.get("reason") or preview_build.get("status") or "unknown preview failure").strip()
+    stderr = ""
+    for log in preview_build.get("logs") or []:
+        if isinstance(log, dict) and log.get("stderr"):
+            stderr = str(log["stderr"])
+            break
+    excerpt = _first_nonempty_line(stderr)
+    haystack = f"{reason}\n{stderr}".lower()
+
+    category = "preview_error"
+    detail = reason
+    if "npm.cmd install failed" in haystack or "npm install failed" in haystack:
+        category = "dependency_install_failed"
+        detail = "Dependency install failed before preview build completed."
+        if "npm-cache" in haystack and "eperm" in haystack:
+            category = "npm_cache_eperm"
+            detail = "npm cache EPERM while installing dependencies."
+
+    return {
+        "category": category,
+        "reason": reason,
+        "detail": detail,
+        "stderr_excerpt": excerpt,
+    }
+
+
 def _load_env() -> None:
     env_path = ROOT / "backend" / ".env"
     if not env_path.exists():
@@ -124,6 +164,12 @@ def _make_summary(results: list[dict[str, Any]]) -> str:
             )
         preview_build = item.get("preview_build") or {}
         lines.append(f"- Preview build: {preview_build.get('status')}")
+        preview_failure = item.get("preview_failure") or {}
+        if preview_failure:
+            lines.append(
+                f"- Preview failure: {preview_failure.get('category')} "
+                f"({preview_failure.get('detail')})"
+            )
         lines.append(f"- New site: {item.get('preview_path')}")
         lines.append(f"- Previous site: {item.get('previous_site_path')}")
         if item.get("score"):
@@ -257,6 +303,7 @@ async def _run_archetype(
 
             preview_build = _load_preview_build(version_dir) or {}
             item["preview_build"] = preview_build
+            item["preview_failure"] = _classify_preview_failure(preview_build)
             item["preview_path"] = preview_build.get("dist_index")
 
             if preview_build.get("status") == "success":

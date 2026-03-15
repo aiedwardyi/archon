@@ -66,6 +66,24 @@ class RunComponentizedValidationTests(unittest.TestCase):
 
         get_mock.assert_called_once_with("http://127.0.0.1:5000/api/health", timeout=5)
 
+    def test_classify_preview_failure_detects_npm_cache_eperm(self):
+        preview_failure = runner._classify_preview_failure(
+            {
+                "status": "error",
+                "reason": "npm.cmd install failed",
+                "logs": [
+                    {
+                        "stderr": "npm error code EPERM\n"
+                        "npm error path C:\\Users\\mredw\\AppData\\Local\\npm-cache\\_cacache\\tmp\\abc123\n"
+                    }
+                ],
+            }
+        )
+
+        self.assertEqual(preview_failure["category"], "npm_cache_eperm")
+        self.assertEqual(preview_failure["reason"], "npm.cmd install failed")
+        self.assertEqual(preview_failure["stderr_excerpt"], "npm error code EPERM")
+
     def test_run_archetype_writes_result_file_on_build_error(self):
         results_dir = _make_scratch_dir("build-error")
 
@@ -162,6 +180,63 @@ class RunComponentizedValidationTests(unittest.TestCase):
         self.assertTrue(written["score_skipped"])
         self.assertEqual(written["queue_telemetry"]["queue_wait_seconds"], 4.0)
 
+    def test_run_archetype_records_preview_failure_details(self):
+        temp_root = _make_scratch_dir("preview-failure")
+        results_dir = temp_root / "results"
+        version_dir = temp_root / "generated" / "301" / "v1"
+        version_dir.mkdir(parents=True, exist_ok=True)
+        (version_dir / "last_preview_build.json").write_text(
+            json.dumps(
+                {
+                    "status": "error",
+                    "reason": "npm.cmd install failed",
+                    "logs": [
+                        {
+                            "stderr": "npm error code EPERM\n"
+                            "npm error path C:\\Users\\mredw\\AppData\\Local\\npm-cache\\_cacache\\tmp\\abc123\n"
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        def fake_create_and_build_sync(*, base_url, name, description, timeout, enqueue_on_limit, queue_timeout):
+            return {
+                "project_id": 301,
+                "version": 1,
+                "preview_url": "http://127.0.0.1:5000/api/preview/301/1",
+                "queue_telemetry": {"queue_observed": False, "queue_wait_seconds": 0.0, "max_queue_position": None},
+            }
+
+        with (
+            mock.patch.object(runner, "ROOT", temp_root),
+            mock.patch.object(runner, "_create_and_build_sync", side_effect=fake_create_and_build_sync),
+            mock.patch.object(runner, "infer_scaffold_mode", return_value="componentized"),
+        ):
+            result = asyncio.run(
+                runner._run_archetype(
+                    archetype="dashboard",
+                    prompt=runner.PROMPTS["dashboard"],
+                    results_dir=results_dir,
+                    base_url="http://127.0.0.1:5000",
+                    build_timeout=30,
+                    enqueue_on_limit=True,
+                    queue_timeout=120,
+                    wait_seconds=0,
+                    scorer_model="gemini-2.5-flash",
+                    build_only=True,
+                    semaphore=asyncio.Semaphore(1),
+                )
+            )
+
+        self.assertEqual(result["score_error"], "preview_unavailable")
+        self.assertEqual(result["preview_failure"]["category"], "npm_cache_eperm")
+        self.assertEqual(result["preview_failure"]["stderr_excerpt"], "npm error code EPERM")
+
+        written = json.loads((results_dir / "dashboard" / "result.json").read_text(encoding="utf-8"))
+        self.assertEqual(written["preview_failure"]["category"], "npm_cache_eperm")
+
     def test_make_queue_summary_and_summary_include_aggregate_queue_metrics(self):
         results = [
             {
@@ -229,6 +304,33 @@ class RunComponentizedValidationTests(unittest.TestCase):
 
         self.assertIn("Mode: build-only", summary_text)
         self.assertIn("New score: skipped (build-only mode)", summary_text)
+
+    def test_make_summary_includes_preview_failure_details(self):
+        summary_text = runner._make_summary(
+            [
+                {
+                    "archetype": "dashboard",
+                    "project_id": 101,
+                    "version": 1,
+                    "build_only": True,
+                    "scaffold_mode": "componentized",
+                    "preview_build": {"status": "error"},
+                    "preview_failure": {
+                        "category": "npm_cache_eperm",
+                        "detail": "npm cache EPERM while installing dependencies.",
+                    },
+                    "preview_path": None,
+                    "previous_site_path": "/tmp/baseline/index.html",
+                    "score_error": "preview_unavailable",
+                    "previous_best_score": 81.0,
+                    "previous_best_score_source": "baseline",
+                    "delta_vs_previous_best": None,
+                    "queue_telemetry": {"queue_observed": True, "queue_wait_seconds": 7.0, "max_queue_position": 2},
+                }
+            ]
+        )
+
+        self.assertIn("Preview failure: npm_cache_eperm (npm cache EPERM while installing dependencies.)", summary_text)
 
 
 if __name__ == "__main__":
