@@ -153,6 +153,74 @@ class ExecutionLimitTests(unittest.TestCase):
         finally:
             db.close()
 
+    def test_execute_task_rejects_same_project_overlap_from_db_running_execution(self):
+        project_id = _create_project(self.client, self.token, "DB Running Overlap Project", "Build a dashboard")
+
+        db = get_session()
+        try:
+            project = db.get(Project, project_id)
+            project.status = "running"
+            execution = Execution(
+                project_id=project_id,
+                owner_id=project.owner_id,
+                status="running",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a dashboard"}]),
+                is_active_head=True,
+                scheduler_worker_id="remote-worker",
+                scheduler_claimed_at=utcnow_naive(),
+                scheduler_heartbeat_at=utcnow_naive(),
+            )
+            db.add(execution)
+            db.commit()
+        finally:
+            db.close()
+
+        response = self.client.post(
+            "/api/execute-task",
+            json={"project_id": project_id},
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
+
+        self.assertEqual(response.status_code, 409)
+        payload = response.get_json()
+        self.assertEqual(payload["reason"], "project_running")
+        self.assertTrue(payload["project_running"])
+        self.assertEqual(payload["active_pipelines"], 1)
+
+    def test_execute_task_rejects_same_project_overlap_from_db_pending_execution(self):
+        project_id = _create_project(self.client, self.token, "DB Pending Overlap Project", "Build a dashboard")
+
+        db = get_session()
+        try:
+            project = db.get(Project, project_id)
+            project.status = "in_progress"
+            execution = Execution(
+                project_id=project_id,
+                owner_id=project.owner_id,
+                status="pending",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a dashboard"}]),
+                is_active_head=True,
+            )
+            db.add(execution)
+            db.commit()
+        finally:
+            db.close()
+
+        response = self.client.post(
+            "/api/execute-task",
+            json={"project_id": project_id},
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
+
+        self.assertEqual(response.status_code, 409)
+        payload = response.get_json()
+        self.assertEqual(payload["reason"], "project_queued")
+        self.assertTrue(payload["project_queued"])
+        self.assertEqual(payload["queued_pipelines"], 1)
+        self.assertEqual(payload["queue_position"], 1)
+
     def test_execute_task_rejects_when_global_worker_limit_is_full(self):
         running_project_id = _create_project(self.client, self.token, "Running Project")
         blocked_project_id = _create_project(self.client, self.token, "Blocked Project", "Build a portfolio")
@@ -172,6 +240,51 @@ class ExecutionLimitTests(unittest.TestCase):
         self.assertEqual(payload["active_pipelines"], 1)
         self.assertEqual(payload["max_concurrent_pipelines"], 1)
         self.assertEqual(payload["project_id"], blocked_project_id)
+        self.assertFalse(payload["project_running"])
+
+        db = get_session()
+        try:
+            executions = db.query(Execution).filter(Execution.project_id == blocked_project_id).count()
+            self.assertEqual(executions, 0)
+        finally:
+            db.close()
+
+    def test_execute_task_rejects_when_global_worker_limit_is_full_from_db_running_execution(self):
+        running_project_id = _create_project(self.client, self.token, "DB Running Project")
+        blocked_project_id = _create_project(self.client, self.token, "DB Blocked Project", "Build a portfolio")
+        os.environ["ARCHON_MAX_CONCURRENT_PIPELINES"] = "1"
+
+        db = get_session()
+        try:
+            running_project = db.get(Project, running_project_id)
+            running_project.status = "running"
+            execution = Execution(
+                project_id=running_project_id,
+                owner_id=running_project.owner_id,
+                status="running",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a portfolio"}]),
+                is_active_head=True,
+                scheduler_worker_id="remote-worker",
+                scheduler_claimed_at=utcnow_naive(),
+                scheduler_heartbeat_at=utcnow_naive(),
+            )
+            db.add(execution)
+            db.commit()
+        finally:
+            db.close()
+
+        response = self.client.post(
+            "/api/execute-task",
+            json={"project_id": blocked_project_id},
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
+
+        self.assertEqual(response.status_code, 429)
+        payload = response.get_json()
+        self.assertEqual(payload["reason"], "worker_limit")
+        self.assertEqual(payload["active_pipelines"], 1)
+        self.assertEqual(payload["max_concurrent_pipelines"], 1)
         self.assertFalse(payload["project_running"])
 
         db = get_session()
@@ -465,6 +578,56 @@ class ExecutionLimitTests(unittest.TestCase):
             self.assertEqual(executions, 0)
         finally:
             db.close()
+
+    def test_execute_task_rejects_when_queue_limit_is_full_from_db_pending_execution(self):
+        running_project_id = _create_project(self.client, self.token, "DB Running Queue Limit Project")
+        queued_project_id = _create_project(self.client, self.token, "DB Queued Queue Limit Project", "Build a portfolio")
+        blocked_project_id = _create_project(self.client, self.token, "DB Blocked Queue Limit Project", "Build a dashboard")
+        os.environ["ARCHON_MAX_CONCURRENT_PIPELINES"] = "1"
+        os.environ["ARCHON_MAX_QUEUED_PIPELINES"] = "1"
+
+        db = get_session()
+        try:
+            running_project = db.get(Project, running_project_id)
+            running_project.status = "running"
+            db.add(Execution(
+                project_id=running_project_id,
+                owner_id=running_project.owner_id,
+                status="running",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a dashboard"}]),
+                is_active_head=True,
+                scheduler_worker_id="remote-worker",
+                scheduler_claimed_at=utcnow_naive(),
+                scheduler_heartbeat_at=utcnow_naive(),
+            ))
+
+            queued_project = db.get(Project, queued_project_id)
+            queued_project.status = "in_progress"
+            db.add(Execution(
+                project_id=queued_project_id,
+                owner_id=queued_project.owner_id,
+                status="pending",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a portfolio"}]),
+                is_active_head=True,
+            ))
+            db.commit()
+        finally:
+            db.close()
+
+        response = self.client.post(
+            "/api/execute-task",
+            json={"project_id": blocked_project_id, "enqueue_on_limit": True},
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
+
+        self.assertEqual(response.status_code, 429)
+        payload = response.get_json()
+        self.assertEqual(payload["reason"], "queue_limit")
+        self.assertEqual(payload["active_pipelines"], 1)
+        self.assertEqual(payload["queued_pipelines"], 1)
+        self.assertEqual(payload["max_queued_pipelines"], 1)
 
     def test_try_claim_execution_for_run_is_exclusive(self):
         project_id = _create_project(self.client, self.token, "Claim Ownership Project", "Build a queue-safe dashboard")

@@ -256,38 +256,160 @@ def _queue_position_unlocked(project_id: int | None) -> int | None:
     return None
 
 
-def get_scheduler_snapshot(project_id: int | None = None) -> dict[str, Any]:
+def _snapshot_local_scheduler_state(project_id: int | None = None) -> dict[str, Any]:
     with execution_state_lock:
-        active_pipelines = sum(1 for state in execution_state.values() if state.get("running"))
-        queued_pipelines = len(pipeline_queue)
+        running_execution_ids: list[int] = []
+        queued_execution_ids: list[int] = []
+        running_without_execution = 0
+        queued_without_execution = 0
+        project_state = _ensure_project_state_unlocked(project_id).copy() if project_id is not None else None
+        queue_position = _queue_position_unlocked(project_id)
+
+        for state in execution_state.values():
+            if state.get("running"):
+                execution_id = state.get("current_execution_id")
+                if execution_id is None:
+                    running_without_execution += 1
+                else:
+                    running_execution_ids.append(execution_id)
+            if state.get("queued"):
+                execution_id = state.get("current_execution_id")
+                if execution_id is None:
+                    queued_without_execution += 1
+                else:
+                    queued_execution_ids.append(execution_id)
+
+    return {
+        "running_execution_ids": running_execution_ids,
+        "queued_execution_ids": queued_execution_ids,
+        "running_without_execution": running_without_execution,
+        "queued_without_execution": queued_without_execution,
+        "project_state": project_state,
+        "local_queue_position": queue_position,
+    }
+
+
+def build_scheduler_runtime_snapshot(project_id: int | None = None) -> dict[str, Any]:
+    local = _snapshot_local_scheduler_state(project_id)
+    tracked_execution_ids = sorted({
+        *local["running_execution_ids"],
+        *local["queued_execution_ids"],
+    })
+    tracked_statuses: dict[int, str] = {}
+    session = get_session()
+    try:
+        if tracked_execution_ids:
+            tracked_statuses = {
+                execution_id: status
+                for execution_id, status in (
+                    session.query(Execution.id, Execution.status)
+                    .filter(Execution.id.in_(tracked_execution_ids))
+                    .all()
+                )
+            }
+
+        local_reserved_running_ids = {
+            execution_id
+            for execution_id in local["running_execution_ids"]
+            if tracked_statuses.get(execution_id) not in {"running", "success", "error", "failed", "completed"}
+        }
+        local_unpersisted_queued_ids = {
+            execution_id
+            for execution_id in local["queued_execution_ids"]
+            if tracked_statuses.get(execution_id) is None
+        }
+        db_running_count = session.query(Execution).filter(Execution.status == "running").count()
+        pending_rows = (
+            session.query(Execution.id, Execution.project_id)
+            .filter(Execution.status == "pending", Execution.is_active_head == True)
+            .order_by(Execution.created_at.asc(), Execution.id.asc())
+            .all()
+        )
+        durable_queue_rows = [row for row in pending_rows if row.id not in local_reserved_running_ids]
+        queue_position_by_project: dict[int, int] = {}
+        for index, row in enumerate(durable_queue_rows, start=1):
+            queue_position_by_project.setdefault(row.project_id, index)
+
         project_running = False
         project_queued = False
-        queue_position = _queue_position_unlocked(project_id)
-        if project_id is not None and project_id in execution_state:
-            project_running = bool(execution_state[project_id].get("running"))
-            project_queued = bool(execution_state[project_id].get("queued"))
+        queue_position = local["local_queue_position"]
+        project_db_status = None
+        project_active_execution_id = None
+        project_state = local["project_state"] or {}
+
+        if project_id is not None:
+            project_running = bool(project_state.get("running"))
+            project_queued = bool(project_state.get("queued"))
+            active_head = (
+                session.query(Execution.id, Execution.status)
+                .filter(Execution.project_id == project_id, Execution.is_active_head == True)
+                .order_by(Execution.created_at.desc(), Execution.id.desc())
+                .first()
+            )
+            if active_head:
+                project_active_execution_id = active_head.id
+                project_db_status = active_head.status
+                if not project_running and project_db_status == "running":
+                    project_running = True
+                    project_queued = False
+                elif not project_running and project_db_status == "pending":
+                    project_queued = True
+                elif project_db_status not in {"pending"} and not project_running:
+                    project_queued = False
+                if project_queued:
+                    queue_position = queue_position_by_project.get(project_id, queue_position)
+                else:
+                    queue_position = None
+
+        return {
+            "active_pipelines": db_running_count
+            + local["running_without_execution"]
+            + len(local_reserved_running_ids),
+            "queued_pipelines": len(durable_queue_rows)
+            + local["queued_without_execution"]
+            + len(local_unpersisted_queued_ids),
+            "max_concurrent_pipelines": get_max_concurrent_pipelines(),
+            "max_queued_pipelines": get_max_queued_pipelines(),
+            "project_running": project_running,
+            "project_queued": project_queued,
+            "queue_position": queue_position,
+            "project_db_status": project_db_status,
+            "project_active_execution_id": project_active_execution_id,
+        }
+    finally:
+        session.close()
+
+
+def get_scheduler_snapshot(project_id: int | None = None) -> dict[str, Any]:
+    runtime = build_scheduler_runtime_snapshot(project_id)
     return {
-        "active_pipelines": active_pipelines,
-        "queued_pipelines": queued_pipelines,
-        "max_concurrent_pipelines": get_max_concurrent_pipelines(),
-        "max_queued_pipelines": get_max_queued_pipelines(),
-        "project_running": project_running,
-        "project_queued": project_queued,
-        "queue_position": queue_position,
+        "active_pipelines": runtime["active_pipelines"],
+        "queued_pipelines": runtime["queued_pipelines"],
+        "max_concurrent_pipelines": runtime["max_concurrent_pipelines"],
+        "max_queued_pipelines": runtime["max_queued_pipelines"],
+        "project_running": runtime["project_running"],
+        "project_queued": runtime["project_queued"],
+        "queue_position": runtime["queue_position"],
     }
 
 
 def claim_pipeline_slot(project_id: int, enqueue_on_limit: bool = False) -> str | None:
+    runtime = build_scheduler_runtime_snapshot(project_id)
     with execution_state_lock:
         state = _ensure_project_state_unlocked(project_id)
         if state.get("running"):
             return "project_running"
         if state.get("queued"):
             return "project_queued"
+        if runtime.get("project_db_status") == "running":
+            return "project_running"
+        if runtime.get("project_db_status") == "pending":
+            return "project_queued"
 
-        running_count = sum(1 for item in execution_state.values() if item.get("running"))
-        if running_count >= get_max_concurrent_pipelines():
+        if runtime["active_pipelines"] >= runtime["max_concurrent_pipelines"]:
             if enqueue_on_limit:
+                if runtime["queued_pipelines"] >= runtime["max_queued_pipelines"]:
+                    return "queue_limit"
                 state["running"] = False
                 state["queued"] = True
                 state["started_at"] = None
