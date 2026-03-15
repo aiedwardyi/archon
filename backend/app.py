@@ -157,20 +157,114 @@ SEED_PROJECTS = [
 ]
 
 execution_state: dict = {}  # keyed by project_id (int)
+execution_state_lock = threading.Lock()
 
-def get_project_state(project_id: int) -> dict:
+
+def _default_project_state() -> dict[str, Any]:
+    return {
+        "running": False,
+        "started_at": None,
+        "current_execution_id": None,
+        "logs": [],
+        "result_ready": False,
+    }
+
+
+def _ensure_project_state_unlocked(project_id: int) -> dict[str, Any]:
     if project_id not in execution_state:
-        execution_state[project_id] = {
-            "running": False,
-            "started_at": None,
-            "current_execution_id": None,
-            "logs": [],
-            "result_ready": False,
-        }
+        execution_state[project_id] = _default_project_state()
     return execution_state[project_id]
 
+
+def get_project_state(project_id: int) -> dict:
+    with execution_state_lock:
+        return _ensure_project_state_unlocked(project_id)
+
+
+def get_max_concurrent_pipelines() -> int:
+    raw = os.getenv("ARCHON_MAX_CONCURRENT_PIPELINES", "2").strip()
+    try:
+        value = int(raw)
+    except ValueError:
+        return 2
+    return max(1, value)
+
+
+def count_running_pipelines() -> int:
+    with execution_state_lock:
+        return sum(1 for state in execution_state.values() if state.get("running"))
+
+
+def get_scheduler_snapshot(project_id: int | None = None) -> dict[str, Any]:
+    with execution_state_lock:
+        active_pipelines = sum(1 for state in execution_state.values() if state.get("running"))
+        project_running = False
+        if project_id is not None and project_id in execution_state:
+            project_running = bool(execution_state[project_id].get("running"))
+    return {
+        "active_pipelines": active_pipelines,
+        "max_concurrent_pipelines": get_max_concurrent_pipelines(),
+        "project_running": project_running,
+    }
+
+
+def claim_pipeline_slot(project_id: int) -> str | None:
+    with execution_state_lock:
+        state = _ensure_project_state_unlocked(project_id)
+        if state.get("running"):
+            return "project_running"
+
+        if count := sum(1 for item in execution_state.values() if item.get("running")):
+            if count >= get_max_concurrent_pipelines():
+                return "worker_limit"
+
+        state["running"] = True
+        state["started_at"] = time.time()
+        state["current_execution_id"] = None
+        state["logs"] = []
+        state["result_ready"] = False
+        return None
+
+
+def attach_execution_to_state(project_id: int, execution_id: int) -> None:
+    if project_id is None:
+        return
+    with execution_state_lock:
+        state = _ensure_project_state_unlocked(project_id)
+        state["current_execution_id"] = execution_id
+
+
+def release_pipeline_slot(project_id: int) -> None:
+    if project_id is None:
+        return
+    with execution_state_lock:
+        state = _ensure_project_state_unlocked(project_id)
+        state["running"] = False
+        state["started_at"] = None
+
 def any_pipeline_running() -> bool:
-    return any(s.get("running") for s in execution_state.values())
+    return count_running_pipelines() > 0
+
+
+def pipeline_busy_response(reason: str, project_id: int | None = None):
+    scheduler = get_scheduler_snapshot(project_id)
+    if reason == "project_running":
+        return jsonify({
+            "error": "A pipeline is already running for this project",
+            "reason": reason,
+            "project_id": project_id,
+            **scheduler,
+        }), 409
+
+    return jsonify({
+        "error": (
+            f"All {scheduler['max_concurrent_pipelines']} pipeline worker slots are busy. "
+            "Try again shortly."
+        ),
+        "reason": reason,
+        "project_id": project_id,
+        **scheduler,
+    }), 429
 
 
 def read_json_file(filepath: Path) -> Dict[str, Any] | None:
@@ -3008,7 +3102,7 @@ def run_full_pipeline_async(
             })
 
     finally:
-        state["running"] = False
+        release_pipeline_slot(project_id)
         session.close()
         print("Pipeline complete")
 
@@ -3385,13 +3479,9 @@ def get_version_logs(project_id: int, version: int):
 
 @app.route("/api/projects/<int:project_id>/iterate", methods=["POST"])
 def iterate_project(project_id: int):
-    state = get_project_state(project_id)
-
-    if state["running"]:
-        return jsonify({"error": "A pipeline is already running for this project"}), 409
-
     user_id = get_optional_request_user_id()
     session = get_session()
+    slot_claimed = False
     try:
         # Accept either JSON or multipart/form-data (for file uploads)
         if request.content_type and "multipart/form-data" in request.content_type:
@@ -3421,6 +3511,11 @@ def iterate_project(project_id: int):
         if access_error:
             return access_error
 
+        slot_error = claim_pipeline_slot(project_id)
+        if slot_error:
+            return pipeline_busy_response(slot_error, project_id)
+        slot_claimed = True
+
         prompt = data["prompt"]
         prompt_history = data.get("prompt_history", [])
         if not prompt_history:
@@ -3445,6 +3540,8 @@ def iterate_project(project_id: int):
             and requested_archetype
             and requested_archetype != project.locked_ui_archetype
         ):
+            release_pipeline_slot(project_id)
+            slot_claimed = False
             return jsonify({
                 "response_type": "chat",
                 "message": (
@@ -3497,12 +3594,7 @@ def iterate_project(project_id: int):
         })
         execution.chat_messages = json.dumps(existing_msgs)
         session.commit()
-
-        state["running"] = True
-        state["started_at"] = time.time()
-        state["current_execution_id"] = execution.id
-        state["logs"] = []
-        state["result_ready"] = False
+        attach_execution_to_state(project_id, execution.id)
 
         # Save uploaded reference images (if any)
         reference_images = []
@@ -3532,10 +3624,12 @@ def iterate_project(project_id: int):
             "project_id": project_id,
             "execution_id": execution.id,
             "version": next_version,
+            **get_scheduler_snapshot(project_id),
         }), 200
 
     except Exception as e:
-        state["running"] = False
+        if slot_claimed:
+            release_pipeline_slot(project_id)
         print(f"Error in iterate_project: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
@@ -3589,6 +3683,8 @@ def execute_task():
     project_id = None
     user_id = get_optional_request_user_id()
     session = get_session()
+    created_project = False
+    slot_claimed = False
     try:
         req_data = request.get_json()
         if not req_data:
@@ -3602,6 +3698,7 @@ def execute_task():
             session.commit()
             session.refresh(project)
             project_id = project.id
+            created_project = True
         else:
             project = session.get(Project, project_id)
             if not project:
@@ -3609,9 +3706,18 @@ def execute_task():
             access_error = get_project_access_error(project, user_id)
             if access_error:
                 return access_error
-            project.status = "in_progress"
-            project.updated_at = datetime.now(timezone.utc)
-            session.commit()
+
+        slot_error = claim_pipeline_slot(project_id)
+        if slot_error:
+            if created_project:
+                session.delete(project)
+                session.commit()
+            return pipeline_busy_response(slot_error, project_id)
+        slot_claimed = True
+
+        project.status = "in_progress"
+        project.updated_at = datetime.now(timezone.utc)
+        session.commit()
 
         next_version = get_next_version(session, project_id)
         task_description = project.description or project.name
@@ -3623,6 +3729,8 @@ def execute_task():
             and requested_archetype
             and requested_archetype != project.locked_ui_archetype
         ):
+            release_pipeline_slot(project_id)
+            slot_claimed = False
             return jsonify({
                 "response_type": "chat",
                 "message": (
@@ -3644,13 +3752,7 @@ def execute_task():
         session.add(execution)
         session.commit()
         session.refresh(execution)
-
-        state = get_project_state(project_id)
-        state["running"] = True
-        state["started_at"] = time.time()
-        state["current_execution_id"] = execution.id
-        state["logs"] = []
-        state["result_ready"] = False
+        attach_execution_to_state(project_id, execution.id)
 
         print(f"Starting v{next_version} for project {project_id}: {task_description}")
         thread = threading.Thread(
@@ -3665,11 +3767,12 @@ def execute_task():
             "project_id": project_id,
             "execution_id": execution.id,
             "version": next_version,
+            **get_scheduler_snapshot(project_id),
         }), 200
 
     except Exception as e:
-        if project_id:
-            get_project_state(project_id)["running"] = False
+        if project_id and slot_claimed:
+            release_pipeline_slot(project_id)
         print(f"Error in execute_task: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
@@ -3679,6 +3782,7 @@ def execute_task():
 @app.route("/api/execution-status", methods=["GET"])
 def execution_status():
     project_id = request.args.get("project_id", type=int)
+    scheduler = get_scheduler_snapshot(project_id)
 
     # No project_id = return idle (prevents cross-user status leaking)
     if not project_id:
@@ -3689,6 +3793,7 @@ def execution_status():
             "engineerTasks": [],
             "project_id": None,
             "execution_id": None,
+            **scheduler,
         }), 200
 
     state = get_project_state(project_id)
@@ -3714,6 +3819,7 @@ def execution_status():
                         "locked_ui_archetype": project.locked_ui_archetype if project else None,
                         "project_id": project_id,
                         "execution_id": execution_id,
+                        **scheduler,
                     }), 200
                 # Crash recovery: in-memory says RUNNING but DB was cleaned up on restart
                 if state["running"] and execution.status in ("failed", "error"):
@@ -3725,6 +3831,7 @@ def execution_status():
                         "locked_ui_archetype": project.locked_ui_archetype if project else None,
                         "project_id": project_id,
                         "execution_id": execution_id,
+                        **scheduler,
                     }), 200
         finally:
             session.close()
@@ -3765,6 +3872,7 @@ def execution_status():
             "locked_ui_archetype": project.locked_ui_archetype if project else None,
             "project_id": project_id,
             "execution_id": execution_id,
+            **scheduler,
         }), 200
 
     if state["running"]:
@@ -3776,6 +3884,7 @@ def execution_status():
             "locked_ui_archetype": project.locked_ui_archetype if project else None,
             "project_id": project_id,
             "execution_id": execution_id,
+            **scheduler,
         }), 200
 
     return jsonify({
@@ -3786,6 +3895,7 @@ def execution_status():
         "locked_ui_archetype": project.locked_ui_archetype if project else None,
         "project_id": project_id,
         "execution_id": execution_id,
+        **scheduler,
     }), 200
 
 

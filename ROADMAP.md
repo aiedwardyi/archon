@@ -205,10 +205,12 @@ Current work on `feat/componentized-multi-run-experiments`:
 - Runner capabilities now include bounded concurrency via `--max-parallel`, one `BuilderAPI` client per worker, lazy scorer imports so CLI help and non-scoring paths do not fail on optional scorer deps, backend health checks that do not require auth bootstrap, and per-archetype result artifacts plus timestamped logs for long-running smoke tests.
 - Added targeted regression coverage in `tests/test_run_componentized_validation.py` for preview-build fallback loading, backend health acceptance of 401, and result-file emission on build failure.
 - March 15, 2026 local smoke-run evidence: with `--archetypes dashboard portfolio --max-parallel 2`, project 424 / execution 430 and project 425 / execution 431 authenticated independently, created separate projects, and progressed through `pm`, `planner`, and `engineer` concurrently, confirming the eval driver can overlap distinct-project runs on the current backend.
-- Current blocker is no longer the eval driver. The remaining production-scaling risks are backend-side: same-project exclusion is still missing on `/api/execute-task`, worker coordination is still process-local, and SQLite remains the durability bottleneck under heavier concurrent writes.
+- Added Stage 2 backend protections locally in `backend/app.py`: atomic slot-claim/release helpers around `execution_state`, same-project exclusion on `/api/execute-task`, a global worker cap through `ARCHON_MAX_CONCURRENT_PIPELINES`, and explicit scheduler metadata on busy/start/status responses.
+- Added backend regression coverage in `backend/tests/test_execution_limits.py`, verifying 409 rejection for same-project overlap and 429 rejection for global-cap saturation on both `/api/execute-task` and `/api/projects/<id>/iterate`.
+- Current blocker is no longer route-level admission control. The remaining production-scaling risks are durable coordination and storage: worker state is still process-local, there is still no real queue, and SQLite remains the first likely bottleneck under heavier concurrent writes.
 - Next roadmap on this branch:
-  Stage 1a: finish the local smoke run and retain only repo-safe runner/test/doc changes.
-  Stage 2: add backend same-project exclusion plus a global worker cap.
+  Stage 1a: keep the bounded-parallel runner stable and continue using it as the validation harness.
+  Stage 2: extend hard rejection into explicit queue or reservation semantics, ideally without relying on process-local state only.
   Stage 3: move queued/running job state into durable coordination suitable for multi-process production scaling.
 
 ### Phase 9 — Pipeline Page & Classifier Improvements (⬜ Planned)
