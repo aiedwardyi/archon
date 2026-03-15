@@ -190,6 +190,12 @@ Current work on `feat/componentized-builder-pipeline`:
 - Added a runtime shell layout repair for fixed-sidebar grid dashboards plus broader support-module/button polish guards so collapsed previews recover before scoring.
 - Added safer fintech polish-runtime behavior plus broader componentized syntax normalization for JSX handler bleed, main-entry import-note bleed, control-flow comment-close bleed, and swallowed array terminators so delayed preview capture no longer blanks rendered fintech dashboards and malformed support files recover more often.
 - Current branch status: build stability is materially improved, fan-page benchmark routing is cleaner, and image-heavy outputs are rendering much closer to target; the best recent scoreable fintech validation still held at 72.5 in `support_module_gate_v16_fintech_typography_feed_guard_safe_retry`, and dashboard no longer times out at 900s, with March 15, 2026 reruns progressing from 73.5 (`support_module_gate_v10_dashboard_layout_guard`) and 73.0 (`support_module_gate_v11_dashboard_support_module_guard`) to 76.0 (`support_module_gate_v18_dashboard_title_activity_guard`) and then 82.0 (`support_module_gate_v20_dashboard_panel_distinction_guard`), which clears the prior 81.0 branch benchmark. The March 15, 2026 `support_module_gate_v34_fintech_table_trend_prompt_retry` black-screen path is now fixed locally by the safer polish runtime, but the follow-up rerun `support_module_gate_v35_fintech_table_trend_prompt_capture_fix` still hit a separate generated syntax family before preview and did not produce a new scoreable fintech checkpoint.
+- Proposed branching model: keep `main` as the broad safe baseline, keep `feat/componentized-builder-pipeline` as the validated pipeline checkpoint, and branch the upcoming scheduler work from `feat/componentized-builder-pipeline` so experimental multi-run changes do not destabilize the current builder recovery path.
+- Proposed experimental branch: `feat/componentized-multi-run-experiments`.
+- Proposed roadmap for that branch:
+  Stage 1: parallelize the validation runner with bounded concurrency and one API client per worker.
+  Stage 2: add backend protections so the same project cannot run twice concurrently, plus a global worker limit.
+  Stage 3: move queued/running job state off process-local memory toward durable coordination suitable for production scaling.
 
 ### Phase 9 — Pipeline Page & Classifier Improvements (⬜ Planned)
 - ✅ Classifier too sensitive — opinion questions triggering builds
