@@ -34,7 +34,7 @@ STEP 2 - IF IMAGES ARE NEEDED, APPLY THESE RULES:
 - READ THE PRD CAREFULLY - only generate images that match the app described
 - For gaming/fantasy: generate character portraits + hero background + weapon/scene art
 - For landing pages: generate 1 hero background + 1-2 feature illustrations
-- For e-commerce: generate product hero shots + lifestyle backgrounds
+- For e-commerce: generate a campaign-style hero background, at least two distinct lifestyle or collection images, and close product hero shots. Prefer editorial fashion photography or premium studio product photography over abstract geometry unless the brief explicitly asks for abstraction.
 - NEVER generate characters unless explicitly named in the PRD
 - NEVER use names or concepts from unrelated apps or examples
 - All prompts must be detailed (80+ words) for best DALL-E 3 results

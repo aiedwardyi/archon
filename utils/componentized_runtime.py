@@ -98,6 +98,10 @@ BARE_SECTION_LABEL_RE = re.compile(
 COMMENT_FILENAME_LABEL_RE = re.compile(
     r"(?m)^/\*\s*(?P<comment>[^*\n]{1,200}?)\s*\*/\s*$\n^(?P<filename>[A-Za-z0-9_-]+\.(?:tsx|ts|jsx|js|css|html|json|md))\s*$"
 )
+JSX_COMMENT_SWALLOWED_TAG_BOUNDARY_RE = re.compile(
+    r"/\*\s*[\s\S]{0,320}?(?P<boundary>(?:/?>)\s*</[A-Za-z][A-Za-z0-9-]*>\s*<[A-Za-z][A-Za-z0-9-]*)\s*\*/",
+    re.MULTILINE,
+)
 URL_PROTOCOL_COMMENT_BLEED_RE = re.compile(r"(?P<scheme>https?):/\*\s*")
 ATTR_VALUE_ORPHAN_COMMENT_CLOSE_RE = re.compile(
     r"(?P<attr>[A-Za-z_:][-A-Za-z0-9_:.]*)=(?P<quote>[\"'])\s*\*/\s*"
@@ -137,6 +141,21 @@ ORPHAN_COMMENT_SPLIT_STRING_LITERAL_RE = re.compile(
 ORPHAN_COMMENT_CLOSE_IN_STRING_LITERAL_RE = re.compile(
     r"(?P<prefix>(?:\[|,|:|=|\(|\{)\s*)(?P<quote>['\"])(?P<before>[^'\"\n]*?)\s*\*/\s*\n\s*(?P<after>[^'\"\n]*?)(?P=quote)",
     re.MULTILINE,
+)
+ALPINE_JSX_DIRECTIVE_NOTE_RE = re.compile(
+    r"/\*\s*@ts-ignore\s*\*/\s*Alpine\.js specific directive",
+    re.IGNORECASE,
+)
+ALPINE_JSX_ATTR_RE = re.compile(
+    r"(?P<leading>\s+)(?:x-[A-Za-z0-9_.:-]+|@[A-Za-z0-9_.:-]+)\s*=\s*(?:\{`[^`]*`\}|\{[^{}]*\}|\"[^\"]*\"|'[^']*')",
+    re.MULTILINE,
+)
+LINK_SELF_CLOSING_WITH_CHILDREN_RE = re.compile(
+    r"<Link(?P<attrs>[^<>]*?)\s*/>(?P<inner>[\s\S]{0,2400}?)</Link>",
+    re.MULTILINE,
+)
+ORPHAN_JSX_CLOSING_BRACE_LINE_RE = re.compile(
+    r"(?m)^[ \t]*}\s*(?=\r?\n[ \t]*</[A-Za-z][A-Za-z0-9-]*>)"
 )
 JSX_BLOCK_COMMENT_BLEED_RE = re.compile(
     r"(?P<open>\(\s*)/\*\s*(?P<comment>[^*]*?)\s{2,}(?P<jsx><[A-Za-z][\s\S]*?)\{(?P<prefix>[a-z][A-Za-z0-9_$]{1,32})\s*\*/\s*\n(?P<indent>[ \t]*)(?P<suffix>[A-Z][A-Za-z0-9_$]{1,64})(?P<rest>[^\n]*)",
@@ -232,7 +251,7 @@ NUMERIC_SELECTOR_HINTS = (
     ".delta",
 )
 MAIN_CSS_IMPORT_LINE_RE = re.compile(r'^\s*import\s+["\'](?P<path>\./[^"\']+\.css)["\'];?\s*(?:(?:/\*.*\*/)|(?://.*))?\s*$')
-MAIN_ENTRY_PREFERRED_CSS_ORDER = ("./base.css", "./index.css", "./style.css", "./styles.css")
+MAIN_ENTRY_PREFERRED_CSS_ORDER = ("./index.css", "./style.css", "./styles.css", "./base.css")
 POLISH_GUARD_IMPORT = "./polish-guard.css"
 POLISH_GUARD_RUNTIME_IMPORT = "./polish-guard"
 POLISH_GUARD_ARCHETYPES = {"dashboard", "fintech"}
@@ -1234,11 +1253,13 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _normalize_run_on_inline_comments(updated)
         updated = _repair_componentized_comment_split_identifiers(updated)
         updated = _repair_componentized_comment_tail_split_identifiers(updated)
+        updated = _repair_componentized_jsx_comment_swallowed_tag_boundaries(updated)
         updated = _repair_componentized_jsx_block_comment_bleed(updated)
         updated = _repair_componentized_jsx_text_comment_bleed(updated)
         updated = _repair_componentized_orphan_comment_split_identifiers(updated)
         updated = _repair_componentized_orphan_comment_split_string_literals(updated)
         updated = _repair_componentized_orphan_comment_close_in_string_literals(updated)
+        updated = _strip_componentized_alpine_jsx_directives(updated)
         updated = _normalize_componentized_void_jsx_elements(updated)
         updated = _normalize_componentized_declaration_boundaries(updated)
         updated = _hoist_componentized_chart_helper_declarations(updated)
@@ -1258,6 +1279,8 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         elif "base.css" in updated:
             updated = BASE_CSS_IMPORT_ANY_RE.sub("", updated)
             updated = BASE_CSS_IMPORT_LINE_RE.sub("", updated)
+        updated = _repair_componentized_link_self_closing_children(updated)
+        updated = _remove_componentized_orphan_jsx_closing_brace_lines(updated)
 
     return updated
 
@@ -2627,6 +2650,34 @@ def _repair_componentized_orphan_comment_close_in_string_literals(source: str) -
         updated = repaired
 
     return updated
+
+
+def _repair_componentized_jsx_comment_swallowed_tag_boundaries(source: str) -> str:
+    return JSX_COMMENT_SWALLOWED_TAG_BOUNDARY_RE.sub(
+        lambda match: match.group("boundary"),
+        source,
+    )
+
+
+def _strip_componentized_alpine_jsx_directives(source: str) -> str:
+    updated = ALPINE_JSX_DIRECTIVE_NOTE_RE.sub("", source)
+    for _ in range(8):
+        repaired = ALPINE_JSX_ATTR_RE.sub("", updated)
+        if repaired == updated:
+            break
+        updated = repaired
+    return updated
+
+
+def _repair_componentized_link_self_closing_children(source: str) -> str:
+    return LINK_SELF_CLOSING_WITH_CHILDREN_RE.sub(
+        lambda match: f"<Link{match.group('attrs')}>{match.group('inner')}</Link>",
+        source,
+    )
+
+
+def _remove_componentized_orphan_jsx_closing_brace_lines(source: str) -> str:
+    return ORPHAN_JSX_CLOSING_BRACE_LINE_RE.sub("", source)
 
 
 def _repair_componentized_jsx_block_comment_bleed(source: str) -> str:

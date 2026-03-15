@@ -1367,7 +1367,8 @@ def build_design_context(
             "\n\nDESIGN ASSETS - USE THESE LOCAL APP ASSETS:\n"
             + "\n".join(asset_lines)
             + "\nIMPORTANT: Use these exact local paths in <img> tags or CSS background-image. "
-              "Do not emit backend API asset URLs in componentized apps.\n"
+              "Do not emit backend API asset URLs in componentized apps. "
+              "Do not substitute Unsplash, Pollinations, or other remote image hosts when a matching local asset is provided.\n"
         )
 
     for asset in design_assets:
@@ -1467,6 +1468,11 @@ QUALITY_PLACEHOLDER_DOMAINS = (
     "placehold.co",
     "via.placeholder.com",
     "picsum.photos",
+)
+QUALITY_REMOTE_IMAGE_DOMAINS = (
+    "images.unsplash.com",
+    "source.unsplash.com",
+    "image.pollinations.ai",
 )
 
 SELF_REVIEW_ISSUE_MAP = {
@@ -1804,7 +1810,13 @@ def detect_componentized_quality_issues(code_dir: Path, *, ui_archetype: str | N
     ):
         issues.append("first_paint_visibility")
 
-    if any(domain in normalized for domain in QUALITY_PLACEHOLDER_DOMAINS):
+    if (
+        any(domain in normalized for domain in QUALITY_PLACEHOLDER_DOMAINS)
+        or (
+            ui_archetype in {"ecommerce", "portfolio", "game", "landing"}
+            and any(domain in normalized for domain in QUALITY_REMOTE_IMAGE_DOMAINS)
+        )
+    ):
         issues.append("external_placeholder_assets")
 
     hover_count = normalized.count(":hover")
@@ -1824,7 +1836,7 @@ def detect_componentized_quality_issues(code_dir: Path, *, ui_archetype: str | N
         )
     )
     layered_shadow_present = bool(re.search(r"box-shadow\s*:\s*[^;]+,[^;]+;", normalized))
-    if ui_archetype in {"dashboard", "fintech", "editor", "kanban", "chat"}:
+    if ui_archetype in {"dashboard", "fintech", "editor", "kanban", "chat", "ecommerce", "portfolio", "game", "landing"}:
         if not any(marker in normalized for marker in display_font_markers) or font_family_count < 2 or title_scale_too_small:
             issues.append("typography_hierarchy")
         if hover_count < 6 or "focus-visible" not in normalized:
@@ -1957,6 +1969,18 @@ def build_componentized_shell_polish_guidance(ui_archetype: str | None) -> str:
             "- Range pills, trade buttons, nav destinations, and table rows need crisp hover and active states that read immediately.\n"
             "- Replace any remote avatar placeholders with styled initials, local assets, or inline SVG treatments.\n"
         )
+    if ui_archetype == "ecommerce":
+        return (
+            "APP-SHELL POLISH TARGET FOR ECOMMERCE:\n"
+            "- Keep the storefront editorial and merchandise-led. It should read like a premium fashion drop, not a generic SaaS landing page with product cards.\n"
+            "- Use the display font for the brand, hero title, collection titles, and other short high-importance headings. Keep a restrained UI sans for filters, pricing, badges, and support copy.\n"
+            "- Favor a premium warm-metal or tonal accent system that matches the benchmark context. Avoid generic bright dashboard blue unless the brief explicitly asks for that direction.\n"
+            "- Hero, collection, and product imagery should use the supplied local assets or equally rich campaign-style photography. Do not fill collection cards with abstract placeholder textures or unrelated stock stand-ins.\n"
+            "- Collection cards should feel like real campaign modules with layered overlays, clear titles, and believable item counts instead of thin placeholder panels.\n"
+            "- Product cards need consistent image cropping, stronger price emphasis, and clear quick-add, size, or cart affordances with visible hover and focus states.\n"
+            "- Create at least three surface depths across the hero, collection rail, product grid, and cart drawer. Use tints, shadows, and subtle texture so the storefront does not collapse into flat dark rectangles.\n"
+            "- Navigation, filter pills, quick-add buttons, and cart controls need visible active states and polished micro-interactions.\n"
+        )
     if ui_archetype in {"editor", "kanban", "chat"}:
         return (
             "APP-SHELL POLISH TARGET FOR WORKSPACES:\n"
@@ -2064,7 +2088,7 @@ def build_componentized_refinement_prompt(
             "Do not keep the primary shell, topbar, hero, KPI row, or initial cards at opacity 0 while waiting for JS or scroll observers."
         ),
         "external_placeholder_assets": (
-            "- External placeholder assets: remove avatar/image placeholder services and replace them with styled initials, gradients, local generated assets, or inline SVG treatments."
+            "- External placeholder assets: remove avatar/image placeholder services, remote stock stand-ins, or brittle third-party image hosts when local generated assets are available. Replace them with staged local assets, styled initials, gradients, or inline SVG treatments."
         ),
         "dense_shell_interactivity": (
             "- Dense-shell interactivity: dashboards and finance shells need working range selectors, filters, sortable data, tab switches, watchlist state, or equivalent real controls."
@@ -2292,7 +2316,7 @@ def select_componentized_refinement_scope(
 
     issue_patterns = {
         "first_paint_visibility": ("intersectionobserver", "hidden-section", "opacity: 0", "visibility: hidden", "fade-in"),
-        "external_placeholder_assets": tuple(domain.lower() for domain in QUALITY_PLACEHOLDER_DOMAINS),
+        "external_placeholder_assets": tuple(domain.lower() for domain in (*QUALITY_PLACEHOLDER_DOMAINS, *QUALITY_REMOTE_IMAGE_DOMAINS)),
         "dense_shell_interactivity": ("onclick", "onchange", "onsubmit", "usestate", "setinterval", "settimeout"),
         "spacing_rhythm": ("padding", "gap", "max-width", "grid-template", "section", "content-area"),
         "typography_hierarchy": ("font-family", "font-size", "letter-spacing", "line-height", "@import", "label", "eyebrow", "space grotesk", "jetbrains mono", "outfit"),

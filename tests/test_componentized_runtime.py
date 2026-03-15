@@ -449,7 +449,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertIn('import App from "./App";', main_source)
             self.assertNotIn("../base.css", main_source)
             if 'import "./index.css";' in main_source:
-                self.assertLess(main_source.index('import "./base.css";'), main_source.index('import "./index.css";'))
+                self.assertGreater(main_source.index('import "./base.css";'), main_source.index('import "./index.css";'))
             app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
             self.assertIn('generated-assets/hero.png', app_source)
             self.assertNotIn('base.css', app_source)
@@ -1033,7 +1033,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertIn('import "./base.css";', main_source)
             self.assertIn('import "./style.css";', main_source)
             self.assertEqual(main_source.count('base.css'), 1)
-            self.assertLess(main_source.index('import "./base.css";'), main_source.index('import "./style.css";'))
+            self.assertGreater(main_source.index('import "./base.css";'), main_source.index('import "./style.css";'))
             self.assertNotIn("../base.css", main_source)
             self.assertNotIn("./App.tsx", main_source)
             self.assertIn("ReactDOM.createRoot", main_source)
@@ -1498,6 +1498,110 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertIn('"https://image.pollinations.ai/prompt/mobile%20meditation%20app%20interface?width=800"', source)
             self.assertNotIn('*/\nNext.js"', source)
             self.assertNotIn(" */\ninterface", source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_jsx_comment_swallowed_tag_boundaries(self):
+        code_dir = _case_dir("componentized-runtime-jsx-tag-boundary-comment")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            (code_dir / "src" / "components" / "HeroBanner.tsx").write_text(
+                "import React from 'react';\n"
+                "const HeroBanner: React.FC = () => {  return (    <section className=\"hero-banner\">      <div        className=\"hero-bg\"        style={{ backgroundImage: `url('generated-assets/hero_background.png')` }}        /* onerror=\"this.style.background='linear-gradient(135deg,#1a1a1f,#222228)'\" JS onerror not valid in React style prop ></div> <div */\n"
+                "        className=\"hero-overlay\"></div>      <div className=\"hero-content\">Hero</div>    </section>  );};\n"
+                "export default HeroBanner;\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            source = (code_dir / "src" / "components" / "HeroBanner.tsx").read_text(encoding="utf-8")
+            self.assertNotIn("JS onerror not valid in React style prop", source)
+            self.assertIn('style={{ backgroundImage: `url(\'generated-assets/hero_background.png\')` }}', source)
+            self.assertIn("></div> <div", source)
+            self.assertIn('className="hero-overlay"></div>', source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_strips_alpine_jsx_directives(self):
+        code_dir = _case_dir("componentized-runtime-alpine-directives")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            (code_dir / "src" / "components" / "CartDrawer.tsx").write_text(
+                "import React from 'react';\n"
+                "export default function CartDrawer({ cartOpen, toggleCart }) {\n"
+                "  return (\n"
+                "    <div className=\"cart-drawer\" x-data={`{ cartOpen: ${cartOpen} }`} x-show=\"cartOpen\" /* @ts-ignore */\n"
+                "Alpine.js specific directive @click.away=\"cartOpen = false\" x-transition:enter=\"ease-out duration-300\">\n"
+                "      <button onClick={toggleCart}>Close</button>\n"
+                "    </div>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            source = (code_dir / "src" / "components" / "CartDrawer.tsx").read_text(encoding="utf-8")
+            self.assertIn('className="cart-drawer"', source)
+            self.assertNotIn("x-data", source)
+            self.assertNotIn("x-show", source)
+            self.assertNotIn("@click.away", source)
+            self.assertNotIn("Alpine.js specific directive", source)
+            self.assertNotIn("@ts-ignore", source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_self_closing_link_wrappers(self):
+        code_dir = _case_dir("componentized-runtime-self-closing-link-wrapper")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            (code_dir / "src" / "components" / "ProductCard.tsx").write_text(
+                "import React from 'react';\n"
+                "import { Link } from 'react-router-dom';\n"
+                "export default function ProductCard() {\n"
+                "  return (\n"
+                "    <Link to=\"/product/1\" className=\"product-card\" />\n"
+                "      <div className=\"product-info\">Product</div>\n"
+                "    </Link>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            source = (code_dir / "src" / "components" / "ProductCard.tsx").read_text(encoding="utf-8")
+            self.assertIn('<Link to="/product/1" className="product-card">', source)
+            self.assertNotIn('className="product-card" />', source)
+            self.assertIn("</Link>", source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_removes_orphan_jsx_closing_brace_lines(self):
+        code_dir = _case_dir("componentized-runtime-orphan-jsx-closing-brace")
+        try:
+            (code_dir / "src" / "pages").mkdir(parents=True)
+            (code_dir / "src" / "pages" / "HomePage.tsx").write_text(
+                "export default function HomePage() {\n"
+                "  return (\n"
+                "    <section>\n"
+                "      <a href=\"#\" className=\"collection-card\">\n"
+                "        <div className=\"collection-overlay\">\n"
+                "          <span>8 Items</span>\n"
+                "        }\n"
+                "      </a>\n"
+                "    </section>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            source = (code_dir / "src" / "pages" / "HomePage.tsx").read_text(encoding="utf-8")
+            self.assertNotIn("\n        }\n      </a>", source)
+            self.assertIn('<a href="#" className="collection-card">', source)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
@@ -2288,6 +2392,37 @@ class ComponentizedRuntimeTests(unittest.TestCase):
 
             self.assertIn("typography_hierarchy", issues)
             self.assertIn("weak_surface_depth", issues)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_detect_componentized_quality_issues_flags_remote_ecommerce_imagery_and_weak_polish(self):
+        code_dir = _case_dir("componentized-quality-ecommerce-visual-issues")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "base.css").write_text(
+                "body { font-family: Inter, sans-serif; }\n"
+                ".hero-title { font-size: 30px; }\n"
+                ".collection-card { box-shadow: 0 4px 14px rgba(0,0,0,0.22); }\n"
+                ".product-card:hover { transform: translateY(-2px); }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "HomePage.tsx").write_text(
+                "export default function HomePage() {\n"
+                "  return (\n"
+                "    <main>\n"
+                "      <img src=\"https://images.unsplash.com/photo-1556906781-9a412961c28c?w=600&q=80\" alt=\"Hoodie\" />\n"
+                "      <section className=\"collection-card\">Urban Capsule</section>\n"
+                "    </main>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            issues = detect_componentized_quality_issues(code_dir, ui_archetype="ecommerce")
+
+            self.assertIn("external_placeholder_assets", issues)
+            self.assertIn("typography_hierarchy", issues)
+            self.assertIn("polish_flow", issues)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
