@@ -2,14 +2,17 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import contextlib
 import json
 import logging
 import os
+import subprocess
 import sys
 import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 import requests
 
@@ -220,6 +223,103 @@ def _ensure_backend_available(base_url: str) -> None:
         raise SystemExit(f"Backend not reachable at {base_url}")
 
 
+def _wait_for_backend_available(base_url: str, *, startup_timeout: int) -> None:
+    deadline = time.monotonic() + max(1, startup_timeout)
+    last_error: Exception | None = None
+    while time.monotonic() < deadline:
+        try:
+            response = requests.get(f"{base_url.rstrip('/')}/api/health", timeout=5)
+            if response.status_code in (200, 401):
+                return
+        except requests.RequestException as exc:
+            last_error = exc
+        time.sleep(1)
+    if last_error is not None:
+        raise SystemExit(f"Backend not reachable at {base_url}: {last_error}") from last_error
+    raise SystemExit(f"Backend not reachable at {base_url}")
+
+
+def _parse_local_backend_target(base_url: str) -> tuple[str, int]:
+    parsed = urlparse(base_url)
+    host = parsed.hostname or "127.0.0.1"
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    if host not in {"127.0.0.1", "localhost"}:
+        raise SystemExit("--launch-backend only supports local backend URLs.")
+    return host, port
+
+
+def _tail_text(path: Path, *, max_chars: int = 4000) -> str:
+    if not path.exists():
+        return ""
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+    return text[-max_chars:]
+
+
+@contextlib.contextmanager
+def _managed_backend(
+    *,
+    base_url: str,
+    results_dir: Path,
+    startup_timeout: int,
+    env_overrides: dict[str, str],
+):
+    host, port = _parse_local_backend_target(base_url)
+    stdout_path = results_dir / "backend.stdout.log"
+    stderr_path = results_dir / "backend.stderr.log"
+    bootstrap = (
+        "import sys;"
+        f"sys.path.insert(0, {str(ROOT / 'backend')!r});"
+        "import app;"
+        "app.init_db();"
+        f"app.app.run(host={host!r}, port={port}, debug=False, use_reloader=False)"
+    )
+    env = os.environ.copy()
+    env.update(env_overrides)
+    env.setdefault("PYTHONUNBUFFERED", "1")
+    stdout_handle = stdout_path.open("w", encoding="utf-8")
+    stderr_handle = stderr_path.open("w", encoding="utf-8")
+    process = subprocess.Popen(
+        [sys.executable, "-c", bootstrap],
+        cwd=ROOT,
+        env=env,
+        stdout=stdout_handle,
+        stderr=stderr_handle,
+        text=True,
+    )
+    try:
+        _wait_for_backend_available(base_url, startup_timeout=startup_timeout)
+        yield
+    except Exception:
+        stdout_handle.flush()
+        stderr_handle.flush()
+        stdout_tail = _tail_text(stdout_path)
+        stderr_tail = _tail_text(stderr_path)
+        detail = "\n".join(
+            part
+            for part in [
+                f"Backend stdout tail:\n{stdout_tail}" if stdout_tail else "",
+                f"Backend stderr tail:\n{stderr_tail}" if stderr_tail else "",
+            ]
+            if part
+        )
+        if detail:
+            raise SystemExit(detail) from None
+        raise
+    finally:
+        if process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=15)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=15)
+        stdout_handle.close()
+        stderr_handle.close()
+
+
 def _create_and_build_sync(
     *,
     base_url: str,
@@ -391,6 +491,11 @@ async def run() -> None:
     parser.add_argument("--label", default="")
     parser.add_argument("--max-parallel", type=int, default=1)
     parser.add_argument("--backend-url", default="http://127.0.0.1:5000")
+    parser.add_argument("--launch-backend", action="store_true")
+    parser.add_argument("--backend-start-timeout", type=int, default=60)
+    parser.add_argument("--backend-max-concurrent", type=int)
+    parser.add_argument("--backend-max-queued", type=int)
+    parser.add_argument("--backend-poll-interval", type=int)
     parser.add_argument("--build-timeout", type=int, default=900)
     parser.add_argument("--queue-timeout", type=int, default=1800)
     parser.add_argument("--enqueue-on-limit", action="store_true")
@@ -406,27 +511,47 @@ async def run() -> None:
     results_dir = DEFAULT_RESULTS_DIR if not args.label else ROOT / "eval" / "results" / args.label
     results_dir.mkdir(parents=True, exist_ok=True)
 
-    semaphore = asyncio.Semaphore(max(1, args.max_parallel))
-    tasks = [
-        asyncio.create_task(
-            _run_archetype(
-                archetype=archetype,
-                prompt=PROMPTS[archetype],
-                results_dir=results_dir,
-                base_url=args.backend_url,
-                build_timeout=args.build_timeout,
-                enqueue_on_limit=args.enqueue_on_limit,
-                queue_timeout=args.queue_timeout,
-                wait_seconds=args.wait_seconds,
-                scorer_model=args.scorer_model,
-                build_only=args.build_only,
-                semaphore=semaphore,
-            )
-        )
-        for archetype in ordered_archetypes
-    ]
+    backend_env_overrides: dict[str, str] = {}
+    if args.backend_max_concurrent is not None:
+        backend_env_overrides["ARCHON_MAX_CONCURRENT_PIPELINES"] = str(args.backend_max_concurrent)
+    if args.backend_max_queued is not None:
+        backend_env_overrides["ARCHON_MAX_QUEUED_PIPELINES"] = str(args.backend_max_queued)
+    if args.backend_poll_interval is not None:
+        backend_env_overrides["ARCHON_SCHEDULER_POLL_INTERVAL_SECONDS"] = str(args.backend_poll_interval)
 
-    results = await asyncio.gather(*tasks)
+    with (
+        _managed_backend(
+            base_url=args.backend_url,
+            results_dir=results_dir,
+            startup_timeout=args.backend_start_timeout,
+            env_overrides=backend_env_overrides,
+        )
+        if args.launch_backend
+        else contextlib.nullcontext()
+    ):
+        await asyncio.to_thread(_ensure_backend_available, args.backend_url)
+
+        semaphore = asyncio.Semaphore(max(1, args.max_parallel))
+        tasks = [
+            asyncio.create_task(
+                _run_archetype(
+                    archetype=archetype,
+                    prompt=PROMPTS[archetype],
+                    results_dir=results_dir,
+                    base_url=args.backend_url,
+                    build_timeout=args.build_timeout,
+                    enqueue_on_limit=args.enqueue_on_limit,
+                    queue_timeout=args.queue_timeout,
+                    wait_seconds=args.wait_seconds,
+                    scorer_model=args.scorer_model,
+                    build_only=args.build_only,
+                    semaphore=semaphore,
+                )
+            )
+            for archetype in ordered_archetypes
+        ]
+
+        results = await asyncio.gather(*tasks)
 
     (results_dir / "results.json").write_text(
         json.dumps(results, indent=2, ensure_ascii=False) + "\n",
