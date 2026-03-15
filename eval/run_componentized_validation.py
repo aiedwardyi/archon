@@ -102,6 +102,13 @@ def _load_env() -> None:
 
 def _make_summary(results: list[dict[str, Any]]) -> str:
     lines = [f"# Componentized Validation {datetime.now().strftime('%Y-%m-%d')}", ""]
+    queue_summary = _make_queue_summary(results)
+    lines.append("## Queue Overview")
+    lines.append(f"- Runs with queue observed: {queue_summary['observed_runs']}/{queue_summary['total_runs']}")
+    lines.append(f"- Average queue wait: {queue_summary['average_queue_wait_seconds']}s")
+    lines.append(f"- Max queue wait: {queue_summary['max_queue_wait_seconds']}s")
+    lines.append(f"- Worst queue position: {queue_summary['worst_queue_position']}")
+    lines.append("")
     for item in results:
         lines.append(f"## {item['archetype']}")
         lines.append(f"- Project: {item.get('project_id')} v{item.get('version')}")
@@ -127,6 +134,30 @@ def _make_summary(results: list[dict[str, Any]]) -> str:
         lines.append(f"- Delta: {item.get('delta_vs_previous_best')}")
         lines.append("")
     return "\n".join(lines).strip() + "\n"
+
+
+def _make_queue_summary(results: list[dict[str, Any]]) -> dict[str, Any]:
+    observed = []
+    max_positions: list[int] = []
+    for item in results:
+        telemetry = item.get("queue_telemetry") or {}
+        if not telemetry.get("queue_observed"):
+            continue
+        observed.append(float(telemetry.get("queue_wait_seconds") or 0.0))
+        max_position = telemetry.get("max_queue_position")
+        if isinstance(max_position, int):
+            max_positions.append(max_position)
+
+    observed_runs = len(observed)
+    average_wait = round(sum(observed) / observed_runs, 1) if observed_runs else 0.0
+    max_wait = round(max(observed), 1) if observed_runs else 0.0
+    return {
+        "total_runs": len(results),
+        "observed_runs": observed_runs,
+        "average_queue_wait_seconds": average_wait,
+        "max_queue_wait_seconds": max_wait,
+        "worst_queue_position": max(max_positions) if max_positions else None,
+    }
 
 
 def _ensure_backend_available(base_url: str) -> None:
@@ -336,6 +367,10 @@ async def run() -> None:
 
     (results_dir / "results.json").write_text(
         json.dumps(results, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    (results_dir / "queue_summary.json").write_text(
+        json.dumps(_make_queue_summary(results), indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
     (results_dir / "summary.md").write_text(_make_summary(results), encoding="utf-8")

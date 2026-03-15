@@ -97,6 +97,50 @@ class RunComponentizedValidationTests(unittest.TestCase):
             self.assertEqual(written["queue_telemetry"]["queue_wait_seconds"], 8.5)
             self.assertEqual(written["queue_telemetry"]["max_queue_position"], 3)
 
+    def test_make_queue_summary_and_summary_include_aggregate_queue_metrics(self):
+        results = [
+            {
+                "archetype": "dashboard",
+                "project_id": 101,
+                "version": 1,
+                "scaffold_mode": "componentized",
+                "preview_build": {"status": "success"},
+                "preview_path": "/tmp/dashboard/index.html",
+                "previous_site_path": "/tmp/baseline/index.html",
+                "score": {"weighted_total": 82.0},
+                "previous_best_score": 81.0,
+                "previous_best_score_source": "baseline",
+                "delta_vs_previous_best": 1.0,
+                "queue_telemetry": {"queue_observed": True, "queue_wait_seconds": 12.5, "max_queue_position": 4},
+            },
+            {
+                "archetype": "portfolio",
+                "project_id": 102,
+                "version": 1,
+                "scaffold_mode": "componentized",
+                "preview_build": {"status": "success"},
+                "preview_path": "/tmp/portfolio/index.html",
+                "previous_site_path": "/tmp/baseline-portfolio/index.html",
+                "score": {"weighted_total": 80.0},
+                "previous_best_score": 83.5,
+                "previous_best_score_source": "baseline",
+                "delta_vs_previous_best": -3.5,
+                "queue_telemetry": {"queue_observed": False, "queue_wait_seconds": 0.0, "max_queue_position": None},
+            },
+        ]
+
+        queue_summary = runner._make_queue_summary(results)
+        summary_text = runner._make_summary(results)
+
+        self.assertEqual(queue_summary["total_runs"], 2)
+        self.assertEqual(queue_summary["observed_runs"], 1)
+        self.assertEqual(queue_summary["average_queue_wait_seconds"], 12.5)
+        self.assertEqual(queue_summary["max_queue_wait_seconds"], 12.5)
+        self.assertEqual(queue_summary["worst_queue_position"], 4)
+        self.assertIn("## Queue Overview", summary_text)
+        self.assertIn("Runs with queue observed: 1/2", summary_text)
+        self.assertIn("Worst queue position: 4", summary_text)
+
 
 if __name__ == "__main__":
     unittest.main()
