@@ -162,7 +162,10 @@ execution_state: dict = {}  # keyed by project_id (int)
 execution_state_lock = threading.Lock()
 pipeline_queue = deque()
 scheduler_bootstrap_lock = threading.Lock()
+scheduler_maintenance_lock = threading.Lock()
+scheduler_poller_lock = threading.Lock()
 scheduler_bootstrapped = False
+scheduler_poller_thread: threading.Thread | None = None
 SCHEDULER_WORKER_ID = os.getenv("ARCHON_SCHEDULER_WORKER_ID", f"{socket.gethostname()}:{os.getpid()}")
 
 
@@ -228,6 +231,15 @@ def get_execution_stale_timeout_seconds() -> int:
     except ValueError:
         return 1200
     return max(60, value)
+
+
+def get_scheduler_poll_interval_seconds() -> int:
+    raw = os.getenv("ARCHON_SCHEDULER_POLL_INTERVAL_SECONDS", "15").strip()
+    try:
+        value = int(raw)
+    except ValueError:
+        return 15
+    return max(1, value)
 
 
 def count_running_pipelines() -> int:
@@ -427,12 +439,7 @@ def dispatch_queued_pipelines() -> int:
 
 def release_and_dispatch_pipeline_slot(project_id: int | None) -> None:
     release_pipeline_slot(project_id)
-    dispatch_queued_pipelines()
-    if count_running_pipelines() < get_max_concurrent_pipelines():
-        recover_pending_pipeline_jobs(
-            log_message="Scheduler: Adopted pending pipeline from durable queue.",
-            summary_reason="from durable queue.",
-        )
+    run_scheduler_maintenance_once(source="slot release", recover_stale=False)
 
 def any_pipeline_running() -> bool:
     return count_running_pipelines() > 0
@@ -663,10 +670,76 @@ def recover_pending_pipeline_jobs(
     return recovered
 
 
+def run_scheduler_maintenance_once(*, source: str, recover_stale: bool = True) -> dict[str, int]:
+    results = {
+        "local_dispatched": 0,
+        "stale_recovered": 0,
+        "pending_adopted": 0,
+    }
+    if not scheduler_maintenance_lock.acquire(blocking=False):
+        return results
+
+    try:
+        results["local_dispatched"] = dispatch_queued_pipelines()
+        if recover_stale:
+            results["stale_recovered"] = recover_stale_running_executions()
+        if count_running_pipelines() >= get_max_concurrent_pipelines():
+            return results
+
+        source_label = source.strip() or "scheduler maintenance"
+        results["pending_adopted"] = recover_pending_pipeline_jobs(
+            log_message=f"Scheduler: Adopted pending pipeline from {source_label}.",
+            summary_reason=f"from durable queue via {source_label}.",
+        )
+        return results
+    finally:
+        scheduler_maintenance_lock.release()
+
+
+def scheduler_poller_disabled() -> bool:
+    return os.getenv("ARCHON_DISABLE_SCHEDULER_POLLER", "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def scheduler_poller_loop() -> None:
+    while True:
+        time.sleep(get_scheduler_poll_interval_seconds())
+        if app.config.get("TESTING") or scheduler_poller_disabled():
+            return
+        if os.getenv("ARCHON_DISABLE_PIPELINE_RECOVERY", "").strip().lower() in {"1", "true", "yes", "on"}:
+            return
+        if not scheduler_bootstrapped:
+            continue
+        try:
+            run_scheduler_maintenance_once(source="background poll", recover_stale=True)
+        except Exception as exc:
+            print(f"[Scheduler] Background poller maintenance failed: {exc}")
+
+
+def ensure_scheduler_poller_running() -> None:
+    global scheduler_poller_thread
+
+    if app.config.get("TESTING") or scheduler_poller_disabled():
+        return
+
+    with scheduler_poller_lock:
+        if scheduler_poller_thread and scheduler_poller_thread.is_alive():
+            return
+        scheduler_poller_thread = threading.Thread(
+            target=scheduler_poller_loop,
+            name=f"archon-scheduler-poller-{os.getpid()}",
+            daemon=True,
+        )
+        scheduler_poller_thread.start()
+        print(f"[Scheduler] Started background poller for worker {SCHEDULER_WORKER_ID}.")
+
+
 def ensure_scheduler_bootstrapped() -> None:
     global scheduler_bootstrapped
 
-    if scheduler_bootstrapped or app.config.get("TESTING"):
+    if app.config.get("TESTING"):
+        return
+    if scheduler_bootstrapped:
+        ensure_scheduler_poller_running()
         return
 
     if os.getenv("ARCHON_DISABLE_PIPELINE_RECOVERY", "").strip().lower() in {"1", "true", "yes", "on"}:
@@ -679,6 +752,7 @@ def ensure_scheduler_bootstrapped() -> None:
         recover_stale_running_executions()
         recover_pending_pipeline_jobs()
         scheduler_bootstrapped = True
+        ensure_scheduler_poller_running()
 
 
 def read_json_file(filepath: Path) -> Dict[str, Any] | None:

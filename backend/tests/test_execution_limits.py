@@ -16,6 +16,7 @@ from app import (
     recover_pending_pipeline_jobs,
     recover_stale_running_executions,
     release_and_dispatch_pipeline_slot,
+    run_scheduler_maintenance_once,
     try_claim_execution_for_run,
     utcnow_naive,
 )
@@ -358,6 +359,71 @@ class ExecutionLimitTests(unittest.TestCase):
         self.assertTrue(execution_state[adopted_project_id]["running"])
         self.assertFalse(execution_state[adopted_project_id]["queued"])
         self.assertEqual(len(pipeline_queue), 0)
+
+    def test_run_scheduler_maintenance_once_recovers_stale_and_adopts_pending_work(self):
+        stale_project_id = _create_project(self.client, self.token, "Stale Poller Project", "Build a stale-run dashboard")
+        adopted_project_id = _create_project(self.client, self.token, "Poller Adoption Project", "Build a background queue dashboard")
+        os.environ["ARCHON_EXECUTION_STALE_TIMEOUT_SECONDS"] = "60"
+
+        db = get_session()
+        try:
+            stale_project = db.get(Project, stale_project_id)
+            stale_project.status = "running"
+            stale_execution = Execution(
+                project_id=stale_project_id,
+                owner_id=stale_project.owner_id,
+                status="running",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a stale-run dashboard"}]),
+                is_active_head=True,
+                scheduler_worker_id="stale-worker",
+                scheduler_claimed_at=utcnow_naive() - timedelta(seconds=180),
+                scheduler_heartbeat_at=utcnow_naive() - timedelta(seconds=180),
+            )
+            db.add(stale_execution)
+
+            adopted_project = db.get(Project, adopted_project_id)
+            adopted_project.status = "in_progress"
+            adopted_execution = Execution(
+                project_id=adopted_project_id,
+                owner_id=adopted_project.owner_id,
+                status="pending",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a background queue dashboard"}]),
+                is_active_head=True,
+            )
+            db.add(adopted_execution)
+            db.commit()
+            db.refresh(stale_execution)
+            db.refresh(adopted_execution)
+            stale_execution_id = stale_execution.id
+            adopted_execution_id = adopted_execution.id
+        finally:
+            db.close()
+
+        with mock.patch("app.start_pipeline_job") as start_job:
+            result = run_scheduler_maintenance_once(source="background poll", recover_stale=True)
+
+        self.assertEqual(result["local_dispatched"], 0)
+        self.assertEqual(result["stale_recovered"], 1)
+        self.assertEqual(result["pending_adopted"], 1)
+        start_job.assert_called_once()
+        self.assertEqual(start_job.call_args.args[0]["project_id"], adopted_project_id)
+        self.assertEqual(start_job.call_args.args[0]["execution_id"], adopted_execution_id)
+        self.assertTrue(start_job.call_args.kwargs["from_queue"])
+        self.assertTrue(execution_state[adopted_project_id]["running"])
+        self.assertFalse(execution_state[adopted_project_id]["queued"])
+
+        db = get_session()
+        try:
+            stale_execution = db.get(Execution, stale_execution_id)
+            stale_project = db.get(Project, stale_project_id)
+            self.assertIsNotNone(stale_execution)
+            self.assertEqual(stale_execution.status, "failed")
+            self.assertIsNotNone(stale_project)
+            self.assertEqual(stale_project.status, "failed")
+        finally:
+            db.close()
 
     def test_execute_task_rejects_when_queue_limit_is_full(self):
         running_project_id = _create_project(self.client, self.token, "Running Queue Limit Project")
