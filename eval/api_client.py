@@ -11,7 +11,10 @@ logger = logging.getLogger(__name__)
 
 class BuildError(Exception):
     """Raised when a build fails or times out."""
-    pass
+
+    def __init__(self, message: str, *, telemetry: dict | None = None):
+        super().__init__(message)
+        self.telemetry = telemetry or {}
 
 
 class BuilderAPI:
@@ -134,6 +137,13 @@ class BuilderAPI:
             "execution_id": data["execution_id"],
             "version": data["version"],
             "project_id": data["project_id"],
+            "trigger_status": data.get("status"),
+            "initial_queue_position": data.get("queue_position"),
+            "trigger_scheduler": {
+                "project_queued": data.get("project_queued"),
+                "queued_pipelines": data.get("queued_pipelines"),
+                "active_pipelines": data.get("active_pipelines"),
+            },
         }
 
     def poll_until_done(
@@ -142,6 +152,8 @@ class BuilderAPI:
         timeout: int = 300,
         poll_interval: float = 3.0,
         queue_timeout: int | None = None,
+        started_queued: bool = False,
+        initial_queue_position: int | None = None,
     ) -> dict:
         """Poll GET /api/execution-status until COMPLETED or FAILED.
 
@@ -155,23 +167,46 @@ class BuilderAPI:
         """
         active_timeout = max(1, timeout)
         queue_timeout = max(1, queue_timeout) if queue_timeout is not None else max(active_timeout, 900)
-        active_started_at = time.time()
-        queue_started_at = None
-        queue_active = False
+        now = time.time()
+        active_started_at = now
+        queue_started_at = now if started_queued else None
+        queue_active = started_queued
         last_stage = None
-        last_queue_position = None
+        last_queue_position = initial_queue_position if started_queued else None
+        telemetry = {
+            "queue_observed": started_queued,
+            "queue_wait_seconds": 0.0,
+            "max_queue_position": initial_queue_position,
+            "last_queue_position": last_queue_position,
+            "queue_timeout_seconds": queue_timeout,
+            "active_timeout_seconds": active_timeout,
+            "poll_count": 0,
+            "final_stage": None,
+        }
         params = {}
         if project_id:
             params["project_id"] = project_id
+
+        if started_queued:
+            logger.info("Build initially queued (queue_position=%s)", initial_queue_position)
 
         while True:
             now = time.time()
             if queue_active:
                 queued_for = now - (queue_started_at if queue_started_at is not None else now)
                 if queued_for >= queue_timeout:
-                    raise BuildError(f"Build stayed queued for over {queue_timeout}s")
+                    telemetry["queue_wait_seconds"] = round(queued_for, 1)
+                    telemetry["final_stage"] = last_stage
+                    raise BuildError(
+                        f"Build stayed queued for over {queue_timeout}s",
+                        telemetry=telemetry,
+                    )
             elif now - active_started_at >= active_timeout:
-                raise BuildError(f"Build timed out after {active_timeout}s once active")
+                telemetry["final_stage"] = last_stage
+                raise BuildError(
+                    f"Build timed out after {active_timeout}s once active",
+                    telemetry=telemetry,
+                )
 
             try:
                 resp = self.session.get(self._url("/api/execution-status"), params=params, timeout=10)
@@ -182,12 +217,21 @@ class BuilderAPI:
                 time.sleep(poll_interval)
                 continue
 
+            telemetry["poll_count"] += 1
             status = data.get("status", "")
             stage = data.get("currentStage", "")
             project_queued = bool(data.get("project_queued"))
             queue_position = data.get("queue_position")
 
             if project_queued:
+                telemetry["queue_observed"] = True
+                if queue_position is not None:
+                    previous_max = telemetry.get("max_queue_position")
+                    telemetry["max_queue_position"] = (
+                        queue_position
+                        if previous_max is None
+                        else max(previous_max, queue_position)
+                    )
                 if not queue_active:
                     queue_started_at = time.time()
                     queue_active = True
@@ -196,28 +240,48 @@ class BuilderAPI:
                 elif queue_position != last_queue_position:
                     logger.info("Build still queued (queue_position=%s)", queue_position)
                     last_queue_position = queue_position
+                telemetry["last_queue_position"] = last_queue_position
             elif queue_active:
                 queue_exit_time = time.time()
                 queued_for = queue_exit_time - (
                     queue_started_at if queue_started_at is not None else queue_exit_time
                 )
                 logger.info("Build left queue after %.1fs", queued_for)
+                telemetry["queue_wait_seconds"] = round(queued_for, 1)
                 queue_active = False
                 queue_started_at = None
                 last_queue_position = None
+                telemetry["last_queue_position"] = None
                 active_started_at = queue_exit_time
 
             if stage != last_stage:
                 logger.info(f"Build stage: {stage} (status: {status})")
                 last_stage = stage
+            telemetry["final_stage"] = stage
 
             if status == "COMPLETED":
                 logger.info("Build completed successfully")
+                if queue_active:
+                    completed_at = time.time()
+                    queued_for = completed_at - (
+                        queue_started_at if queue_started_at is not None else completed_at
+                    )
+                    telemetry["queue_wait_seconds"] = round(queued_for, 1)
+                telemetry["active_duration_seconds"] = round(max(time.time() - active_started_at, 0.0), 1)
+                data["queue_telemetry"] = telemetry
                 return data
             elif status == "FAILED":
-                raise BuildError(f"Build failed at stage '{stage}'")
+                if queue_active:
+                    failed_at = time.time()
+                    queued_for = failed_at - (
+                        queue_started_at if queue_started_at is not None else failed_at
+                    )
+                    telemetry["queue_wait_seconds"] = round(queued_for, 1)
+                telemetry["active_duration_seconds"] = round(max(time.time() - active_started_at, 0.0), 1)
+                raise BuildError(f"Build failed at stage '{stage}'", telemetry=telemetry)
 
             time.sleep(poll_interval)
+
     def get_preview_url(self, project_id: int, version: int) -> str:
         """Return the preview URL for a given project/version."""
         return f"{self.base_url}/api/preview/{project_id}/{version}"
@@ -236,12 +300,30 @@ class BuilderAPI:
         """
         project_id = self.create_project(name, description)
         build_info = self.trigger_build(project_id, enqueue_on_limit=enqueue_on_limit)
-        result = self.poll_until_done(project_id=project_id, timeout=timeout, queue_timeout=queue_timeout)
+        try:
+            result = self.poll_until_done(
+                project_id=project_id,
+                timeout=timeout,
+                queue_timeout=queue_timeout,
+                started_queued=build_info.get("trigger_status") == "queued",
+                initial_queue_position=build_info.get("initial_queue_position"),
+            )
+        except BuildError as exc:
+            telemetry = dict(getattr(exc, "telemetry", {}) or {})
+            telemetry.setdefault("trigger_status", build_info.get("trigger_status"))
+            telemetry.setdefault("initial_queue_position", build_info.get("initial_queue_position"))
+            telemetry.setdefault("trigger_scheduler", build_info.get("trigger_scheduler"))
+            raise BuildError(str(exc), telemetry=telemetry) from exc
         preview_url = self.get_preview_url(project_id, build_info["version"])
+        queue_telemetry = dict(result.get("queue_telemetry") or {})
+        queue_telemetry.setdefault("trigger_status", build_info.get("trigger_status"))
+        queue_telemetry.setdefault("initial_queue_position", build_info.get("initial_queue_position"))
+        queue_telemetry.setdefault("trigger_scheduler", build_info.get("trigger_scheduler"))
         return {
             "project_id": project_id,
             "version": build_info["version"],
             "execution_id": build_info["execution_id"],
             "preview_url": preview_url,
             "status": result.get("status"),
+            "queue_telemetry": queue_telemetry,
         }

@@ -64,7 +64,10 @@ class RunComponentizedValidationTests(unittest.TestCase):
             results_dir = Path(td)
 
             def fake_create_and_build_sync(*, base_url, name, description, timeout, enqueue_on_limit, queue_timeout):
-                raise BuildError("simulated failure")
+                raise BuildError(
+                    "simulated failure",
+                    telemetry={"queue_observed": True, "queue_wait_seconds": 8.5, "max_queue_position": 3},
+                )
 
             with mock.patch.object(runner, "_create_and_build_sync", side_effect=fake_create_and_build_sync):
                 result = asyncio.run(
@@ -91,6 +94,8 @@ class RunComponentizedValidationTests(unittest.TestCase):
             written = json.loads(result_path.read_text(encoding="utf-8"))
             self.assertEqual(written["score_error"], "build_failed")
             self.assertEqual(written["build_error"], "simulated failure")
+            self.assertEqual(written["queue_telemetry"]["queue_wait_seconds"], 8.5)
+            self.assertEqual(written["queue_telemetry"]["max_queue_position"], 3)
 
 
 if __name__ == "__main__":

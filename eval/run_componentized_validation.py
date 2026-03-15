@@ -106,6 +106,13 @@ def _make_summary(results: list[dict[str, Any]]) -> str:
         lines.append(f"## {item['archetype']}")
         lines.append(f"- Project: {item.get('project_id')} v{item.get('version')}")
         lines.append(f"- Scaffold mode: {item.get('scaffold_mode')}")
+        queue_telemetry = item.get("queue_telemetry") or {}
+        if queue_telemetry:
+            lines.append(
+                f"- Queue: observed={queue_telemetry.get('queue_observed')} "
+                f"wait={queue_telemetry.get('queue_wait_seconds')}s "
+                f"max_position={queue_telemetry.get('max_queue_position')}"
+            )
         preview_build = item.get("preview_build") or {}
         lines.append(f"- Preview build: {preview_build.get('status')}")
         lines.append(f"- New site: {item.get('preview_path')}")
@@ -204,6 +211,7 @@ async def _run_archetype(
             )
             item["project_id"] = build_result["project_id"]
             item["version"] = build_result["version"]
+            item["queue_telemetry"] = build_result.get("queue_telemetry")
 
             version_dir = ROOT / "generated" / str(build_result["project_id"]) / f"v{build_result['version']}"
             plan_data = _load_plan_data(version_dir) or {}
@@ -260,6 +268,9 @@ async def _run_archetype(
                 )
         except BuildError as exc:
             item["build_error"] = str(exc)
+            telemetry = getattr(exc, "telemetry", None)
+            if telemetry:
+                item["queue_telemetry"] = telemetry
             item["score_error"] = "build_failed"
             item["delta_vs_previous_best"] = None
             logger.warning("Build failed for %s: %s", archetype, exc)

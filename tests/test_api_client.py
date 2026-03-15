@@ -32,6 +32,8 @@ class BuilderAPITests(unittest.TestCase):
 
         self.assertEqual(result["status"], "COMPLETED")
         self.assertEqual(api.session.get.call_count, 3)
+        self.assertTrue(result["queue_telemetry"]["queue_observed"])
+        self.assertEqual(result["queue_telemetry"]["max_queue_position"], 2)
 
     def test_poll_until_done_raises_after_queue_timeout(self):
         api = self._make_api()
@@ -55,6 +57,52 @@ class BuilderAPITests(unittest.TestCase):
                 api.poll_until_done(project_id=101, timeout=30, queue_timeout=1, poll_interval=0.5)
 
         self.assertIn("queued", str(ctx.exception))
+        self.assertEqual(ctx.exception.telemetry["max_queue_position"], 3)
+        self.assertTrue(ctx.exception.telemetry["queue_observed"])
+
+    def test_create_and_build_merges_trigger_and_poll_queue_telemetry(self):
+        api = self._make_api()
+        api.create_project = mock.Mock(return_value=101)
+        api.trigger_build = mock.Mock(
+            return_value={
+                "project_id": 101,
+                "execution_id": 12,
+                "version": 3,
+                "trigger_status": "queued",
+                "initial_queue_position": 4,
+                "trigger_scheduler": {"project_queued": True, "queued_pipelines": 4, "active_pipelines": 2},
+            }
+        )
+        api.poll_until_done = mock.Mock(
+            return_value={
+                "status": "COMPLETED",
+                "queue_telemetry": {
+                    "queue_observed": True,
+                    "queue_wait_seconds": 12.5,
+                    "max_queue_position": 4,
+                    "active_duration_seconds": 34.0,
+                },
+            }
+        )
+
+        result = api.create_and_build(
+            name="Queued Build",
+            description="Build a dashboard",
+            timeout=30,
+            queue_timeout=120,
+            enqueue_on_limit=True,
+        )
+
+        api.poll_until_done.assert_called_once_with(
+            project_id=101,
+            timeout=30,
+            queue_timeout=120,
+            started_queued=True,
+            initial_queue_position=4,
+        )
+        self.assertEqual(result["queue_telemetry"]["trigger_status"], "queued")
+        self.assertEqual(result["queue_telemetry"]["initial_queue_position"], 4)
+        self.assertEqual(result["queue_telemetry"]["queue_wait_seconds"], 12.5)
 
 
 if __name__ == "__main__":
