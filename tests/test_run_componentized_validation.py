@@ -23,6 +23,7 @@ class RunComponentizedValidationTests(unittest.TestCase):
                 description="Build a dashboard",
                 timeout=30,
                 enqueue_on_limit=True,
+                queue_timeout=120,
             )
 
         builder_cls.assert_called_once_with(base_url="http://127.0.0.1:5000")
@@ -31,6 +32,7 @@ class RunComponentizedValidationTests(unittest.TestCase):
             description="Build a dashboard",
             timeout=30,
             enqueue_on_limit=True,
+            queue_timeout=120,
         )
         self.assertEqual(result["project_id"], 1)
 
@@ -61,7 +63,7 @@ class RunComponentizedValidationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             results_dir = Path(td)
 
-            def fake_create_and_build_sync(*, base_url, name, description, timeout, enqueue_on_limit):
+            def fake_create_and_build_sync(*, base_url, name, description, timeout, enqueue_on_limit, queue_timeout):
                 raise BuildError("simulated failure")
 
             with mock.patch.object(runner, "_create_and_build_sync", side_effect=fake_create_and_build_sync):
@@ -73,6 +75,7 @@ class RunComponentizedValidationTests(unittest.TestCase):
                         base_url="http://127.0.0.1:5000",
                         build_timeout=30,
                         enqueue_on_limit=False,
+                        queue_timeout=120,
                         wait_seconds=0,
                         scorer_model="gemini-2.5-flash",
                         semaphore=asyncio.Semaphore(1),

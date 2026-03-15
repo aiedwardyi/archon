@@ -136,23 +136,43 @@ class BuilderAPI:
             "project_id": data["project_id"],
         }
 
-    def poll_until_done(self, project_id: int = None, timeout: int = 300, poll_interval: float = 3.0) -> dict:
+    def poll_until_done(
+        self,
+        project_id: int = None,
+        timeout: int = 300,
+        poll_interval: float = 3.0,
+        queue_timeout: int | None = None,
+    ) -> dict:
         """Poll GET /api/execution-status until COMPLETED or FAILED.
 
         Args:
             project_id: Project ID to poll. If provided, passes as query param.
-            timeout: Max seconds to wait.
+            timeout: Max seconds to wait once the build is actively running.
             poll_interval: Seconds between polls.
+            queue_timeout: Max seconds to tolerate queue waiting before the active build starts.
 
         Returns the final status response dict.
         """
-        start = time.time()
+        active_timeout = max(1, timeout)
+        queue_timeout = max(1, queue_timeout) if queue_timeout is not None else max(active_timeout, 900)
+        active_started_at = time.time()
+        queue_started_at = None
+        queue_active = False
         last_stage = None
+        last_queue_position = None
         params = {}
         if project_id:
             params["project_id"] = project_id
 
-        while time.time() - start < timeout:
+        while True:
+            now = time.time()
+            if queue_active:
+                queued_for = now - (queue_started_at if queue_started_at is not None else now)
+                if queued_for >= queue_timeout:
+                    raise BuildError(f"Build stayed queued for over {queue_timeout}s")
+            elif now - active_started_at >= active_timeout:
+                raise BuildError(f"Build timed out after {active_timeout}s once active")
+
             try:
                 resp = self.session.get(self._url("/api/execution-status"), params=params, timeout=10)
                 resp.raise_for_status()
@@ -164,6 +184,28 @@ class BuilderAPI:
 
             status = data.get("status", "")
             stage = data.get("currentStage", "")
+            project_queued = bool(data.get("project_queued"))
+            queue_position = data.get("queue_position")
+
+            if project_queued:
+                if not queue_active:
+                    queue_started_at = time.time()
+                    queue_active = True
+                    last_queue_position = queue_position
+                    logger.info("Build queued during polling (queue_position=%s)", queue_position)
+                elif queue_position != last_queue_position:
+                    logger.info("Build still queued (queue_position=%s)", queue_position)
+                    last_queue_position = queue_position
+            elif queue_active:
+                queue_exit_time = time.time()
+                queued_for = queue_exit_time - (
+                    queue_started_at if queue_started_at is not None else queue_exit_time
+                )
+                logger.info("Build left queue after %.1fs", queued_for)
+                queue_active = False
+                queue_started_at = None
+                last_queue_position = None
+                active_started_at = queue_exit_time
 
             if stage != last_stage:
                 logger.info(f"Build stage: {stage} (status: {status})")
@@ -176,9 +218,6 @@ class BuilderAPI:
                 raise BuildError(f"Build failed at stage '{stage}'")
 
             time.sleep(poll_interval)
-
-        raise BuildError(f"Build timed out after {timeout}s")
-
     def get_preview_url(self, project_id: int, version: int) -> str:
         """Return the preview URL for a given project/version."""
         return f"{self.base_url}/api/preview/{project_id}/{version}"
@@ -189,6 +228,7 @@ class BuilderAPI:
         description: str,
         timeout: int = 300,
         enqueue_on_limit: bool = False,
+        queue_timeout: int | None = None,
     ) -> dict:
         """Convenience: create project, set description, trigger build, poll to completion.
 
@@ -196,7 +236,7 @@ class BuilderAPI:
         """
         project_id = self.create_project(name, description)
         build_info = self.trigger_build(project_id, enqueue_on_limit=enqueue_on_limit)
-        result = self.poll_until_done(project_id=project_id, timeout=timeout)
+        result = self.poll_until_done(project_id=project_id, timeout=timeout, queue_timeout=queue_timeout)
         preview_url = self.get_preview_url(project_id, build_info["version"])
         return {
             "project_id": project_id,

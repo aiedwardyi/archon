@@ -139,6 +139,7 @@ def _create_and_build_sync(
     description: str,
     timeout: int,
     enqueue_on_limit: bool,
+    queue_timeout: int | None,
 ) -> dict[str, Any]:
     api = BuilderAPI(base_url=base_url)
     return api.create_and_build(
@@ -146,6 +147,7 @@ def _create_and_build_sync(
         description=description,
         timeout=timeout,
         enqueue_on_limit=enqueue_on_limit,
+        queue_timeout=queue_timeout,
     )
 
 
@@ -173,6 +175,7 @@ async def _run_archetype(
     base_url: str,
     build_timeout: int,
     enqueue_on_limit: bool,
+    queue_timeout: int | None,
     wait_seconds: float,
     scorer_model: str,
     semaphore: asyncio.Semaphore,
@@ -197,6 +200,7 @@ async def _run_archetype(
                 description=prompt,
                 timeout=build_timeout,
                 enqueue_on_limit=enqueue_on_limit,
+                queue_timeout=queue_timeout,
             )
             item["project_id"] = build_result["project_id"]
             item["version"] = build_result["version"]
@@ -285,6 +289,7 @@ async def run() -> None:
     parser.add_argument("--max-parallel", type=int, default=1)
     parser.add_argument("--backend-url", default="http://127.0.0.1:5000")
     parser.add_argument("--build-timeout", type=int, default=900)
+    parser.add_argument("--queue-timeout", type=int, default=1800)
     parser.add_argument("--enqueue-on-limit", action="store_true")
     parser.add_argument("--wait-seconds", type=float, default=3.0)
     parser.add_argument("--scorer-model", default="gemini-2.5-flash")
@@ -307,6 +312,7 @@ async def run() -> None:
                 base_url=args.backend_url,
                 build_timeout=args.build_timeout,
                 enqueue_on_limit=args.enqueue_on_limit,
+                queue_timeout=args.queue_timeout,
                 wait_seconds=args.wait_seconds,
                 scorer_model=args.scorer_model,
                 semaphore=semaphore,
