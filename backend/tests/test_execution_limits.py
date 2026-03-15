@@ -227,6 +227,48 @@ class ExecutionLimitTests(unittest.TestCase):
         self.assertEqual(payload["queued_pipelines"], 1)
         self.assertEqual(payload["queue_position"], 1)
 
+    def test_execute_task_rejects_same_project_overlap_from_slot_leased_pending_execution(self):
+        project_id = _create_project(self.client, self.token, "Slot Leased Overlap Project", "Build a dashboard")
+
+        db = get_session()
+        try:
+            project = db.get(Project, project_id)
+            project.status = "in_progress"
+            execution = Execution(
+                project_id=project_id,
+                owner_id=project.owner_id,
+                status="pending",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a dashboard"}]),
+                is_active_head=True,
+            )
+            db.add(execution)
+            db.commit()
+            db.refresh(execution)
+            db.add(PipelineSlotLease(
+                slot_index=1,
+                execution_id=execution.id,
+                worker_id="remote-worker",
+                claimed_at=utcnow_naive(),
+                heartbeat_at=utcnow_naive(),
+            ))
+            db.commit()
+        finally:
+            db.close()
+
+        response = self.client.post(
+            "/api/execute-task",
+            json={"project_id": project_id},
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
+
+        self.assertEqual(response.status_code, 409)
+        payload = response.get_json()
+        self.assertEqual(payload["reason"], "project_running")
+        self.assertTrue(payload["project_running"])
+        self.assertFalse(payload["project_queued"])
+        self.assertEqual(payload["active_pipelines"], 1)
+
     def test_execute_task_restores_execution_when_startup_fails_before_thread_launch(self):
         project_id = _create_project(self.client, self.token, "Startup Failure Project", "Build a startup-safe dashboard")
 
@@ -307,6 +349,57 @@ class ExecutionLimitTests(unittest.TestCase):
                 scheduler_heartbeat_at=utcnow_naive(),
             )
             db.add(execution)
+            db.commit()
+        finally:
+            db.close()
+
+        response = self.client.post(
+            "/api/execute-task",
+            json={"project_id": blocked_project_id},
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
+
+        self.assertEqual(response.status_code, 429)
+        payload = response.get_json()
+        self.assertEqual(payload["reason"], "worker_limit")
+        self.assertEqual(payload["active_pipelines"], 1)
+        self.assertEqual(payload["max_concurrent_pipelines"], 1)
+        self.assertFalse(payload["project_running"])
+
+        db = get_session()
+        try:
+            executions = db.query(Execution).filter(Execution.project_id == blocked_project_id).count()
+            self.assertEqual(executions, 0)
+        finally:
+            db.close()
+
+    def test_execute_task_rejects_when_global_worker_limit_is_full_from_db_slot_lease(self):
+        running_project_id = _create_project(self.client, self.token, "DB Slot Lease Project")
+        blocked_project_id = _create_project(self.client, self.token, "DB Slot Lease Blocked Project", "Build a portfolio")
+        os.environ["ARCHON_MAX_CONCURRENT_PIPELINES"] = "1"
+
+        db = get_session()
+        try:
+            running_project = db.get(Project, running_project_id)
+            running_project.status = "in_progress"
+            execution = Execution(
+                project_id=running_project_id,
+                owner_id=running_project.owner_id,
+                status="pending",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a portfolio"}]),
+                is_active_head=True,
+            )
+            db.add(execution)
+            db.commit()
+            db.refresh(execution)
+            db.add(PipelineSlotLease(
+                slot_index=1,
+                execution_id=execution.id,
+                worker_id="remote-worker",
+                claimed_at=utcnow_naive(),
+                heartbeat_at=utcnow_naive(),
+            ))
             db.commit()
         finally:
             db.close()

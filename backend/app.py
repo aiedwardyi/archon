@@ -310,24 +310,40 @@ def build_scheduler_runtime_snapshot(project_id: int | None = None) -> dict[str,
                 )
             }
 
+        durable_active_execution_ids = {
+            execution_id
+            for (execution_id,) in session.query(PipelineSlotLease.execution_id).all()
+        }
+        durable_active_execution_ids.update(
+            execution_id
+            for (execution_id,) in (
+                session.query(Execution.id)
+                .filter(Execution.status == "running")
+                .all()
+            )
+        )
         local_reserved_running_ids = {
             execution_id
             for execution_id in local["running_execution_ids"]
             if tracked_statuses.get(execution_id) not in {"running", "success", "error", "failed", "completed"}
+            and execution_id not in durable_active_execution_ids
         }
         local_unpersisted_queued_ids = {
             execution_id
             for execution_id in local["queued_execution_ids"]
             if tracked_statuses.get(execution_id) is None
         }
-        db_running_count = session.query(Execution).filter(Execution.status == "running").count()
         pending_rows = (
             session.query(Execution.id, Execution.project_id)
             .filter(Execution.status == "pending", Execution.is_active_head == True)
             .order_by(Execution.created_at.asc(), Execution.id.asc())
             .all()
         )
-        durable_queue_rows = [row for row in pending_rows if row.id not in local_reserved_running_ids]
+        durable_queue_rows = [
+            row
+            for row in pending_rows
+            if row.id not in local_reserved_running_ids and row.id not in durable_active_execution_ids
+        ]
         queue_position_by_project: dict[int, int] = {}
         for index, row in enumerate(durable_queue_rows, start=1):
             queue_position_by_project.setdefault(row.project_id, index)
@@ -351,7 +367,8 @@ def build_scheduler_runtime_snapshot(project_id: int | None = None) -> dict[str,
             if active_head:
                 project_active_execution_id = active_head.id
                 project_db_status = active_head.status
-                if not project_running and project_db_status == "running":
+                project_has_durable_active_slot = project_active_execution_id in durable_active_execution_ids
+                if not project_running and (project_db_status == "running" or project_has_durable_active_slot):
                     project_running = True
                     project_queued = False
                 elif not project_running and project_db_status == "pending":
@@ -364,7 +381,7 @@ def build_scheduler_runtime_snapshot(project_id: int | None = None) -> dict[str,
                     queue_position = None
 
         return {
-            "active_pipelines": db_running_count
+            "active_pipelines": len(durable_active_execution_ids)
             + local["running_without_execution"]
             + len(local_reserved_running_ids),
             "queued_pipelines": len(durable_queue_rows)
@@ -451,9 +468,9 @@ def claim_pipeline_slot(project_id: int, enqueue_on_limit: bool = False) -> str 
             return "project_running"
         if state.get("queued"):
             return "project_queued"
-        if runtime.get("project_db_status") == "running":
+        if runtime["project_running"]:
             return "project_running"
-        if runtime.get("project_db_status") == "pending":
+        if runtime["project_queued"]:
             return "project_queued"
 
         if runtime["active_pipelines"] >= runtime["max_concurrent_pipelines"]:
