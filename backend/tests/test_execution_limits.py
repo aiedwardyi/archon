@@ -12,6 +12,7 @@ from app import (
     SCHEDULER_WORKER_ID,
     app,
     claim_execution_for_pipeline_start,
+    dispatch_queued_pipelines,
     execution_state,
     pipeline_queue,
     recover_pending_pipeline_jobs,
@@ -475,6 +476,68 @@ class ExecutionLimitTests(unittest.TestCase):
         self.assertFalse(execution_state[adopted_project_id]["queued"])
         self.assertEqual(len(pipeline_queue), 0)
 
+    def test_dispatch_queued_pipelines_respects_db_running_worker_limit(self):
+        running_project_id = _create_project(self.client, self.token, "DB Running Dispatch Project")
+        queued_project_id = _create_project(self.client, self.token, "Queued Dispatch Project", "Build a queue-safe dashboard")
+        os.environ["ARCHON_MAX_CONCURRENT_PIPELINES"] = "1"
+
+        db = get_session()
+        try:
+            running_project = db.get(Project, running_project_id)
+            running_project.status = "running"
+            running_execution = Execution(
+                project_id=running_project_id,
+                owner_id=running_project.owner_id,
+                status="running",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a queue-safe dashboard"}]),
+                is_active_head=True,
+                scheduler_worker_id="remote-worker",
+                scheduler_claimed_at=utcnow_naive(),
+                scheduler_heartbeat_at=utcnow_naive(),
+            )
+            db.add(running_execution)
+
+            queued_project = db.get(Project, queued_project_id)
+            queued_project.status = "in_progress"
+            queued_execution = Execution(
+                project_id=queued_project_id,
+                owner_id=queued_project.owner_id,
+                status="pending",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a queue-safe dashboard"}]),
+                is_active_head=True,
+            )
+            db.add(queued_execution)
+            db.commit()
+            db.refresh(queued_execution)
+            queued_execution_id = queued_execution.id
+            queued_created_at = queued_execution.created_at
+        finally:
+            db.close()
+
+        execution_state[queued_project_id] = _queued_state(queued_execution_id)
+        pipeline_queue.append({
+            "project_id": queued_project_id,
+            "execution_id": queued_execution_id,
+            "version": 1,
+            "task_description": "Build a queue-safe dashboard",
+            "prompt_history": [{"role": "user", "content": "Build a queue-safe dashboard"}],
+            "reference_images": None,
+            "nlu_result": {"intent": "build"},
+            "created_at": queued_created_at,
+        })
+
+        with mock.patch("app.start_pipeline_job") as start_job:
+            dispatched = dispatch_queued_pipelines()
+
+        self.assertEqual(dispatched, 0)
+        start_job.assert_not_called()
+        self.assertTrue(execution_state[queued_project_id]["queued"])
+        self.assertFalse(execution_state[queued_project_id]["running"])
+        self.assertEqual(len(pipeline_queue), 1)
+        self.assertEqual(pipeline_queue[0]["project_id"], queued_project_id)
+
     def test_run_scheduler_maintenance_once_recovers_stale_and_adopts_pending_work(self):
         stale_project_id = _create_project(self.client, self.token, "Stale Poller Project", "Build a stale-run dashboard")
         adopted_project_id = _create_project(self.client, self.token, "Poller Adoption Project", "Build a background queue dashboard")
@@ -537,6 +600,62 @@ class ExecutionLimitTests(unittest.TestCase):
             self.assertEqual(stale_execution.status, "failed")
             self.assertIsNotNone(stale_project)
             self.assertEqual(stale_project.status, "failed")
+        finally:
+            db.close()
+
+    def test_run_scheduler_maintenance_once_skips_pending_adoption_when_db_running_at_worker_limit(self):
+        running_project_id = _create_project(self.client, self.token, "Maintenance DB Running Project")
+        pending_project_id = _create_project(self.client, self.token, "Maintenance Deferred Pending Project", "Build a queue-safe dashboard")
+        os.environ["ARCHON_MAX_CONCURRENT_PIPELINES"] = "1"
+
+        db = get_session()
+        try:
+            running_project = db.get(Project, running_project_id)
+            running_project.status = "running"
+            running_execution = Execution(
+                project_id=running_project_id,
+                owner_id=running_project.owner_id,
+                status="running",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a queue-safe dashboard"}]),
+                is_active_head=True,
+                scheduler_worker_id="remote-worker",
+                scheduler_claimed_at=utcnow_naive(),
+                scheduler_heartbeat_at=utcnow_naive(),
+            )
+            db.add(running_execution)
+
+            pending_project = db.get(Project, pending_project_id)
+            pending_project.status = "in_progress"
+            pending_execution = Execution(
+                project_id=pending_project_id,
+                owner_id=pending_project.owner_id,
+                status="pending",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a queue-safe dashboard"}]),
+                is_active_head=True,
+            )
+            db.add(pending_execution)
+            db.commit()
+            db.refresh(pending_execution)
+            pending_execution_id = pending_execution.id
+        finally:
+            db.close()
+
+        with mock.patch("app.start_pipeline_job") as start_job:
+            result = run_scheduler_maintenance_once(source="background poll", recover_stale=False)
+
+        self.assertEqual(result["stale_recovered"], 0)
+        self.assertEqual(result["pending_adopted"], 0)
+        self.assertEqual(result["local_dispatched"], 0)
+        start_job.assert_not_called()
+        self.assertEqual(len(pipeline_queue), 0)
+        self.assertEqual(execution_state, {})
+
+        db = get_session()
+        try:
+            pending_execution = db.get(Execution, pending_execution_id)
+            self.assertEqual(pending_execution.status, "pending")
         finally:
             db.close()
 

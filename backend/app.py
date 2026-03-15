@@ -569,11 +569,15 @@ def start_pipeline_job(job: dict[str, Any], *, from_queue: bool = False) -> bool
 
 
 def dispatch_queued_pipelines() -> int:
+    runtime = build_scheduler_runtime_snapshot()
+    available_slots = max(runtime["max_concurrent_pipelines"] - runtime["active_pipelines"], 0)
+    if available_slots <= 0:
+        return 0
+
     jobs_to_start: list[dict[str, Any]] = []
     with execution_state_lock:
         while (
-            sum(1 for state in execution_state.values() if state.get("running"))
-            < get_max_concurrent_pipelines()
+            available_slots > 0
             and pipeline_queue
         ):
             job = pipeline_queue.popleft()
@@ -589,6 +593,7 @@ def dispatch_queued_pipelines() -> int:
             state["queued_at"] = None
             state["last_heartbeat_at"] = None
             jobs_to_start.append(job)
+            available_slots -= 1
 
     for job in jobs_to_start:
         start_pipeline_job(job, from_queue=True)
@@ -844,8 +849,9 @@ def run_scheduler_maintenance_once(*, source: str, recover_stale: bool = True) -
     try:
         if recover_stale:
             results["stale_recovered"] = recover_stale_running_executions()
+        runtime = build_scheduler_runtime_snapshot()
         source_label = source.strip() or "scheduler maintenance"
-        if count_running_pipelines() < get_max_concurrent_pipelines():
+        if runtime["active_pipelines"] < runtime["max_concurrent_pipelines"]:
             results["pending_adopted"] = recover_pending_pipeline_jobs(
                 log_message=f"Scheduler: Adopted pending pipeline from {source_label}.",
                 summary_reason=f"from durable queue via {source_label}.",
