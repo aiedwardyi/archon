@@ -83,6 +83,10 @@ flask_server.log
 tmp_*.log
 tmp-*.log
 /frontend-consumer-*.png
+.tmp-*/
+.tmp-*.*
+.tmp_*.*
+test-results/
 
 # Eval loop runtime files
 *.pid
