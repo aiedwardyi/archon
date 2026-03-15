@@ -167,6 +167,17 @@ class Execution(Base):
         }
 
 
+class PipelineSlotLease(Base):
+    __tablename__ = "pipeline_slot_leases"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    slot_index = Column(Integer, nullable=False, unique=True, index=True)
+    execution_id = Column(Integer, ForeignKey("executions.id"), nullable=False, unique=True, index=True)
+    worker_id = Column(String(100), nullable=False)
+    claimed_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    heartbeat_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+
 class ImageAsset(Base):
     __tablename__ = "image_assets"
 

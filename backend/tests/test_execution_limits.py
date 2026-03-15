@@ -24,6 +24,7 @@ from app import (
     utcnow_naive,
 )
 from models import Execution, Project, User, get_session
+from models import PipelineSlotLease
 
 
 TEST_PASSWORD = "testpass123"
@@ -95,6 +96,7 @@ class ExecutionLimitTests(unittest.TestCase):
         try:
             user = db.get(User, cls.user_id)
             if user:
+                db.query(PipelineSlotLease).delete(synchronize_session=False)
                 db.query(Execution).filter(Execution.owner_id == user.id).delete(synchronize_session=False)
                 db.query(Project).filter(Project.owner_id == user.id).delete(synchronize_session=False)
                 db.delete(user)
@@ -105,6 +107,7 @@ class ExecutionLimitTests(unittest.TestCase):
     def setUp(self):
         db = get_session()
         try:
+            db.query(PipelineSlotLease).delete(synchronize_session=False)
             db.query(Execution).filter(Execution.owner_id == self.user_id).delete(synchronize_session=False)
             db.query(Project).filter(Project.owner_id == self.user_id).delete(synchronize_session=False)
             db.commit()
@@ -875,11 +878,65 @@ class ExecutionLimitTests(unittest.TestCase):
         db = get_session()
         try:
             execution = db.get(Execution, execution_id)
+            lease = db.query(PipelineSlotLease).filter(PipelineSlotLease.execution_id == execution_id).first()
             self.assertIsNotNone(execution)
             self.assertEqual(execution.status, "running")
             self.assertEqual(execution.scheduler_worker_id, SCHEDULER_WORKER_ID)
             self.assertIsNotNone(execution.scheduler_claimed_at)
             self.assertIsNotNone(execution.scheduler_heartbeat_at)
+            self.assertIsNotNone(lease)
+            self.assertEqual(lease.worker_id, SCHEDULER_WORKER_ID)
+        finally:
+            db.close()
+
+    def test_try_claim_execution_for_run_respects_durable_slot_limit(self):
+        first_project_id = _create_project(self.client, self.token, "First Slot Lease Project", "Build a queue-safe dashboard")
+        second_project_id = _create_project(self.client, self.token, "Second Slot Lease Project", "Build a queue-safe dashboard")
+        os.environ["ARCHON_MAX_CONCURRENT_PIPELINES"] = "1"
+
+        db = get_session()
+        try:
+            first_project = db.get(Project, first_project_id)
+            second_project = db.get(Project, second_project_id)
+            first_execution = Execution(
+                project_id=first_project_id,
+                owner_id=first_project.owner_id,
+                status="pending",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a queue-safe dashboard"}]),
+                is_active_head=True,
+            )
+            second_execution = Execution(
+                project_id=second_project_id,
+                owner_id=second_project.owner_id,
+                status="pending",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a queue-safe dashboard"}]),
+                is_active_head=True,
+            )
+            db.add(first_execution)
+            db.add(second_execution)
+            db.commit()
+            db.refresh(first_execution)
+            db.refresh(second_execution)
+            first_execution_id = first_execution.id
+            second_execution_id = second_execution.id
+        finally:
+            db.close()
+
+        self.assertTrue(try_claim_execution_for_run(first_execution_id))
+        self.assertFalse(try_claim_execution_for_run(second_execution_id))
+
+        db = get_session()
+        try:
+            first_execution = db.get(Execution, first_execution_id)
+            second_execution = db.get(Execution, second_execution_id)
+            leases = db.query(PipelineSlotLease).all()
+            self.assertEqual(first_execution.status, "running")
+            self.assertEqual(second_execution.status, "pending")
+            self.assertEqual(len(leases), 1)
+            self.assertEqual(leases[0].execution_id, first_execution_id)
+            self.assertEqual(leases[0].slot_index, 1)
         finally:
             db.close()
 
@@ -912,9 +969,11 @@ class ExecutionLimitTests(unittest.TestCase):
         db = get_session()
         try:
             execution = db.get(Execution, execution_id)
+            lease = db.query(PipelineSlotLease).filter(PipelineSlotLease.execution_id == execution_id).first()
             self.assertIsNotNone(execution)
             self.assertEqual(execution.status, "running")
             self.assertEqual(execution.scheduler_worker_id, SCHEDULER_WORKER_ID)
+            self.assertIsNotNone(lease)
         finally:
             db.close()
 
@@ -984,6 +1043,14 @@ class ExecutionLimitTests(unittest.TestCase):
             db.commit()
             db.refresh(execution)
             execution_id = execution.id
+            db.add(PipelineSlotLease(
+                slot_index=1,
+                execution_id=execution_id,
+                worker_id="stale-worker",
+                claimed_at=utcnow_naive() - timedelta(seconds=180),
+                heartbeat_at=utcnow_naive() - timedelta(seconds=180),
+            ))
+            db.commit()
         finally:
             db.close()
 
@@ -993,6 +1060,7 @@ class ExecutionLimitTests(unittest.TestCase):
         db = get_session()
         try:
             execution = db.get(Execution, execution_id)
+            lease = db.query(PipelineSlotLease).filter(PipelineSlotLease.execution_id == execution_id).first()
             project = db.get(Project, project_id)
             self.assertIsNotNone(execution)
             self.assertEqual(execution.status, "failed")
@@ -1003,6 +1071,7 @@ class ExecutionLimitTests(unittest.TestCase):
             self.assertIsNone(execution.scheduler_worker_id)
             self.assertIsNone(execution.scheduler_claimed_at)
             self.assertIsNone(execution.scheduler_heartbeat_at)
+            self.assertIsNone(lease)
             self.assertIsNotNone(project)
             self.assertEqual(project.status, "failed")
         finally:

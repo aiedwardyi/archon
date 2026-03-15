@@ -18,12 +18,14 @@ from typing import Any, Dict
 import threading
 import time
 from datetime import datetime, timedelta, timezone
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import object_session
 
 # Suppress SQLAlchemy legacy Query.get() deprecation warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="sqlalchemy")
 
 from flask_jwt_extended import get_jwt_identity, jwt_required, verify_jwt_in_request
-from models import Project, Execution, User, get_session, init_db, get_next_version
+from models import Project, Execution, PipelineSlotLease, User, get_session, init_db, get_next_version
 from auth import auth_bp, claim_guest_project_for_user, init_jwt
 
 # NLU Agent — sentiment + keyword analysis before pipeline routing
@@ -709,8 +711,76 @@ def queued_pipeline_response(
     }), 202
 
 
+def reserve_pipeline_slot_lease(execution_id: int | None) -> str:
+    if execution_id is None:
+        return "missing_execution"
+
+    claimed_at = utcnow_naive()
+    max_slots = get_max_concurrent_pipelines()
+    for slot_index in range(1, max_slots + 1):
+        session = get_session()
+        try:
+            existing = (
+                session.query(PipelineSlotLease)
+                .filter(PipelineSlotLease.execution_id == execution_id)
+                .first()
+            )
+            if existing:
+                return "already_reserved"
+
+            lease = PipelineSlotLease(
+                slot_index=slot_index,
+                execution_id=execution_id,
+                worker_id=SCHEDULER_WORKER_ID,
+                claimed_at=claimed_at,
+                heartbeat_at=claimed_at,
+            )
+            session.add(lease)
+            session.commit()
+            return "reserved"
+        except IntegrityError:
+            session.rollback()
+            existing = (
+                session.query(PipelineSlotLease)
+                .filter(PipelineSlotLease.execution_id == execution_id)
+                .first()
+            )
+            if existing:
+                return "already_reserved"
+        finally:
+            session.close()
+
+    return "worker_limit"
+
+
+def release_pipeline_slot_lease(execution_id: int | None) -> None:
+    if execution_id is None:
+        return
+
+    session = get_session()
+    try:
+        lease = (
+            session.query(PipelineSlotLease)
+            .filter(PipelineSlotLease.execution_id == execution_id)
+            .first()
+        )
+        if not lease:
+            session.rollback()
+            return
+        session.delete(lease)
+        session.commit()
+    except Exception:
+        session.rollback()
+    finally:
+        session.close()
+
+
 def try_claim_execution_for_run(execution_id: int | None) -> bool:
     if execution_id is None:
+        return False
+
+    lease_status = reserve_pipeline_slot_lease(execution_id)
+    if lease_status != "reserved":
         return False
 
     session = get_session()
@@ -731,14 +801,28 @@ def try_claim_execution_for_run(execution_id: int | None) -> bool:
         )
         if not updated:
             session.rollback()
+            release_pipeline_slot_lease(execution_id)
             return False
         session.commit()
         return True
+    except Exception:
+        session.rollback()
+        release_pipeline_slot_lease(execution_id)
+        raise
     finally:
         session.close()
 
 
 def clear_execution_claim(execution: Execution) -> None:
+    session = object_session(execution)
+    if session is not None:
+        lease = (
+            session.query(PipelineSlotLease)
+            .filter(PipelineSlotLease.execution_id == execution.id)
+            .first()
+        )
+        if lease:
+            session.delete(lease)
     execution.scheduler_worker_id = None
     execution.scheduler_claimed_at = None
     execution.scheduler_heartbeat_at = None
@@ -4140,6 +4224,7 @@ def reset_build(project_id):
         ).first()
         if stuck:
             stuck.status = "failed"
+            clear_execution_claim(stuck)
             db.commit()
             return jsonify({"reset": True, "execution_id": stuck.id})
         return jsonify({"reset": False, "message": "No running execution found"})
