@@ -57,6 +57,7 @@ MAIN_BASE_CSS_IMPORT_RE = re.compile(
     r'^\s*import\s+[\"\'][^\"\']*base\.css[\"\'];?\s*(?:(?:/\*.*\*/)|(?://.*))?\s*$',
     re.MULTILINE,
 )
+MAIN_ENTRY_INVALID_IMPORT_NOTE_RE = re.compile(r"^\s*import\s+it(?:\b|[.])", re.IGNORECASE)
 INLINE_COMMENT_RUNON_RE = re.compile(
     r"//\s*([^\n]*?)(?=(?:import\b|const|let|var|function|export\b|return\b|interface\b|type\b|class\b|use[A-Z]\w*|[A-Z][A-Za-z0-9_]*\s*[.(<]))"
 )
@@ -72,16 +73,23 @@ UNTERMINATED_BLOCK_COMMENT_LINE_NOTE_RE = re.compile(
     r"(?P<indent>[ \t]*)/\*\s*(?P<comment>[^*\n]{2,240}?)\s*//\s*(?P<tail>[^*\n]{2,240}?)\s+(?P<code>(?:console\.[A-Za-z_$][\w$]*\s*\(|return\b|const\b|let\b|var\b|if\s*\(|for\s*\(|while\s*\(|switch\s*\(|set[A-Z]\w*\s*\(|[A-Za-z_$][\w$]*\s*=|[A-Za-z_$][\w$]*\s*\())(?P<rest>[^\n]*)",
     re.MULTILINE,
 )
+INLINE_BLOCK_COMMENT_CONTINUATION_RE = re.compile(
+    r"(?m)^(?P<prefix>[^\n]*?)/\*\s*(?P<comment>[^*\n]{2,240}?)\s{2,}(?P<code>(?:[)}\]],?\s*[^\n]*|[A-Za-z_:][-A-Za-z0-9_:.]*=\s*[^\n]*|[A-Za-z_$][\w$]*\s*:\s*[^\n]*|(?:const|let|var|return|if|for|while|switch)\b[^\n]*|set[A-Z]\w*\s*\([^\n]*))(?:\s*//\s*(?P<label>[^*\n]{2,200}?))?\s*(?:\*/)?\s*$",
+    re.MULTILINE,
+)
 INTERFACE_FIELD_COMMENT_BLEED_RE = re.compile(
     r"(?P<field>[A-Za-z_$][\w$]*\??\s*:\s*[^;{}\n]+;)\s*/\*\s*(?P<comment>[^*]*?)\}\s*\*/\s*\n(?=\s*(?:interface|type)\b)",
     re.MULTILINE,
 )
 RUNON_NATURAL_LANGUAGE_NOTE_RE = re.compile(
-    r"(?:(?<=;)|(?<=\n)|^)\s*(?:Return|Note|Explanation)\s*\((?P<note>[^)\n]{2,160})\)\s*(?=(?:const\b|let\b|var\b|return\b|set[A-Z]\w*\b|[A-Za-z_$][\w$]*\s*=))",
+    r"(?:(?<=;)|(?<=\n)|^)\s*(?:Return|Note|Explanation|Data)\s*\((?P<note>[^)\n]{2,160})\)\s*(?=(?:const\b|let\b|var\b|return\b|set[A-Z]\w*\b|[A-Za-z_$][\w$]*\s*=))",
     re.MULTILINE,
 )
 RUNON_EXPLANATORY_LABEL_RE = re.compile(
     r"(?m)^(?P<label>[A-Za-z][A-Za-z0-9/&,\- ':]+(?:\([^)\n]{1,120}\))?)\s{2,}(?=(?:[)}]\s*)*(?:const\b|let\b|var\b|function\b|return\b|set[A-Z]\w*\b|[A-Za-z_$][\w$]*\s*=|[)}]))"
+)
+LOWERCASE_OBJECT_FIELD_LABEL_RE = re.compile(
+    r"(?m)^(?P<indent>[ \t]*)(?P<label>[a-z][A-Za-z0-9/&,\- ']{2,120}?)\s{2,}(?P<field>[A-Za-z_$][\w$]*\s*:\s*[^\n]+)$"
 )
 BARE_SECTION_LABEL_RE = re.compile(
     r"(?m)^(?P<label>[A-Za-z][A-Za-z0-9/&,\- ':]+(?:\([^)\n]{1,120}\))?)\s*$\n(?=\s*(?:/\*|//|const|let|var|function|export|type|interface|class|return|if|for|while|switch|set[A-Z]\w*\(|[A-Za-z_$][\w$]*\(|[)}]))"
@@ -98,13 +106,43 @@ ORPHAN_COMMENT_CLOSE_AFTER_STATEMENT_RE = re.compile(
     r"(?P<stmt>(?:\)\s*;|}\s*;))\s*\*/(?=\s*(?:\r?\n\s*)?(?:const|function|export|type|interface|class|return|$))",
     re.MULTILINE,
 )
+CONTROL_FLOW_ORPHAN_COMMENT_CLOSE_RE = re.compile(
+    r"(?P<prefix>\b(?:if|for|while|switch)\s*\()\s*\*/\s*(?:\r?\n\s*)?",
+    re.MULTILINE,
+)
+BLOCK_COMMENT_SWALLOWED_ARRAY_CLOSE_RE = re.compile(
+    r"/\*\s*(?P<comment>[\s\S]{0,600}?)\];\s*\*/\s*(?=\r?\n\s*(?:export|const|let|var|function|interface|type|class)\b)",
+    re.MULTILINE,
+)
 COMMENT_SPLIT_IDENTIFIER_RE = re.compile(
     r"/\*\s*(?P<comment>[^*]*?)\s{2,}(?P<prefix>[a-z][A-Za-z0-9_$]{1,32})\s*\*/\s*\n(?P<suffix>[A-Z][A-Za-z0-9_$]{1,64})(?P<rest>[^\n]*)",
+    re.MULTILINE,
+)
+ORPHAN_COMMENT_SPLIT_IDENTIFIER_RE = re.compile(
+    r"(?<![A-Za-z0-9_$])(?P<prefix>[a-z][A-Za-z0-9_$]{1,32})\s*\*/\s*\n(?P<indent>[ \t]*)(?P<suffix>[A-Z][A-Za-z0-9_$]{1,64})(?P<rest>[^\n]*)",
+    re.MULTILINE,
+)
+ORPHAN_COMMENT_SPLIT_STRING_LITERAL_RE = re.compile(
+    r"(?P<prefix>(?:\?|:|=|\(|,|\{)\s*)(?P<quote>['\"])\s*\*/\s*\n(?P<indent>[ \t]*)(?P<content>[^'\"\n]{1,120})(?P=quote)",
     re.MULTILINE,
 )
 JSX_BLOCK_COMMENT_BLEED_RE = re.compile(
     r"(?P<open>\(\s*)/\*\s*(?P<comment>[^*]*?)\s{2,}(?P<jsx><[A-Za-z][\s\S]*?)\{(?P<prefix>[a-z][A-Za-z0-9_$]{1,32})\s*\*/\s*\n(?P<indent>[ \t]*)(?P<suffix>[A-Z][A-Za-z0-9_$]{1,64})(?P<rest>[^\n]*)",
     re.MULTILINE,
+)
+JSX_TEXT_COMMENT_CLOSE_BLEED_RE = re.compile(
+    r">(?P<prefix>[^<>{\n]{1,120}?)\s*\*/\s*(?:\r?\n\s*(?:\d+\s*\|\s*)?)?(?P<suffix>[A-Za-z][^<>{\n]{0,120}?)<",
+    re.MULTILINE,
+)
+VOID_JSX_ELEMENT_RE = re.compile(
+    r"(?<![A-Za-z0-9_\"'])<(?P<tag>area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)\b(?P<attrs>[^<>]*?)(?<!/)>",
+    re.IGNORECASE,
+)
+JSX_EVENT_HANDLER_ARROW_BLEED_RE = re.compile(
+    r"(?P<prefix>\bon[A-Z][A-Za-z0-9_]*=\{\s*)(?P<param>\(?\s*[A-Za-z_$][\w$]*\s*\)?)\s*=\s*/>"
+)
+CSS_DATA_URI_ESCAPED_QUOTE_BLEED_RE = re.compile(
+    r"\\'\\''(?=\s+[A-Za-z-]+=)"
 )
 DECLARATION_BOUNDARY_RE = re.compile(
     r"(?<=})(?=(?:interface\b|type\b|const\b|let\b|var\b|function\b|export\b|class\b|return\b))"
@@ -1166,6 +1204,9 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _normalize_componentized_tsconfig(updated)
     elif rel_path == "src/index.css":
         updated = _normalize_componentized_index_css(updated)
+        updated = _repair_componentized_css_data_uri_quote_bleed(updated)
+    elif rel_path.endswith(".css"):
+        updated = _repair_componentized_css_data_uri_quote_bleed(updated)
     elif rel_path.endswith((".ts", ".tsx", ".js", ".jsx")):
         updated = LOCAL_CODE_IMPORT_RE.sub(r"\1\2\4", updated)
         updated = _normalize_componentized_field_aliases(updated)
@@ -1173,14 +1214,21 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_inline_block_comment_code_bleed(updated)
         updated = _repair_block_comment_control_flow_bleed(updated)
         updated = _repair_unterminated_block_comment_line_notes(updated)
+        updated = _repair_inline_block_comment_continuations(updated)
         updated = _normalize_run_on_inline_comments(updated)
         updated = _repair_componentized_comment_split_identifiers(updated)
         updated = _repair_componentized_jsx_block_comment_bleed(updated)
+        updated = _repair_componentized_jsx_text_comment_bleed(updated)
+        updated = _repair_componentized_orphan_comment_split_identifiers(updated)
+        updated = _repair_componentized_orphan_comment_split_string_literals(updated)
+        updated = _normalize_componentized_void_jsx_elements(updated)
         updated = _normalize_componentized_declaration_boundaries(updated)
         updated = _hoist_componentized_chart_helper_declarations(updated)
         updated = _normalize_run_on_natural_language_notes(updated)
+        updated = _normalize_lowercase_object_field_labels(updated)
         updated = _normalize_run_on_explanatory_labels(updated)
         updated = _normalize_bare_section_labels(updated)
+        updated = _repair_componentized_jsx_event_handler_arrow_bleed(updated)
         updated = _repair_componentized_comment_url_bleed(updated)
         updated = _normalize_run_on_imports(updated)
         updated = _normalize_componentized_currency_formatting(updated)
@@ -2044,7 +2092,12 @@ def _build_componentized_polish_guard_runtime(ui_archetype: str) -> str | None:
 
     return (
         f"// Runtime numeric polish guard for {ui_archetype} shells.\n"
+        "// Keep text mutations opt-in so React-managed dashboards do not reconcile against rewritten numeric nodes.\n"
         "const COUNT_SELECTORS = [\n"
+        '  "[data-countup]"\n'
+        "] as const;\n\n"
+        "const MONO_SELECTORS = [\n"
+        '  ...COUNT_SELECTORS,\n'
         '  ".kpi-value",\n'
         '  ".kpi-delta",\n'
         '  ".portfolio-value .value-amount",\n'
@@ -2057,10 +2110,6 @@ def _build_componentized_polish_guard_runtime(ui_archetype: str) -> str | None:
         '  ".news-feed-time",\n'
         '  ".price",\n'
         '  ".delta",\n'
-        '  "[data-countup]"\n'
-        "] as const;\n\n"
-        "const MONO_SELECTORS = [\n"
-        '  ...COUNT_SELECTORS,\n'
         '  ".text-mono",\n'
         '  ".table-cell",\n'
         '  ".candlestick-chart-svg text"\n'
@@ -2403,6 +2452,23 @@ def _repair_unterminated_block_comment_line_notes(source: str) -> str:
     return UNTERMINATED_BLOCK_COMMENT_LINE_NOTE_RE.sub(_repl, source)
 
 
+def _repair_inline_block_comment_continuations(source: str) -> str:
+    def _repl(match: re.Match[str]) -> str:
+        prefix = match.group("prefix").rstrip()
+        comment = " ".join(
+            " ".join(part.split()).strip()
+            for part in (match.group("comment"), match.group("label"))
+            if part and part.strip()
+        ).strip()
+        code = match.group("code").strip()
+        indent_match = re.match(r"[ \t]*", match.group("prefix"))
+        indent = indent_match.group(0) if indent_match else ""
+        comment_block = f"{prefix} /* {comment} */" if prefix else f"{indent}/* {comment} */"
+        return f"{comment_block}\n{indent}{code}"
+
+    return INLINE_BLOCK_COMMENT_CONTINUATION_RE.sub(_repl, source)
+
+
 def _normalize_run_on_natural_language_notes(source: str) -> str:
     return RUNON_NATURAL_LANGUAGE_NOTE_RE.sub(
         lambda match: f"/* {match.group('note').strip()} */\n",
@@ -2413,6 +2479,13 @@ def _normalize_run_on_natural_language_notes(source: str) -> str:
 def _normalize_run_on_explanatory_labels(source: str) -> str:
     return RUNON_EXPLANATORY_LABEL_RE.sub(
         lambda match: f"/* {match.group('label').strip()} */\n",
+        source,
+    )
+
+
+def _normalize_lowercase_object_field_labels(source: str) -> str:
+    return LOWERCASE_OBJECT_FIELD_LABEL_RE.sub(
+        lambda match: f"{match.group('indent')}/* {match.group('label').strip()} */\n{match.group('indent')}{match.group('field').strip()}",
         source,
     )
 
@@ -2445,6 +2518,14 @@ def _repair_componentized_comment_url_bleed(source: str) -> str:
         lambda match: match.group("stmt"),
         updated,
     )
+    updated = CONTROL_FLOW_ORPHAN_COMMENT_CLOSE_RE.sub(
+        lambda match: match.group("prefix"),
+        updated,
+    )
+    updated = BLOCK_COMMENT_SWALLOWED_ARRAY_CLOSE_RE.sub(
+        lambda match: f"/* {' '.join(match.group('comment').split()).strip()} */\n];",
+        updated,
+    )
     return updated
 
 
@@ -2460,6 +2541,26 @@ def _repair_componentized_comment_split_identifiers(source: str) -> str:
     return COMMENT_SPLIT_IDENTIFIER_RE.sub(_repl, source)
 
 
+def _repair_componentized_orphan_comment_split_identifiers(source: str) -> str:
+    def _repl(match: re.Match[str]) -> str:
+        prefix = match.group("prefix").strip()
+        suffix = match.group("suffix").strip()
+        rest = match.group("rest") or ""
+        return f"{prefix}{suffix}{rest}"
+
+    return ORPHAN_COMMENT_SPLIT_IDENTIFIER_RE.sub(_repl, source)
+
+
+def _repair_componentized_orphan_comment_split_string_literals(source: str) -> str:
+    def _repl(match: re.Match[str]) -> str:
+        prefix = match.group("prefix")
+        quote = match.group("quote")
+        content = match.group("content").strip()
+        return f"{prefix}{quote}{content}{quote}"
+
+    return ORPHAN_COMMENT_SPLIT_STRING_LITERAL_RE.sub(_repl, source)
+
+
 def _repair_componentized_jsx_block_comment_bleed(source: str) -> str:
     def _repl(match: re.Match[str]) -> str:
         comment = " ".join(match.group("comment").split()).strip()
@@ -2472,6 +2573,35 @@ def _repair_componentized_jsx_block_comment_bleed(source: str) -> str:
         return f"(\n{comment_block}{indent}{jsx}{{{prefix}{suffix}{rest}"
 
     return JSX_BLOCK_COMMENT_BLEED_RE.sub(_repl, source)
+
+
+def _repair_componentized_jsx_text_comment_bleed(source: str) -> str:
+    def _repl(match: re.Match[str]) -> str:
+        prefix = " ".join(match.group("prefix").split()).strip()
+        suffix = " ".join(match.group("suffix").split()).strip()
+        if not prefix or not suffix:
+            return match.group(0)
+        return f">{prefix} {suffix}<"
+
+    return JSX_TEXT_COMMENT_CLOSE_BLEED_RE.sub(_repl, source)
+
+
+def _normalize_componentized_void_jsx_elements(source: str) -> str:
+    return VOID_JSX_ELEMENT_RE.sub(
+        lambda match: f"<{match.group('tag')}{match.group('attrs').rstrip()} />",
+        source,
+    )
+
+
+def _repair_componentized_css_data_uri_quote_bleed(source: str) -> str:
+    return CSS_DATA_URI_ESCAPED_QUOTE_BLEED_RE.sub(r"\\'", source)
+
+
+def _repair_componentized_jsx_event_handler_arrow_bleed(source: str) -> str:
+    return JSX_EVENT_HANDLER_ARROW_BLEED_RE.sub(
+        lambda match: f"{match.group('prefix')}{match.group('param').strip()} =>",
+        source,
+    )
 
 
 def _normalize_componentized_declaration_boundaries(source: str) -> str:
@@ -2636,6 +2766,8 @@ def _normalize_componentized_main_css_order(source: str) -> str:
         css_match = MAIN_CSS_IMPORT_LINE_RE.match(line)
         if css_match:
             css_imports.append(css_match.group("path"))
+        elif MAIN_ENTRY_INVALID_IMPORT_NOTE_RE.match(stripped):
+            continue
         elif stripped.startswith("import "):
             js_imports.append(line.rstrip())
         else:

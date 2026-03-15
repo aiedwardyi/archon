@@ -1019,6 +1019,9 @@ def build_componentized_refinement_prompt(
         "table_sparse": (
             "- Table density: expand holdings, transaction, or comparison tables so they feel publishable rather than skeletal."
         ),
+        "table_trend_missing": (
+            "- Table trend cues: fintech tables should include clear per-row trend context such as sparklines, mini trendlines, or equivalent visual movement indicators in addition to the numeric columns."
+        ),
         "side_panel_thin": (
             "- Supporting panel density: strict dashboard and finance shells should carry at least two distinct support modules, such as watchlist plus activity, alerts plus news, or allocation plus movers, each with real entries."
         ),
@@ -1238,6 +1241,7 @@ def select_componentized_refinement_scope(
         "chart_missing": ("chart", "recharts", "sparkline", "polyline", "candlestick"),
         "chart_underdeveloped": ("chart", "tooltip", "range", "axis", "grid"),
         "table_sparse": ("table", "holdings", "transactions", "rows", "columns"),
+        "table_trend_missing": ("table", "holdings", "sparkline", "trend", "mini-chart", "history"),
         "side_panel_thin": ("watchlist", "activity", "alerts", "notification", "news", "allocation", "movers", "briefing"),
         "panel_stacking": ("section", "panel", "card", "widget"),
         "interactive_controls": ("onclick", "onchange", "filter", "sort", "selectedrange", "tab"),

@@ -1028,6 +1028,16 @@ def _evaluate_file_content(
             weakness_codes.append("temporal_realism")
             weaknesses.append("The file has limited date or timestamp variety.")
 
+    if (
+        role == "table"
+        and (ui_archetype or "").lower() == "fintech"
+        and (has_inline_seed_data or not prop_driven_component)
+        and not _has_fintech_table_trend_cues(record["content"])
+    ):
+        score -= 18
+        weakness_codes.append("table_trend_missing")
+        weaknesses.append("Fintech tables need explicit row-level trend cues such as sparklines or mini trend markers.")
+
     score = max(score, 0)
     return {
         "path": record["path"],
@@ -1197,6 +1207,26 @@ def _estimate_interactive_control_count(records: list[dict[str, Any]]) -> int:
 def _has_numeric_typography(records: list[dict[str, Any]]) -> bool:
     combined = "\n".join(record["content"].lower() for record in records)
     return any(token in combined for token in ("font-variant-numeric", "tabular-nums", "jetbrains mono", "roboto mono", "dm mono", "space mono", "text-mono"))
+
+
+def _has_fintech_table_trend_cues(source: str) -> bool:
+    normalized = source.lower()
+    explicit_tokens = (
+        "sparkline",
+        "mini-chart",
+        "micro-chart",
+        "trendline",
+        "trend-line",
+        "price history",
+        "trend path",
+    )
+    if any(token in normalized for token in explicit_tokens):
+        return True
+    return bool(
+        re.search(r"\b(?:sparkline|trend|history)\s*:", normalized)
+        or re.search(r"classname\s*=\s*[\"'][^\"']*(?:sparkline|trend)[^\"']*[\"']", source, re.IGNORECASE)
+        or re.search(r"<svg[\s\S]{0,180}(?:sparkline|trend)", source, re.IGNORECASE)
+    )
 
 
 def _duplicate_object_count(records: list[dict[str, Any]]) -> int:
