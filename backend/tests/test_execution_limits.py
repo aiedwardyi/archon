@@ -321,6 +321,44 @@ class ExecutionLimitTests(unittest.TestCase):
         self.assertEqual(execution_state[project_id]["current_execution_id"], execution_id)
         self.assertEqual(len(pipeline_queue), 0)
 
+    def test_release_and_dispatch_pipeline_slot_adopts_pending_database_execution(self):
+        running_project_id = _create_project(self.client, self.token, "Running Durable Queue Project")
+        adopted_project_id = _create_project(self.client, self.token, "Adopted Durable Queue Project", "Build a shared queue dashboard")
+        os.environ["ARCHON_MAX_CONCURRENT_PIPELINES"] = "1"
+
+        db = get_session()
+        try:
+            project = db.get(Project, adopted_project_id)
+            project.status = "in_progress"
+            execution = Execution(
+                project_id=adopted_project_id,
+                owner_id=project.owner_id,
+                status="pending",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a shared queue dashboard"}]),
+                is_active_head=True,
+            )
+            db.add(execution)
+            db.commit()
+            db.refresh(execution)
+            execution_id = execution.id
+        finally:
+            db.close()
+
+        execution_state[running_project_id] = _running_state(1201)
+
+        with mock.patch("app.start_pipeline_job") as start_job:
+            release_and_dispatch_pipeline_slot(running_project_id)
+
+        start_job.assert_called_once()
+        self.assertEqual(start_job.call_args.args[0]["project_id"], adopted_project_id)
+        self.assertEqual(start_job.call_args.args[0]["execution_id"], execution_id)
+        self.assertTrue(start_job.call_args.kwargs["from_queue"])
+        self.assertFalse(execution_state[running_project_id]["running"])
+        self.assertTrue(execution_state[adopted_project_id]["running"])
+        self.assertFalse(execution_state[adopted_project_id]["queued"])
+        self.assertEqual(len(pipeline_queue), 0)
+
     def test_execute_task_rejects_when_queue_limit_is_full(self):
         running_project_id = _create_project(self.client, self.token, "Running Queue Limit Project")
         queued_project_id = _create_project(self.client, self.token, "Queued Queue Limit Project", "Build a portfolio")
@@ -443,6 +481,55 @@ class ExecutionLimitTests(unittest.TestCase):
             self.assertEqual(project.status, "failed")
         finally:
             db.close()
+
+    def test_execution_status_clears_stale_local_queue_after_remote_claim(self):
+        project_id = _create_project(self.client, self.token, "Remote Claim Status Project", "Build a shared dashboard")
+
+        db = get_session()
+        try:
+            project = db.get(Project, project_id)
+            project.status = "in_progress"
+            execution = Execution(
+                project_id=project_id,
+                owner_id=project.owner_id,
+                status="running",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a shared dashboard"}]),
+                is_active_head=True,
+                scheduler_worker_id="other-worker",
+                scheduler_claimed_at=utcnow_naive(),
+                scheduler_heartbeat_at=utcnow_naive(),
+            )
+            db.add(execution)
+            db.commit()
+            db.refresh(execution)
+            execution_id = execution.id
+        finally:
+            db.close()
+
+        execution_state[project_id] = _queued_state(execution_id)
+        pipeline_queue.append({
+            "project_id": project_id,
+            "execution_id": execution_id,
+            "version": 1,
+            "task_description": "Build a shared dashboard",
+            "prompt_history": [{"role": "user", "content": "Build a shared dashboard"}],
+            "reference_images": None,
+            "nlu_result": {"intent": "build"},
+        })
+
+        response = self.client.get(
+            "/api/execution-status",
+            query_string={"project_id": project_id},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["status"], "RUNNING")
+        self.assertFalse(payload["project_queued"])
+        self.assertIsNone(payload["queue_position"])
+        self.assertEqual(len(pipeline_queue), 0)
+        self.assertFalse(execution_state[project_id]["queued"])
 
 
 if __name__ == "__main__":

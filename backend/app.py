@@ -428,6 +428,11 @@ def dispatch_queued_pipelines() -> int:
 def release_and_dispatch_pipeline_slot(project_id: int | None) -> None:
     release_pipeline_slot(project_id)
     dispatch_queued_pipelines()
+    if count_running_pipelines() < get_max_concurrent_pipelines():
+        recover_pending_pipeline_jobs(
+            log_message="Scheduler: Adopted pending pipeline from durable queue.",
+            summary_reason="from durable queue.",
+        )
 
 def any_pipeline_running() -> bool:
     return count_running_pipelines() > 0
@@ -594,7 +599,11 @@ def recover_stale_running_executions() -> int:
     return recovered
 
 
-def recover_pending_pipeline_jobs() -> int:
+def recover_pending_pipeline_jobs(
+    *,
+    log_message: str = "Scheduler: Recovered pending pipeline after backend restart.",
+    summary_reason: str = "from database.",
+) -> int:
     session = get_session()
     recovered = 0
     seen_projects: set[int] = set()
@@ -610,6 +619,12 @@ def recover_pending_pipeline_jobs() -> int:
             project_id = execution.project_id
             if not project_id or project_id in seen_projects or not execution.is_active_head:
                 continue
+
+            with execution_state_lock:
+                state = _ensure_project_state_unlocked(project_id)
+                if state.get("running") or state.get("queued"):
+                    seen_projects.add(project_id)
+                    continue
 
             project = session.get(Project, project_id)
             if not project or project.status not in {"pending", "in_progress", "running"}:
@@ -635,14 +650,15 @@ def recover_pending_pipeline_jobs() -> int:
                 print(f"[Scheduler] Skipping pending execution {execution.id}: {queue_result}")
                 continue
 
-            add_log("Scheduler: Recovered pending pipeline after backend restart.", project_id=project_id)
+            if log_message:
+                add_log(log_message, project_id=project_id)
             recovered += 1
     finally:
         session.close()
 
     if recovered:
         dispatch_queued_pipelines()
-        print(f"[Scheduler] Recovered {recovered} pending pipeline(s) from database.")
+        print(f"[Scheduler] Recovered {recovered} pending pipeline(s) {summary_reason}")
 
     return recovered
 
@@ -4345,7 +4361,6 @@ def execute_task():
 @app.route("/api/execution-status", methods=["GET"])
 def execution_status():
     project_id = request.args.get("project_id", type=int)
-    scheduler = get_scheduler_snapshot(project_id)
 
     # No project_id = return idle (prevents cross-user status leaking)
     if not project_id:
@@ -4356,7 +4371,7 @@ def execution_status():
             "engineerTasks": [],
             "project_id": None,
             "execution_id": None,
-            **scheduler,
+            **get_scheduler_snapshot(project_id),
         }), 200
 
     state = get_project_state(project_id)
@@ -4369,10 +4384,14 @@ def execution_status():
         try:
             execution = session.get(Execution, execution_id)
             if execution:
+                if state.get("queued") and execution.status != "pending":
+                    cancel_queued_pipeline(project_id)
+                    state = get_project_state(project_id)
                 version = execution.version
                 project = session.get(Project, execution.project_id)
                 # 7C.2: DB is ground truth when pipeline not actively running
                 if not state["running"] and execution.status in ("success", "error"):
+                    scheduler = get_scheduler_snapshot(project_id)
                     db_status = "COMPLETED" if execution.status == "success" else "FAILED"
                     return jsonify({
                         "status": db_status,
@@ -4384,8 +4403,21 @@ def execution_status():
                         "execution_id": execution_id,
                         **scheduler,
                     }), 200
+                if not state["running"] and execution.status == "running":
+                    scheduler = get_scheduler_snapshot(project_id)
+                    return jsonify({
+                        "status": "RUNNING",
+                        "currentStage": "pm",
+                        "logs": state.get("logs", []),
+                        "engineerTasks": [],
+                        "locked_ui_archetype": project.locked_ui_archetype if project else None,
+                        "project_id": project_id,
+                        "execution_id": execution_id,
+                        **scheduler,
+                    }), 200
                 # Crash recovery: in-memory says RUNNING but DB was cleaned up on restart
                 if state["running"] and execution.status in ("failed", "error"):
+                    scheduler = get_scheduler_snapshot(project_id)
                     return jsonify({
                         "status": "FAILED",
                         "currentStage": "engineer",
@@ -4425,6 +4457,7 @@ def execution_status():
             break
 
     if data is not None and state.get("result_ready", True):
+        scheduler = get_scheduler_snapshot(project_id)
         raw_status = str(data.get("status", "success")).lower()
         frontend_status = STATUS_MAP.get(raw_status, "COMPLETED")
         return jsonify({
@@ -4439,6 +4472,7 @@ def execution_status():
         }), 200
 
     if state["running"] or state.get("queued"):
+        scheduler = get_scheduler_snapshot(project_id)
         return jsonify({
             "status": "RUNNING",
             "currentStage": current_stage if state["running"] else "pm",
@@ -4450,6 +4484,7 @@ def execution_status():
             **scheduler,
         }), 200
 
+    scheduler = get_scheduler_snapshot(project_id)
     return jsonify({
         "status": "FAILED",
         "currentStage": "complete",
