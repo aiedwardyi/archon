@@ -485,6 +485,41 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_repairs_tsconfig_leading_comma_noise(self):
+        code_dir = _case_dir("componentized-runtime-tsconfig-leading-comma")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "main.tsx").write_text(
+                "import React from 'react';\n"
+                "import ReactDOM from 'react-dom/client';\n"
+                "import App from './App';\n"
+                "ReactDOM.createRoot(document.getElementById('root')!).render(<App />);\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() { return <div>Portfolio</div>; }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "tsconfig.json").write_text(
+                "{\n"
+                '  "compilerOptions": {\n'
+                '    "target": "ES2020",\n'
+                ',    "isolatedModules": true,\n'
+                '    "jsx": "react-jsx"\n'
+                "  }\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            tsconfig_source = (code_dir / "tsconfig.json").read_text(encoding="utf-8")
+            self.assertIn('"isolatedModules": true', tsconfig_source)
+            self.assertNotIn('\n,    "isolatedModules"', tsconfig_source)
+            self.assertIn('"noUnusedLocals": false', tsconfig_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_ensure_componentized_workspace_support_repairs_multiline_run_on_comments(self):
         code_dir = _case_dir("componentized-runtime-multiline-inline-comments")
         try:
@@ -1416,6 +1451,95 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
             self.assertIn("{liveTickers.map((ticker)", app_source)
             self.assertNotIn("live */", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_repeated_orphan_current_target_splits(self):
+        code_dir = _case_dir("componentized-runtime-orphan-current-target-split")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return <img onError={(e) => { e.current */\n"
+                "Target.src='fallback.png'; e.current */\n"
+                "Target.style.backgroundColor='black'; e.currentTarget.style.objectFit='contain'; }} />;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertEqual(app_source.count("currentTarget"), 3)
+            self.assertNotIn("current */", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_orphan_comment_close_inside_string_literals(self):
+        code_dir = _case_dir("componentized-runtime-orphan-string-close")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "ProjectsGrid.tsx").write_text(
+                "export default function ProjectsGrid() {\n"
+                "  const projects = [\n"
+                '    { tech: [" */\n'
+                'Next.js", "D3.js"], image: "https://image.pollinations.ai/prompt/mobile%20meditation%20app%20 */\n'
+                'interface?width=800" },\n'
+                "  ];\n"
+                "  return <div>{projects[0].tech[0]} {projects[0].image}</div>;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            source = (code_dir / "src" / "ProjectsGrid.tsx").read_text(encoding="utf-8")
+            self.assertIn('"Next.js"', source)
+            self.assertIn('"https://image.pollinations.ai/prompt/mobile%20meditation%20app%20interface?width=800"', source)
+            self.assertNotIn('*/\nNext.js"', source)
+            self.assertNotIn(" */\ninterface", source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_merges_comment_filename_labels(self):
+        code_dir = _case_dir("componentized-runtime-comment-filename-label")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "/* Inline StatsBand component for */\n"
+                "App.tsx\n"
+                "const StatsBand = () => <section />;\n"
+                "export default StatsBand;\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("/* Inline StatsBand component for App.tsx */", source)
+            self.assertNotIn("\nApp.tsx\n", source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_comment_tail_split_identifiers(self):
+        code_dir = _case_dir("componentized-runtime-comment-tail-split")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  /* entry.target.class */\n"
+                "List.remove('is-visible');\n"
+                "  return <div />;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("entry.target.classList.remove('is-visible');", source)
+            self.assertNotIn("/* entry.target.class */", source)
+            self.assertNotIn("\nList.remove('is-visible');", source)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 

@@ -95,6 +95,9 @@ LOWERCASE_OBJECT_FIELD_LABEL_RE = re.compile(
 BARE_SECTION_LABEL_RE = re.compile(
     r"(?m)^(?P<label>[A-Za-z][A-Za-z0-9/&,\- ':]+(?:\([^)\n]{1,120}\))?)\s*$\n(?=\s*(?:/\*|//|const|let|var|function|export|type|interface|class|return|if|for|while|switch|set[A-Z]\w*\(|[A-Za-z_$][\w$]*\(|[)}]))"
 )
+COMMENT_FILENAME_LABEL_RE = re.compile(
+    r"(?m)^/\*\s*(?P<comment>[^*\n]{1,200}?)\s*\*/\s*$\n^(?P<filename>[A-Za-z0-9_-]+\.(?:tsx|ts|jsx|js|css|html|json|md))\s*$"
+)
 URL_PROTOCOL_COMMENT_BLEED_RE = re.compile(r"(?P<scheme>https?):/\*\s*")
 ATTR_VALUE_ORPHAN_COMMENT_CLOSE_RE = re.compile(
     r"(?P<attr>[A-Za-z_:][-A-Za-z0-9_:.]*)=(?P<quote>[\"'])\s*\*/\s*"
@@ -119,12 +122,20 @@ COMMENT_SPLIT_IDENTIFIER_RE = re.compile(
     r"/\*\s*(?P<comment>[^*]*?)\s{2,}(?P<prefix>[a-z][A-Za-z0-9_$]{1,32})\s*\*/\s*\n(?P<suffix>[A-Z][A-Za-z0-9_$]{1,64})(?P<rest>[^\n]*)",
     re.MULTILINE,
 )
+COMMENT_TAIL_SPLIT_IDENTIFIER_RE = re.compile(
+    r"/\*\s*(?P<expr>[^*\n]*?\.[a-z][A-Za-z0-9_$]{1,32})\s*\*/\s*\n(?P<suffix>[A-Z][A-Za-z0-9_$]{1,64})(?P<rest>[^\n]*)",
+    re.MULTILINE,
+)
 ORPHAN_COMMENT_SPLIT_IDENTIFIER_RE = re.compile(
     r"(?<![A-Za-z0-9_$])(?P<prefix>[a-z][A-Za-z0-9_$]{1,32})\s*\*/\s*\n(?P<indent>[ \t]*)(?P<suffix>[A-Z][A-Za-z0-9_$]{1,64})(?P<rest>[^\n]*)",
     re.MULTILINE,
 )
 ORPHAN_COMMENT_SPLIT_STRING_LITERAL_RE = re.compile(
     r"(?P<prefix>(?:\?|:|=|\(|,|\{)\s*)(?P<quote>['\"])\s*\*/\s*\n(?P<indent>[ \t]*)(?P<content>[^'\"\n]{1,120})(?P=quote)",
+    re.MULTILINE,
+)
+ORPHAN_COMMENT_CLOSE_IN_STRING_LITERAL_RE = re.compile(
+    r"(?P<prefix>(?:\[|,|:|=|\(|\{)\s*)(?P<quote>['\"])(?P<before>[^'\"\n]*?)\s*\*/\s*\n\s*(?P<after>[^'\"\n]*?)(?P=quote)",
     re.MULTILINE,
 )
 JSX_BLOCK_COMMENT_BLEED_RE = re.compile(
@@ -1222,10 +1233,12 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_inline_block_comment_continuations(updated)
         updated = _normalize_run_on_inline_comments(updated)
         updated = _repair_componentized_comment_split_identifiers(updated)
+        updated = _repair_componentized_comment_tail_split_identifiers(updated)
         updated = _repair_componentized_jsx_block_comment_bleed(updated)
         updated = _repair_componentized_jsx_text_comment_bleed(updated)
         updated = _repair_componentized_orphan_comment_split_identifiers(updated)
         updated = _repair_componentized_orphan_comment_split_string_literals(updated)
+        updated = _repair_componentized_orphan_comment_close_in_string_literals(updated)
         updated = _normalize_componentized_void_jsx_elements(updated)
         updated = _normalize_componentized_declaration_boundaries(updated)
         updated = _hoist_componentized_chart_helper_declarations(updated)
@@ -1233,6 +1246,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _normalize_lowercase_object_field_labels(updated)
         updated = _normalize_run_on_explanatory_labels(updated)
         updated = _normalize_bare_section_labels(updated)
+        updated = _normalize_comment_filename_labels(updated)
         updated = _repair_componentized_jsx_event_handler_arrow_bleed(updated)
         updated = _repair_componentized_comment_url_bleed(updated)
         updated = _normalize_run_on_imports(updated)
@@ -1249,7 +1263,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
 
 
 def _normalize_componentized_package_json(source: str) -> str:
-    candidate = _repair_json_escape_noise(source)
+    candidate = _repair_json_leading_comma_noise(_repair_json_escape_noise(source))
     try:
         data = json.loads(candidate)
     except json.JSONDecodeError:
@@ -1317,6 +1331,10 @@ def _repair_json_escape_noise(source: str) -> str:
     return repaired_source
 
 
+def _repair_json_leading_comma_noise(source: str) -> str:
+    return re.sub(r'(^[ \t]*),([ \t]*(?:"|\{|\[))', r"\1\2", source, flags=re.MULTILINE)
+
+
 def _sync_componentized_package_dependencies(code_dir: Path) -> list[str]:
     package_json_path = code_dir / "package.json"
     if not package_json_path.exists():
@@ -1368,6 +1386,7 @@ def _sync_componentized_package_dependencies(code_dir: Path) -> list[str]:
 
 
 def _normalize_componentized_tsconfig(source: str) -> str:
+    source = _repair_json_leading_comma_noise(_repair_json_escape_noise(source))
     try:
         data = json.loads(source)
     except json.JSONDecodeError:
@@ -2502,6 +2521,13 @@ def _normalize_bare_section_labels(source: str) -> str:
     )
 
 
+def _normalize_comment_filename_labels(source: str) -> str:
+    return COMMENT_FILENAME_LABEL_RE.sub(
+        lambda match: f"/* {match.group('comment').strip()} {match.group('filename').strip()} */",
+        source,
+    )
+
+
 def _repair_componentized_comment_url_bleed(source: str) -> str:
     updated = URL_PROTOCOL_COMMENT_BLEED_RE.sub(
         lambda match: f"{match.group('scheme')}://",
@@ -2546,14 +2572,32 @@ def _repair_componentized_comment_split_identifiers(source: str) -> str:
     return COMMENT_SPLIT_IDENTIFIER_RE.sub(_repl, source)
 
 
-def _repair_componentized_orphan_comment_split_identifiers(source: str) -> str:
-    def _repl(match: re.Match[str]) -> str:
-        prefix = match.group("prefix").strip()
-        suffix = match.group("suffix").strip()
-        rest = match.group("rest") or ""
-        return f"{prefix}{suffix}{rest}"
+def _repair_componentized_comment_tail_split_identifiers(source: str) -> str:
+    return COMMENT_TAIL_SPLIT_IDENTIFIER_RE.sub(
+        lambda match: f"{match.group('expr').strip()}{match.group('suffix').strip()}{match.group('rest') or ''}",
+        source,
+    )
 
-    return ORPHAN_COMMENT_SPLIT_IDENTIFIER_RE.sub(_repl, source)
+
+def _repair_componentized_orphan_comment_split_identifiers(source: str) -> str:
+    updated = source
+
+    for _ in range(8):
+        def _repl(match: re.Match[str]) -> str:
+            line_start = updated.rfind("\n", 0, match.start()) + 1
+            if "/*" in updated[line_start:match.start()]:
+                return match.group(0)
+            prefix = match.group("prefix").strip()
+            suffix = match.group("suffix").strip()
+            rest = match.group("rest") or ""
+            return f"{prefix}{suffix}{rest}"
+
+        repaired = ORPHAN_COMMENT_SPLIT_IDENTIFIER_RE.sub(_repl, updated)
+        if repaired == updated:
+            break
+        updated = repaired
+
+    return updated
 
 
 def _repair_componentized_orphan_comment_split_string_literals(source: str) -> str:
@@ -2564,6 +2608,25 @@ def _repair_componentized_orphan_comment_split_string_literals(source: str) -> s
         return f"{prefix}{quote}{content}{quote}"
 
     return ORPHAN_COMMENT_SPLIT_STRING_LITERAL_RE.sub(_repl, source)
+
+
+def _repair_componentized_orphan_comment_close_in_string_literals(source: str) -> str:
+    updated = source
+
+    for _ in range(8):
+        repaired = ORPHAN_COMMENT_CLOSE_IN_STRING_LITERAL_RE.sub(
+            lambda match: (
+                f"{match.group('prefix')}{match.group('quote')}"
+                f"{match.group('before').rstrip()}{match.group('after').lstrip()}"
+                f"{match.group('quote')}"
+            ),
+            updated,
+        )
+        if repaired == updated:
+            break
+        updated = repaired
+
+    return updated
 
 
 def _repair_componentized_jsx_block_comment_bleed(source: str) -> str:

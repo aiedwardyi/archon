@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import unittest
 from pathlib import Path
 from unittest import mock
 from uuid import uuid4
+
+import requests
 
 from eval.api_client import BuildError
 from eval import run_componentized_validation as runner
@@ -65,6 +68,38 @@ class RunComponentizedValidationTests(unittest.TestCase):
             runner._ensure_backend_available("http://127.0.0.1:5000")
 
         get_mock.assert_called_once_with("http://127.0.0.1:5000/api/health", timeout=5)
+
+    def test_managed_backend_includes_log_tails_on_startup_failure(self):
+        results_dir = _make_scratch_dir("managed-backend-failure")
+        process = mock.Mock()
+        process.poll.return_value = 1
+
+        def fake_popen(*args, **kwargs):
+            Path(kwargs["stdout"].name).write_text("backend stdout line\n", encoding="utf-8")
+            Path(kwargs["stderr"].name).write_text("backend stderr line\n", encoding="utf-8")
+            return process
+
+        with (
+            mock.patch("eval.run_componentized_validation.subprocess.Popen", side_effect=fake_popen),
+            mock.patch(
+                "eval.run_componentized_validation.requests.get",
+                side_effect=requests.RequestException("connection refused"),
+            ),
+            mock.patch("eval.run_componentized_validation.time.sleep"),
+        ):
+            with self.assertRaises(SystemExit) as ctx:
+                with runner._managed_backend(
+                    base_url="http://127.0.0.1:5000",
+                    results_dir=results_dir,
+                    startup_timeout=1,
+                    env_overrides={},
+                ):
+                    self.fail("managed backend context should not yield on startup failure")
+
+        self.assertIn("Backend stdout tail:", str(ctx.exception))
+        self.assertIn("backend stdout line", str(ctx.exception))
+        self.assertIn("Backend stderr tail:", str(ctx.exception))
+        self.assertIn("backend stderr line", str(ctx.exception))
 
     def test_classify_preview_failure_detects_npm_cache_eperm(self):
         preview_failure = runner._classify_preview_failure(
@@ -331,6 +366,51 @@ class RunComponentizedValidationTests(unittest.TestCase):
         )
 
         self.assertIn("Preview failure: npm_cache_eperm (npm cache EPERM while installing dependencies.)", summary_text)
+
+    def test_run_launch_backend_creates_results_dir_before_startup_check(self):
+        temp_root = _make_scratch_dir("launch-backend-run")
+        backend_events: list[tuple[str, object]] = []
+
+        @contextlib.contextmanager
+        def fake_managed_backend(*, base_url, results_dir, startup_timeout, env_overrides):
+            backend_events.append(("managed_backend", results_dir.exists()))
+            yield
+
+        async def fake_run_archetype(**kwargs):
+            return {
+                "archetype": kwargs["archetype"],
+                "project_id": 101,
+                "version": 1,
+                "build_only": True,
+                "scaffold_mode": "componentized",
+                "preview_build": {"status": "success"},
+                "preview_path": "/tmp/dashboard/index.html",
+                "previous_site_path": "/tmp/baseline/index.html",
+                "score_skipped": True,
+                "previous_best_score": 81.0,
+                "previous_best_score_source": "baseline",
+                "delta_vs_previous_best": None,
+                "queue_telemetry": {"queue_observed": False, "queue_wait_seconds": 0.0, "max_queue_position": None},
+            }
+
+        def fake_ensure_backend_available(base_url: str) -> None:
+            backend_events.append(("ensure", base_url))
+
+        with (
+            mock.patch.object(runner, "ROOT", temp_root),
+            mock.patch.object(runner, "DEFAULT_RESULTS_DIR", temp_root / "eval" / "results" / "default"),
+            mock.patch.object(runner, "PROMPTS", {"dashboard": "Build a dashboard"}),
+            mock.patch("sys.argv", ["run_componentized_validation.py", "--launch-backend", "--build-only", "--archetypes", "dashboard", "--label", "launch-backend-test"]),
+            mock.patch.object(runner, "_managed_backend", side_effect=fake_managed_backend),
+            mock.patch.object(runner, "_ensure_backend_available", side_effect=fake_ensure_backend_available),
+            mock.patch.object(runner, "_run_archetype", side_effect=fake_run_archetype),
+        ):
+            asyncio.run(runner.run())
+
+        self.assertEqual(backend_events[0], ("managed_backend", True))
+        self.assertEqual(backend_events[1], ("ensure", "http://127.0.0.1:5000"))
+        self.assertEqual(len([event for event in backend_events if event[0] == "ensure"]), 1)
+        self.assertTrue((temp_root / "eval" / "results" / "launch-backend-test" / "results.json").exists())
 
 
 if __name__ == "__main__":

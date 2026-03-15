@@ -292,7 +292,7 @@ def _managed_backend(
     try:
         _wait_for_backend_available(base_url, startup_timeout=startup_timeout)
         yield
-    except Exception:
+    except BaseException:
         stdout_handle.flush()
         stderr_handle.flush()
         stdout_tail = _tail_text(stdout_path)
@@ -503,8 +503,6 @@ async def run() -> None:
     parser.add_argument("--wait-seconds", type=float, default=3.0)
     parser.add_argument("--scorer-model", default="gemini-2.5-flash")
     args = parser.parse_args()
-
-    await asyncio.to_thread(_ensure_backend_available, args.backend_url)
 
     selected = set(args.archetypes or PROMPTS.keys())
     ordered_archetypes = [name for name in PROMPTS if name in selected]
