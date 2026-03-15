@@ -42,6 +42,7 @@ NON_EDITABLE_COMPONENTIZED_FILENAMES = {
 
 SKIP_DIRS = {
     ".git",
+    ".npm-cache",
     ".vite",
     "__pycache__",
     "assets",
@@ -490,6 +491,10 @@ def build_componentized_preview(
     npm_cmd = "npm.cmd" if os.name == "nt" else "npm"
     env = os.environ.copy()
     env.setdefault("CI", "1")
+    npm_cache_dir = code_dir / ".npm-cache"
+    npm_cache_dir.mkdir(parents=True, exist_ok=True)
+    env.setdefault("npm_config_cache", str(npm_cache_dir))
+    env.setdefault("NPM_CONFIG_CACHE", str(npm_cache_dir))
 
     commands: list[list[str]] = []
     install_required = not (code_dir / "node_modules").exists()
