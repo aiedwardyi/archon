@@ -11,12 +11,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from app import (
     SCHEDULER_WORKER_ID,
     app,
+    claim_execution_for_pipeline_start,
     execution_state,
     pipeline_queue,
     recover_pending_pipeline_jobs,
     recover_stale_running_executions,
     release_and_dispatch_pipeline_slot,
     run_scheduler_maintenance_once,
+    start_pipeline_job,
     try_claim_execution_for_run,
     utcnow_naive,
 )
@@ -664,6 +666,84 @@ class ExecutionLimitTests(unittest.TestCase):
         finally:
             db.close()
 
+    def test_claim_execution_for_pipeline_start_claims_before_thread_launch(self):
+        project_id = _create_project(self.client, self.token, "Preclaim Start Project", "Build a queue-safe dashboard")
+
+        db = get_session()
+        try:
+            project = db.get(Project, project_id)
+            execution = Execution(
+                project_id=project_id,
+                owner_id=project.owner_id,
+                status="pending",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a queue-safe dashboard"}]),
+                is_active_head=True,
+            )
+            db.add(execution)
+            db.commit()
+            db.refresh(execution)
+            execution_id = execution.id
+        finally:
+            db.close()
+
+        execution_state[project_id] = _running_state(execution_id)
+
+        self.assertTrue(claim_execution_for_pipeline_start(project_id, execution_id))
+        self.assertIsNotNone(execution_state[project_id]["last_heartbeat_at"])
+
+        db = get_session()
+        try:
+            execution = db.get(Execution, execution_id)
+            self.assertIsNotNone(execution)
+            self.assertEqual(execution.status, "running")
+            self.assertEqual(execution.scheduler_worker_id, SCHEDULER_WORKER_ID)
+        finally:
+            db.close()
+
+    def test_start_pipeline_job_skips_duplicate_thread_when_execution_already_claimed(self):
+        project_id = _create_project(self.client, self.token, "Duplicate Thread Guard Project", "Build a queue-safe dashboard")
+
+        db = get_session()
+        try:
+            project = db.get(Project, project_id)
+            execution = Execution(
+                project_id=project_id,
+                owner_id=project.owner_id,
+                status="running",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a queue-safe dashboard"}]),
+                is_active_head=True,
+                scheduler_worker_id="remote-worker",
+                scheduler_claimed_at=utcnow_naive(),
+                scheduler_heartbeat_at=utcnow_naive(),
+            )
+            db.add(execution)
+            db.commit()
+            db.refresh(execution)
+            execution_id = execution.id
+        finally:
+            db.close()
+
+        execution_state[project_id] = _running_state(execution_id)
+        job = {
+            "project_id": project_id,
+            "execution_id": execution_id,
+            "version": 1,
+            "task_description": "Build a queue-safe dashboard",
+            "prompt_history": [{"role": "user", "content": "Build a queue-safe dashboard"}],
+            "reference_images": None,
+            "nlu_result": {"intent": "build"},
+        }
+
+        with mock.patch("app.release_and_dispatch_pipeline_slot") as release_slot:
+            with mock.patch("app.threading.Thread") as thread_cls:
+                started = start_pipeline_job(job)
+
+        self.assertFalse(started)
+        release_slot.assert_called_once_with(project_id)
+        thread_cls.assert_not_called()
+
     def test_recover_stale_running_executions_fails_expired_execution(self):
         project_id = _create_project(self.client, self.token, "Stale Recovery Project", "Build a resilient dashboard")
         os.environ["ARCHON_EXECUTION_STALE_TIMEOUT_SECONDS"] = "60"
@@ -708,6 +788,56 @@ class ExecutionLimitTests(unittest.TestCase):
             self.assertIsNone(execution.scheduler_heartbeat_at)
             self.assertIsNotNone(project)
             self.assertEqual(project.status, "failed")
+        finally:
+            db.close()
+
+    def test_start_pipeline_job_preclaims_execution_before_starting_thread(self):
+        project_id = _create_project(self.client, self.token, "Thread Preclaim Project", "Build a queue-safe dashboard")
+
+        db = get_session()
+        try:
+            project = db.get(Project, project_id)
+            execution = Execution(
+                project_id=project_id,
+                owner_id=project.owner_id,
+                status="pending",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a queue-safe dashboard"}]),
+                is_active_head=True,
+            )
+            db.add(execution)
+            db.commit()
+            db.refresh(execution)
+            execution_id = execution.id
+        finally:
+            db.close()
+
+        execution_state[project_id] = _running_state(execution_id)
+        job = {
+            "project_id": project_id,
+            "execution_id": execution_id,
+            "version": 1,
+            "task_description": "Build a queue-safe dashboard",
+            "prompt_history": [{"role": "user", "content": "Build a queue-safe dashboard"}],
+            "reference_images": None,
+            "nlu_result": {"intent": "build"},
+        }
+
+        with mock.patch("app.threading.Thread") as thread_cls:
+            thread_cls.return_value.start.return_value = None
+            started = start_pipeline_job(job)
+
+        self.assertTrue(started)
+        thread_cls.assert_called_once()
+        self.assertTrue(thread_cls.call_args.kwargs["daemon"])
+        self.assertEqual(thread_cls.call_args.kwargs["args"][-1], True)
+
+        db = get_session()
+        try:
+            execution = db.get(Execution, execution_id)
+            self.assertIsNotNone(execution)
+            self.assertEqual(execution.status, "running")
+            self.assertEqual(execution.scheduler_worker_id, SCHEDULER_WORKER_ID)
         finally:
             db.close()
 

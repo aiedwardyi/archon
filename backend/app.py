@@ -508,10 +508,29 @@ def queue_pipeline_job(job: dict[str, Any]) -> int | str:
         return len(pipeline_queue)
 
 
-def start_pipeline_job(job: dict[str, Any], *, from_queue: bool = False) -> None:
+def claim_execution_for_pipeline_start(project_id: int, execution_id: int | None) -> bool:
+    if execution_id is None:
+        return True
+    if not try_claim_execution_for_run(execution_id):
+        print(
+            f"[Scheduler] Execution {execution_id} was already claimed or is no longer pending; "
+            "skipping duplicate local worker start."
+        )
+        release_and_dispatch_pipeline_slot(project_id)
+        return False
+    with execution_state_lock:
+        _ensure_project_state_unlocked(project_id)["last_heartbeat_at"] = time.time()
+    return True
+
+
+def start_pipeline_job(job: dict[str, Any], *, from_queue: bool = False) -> bool:
     project_id = job["project_id"]
+    execution_id = job.get("execution_id")
     version = job.get("version")
     task_description = job["task_description"]
+
+    if not claim_execution_for_pipeline_start(project_id, execution_id):
+        return False
 
     if from_queue:
         add_log("Scheduler: Dequeued pipeline and starting execution.", project_id=project_id)
@@ -525,10 +544,12 @@ def start_pipeline_job(job: dict[str, Any], *, from_queue: bool = False) -> None
             project_id,
             job.get("reference_images"),
             job.get("nlu_result"),
+            True,
         ),
         daemon=True,
     )
     thread.start()
+    return True
 
 
 def dispatch_queued_pipelines() -> int:
@@ -2582,6 +2603,7 @@ def run_full_pipeline_async(
     project_id: int = None,
     reference_images: list = None,
     nlu_context: dict | None = None,
+    execution_preclaimed: bool = False,
 ):
     state = get_project_state(project_id)
 
@@ -2594,14 +2616,15 @@ def run_full_pipeline_async(
 
     try:
         if execution_id:
-            if not try_claim_execution_for_run(execution_id):
-                print(
-                    f"[Scheduler] Execution {execution_id} was already claimed or is no longer pending; "
-                    "skipping duplicate local worker."
-                )
-                return
-            with execution_state_lock:
-                _ensure_project_state_unlocked(project_id)["last_heartbeat_at"] = time.time()
+            if not execution_preclaimed:
+                if not try_claim_execution_for_run(execution_id):
+                    print(
+                        f"[Scheduler] Execution {execution_id} was already claimed or is no longer pending; "
+                        "skipping duplicate local worker."
+                    )
+                    return
+                with execution_state_lock:
+                    _ensure_project_state_unlocked(project_id)["last_heartbeat_at"] = time.time()
 
         version = None
         if execution_id:
