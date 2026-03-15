@@ -197,6 +197,20 @@ Current work on `feat/componentized-builder-pipeline`:
   Stage 2: add backend protections so the same project cannot run twice concurrently, plus a global worker limit.
   Stage 3: move queued/running job state off process-local memory toward durable coordination suitable for production scaling.
 
+### Branch Update — Componentized Multi-Run Experiments
+
+Current work on `feat/componentized-multi-run-experiments`:
+- Branch created from `feat/componentized-builder-pipeline` after the March 15, 2026 documentation checkpoint so the validated builder/runtime recovery path remains a safe fallback.
+- Added a tracked Stage 1 multi-run runner at `eval/run_componentized_validation.py` instead of relying on the untracked temp validation script.
+- Runner capabilities now include bounded concurrency via `--max-parallel`, one `BuilderAPI` client per worker, lazy scorer imports so CLI help and non-scoring paths do not fail on optional scorer deps, backend health checks that do not require auth bootstrap, and per-archetype result artifacts plus timestamped logs for long-running smoke tests.
+- Added targeted regression coverage in `tests/test_run_componentized_validation.py` for preview-build fallback loading, backend health acceptance of 401, and result-file emission on build failure.
+- March 15, 2026 local smoke-run evidence: with `--archetypes dashboard portfolio --max-parallel 2`, project 424 / execution 430 and project 425 / execution 431 authenticated independently, created separate projects, and progressed through `pm`, `planner`, and `engineer` concurrently, confirming the eval driver can overlap distinct-project runs on the current backend.
+- Current blocker is no longer the eval driver. The remaining production-scaling risks are backend-side: same-project exclusion is still missing on `/api/execute-task`, worker coordination is still process-local, and SQLite remains the durability bottleneck under heavier concurrent writes.
+- Next roadmap on this branch:
+  Stage 1a: finish the local smoke run and retain only repo-safe runner/test/doc changes.
+  Stage 2: add backend same-project exclusion plus a global worker cap.
+  Stage 3: move queued/running job state into durable coordination suitable for multi-process production scaling.
+
 ### Phase 9 — Pipeline Page & Classifier Improvements (⬜ Planned)
 - ✅ Classifier too sensitive — opinion questions triggering builds
 - Chat panel needs max-height + scrollable container

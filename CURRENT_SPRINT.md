@@ -1,8 +1,13 @@
 # Current Sprint
 
-## Branch Alignment — `feat/componentized-builder-pipeline`
+## Branch Alignment — `feat/componentized-multi-run-experiments`
 
 Short status update for the active branch:
+- This branch was cut from `feat/componentized-builder-pipeline` after the March 15, 2026 dashboard/runtime recovery docs checkpoint so the validated builder work remains intact while scheduler experiments stay isolated.
+- Added a tracked Stage 1 multi-run validation runner at `eval/run_componentized_validation.py` with bounded concurrency, isolated API clients per worker, lazy scorer-only imports, backend reachability checks that do not require auth bootstrapping, and per-archetype progress/result artifacts for smoke-run debugging.
+- Added targeted regression coverage in `tests/test_run_componentized_validation.py` for preview-build fallback loading, backend health acceptance of 401, and result-file emission on build failure.
+- March 15, 2026 bounded-parallel smoke-run status on this branch: `dashboard` (project 424 / execution 430) and `portfolio` (project 425 / execution 431) started within the same second, authenticated independently, created separate projects, and advanced through `pm`, `planner`, and `engineer` concurrently under `--max-parallel 2`, confirming that bounded parallel validation is viable locally across different projects.
+- Current gap on this branch: Stage 1 proves the eval driver can overlap builds safely enough for local experimentation, but production-safe multi-run still needs backend hardening for same-project exclusion on `/api/execute-task`, a global worker limit, and durable queued/running coordination beyond process-local memory and SQLite write contention.
 - Added a dual-path builder: legacy single-page fallback remains, while app-like requests can now generate a componentized React + TypeScript + Vite workspace.
 - Updated planner/schema/backend flow to support multi-file scaffolds, multi-file iteration context, preview builds, and scoped file repair.
 - Added visual direction persistence plus iteration identity locks so later edits preserve fonts, colors, spacing direction, and key interactive patterns.
@@ -17,9 +22,8 @@ Short status update for the active branch:
 - Added a runtime shell layout guard for fixed-sidebar grid dashboards plus broader watchlist/activity/button polish coverage so collapsed preview shells can recover before scoring.
 - Added safer fintech polish-guard runtime behavior plus broader componentized syntax recovery for JSX handler bleed, main-entry import-note bleed, control-flow comment-close bleed, and swallowed array terminators so delayed preview capture no longer collapses rendered fintech shells and malformed support files recover more often.
 - Current gap: the dashboard 900s timeout is fixed, and March 15, 2026 reruns now stepped from 73.5 in `support_module_gate_v10_dashboard_layout_guard` to 76.0 in `support_module_gate_v18_dashboard_title_activity_guard` and then 82.0 in `support_module_gate_v20_dashboard_panel_distinction_guard`, clearing the 81.0 branch benchmark; fintech still trails its benchmark, with the best recent scoreable retry holding at 72.5 in `support_module_gate_v16_fintech_typography_feed_guard_safe_retry`. The March 15, 2026 `support_module_gate_v34_fintech_table_trend_prompt_retry` black-screen path is now fixed locally by the safer polish runtime, but the follow-up rerun `support_module_gate_v35_fintech_table_trend_prompt_capture_fix` surfaced a separate generated syntax family before preview, so it did not produce a new scoreable fintech checkpoint.
-- Branch strategy: keep `main` as the broad stable baseline, keep `feat/componentized-builder-pipeline` as the current builder-pipeline checkpoint, and branch next experimental work off this branch rather than off `main` so the validated dashboard/runtime recovery work remains intact while multi-run scheduling changes are isolated.
-- Proposed next branch: `feat/componentized-multi-run-experiments`.
-- Proposed next task on that branch: add bounded parallel validation runs first, then harden backend scheduling with per-project exclusion, a global worker cap, and durable queued/running state so multi-run evaluation can scale toward production use without corrupting pipeline state.
+- Branch strategy: keep `main` as the broad stable baseline, keep `feat/componentized-builder-pipeline` as the validated builder-pipeline checkpoint, and use `feat/componentized-multi-run-experiments` for scheduler/concurrency work so the parallel-eval path can evolve without destabilizing the recovery-heavy builder branch.
+- Active task on this branch: finish Stage 1 runner validation, then move to backend protections for per-project exclusion, a global worker cap, and durable queued/running state so multi-run evaluation can scale toward production use without corrupting pipeline state.
 
 ## Completed Phases
 
