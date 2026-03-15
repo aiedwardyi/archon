@@ -554,6 +554,32 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_comments_bare_section_labels_before_comment_blocks(self):
+        code_dir = _case_dir("componentized-runtime-bare-section-labels-before-comments")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "import React from 'react';\n"
+                "const CandlestickChart: React.FC = () => {\n"
+                "Component (static for now)\n"
+                "  /* Data for 12 candlesticks */\n"
+                "  const data = [{ o: 50, c: 55 }];\n"
+                "  return <div>{data.length}</div>;\n"
+                "};\n"
+                "export default function App() { return <CandlestickChart />; }\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("/* Component (static for now) */", app_source)
+            self.assertIn("/* Data for 12 candlesticks */", app_source)
+            self.assertIn("const data = [{ o: 50, c: 55 }];", app_source)
+            self.assertNotIn("\nComponent (static for now)\n", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_ensure_componentized_workspace_support_comments_run_on_explanatory_labels(self):
         code_dir = _case_dir("componentized-runtime-run-on-explanatory-labels")
         try:

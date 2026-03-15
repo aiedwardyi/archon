@@ -84,7 +84,7 @@ RUNON_EXPLANATORY_LABEL_RE = re.compile(
     r"(?m)^(?P<label>[A-Za-z][A-Za-z0-9/&,\- ':]+(?:\([^)\n]{1,120}\))?)\s{2,}(?=(?:[)}]\s*)*(?:const\b|let\b|var\b|function\b|return\b|set[A-Z]\w*\b|[A-Za-z_$][\w$]*\s*=|[)}]))"
 )
 BARE_SECTION_LABEL_RE = re.compile(
-    r"(?m)^(?P<label>[A-Za-z][A-Za-z0-9/&,\- ':]+(?:\([^)\n]{1,120}\))?)\s*$\n(?=\s*(?:const|let|var|function|export|type|interface|class|return|if|for|while|switch|set[A-Z]\w*\(|[A-Za-z_$][\w$]*\(|[)}]))"
+    r"(?m)^(?P<label>[A-Za-z][A-Za-z0-9/&,\- ':]+(?:\([^)\n]{1,120}\))?)\s*$\n(?=\s*(?:/\*|//|const|let|var|function|export|type|interface|class|return|if|for|while|switch|set[A-Z]\w*\(|[A-Za-z_$][\w$]*\(|[)}]))"
 )
 URL_PROTOCOL_COMMENT_BLEED_RE = re.compile(r"(?P<scheme>https?):/\*\s*")
 ATTR_VALUE_ORPHAN_COMMENT_CLOSE_RE = re.compile(
