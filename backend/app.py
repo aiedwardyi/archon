@@ -533,6 +533,24 @@ def cancel_queued_pipeline(project_id: int | None) -> None:
         state["last_heartbeat_at"] = None
 
 
+def _remove_queued_jobs_unlocked(
+    *,
+    execution_ids: set[int] | None = None,
+    project_ids: set[int] | None = None,
+) -> None:
+    if not pipeline_queue:
+        return
+    execution_ids = execution_ids or set()
+    project_ids = project_ids or set()
+    remaining_jobs = [
+        job
+        for job in pipeline_queue
+        if job.get("execution_id") not in execution_ids and job.get("project_id") not in project_ids
+    ]
+    pipeline_queue.clear()
+    pipeline_queue.extend(remaining_jobs)
+
+
 def coerce_bool(value: Any) -> bool:
     if isinstance(value, bool):
         return value
@@ -702,18 +720,62 @@ def dispatch_queued_pipelines() -> int:
 
     jobs_to_start: list[dict[str, Any]] = []
     started_execution_ids: set[int] = set()
+    started_project_ids: set[int] = set()
     adopted_project_ids: list[int] = []
+    queued_execution_ids: set[int] = set()
     with execution_state_lock:
-        while (
-            available_slots > 0
-            and pipeline_queue
-        ):
-            job = pipeline_queue.popleft()
+        queued_execution_ids = {
+            job.get("execution_id")
+            for job in pipeline_queue
+            if job.get("execution_id") is not None
+        }
+
+    adopted_jobs = collect_pending_jobs_for_dispatch(limit=available_slots)
+    with execution_state_lock:
+        for job in adopted_jobs:
+            if available_slots <= 0:
+                break
             project_id = job.get("project_id")
+            execution_id = job.get("execution_id")
             if project_id is None:
                 continue
             state = _ensure_project_state_unlocked(project_id)
-            if not state.get("queued"):
+            if state.get("running"):
+                continue
+            current_execution_id = state.get("current_execution_id")
+            if state.get("queued") and current_execution_id not in {None, execution_id}:
+                continue
+            state["queued"] = False
+            state["running"] = True
+            state["started_at"] = time.time()
+            state["queued_at"] = None
+            state["last_heartbeat_at"] = None
+            state["result_ready"] = False
+            state["current_execution_id"] = execution_id
+            jobs_to_start.append(job)
+            if execution_id is not None:
+                started_execution_ids.add(execution_id)
+            started_project_ids.add(project_id)
+            if execution_id not in queued_execution_ids:
+                adopted_project_ids.append(project_id)
+            available_slots -= 1
+
+        if started_execution_ids or started_project_ids:
+            _remove_queued_jobs_unlocked(
+                execution_ids=started_execution_ids,
+                project_ids=started_project_ids,
+            )
+
+        while available_slots > 0 and pipeline_queue:
+            job = pipeline_queue.popleft()
+            project_id = job.get("project_id")
+            execution_id = job.get("execution_id")
+            if project_id is None or project_id in started_project_ids:
+                continue
+            if execution_id in started_execution_ids:
+                continue
+            state = _ensure_project_state_unlocked(project_id)
+            if not state.get("queued") or state.get("running"):
                 continue
             state["queued"] = False
             state["running"] = True
@@ -721,40 +783,10 @@ def dispatch_queued_pipelines() -> int:
             state["queued_at"] = None
             state["last_heartbeat_at"] = None
             jobs_to_start.append(job)
-            execution_id = job.get("execution_id")
             if execution_id is not None:
                 started_execution_ids.add(execution_id)
+            started_project_ids.add(project_id)
             available_slots -= 1
-
-    adopted_jobs = collect_pending_jobs_for_dispatch(
-        limit=available_slots,
-        exclude_execution_ids=started_execution_ids,
-    )
-    if adopted_jobs:
-        with execution_state_lock:
-            for job in adopted_jobs:
-                if available_slots <= 0:
-                    break
-                project_id = job.get("project_id")
-                execution_id = job.get("execution_id")
-                if project_id is None:
-                    continue
-                state = _ensure_project_state_unlocked(project_id)
-                if state.get("running"):
-                    continue
-                current_execution_id = state.get("current_execution_id")
-                if state.get("queued") and current_execution_id not in {None, execution_id}:
-                    continue
-                state["queued"] = False
-                state["running"] = True
-                state["started_at"] = time.time()
-                state["queued_at"] = None
-                state["last_heartbeat_at"] = None
-                state["result_ready"] = False
-                state["current_execution_id"] = execution_id
-                jobs_to_start.append(job)
-                adopted_project_ids.append(project_id)
-                available_slots -= 1
 
     for project_id in adopted_project_ids:
         add_log("Scheduler: Adopted pending pipeline from durable queue.", project_id=project_id)
