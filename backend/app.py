@@ -160,6 +160,8 @@ SEED_PROJECTS = [
 execution_state: dict = {}  # keyed by project_id (int)
 execution_state_lock = threading.Lock()
 pipeline_queue = deque()
+scheduler_bootstrap_lock = threading.Lock()
+scheduler_bootstrapped = False
 
 
 def _default_project_state() -> dict[str, Any]:
@@ -428,6 +430,76 @@ def queued_pipeline_response(
     }), 202
 
 
+def recover_pending_pipeline_jobs() -> int:
+    session = get_session()
+    recovered = 0
+    seen_projects: set[int] = set()
+    try:
+        pending_executions = (
+            session.query(Execution)
+            .filter(Execution.status == "pending")
+            .order_by(Execution.created_at.asc(), Execution.id.asc())
+            .all()
+        )
+
+        for execution in pending_executions:
+            project_id = execution.project_id
+            if not project_id or project_id in seen_projects or not execution.is_active_head:
+                continue
+
+            project = session.get(Project, project_id)
+            if not project or project.status not in {"pending", "in_progress", "running"}:
+                continue
+
+            prompt_history = load_execution_prompt_history(execution)
+            job = {
+                "project_id": project_id,
+                "execution_id": execution.id,
+                "version": execution.version,
+                "task_description": derive_execution_task_description(project, prompt_history),
+                "prompt_history": prompt_history,
+                "reference_images": collect_execution_reference_images(project_id, execution.version),
+                "nlu_result": None,
+            }
+
+            seen_projects.add(project_id)
+            attach_execution_to_state(project_id, execution.id)
+            queue_result = queue_pipeline_job(job)
+            if isinstance(queue_result, str):
+                attach_execution_to_state(project_id, None)
+                cancel_queued_pipeline(project_id)
+                print(f"[Scheduler] Skipping pending execution {execution.id}: {queue_result}")
+                continue
+
+            add_log("Scheduler: Recovered pending pipeline after backend restart.", project_id=project_id)
+            recovered += 1
+    finally:
+        session.close()
+
+    if recovered:
+        dispatch_queued_pipelines()
+        print(f"[Scheduler] Recovered {recovered} pending pipeline(s) from database.")
+
+    return recovered
+
+
+def ensure_scheduler_bootstrapped() -> None:
+    global scheduler_bootstrapped
+
+    if scheduler_bootstrapped or app.config.get("TESTING"):
+        return
+
+    if os.getenv("ARCHON_DISABLE_PIPELINE_RECOVERY", "").strip().lower() in {"1", "true", "yes", "on"}:
+        scheduler_bootstrapped = True
+        return
+
+    with scheduler_bootstrap_lock:
+        if scheduler_bootstrapped:
+            return
+        recover_pending_pipeline_jobs()
+        scheduler_bootstrapped = True
+
+
 def read_json_file(filepath: Path) -> Dict[str, Any] | None:
     try:
         if not filepath.exists():
@@ -465,6 +537,40 @@ def add_log(message: str, log_type: str = "info", project_id: int = None):
         "message": message,
         "type": log_type,
     })
+
+
+def load_execution_prompt_history(execution: Execution) -> list[dict[str, Any]]:
+    if not execution.prompt_history:
+        return []
+    try:
+        history = json.loads(execution.prompt_history)
+    except Exception:
+        return []
+    return history if isinstance(history, list) else []
+
+
+def derive_execution_task_description(project: Project, prompt_history: list[dict[str, Any]]) -> str:
+    for entry in reversed(prompt_history):
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("role") == "user" and entry.get("content"):
+            return str(entry["content"]).strip()
+
+    description = (project.description or "").strip()
+    if description:
+        return description
+    return (project.name or "").strip() or "Continue the queued build"
+
+
+def collect_execution_reference_images(project_id: int, version: int | None) -> list[str]:
+    if not project_id or not version:
+        return []
+
+    refs_dir = get_version_dir(project_id, version) / "references"
+    if not refs_dir.exists():
+        return []
+
+    return [str(path.resolve()) for path in sorted(refs_dir.iterdir()) if path.is_file()]
 
 
 def get_version_dir(project_id: int, version: int) -> Path:
@@ -3266,6 +3372,11 @@ def run_full_pipeline_async(
         release_and_dispatch_pipeline_slot(project_id)
         session.close()
         print("Pipeline complete")
+
+
+@app.before_request
+def bootstrap_scheduler_once():
+    ensure_scheduler_bootstrapped()
 
 
 # ============================================================================

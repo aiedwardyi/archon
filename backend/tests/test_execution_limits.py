@@ -2,11 +2,18 @@ import os
 import sys
 import unittest
 import uuid
+import json
 from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from app import app, execution_state, pipeline_queue, release_and_dispatch_pipeline_slot
+from app import (
+    app,
+    execution_state,
+    pipeline_queue,
+    recover_pending_pipeline_jobs,
+    release_and_dispatch_pipeline_slot,
+)
 from models import Execution, Project, User, get_session
 
 
@@ -85,6 +92,13 @@ class ExecutionLimitTests(unittest.TestCase):
             db.close()
 
     def setUp(self):
+        db = get_session()
+        try:
+            db.query(Execution).filter(Execution.owner_id == self.user_id).delete(synchronize_session=False)
+            db.query(Project).filter(Project.owner_id == self.user_id).delete(synchronize_session=False)
+            db.commit()
+        finally:
+            db.close()
         execution_state.clear()
         pipeline_queue.clear()
         self._old_worker_limit = os.environ.get("ARCHON_MAX_CONCURRENT_PIPELINES")
@@ -251,6 +265,43 @@ class ExecutionLimitTests(unittest.TestCase):
         self.assertFalse(execution_state[running_project_id]["running"])
         self.assertTrue(execution_state[queued_project_id]["running"])
         self.assertFalse(execution_state[queued_project_id]["queued"])
+        self.assertEqual(len(pipeline_queue), 0)
+
+    def test_recover_pending_pipeline_jobs_requeues_pending_execution(self):
+        project_id = _create_project(self.client, self.token, "Recovered Queue Project", "Build a recovery dashboard")
+
+        db = get_session()
+        try:
+            project = db.get(Project, project_id)
+            project.status = "in_progress"
+            execution = Execution(
+                project_id=project_id,
+                owner_id=project.owner_id,
+                status="pending",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a recovery dashboard"}]),
+                is_active_head=True,
+            )
+            db.add(execution)
+            db.commit()
+            db.refresh(execution)
+            execution_id = execution.id
+        finally:
+            db.close()
+
+        with mock.patch("app.start_pipeline_job") as start_job:
+            recovered = recover_pending_pipeline_jobs()
+
+        self.assertEqual(recovered, 1)
+        start_job.assert_called_once()
+        job = start_job.call_args.args[0]
+        self.assertEqual(job["project_id"], project_id)
+        self.assertEqual(job["execution_id"], execution_id)
+        self.assertEqual(job["task_description"], "Build a recovery dashboard")
+        self.assertTrue(start_job.call_args.kwargs["from_queue"])
+        self.assertTrue(execution_state[project_id]["running"])
+        self.assertFalse(execution_state[project_id]["queued"])
+        self.assertEqual(execution_state[project_id]["current_execution_id"], execution_id)
         self.assertEqual(len(pipeline_queue), 0)
 
 
