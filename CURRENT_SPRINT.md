@@ -15,7 +15,7 @@ Short status update for the active branch:
 - Added deterministic dashboard/fintech polish guards so support modules, action affordance, and support-rail hierarchy can improve in preview without relying on another prompt rewrite pass.
 - Added tighter componentized refinement scoping so generated lockfiles, icon libraries, runtime polish guards, and low-signal stub CSS files no longer dilute dashboard/fintech repair passes.
 - Added a runtime shell layout guard for fixed-sidebar grid dashboards plus broader watchlist/activity/button polish coverage so collapsed preview shells can recover before scoring.
-- Current gap: the dashboard 900s timeout is fixed, and a clean rerun on March 15, 2026 recovered to 73.5 in `support_module_gate_v10_dashboard_layout_guard` with the follow-up support-module rerun landing at 73.0, but dashboard polish still trails the 81.0 branch benchmark.
+- Current gap: the dashboard 900s timeout is fixed, and March 15, 2026 reruns now stepped from 73.5 in `support_module_gate_v10_dashboard_layout_guard` to 76.0 in `support_module_gate_v18_dashboard_title_activity_guard` and then 82.0 in `support_module_gate_v20_dashboard_panel_distinction_guard`, clearing the 81.0 branch benchmark; the latest scoreable fintech retry still held at 72.5 in `support_module_gate_v16_fintech_typography_feed_guard_safe_retry`, while the follow-up safety rerun `support_module_gate_v21_fintech_panel_distinction_safe` failed before preview on a generated `App.tsx` syntax error unrelated to the shared polish guard.
 
 ## Completed Phases
 
