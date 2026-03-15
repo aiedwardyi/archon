@@ -597,6 +597,75 @@ class ExecutionLimitTests(unittest.TestCase):
         self.assertEqual(len(pipeline_queue), 0)
         self.assertFalse(execution_state[project_id]["queued"])
 
+    def test_execution_status_uses_db_active_head_when_local_state_is_missing_for_running(self):
+        project_id = _create_project(self.client, self.token, "DB Fallback Running Project", "Build a distributed dashboard")
+
+        db = get_session()
+        try:
+            project = db.get(Project, project_id)
+            project.status = "in_progress"
+            execution = Execution(
+                project_id=project_id,
+                owner_id=project.owner_id,
+                status="running",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a distributed dashboard"}]),
+                is_active_head=True,
+                scheduler_worker_id="remote-worker",
+                scheduler_claimed_at=utcnow_naive(),
+                scheduler_heartbeat_at=utcnow_naive(),
+            )
+            db.add(execution)
+            db.commit()
+            db.refresh(execution)
+            execution_id = execution.id
+        finally:
+            db.close()
+
+        response = self.client.get(
+            "/api/execution-status",
+            query_string={"project_id": project_id},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["status"], "RUNNING")
+        self.assertEqual(payload["currentStage"], "pm")
+        self.assertEqual(payload["execution_id"], execution_id)
+
+    def test_execution_status_uses_db_active_head_when_local_state_is_missing_for_completed(self):
+        project_id = _create_project(self.client, self.token, "DB Fallback Completed Project", "Build a shipped dashboard")
+
+        db = get_session()
+        try:
+            project = db.get(Project, project_id)
+            project.status = "completed"
+            execution = Execution(
+                project_id=project_id,
+                owner_id=project.owner_id,
+                status="success",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a shipped dashboard"}]),
+                is_active_head=True,
+            )
+            db.add(execution)
+            db.commit()
+            db.refresh(execution)
+            execution_id = execution.id
+        finally:
+            db.close()
+
+        response = self.client.get(
+            "/api/execution-status",
+            query_string={"project_id": project_id},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["status"], "COMPLETED")
+        self.assertEqual(payload["currentStage"], "engineer")
+        self.assertEqual(payload["execution_id"], execution_id)
+
 
 if __name__ == "__main__":
     unittest.main()

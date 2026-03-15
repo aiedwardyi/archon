@@ -4453,6 +4453,46 @@ def execution_status():
     execution_id = state.get("current_execution_id")
     project = None
 
+    if not execution_id:
+        session = get_session()
+        try:
+            execution = (
+                session.query(Execution)
+                .filter(Execution.project_id == project_id, Execution.is_active_head == True)
+                .order_by(Execution.created_at.desc(), Execution.id.desc())
+                .first()
+            )
+            if execution:
+                execution_id = execution.id
+                version = execution.version
+                project = session.get(Project, execution.project_id)
+                scheduler = get_scheduler_snapshot(project_id)
+                if execution.status in ("success", "error"):
+                    db_status = "COMPLETED" if execution.status == "success" else "FAILED"
+                    return jsonify({
+                        "status": db_status,
+                        "currentStage": "engineer",
+                        "logs": state.get("logs", []),
+                        "engineerTasks": [],
+                        "locked_ui_archetype": project.locked_ui_archetype if project else None,
+                        "project_id": project_id,
+                        "execution_id": execution_id,
+                        **scheduler,
+                    }), 200
+                if execution.status in ("pending", "running"):
+                    return jsonify({
+                        "status": "RUNNING",
+                        "currentStage": "pm",
+                        "logs": state.get("logs", []),
+                        "engineerTasks": [],
+                        "locked_ui_archetype": project.locked_ui_archetype if project else None,
+                        "project_id": project_id,
+                        "execution_id": execution_id,
+                        **scheduler,
+                    }), 200
+        finally:
+            session.close()
+
     if execution_id:
         session = get_session()
         try:
