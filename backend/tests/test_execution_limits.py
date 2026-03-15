@@ -519,7 +519,7 @@ class ExecutionLimitTests(unittest.TestCase):
         with mock.patch("app.start_pipeline_job") as start_job:
             result = run_scheduler_maintenance_once(source="background poll", recover_stale=True)
 
-        self.assertEqual(result["local_dispatched"], 0)
+        self.assertEqual(result["local_dispatched"], 1)
         self.assertEqual(result["stale_recovered"], 1)
         self.assertEqual(result["pending_adopted"], 1)
         start_job.assert_called_once()
@@ -539,6 +539,73 @@ class ExecutionLimitTests(unittest.TestCase):
             self.assertEqual(stale_project.status, "failed")
         finally:
             db.close()
+
+    def test_run_scheduler_maintenance_once_prioritizes_oldest_db_pending_execution(self):
+        older_project_id = _create_project(self.client, self.token, "Older Durable Queue Project", "Build the older dashboard")
+        newer_project_id = _create_project(self.client, self.token, "Newer Local Queue Project", "Build the newer dashboard")
+        os.environ["ARCHON_MAX_CONCURRENT_PIPELINES"] = "1"
+
+        db = get_session()
+        try:
+            older_project = db.get(Project, older_project_id)
+            older_project.status = "in_progress"
+            older_execution = Execution(
+                project_id=older_project_id,
+                owner_id=older_project.owner_id,
+                status="pending",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build the older dashboard"}]),
+                is_active_head=True,
+            )
+            db.add(older_execution)
+            db.commit()
+            db.refresh(older_execution)
+
+            newer_project = db.get(Project, newer_project_id)
+            newer_project.status = "in_progress"
+            newer_execution = Execution(
+                project_id=newer_project_id,
+                owner_id=newer_project.owner_id,
+                status="pending",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build the newer dashboard"}]),
+                is_active_head=True,
+            )
+            db.add(newer_execution)
+            db.commit()
+            db.refresh(newer_execution)
+            older_execution_id = older_execution.id
+            newer_execution_id = newer_execution.id
+            newer_created_at = newer_execution.created_at
+        finally:
+            db.close()
+
+        execution_state[newer_project_id] = _queued_state(newer_execution_id)
+        pipeline_queue.append({
+            "project_id": newer_project_id,
+            "execution_id": newer_execution_id,
+            "version": 1,
+            "task_description": "Build the newer dashboard",
+            "prompt_history": [{"role": "user", "content": "Build the newer dashboard"}],
+            "reference_images": None,
+            "nlu_result": {"intent": "build"},
+            "created_at": newer_created_at,
+        })
+
+        with mock.patch("app.start_pipeline_job") as start_job:
+            result = run_scheduler_maintenance_once(source="background poll", recover_stale=False)
+
+        self.assertEqual(result["pending_adopted"], 1)
+        self.assertEqual(result["local_dispatched"], 1)
+        start_job.assert_called_once()
+        self.assertEqual(start_job.call_args.args[0]["project_id"], older_project_id)
+        self.assertEqual(start_job.call_args.args[0]["execution_id"], older_execution_id)
+        self.assertTrue(start_job.call_args.kwargs["from_queue"])
+        self.assertTrue(execution_state[older_project_id]["running"])
+        self.assertFalse(execution_state[older_project_id]["queued"])
+        self.assertTrue(execution_state[newer_project_id]["queued"])
+        self.assertEqual(len(pipeline_queue), 1)
+        self.assertEqual(pipeline_queue[0]["project_id"], newer_project_id)
 
     def test_execute_task_rejects_when_queue_limit_is_full(self):
         running_project_id = _create_project(self.client, self.token, "Running Queue Limit Project")

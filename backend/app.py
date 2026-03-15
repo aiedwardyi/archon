@@ -504,7 +504,23 @@ def queue_pipeline_job(job: dict[str, Any]) -> int | str:
         state["result_ready"] = False
         if execution_id is not None:
             state["current_execution_id"] = execution_id
-        pipeline_queue.append(job)
+        created_at = job.get("created_at")
+        if created_at is None:
+            pipeline_queue.append(job)
+        else:
+            inserted = False
+            sort_key = (created_at, execution_id or 0)
+            for index, queued_job in enumerate(pipeline_queue):
+                queued_created_at = queued_job.get("created_at")
+                if queued_created_at is None:
+                    continue
+                queued_key = (queued_created_at, queued_job.get("execution_id") or 0)
+                if sort_key < queued_key:
+                    pipeline_queue.insert(index, job)
+                    inserted = True
+                    break
+            if not inserted:
+                pipeline_queue.append(job)
         return len(pipeline_queue)
 
 
@@ -753,6 +769,7 @@ def recover_pending_pipeline_jobs(
     *,
     log_message: str = "Scheduler: Recovered pending pipeline after backend restart.",
     summary_reason: str = "from database.",
+    dispatch: bool = True,
 ) -> int:
     session = get_session()
     recovered = 0
@@ -789,6 +806,7 @@ def recover_pending_pipeline_jobs(
                 "prompt_history": prompt_history,
                 "reference_images": collect_execution_reference_images(project_id, execution.version),
                 "nlu_result": None,
+                "created_at": execution.created_at,
             }
 
             seen_projects.add(project_id)
@@ -806,8 +824,9 @@ def recover_pending_pipeline_jobs(
     finally:
         session.close()
 
-    if recovered:
+    if recovered and dispatch:
         dispatch_queued_pipelines()
+    if recovered:
         print(f"[Scheduler] Recovered {recovered} pending pipeline(s) {summary_reason}")
 
     return recovered
@@ -823,17 +842,16 @@ def run_scheduler_maintenance_once(*, source: str, recover_stale: bool = True) -
         return results
 
     try:
-        results["local_dispatched"] = dispatch_queued_pipelines()
         if recover_stale:
             results["stale_recovered"] = recover_stale_running_executions()
-        if count_running_pipelines() >= get_max_concurrent_pipelines():
-            return results
-
         source_label = source.strip() or "scheduler maintenance"
-        results["pending_adopted"] = recover_pending_pipeline_jobs(
-            log_message=f"Scheduler: Adopted pending pipeline from {source_label}.",
-            summary_reason=f"from durable queue via {source_label}.",
-        )
+        if count_running_pipelines() < get_max_concurrent_pipelines():
+            results["pending_adopted"] = recover_pending_pipeline_jobs(
+                log_message=f"Scheduler: Adopted pending pipeline from {source_label}.",
+                summary_reason=f"from durable queue via {source_label}.",
+                dispatch=False,
+            )
+        results["local_dispatched"] = dispatch_queued_pipelines()
         return results
     finally:
         scheduler_maintenance_lock.release()
@@ -4307,6 +4325,7 @@ def iterate_project(project_id: int):
             "prompt_history": prompt_history,
             "reference_images": reference_images,
             "nlu_result": nlu_result,
+            "created_at": execution.created_at,
         }
 
         if queued_submission:
@@ -4508,6 +4527,7 @@ def execute_task():
             "prompt_history": initial_history,
             "reference_images": None,
             "nlu_result": nlu_result,
+            "created_at": execution.created_at,
         }
 
         if queued_submission:
