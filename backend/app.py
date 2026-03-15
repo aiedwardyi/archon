@@ -196,6 +196,15 @@ def get_max_concurrent_pipelines() -> int:
     return max(1, value)
 
 
+def get_max_queued_pipelines() -> int:
+    raw = os.getenv("ARCHON_MAX_QUEUED_PIPELINES", "20").strip()
+    try:
+        value = int(raw)
+    except ValueError:
+        return 20
+    return max(1, value)
+
+
 def count_running_pipelines() -> int:
     with execution_state_lock:
         return sum(1 for state in execution_state.values() if state.get("running"))
@@ -224,6 +233,7 @@ def get_scheduler_snapshot(project_id: int | None = None) -> dict[str, Any]:
         "active_pipelines": active_pipelines,
         "queued_pipelines": queued_pipelines,
         "max_concurrent_pipelines": get_max_concurrent_pipelines(),
+        "max_queued_pipelines": get_max_queued_pipelines(),
         "project_running": project_running,
         "project_queued": project_queued,
         "queue_position": queue_position,
@@ -321,6 +331,9 @@ def queue_pipeline_job(job: dict[str, Any]) -> int | str:
         if state.get("queued") and state.get("current_execution_id") not in {None, execution_id}:
             return "project_queued"
 
+        if len(pipeline_queue) >= get_max_queued_pipelines():
+            return "queue_limit"
+
         state["queued"] = True
         state["queued_at"] = state.get("queued_at") or time.time()
         state["started_at"] = None
@@ -401,6 +414,17 @@ def pipeline_busy_response(reason: str, project_id: int | None = None):
             "project_id": project_id,
             **scheduler,
         }), 409
+
+    if reason == "queue_limit":
+        return jsonify({
+            "error": (
+                f"The scheduler queue is full ({scheduler['queued_pipelines']}/"
+                f"{scheduler['max_queued_pipelines']}). Try again shortly."
+            ),
+            "reason": reason,
+            "project_id": project_id,
+            **scheduler,
+        }), 429
 
     return jsonify({
         "error": (

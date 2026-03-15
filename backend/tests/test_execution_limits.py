@@ -102,6 +102,7 @@ class ExecutionLimitTests(unittest.TestCase):
         execution_state.clear()
         pipeline_queue.clear()
         self._old_worker_limit = os.environ.get("ARCHON_MAX_CONCURRENT_PIPELINES")
+        self._old_queue_limit = os.environ.get("ARCHON_MAX_QUEUED_PIPELINES")
 
     def tearDown(self):
         execution_state.clear()
@@ -110,6 +111,10 @@ class ExecutionLimitTests(unittest.TestCase):
             os.environ.pop("ARCHON_MAX_CONCURRENT_PIPELINES", None)
         else:
             os.environ["ARCHON_MAX_CONCURRENT_PIPELINES"] = self._old_worker_limit
+        if self._old_queue_limit is None:
+            os.environ.pop("ARCHON_MAX_QUEUED_PIPELINES", None)
+        else:
+            os.environ["ARCHON_MAX_QUEUED_PIPELINES"] = self._old_queue_limit
 
     def test_execute_task_rejects_same_project_overlap(self):
         project_id = _create_project(self.client, self.token, "Overlap Guard Project", "Build a dashboard")
@@ -303,6 +308,47 @@ class ExecutionLimitTests(unittest.TestCase):
         self.assertFalse(execution_state[project_id]["queued"])
         self.assertEqual(execution_state[project_id]["current_execution_id"], execution_id)
         self.assertEqual(len(pipeline_queue), 0)
+
+    def test_execute_task_rejects_when_queue_limit_is_full(self):
+        running_project_id = _create_project(self.client, self.token, "Running Queue Limit Project")
+        queued_project_id = _create_project(self.client, self.token, "Queued Queue Limit Project", "Build a portfolio")
+        blocked_project_id = _create_project(self.client, self.token, "Blocked Queue Limit Project", "Build a dashboard")
+        os.environ["ARCHON_MAX_CONCURRENT_PIPELINES"] = "1"
+        os.environ["ARCHON_MAX_QUEUED_PIPELINES"] = "1"
+
+        execution_state[running_project_id] = _running_state(1101)
+        execution_state[queued_project_id] = _queued_state(1102)
+        pipeline_queue.append({
+            "project_id": queued_project_id,
+            "execution_id": 1102,
+            "version": 1,
+            "task_description": "Build a portfolio",
+            "prompt_history": [{"role": "user", "content": "Build a portfolio"}],
+            "reference_images": None,
+            "nlu_result": {"intent": "build"},
+        })
+
+        response = self.client.post(
+            "/api/execute-task",
+            json={"project_id": blocked_project_id, "enqueue_on_limit": True},
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
+
+        self.assertEqual(response.status_code, 429)
+        payload = response.get_json()
+        self.assertEqual(payload["reason"], "queue_limit")
+        self.assertEqual(payload["queued_pipelines"], 1)
+        self.assertEqual(payload["max_queued_pipelines"], 1)
+        self.assertEqual(payload["active_pipelines"], 1)
+        self.assertFalse(payload["project_running"])
+        self.assertFalse(payload["project_queued"])
+
+        db = get_session()
+        try:
+            executions = db.query(Execution).filter(Execution.project_id == blocked_project_id).count()
+            self.assertEqual(executions, 0)
+        finally:
+            db.close()
 
 
 if __name__ == "__main__":
