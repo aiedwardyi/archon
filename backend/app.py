@@ -7,6 +7,7 @@ from flask_cors import CORS
 from collections import deque
 import json
 import os
+import socket
 import shutil
 import sys
 import warnings
@@ -16,7 +17,7 @@ from pathlib import Path
 from typing import Any, Dict
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 # Suppress SQLAlchemy legacy Query.get() deprecation warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="sqlalchemy")
@@ -162,6 +163,7 @@ execution_state_lock = threading.Lock()
 pipeline_queue = deque()
 scheduler_bootstrap_lock = threading.Lock()
 scheduler_bootstrapped = False
+SCHEDULER_WORKER_ID = os.getenv("ARCHON_SCHEDULER_WORKER_ID", f"{socket.gethostname()}:{os.getpid()}")
 
 
 def _default_project_state() -> dict[str, Any]:
@@ -170,6 +172,7 @@ def _default_project_state() -> dict[str, Any]:
         "queued": False,
         "started_at": None,
         "queued_at": None,
+        "last_heartbeat_at": None,
         "current_execution_id": None,
         "logs": [],
         "result_ready": False,
@@ -203,6 +206,28 @@ def get_max_queued_pipelines() -> int:
     except ValueError:
         return 20
     return max(1, value)
+
+
+def utcnow_naive() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def get_execution_heartbeat_interval_seconds() -> int:
+    raw = os.getenv("ARCHON_EXECUTION_HEARTBEAT_INTERVAL_SECONDS", "15").strip()
+    try:
+        value = int(raw)
+    except ValueError:
+        return 15
+    return max(1, value)
+
+
+def get_execution_stale_timeout_seconds() -> int:
+    raw = os.getenv("ARCHON_EXECUTION_STALE_TIMEOUT_SECONDS", "1200").strip()
+    try:
+        value = int(raw)
+    except ValueError:
+        return 1200
+    return max(60, value)
 
 
 def count_running_pipelines() -> int:
@@ -255,6 +280,7 @@ def claim_pipeline_slot(project_id: int, enqueue_on_limit: bool = False) -> str 
                 state["queued"] = True
                 state["started_at"] = None
                 state["queued_at"] = time.time()
+                state["last_heartbeat_at"] = None
                 state["current_execution_id"] = None
                 state["logs"] = []
                 state["result_ready"] = False
@@ -265,6 +291,7 @@ def claim_pipeline_slot(project_id: int, enqueue_on_limit: bool = False) -> str 
         state["queued"] = False
         state["started_at"] = time.time()
         state["queued_at"] = None
+        state["last_heartbeat_at"] = None
         state["current_execution_id"] = None
         state["logs"] = []
         state["result_ready"] = False
@@ -286,6 +313,7 @@ def release_pipeline_slot(project_id: int) -> None:
         state = _ensure_project_state_unlocked(project_id)
         state["running"] = False
         state["started_at"] = None
+        state["last_heartbeat_at"] = None
 
 
 def cancel_queued_pipeline(project_id: int | None) -> None:
@@ -301,6 +329,7 @@ def cancel_queued_pipeline(project_id: int | None) -> None:
         state["queued"] = False
         state["queued_at"] = None
         state["started_at"] = None
+        state["last_heartbeat_at"] = None
 
 
 def coerce_bool(value: Any) -> bool:
@@ -337,6 +366,7 @@ def queue_pipeline_job(job: dict[str, Any]) -> int | str:
         state["queued"] = True
         state["queued_at"] = state.get("queued_at") or time.time()
         state["started_at"] = None
+        state["last_heartbeat_at"] = None
         state["result_ready"] = False
         if execution_id is not None:
             state["current_execution_id"] = execution_id
@@ -386,6 +416,7 @@ def dispatch_queued_pipelines() -> int:
             state["running"] = True
             state["started_at"] = time.time()
             state["queued_at"] = None
+            state["last_heartbeat_at"] = None
             jobs_to_start.append(job)
 
     for job in jobs_to_start:
@@ -454,6 +485,115 @@ def queued_pipeline_response(
     }), 202
 
 
+def try_claim_execution_for_run(execution_id: int | None) -> bool:
+    if execution_id is None:
+        return False
+
+    session = get_session()
+    claimed_at = utcnow_naive()
+    try:
+        updated = (
+            session.query(Execution)
+            .filter(Execution.id == execution_id, Execution.status == "pending")
+            .update(
+                {
+                    Execution.status: "running",
+                    Execution.scheduler_worker_id: SCHEDULER_WORKER_ID,
+                    Execution.scheduler_claimed_at: claimed_at,
+                    Execution.scheduler_heartbeat_at: claimed_at,
+                },
+                synchronize_session=False,
+            )
+        )
+        if not updated:
+            session.rollback()
+            return False
+        session.commit()
+        return True
+    finally:
+        session.close()
+
+
+def clear_execution_claim(execution: Execution) -> None:
+    execution.scheduler_worker_id = None
+    execution.scheduler_claimed_at = None
+    execution.scheduler_heartbeat_at = None
+
+
+def touch_execution_heartbeat(project_id: int | None, *, force: bool = False) -> None:
+    if project_id is None:
+        return
+
+    execution_id = None
+    with execution_state_lock:
+        state = _ensure_project_state_unlocked(project_id)
+        if not state.get("running"):
+            return
+        execution_id = state.get("current_execution_id")
+        if execution_id is None:
+            return
+        now_ts = time.time()
+        last_heartbeat_at = state.get("last_heartbeat_at")
+        if not force and last_heartbeat_at is not None:
+            if now_ts - last_heartbeat_at < get_execution_heartbeat_interval_seconds():
+                return
+        state["last_heartbeat_at"] = now_ts
+
+    session = get_session()
+    try:
+        execution = session.get(Execution, execution_id)
+        if (
+            execution
+            and execution.status == "running"
+            and execution.scheduler_worker_id == SCHEDULER_WORKER_ID
+        ):
+            execution.scheduler_heartbeat_at = utcnow_naive()
+            session.commit()
+        else:
+            session.rollback()
+    except Exception:
+        session.rollback()
+    finally:
+        session.close()
+
+
+def recover_stale_running_executions() -> int:
+    session = get_session()
+    recovered = 0
+    cutoff = utcnow_naive() - timedelta(seconds=get_execution_stale_timeout_seconds())
+    try:
+        running_executions = session.query(Execution).filter(Execution.status == "running").all()
+        for execution in running_executions:
+            heartbeat = execution.scheduler_heartbeat_at or execution.scheduler_claimed_at or execution.created_at
+            if heartbeat and heartbeat >= cutoff:
+                continue
+
+            execution.status = "failed"
+            if not execution.error_message:
+                execution.error_message = "Scheduler heartbeat expired before pipeline completion."
+            clear_execution_claim(execution)
+
+            project = execution.project
+            if project and project.status in {"running", "in_progress"}:
+                project.status = "failed"
+                project.updated_at = datetime.now(timezone.utc)
+
+            recovered += 1
+
+        if recovered:
+            session.commit()
+            print(f"[Scheduler] Marked {recovered} stale running pipeline(s) as failed.")
+        else:
+            session.rollback()
+    except Exception as exc:
+        session.rollback()
+        print(f"[Scheduler] Failed to recover stale running executions: {exc}")
+    finally:
+        session.close()
+
+    return recovered
+
+
 def recover_pending_pipeline_jobs() -> int:
     session = get_session()
     recovered = 0
@@ -520,6 +660,7 @@ def ensure_scheduler_bootstrapped() -> None:
     with scheduler_bootstrap_lock:
         if scheduler_bootstrapped:
             return
+        recover_stale_running_executions()
         recover_pending_pipeline_jobs()
         scheduler_bootstrapped = True
 
@@ -561,6 +702,7 @@ def add_log(message: str, log_type: str = "info", project_id: int = None):
         "message": message,
         "type": log_type,
     })
+    touch_execution_heartbeat(project_id)
 
 
 def load_execution_prompt_history(execution: Execution) -> list[dict[str, Any]]:
@@ -2240,10 +2382,14 @@ def run_full_pipeline_async(
 
     try:
         if execution_id:
-            execution = session.get(Execution, execution_id)
-            if execution:
-                execution.status = "running"
-                session.commit()
+            if not try_claim_execution_for_run(execution_id):
+                print(
+                    f"[Scheduler] Execution {execution_id} was already claimed or is no longer pending; "
+                    "skipping duplicate local worker."
+                )
+                return
+            with execution_state_lock:
+                _ensure_project_state_unlocked(project_id)["last_heartbeat_at"] = time.time()
 
         version = None
         if execution_id:
@@ -3244,6 +3390,7 @@ def run_full_pipeline_async(
             execution = session.get(Execution, execution_id)
             if execution:
                 execution.status = "success"
+                clear_execution_claim(execution)
                 execution.result_path = str(version_dir / "last_execution_result.json")
                 execution.prd_path = str(version_dir / "last_prd.json")
                 execution.plan_path = str(version_dir / "last_plan.json")
@@ -3373,6 +3520,7 @@ def run_full_pipeline_async(
                 if execution:
                     execution.status = "error"
                     execution.error_message = error_msg
+                    clear_execution_claim(execution)
                     session.commit()
                     project = execution.project
                     if project:

@@ -3,16 +3,21 @@ import sys
 import unittest
 import uuid
 import json
+from datetime import timedelta
 from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from app import (
+    SCHEDULER_WORKER_ID,
     app,
     execution_state,
     pipeline_queue,
     recover_pending_pipeline_jobs,
+    recover_stale_running_executions,
     release_and_dispatch_pipeline_slot,
+    try_claim_execution_for_run,
+    utcnow_naive,
 )
 from models import Execution, Project, User, get_session
 
@@ -53,6 +58,7 @@ def _running_state(execution_id: int) -> dict:
         "queued": False,
         "started_at": 123.0,
         "queued_at": None,
+        "last_heartbeat_at": None,
         "current_execution_id": execution_id,
         "logs": [],
         "result_ready": False,
@@ -65,6 +71,7 @@ def _queued_state(execution_id: int) -> dict:
         "queued": True,
         "started_at": None,
         "queued_at": 456.0,
+        "last_heartbeat_at": None,
         "current_execution_id": execution_id,
         "logs": [],
         "result_ready": False,
@@ -103,6 +110,7 @@ class ExecutionLimitTests(unittest.TestCase):
         pipeline_queue.clear()
         self._old_worker_limit = os.environ.get("ARCHON_MAX_CONCURRENT_PIPELINES")
         self._old_queue_limit = os.environ.get("ARCHON_MAX_QUEUED_PIPELINES")
+        self._old_stale_timeout = os.environ.get("ARCHON_EXECUTION_STALE_TIMEOUT_SECONDS")
 
     def tearDown(self):
         execution_state.clear()
@@ -115,6 +123,10 @@ class ExecutionLimitTests(unittest.TestCase):
             os.environ.pop("ARCHON_MAX_QUEUED_PIPELINES", None)
         else:
             os.environ["ARCHON_MAX_QUEUED_PIPELINES"] = self._old_queue_limit
+        if self._old_stale_timeout is None:
+            os.environ.pop("ARCHON_EXECUTION_STALE_TIMEOUT_SECONDS", None)
+        else:
+            os.environ["ARCHON_EXECUTION_STALE_TIMEOUT_SECONDS"] = self._old_stale_timeout
 
     def test_execute_task_rejects_same_project_overlap(self):
         project_id = _create_project(self.client, self.token, "Overlap Guard Project", "Build a dashboard")
@@ -347,6 +359,88 @@ class ExecutionLimitTests(unittest.TestCase):
         try:
             executions = db.query(Execution).filter(Execution.project_id == blocked_project_id).count()
             self.assertEqual(executions, 0)
+        finally:
+            db.close()
+
+    def test_try_claim_execution_for_run_is_exclusive(self):
+        project_id = _create_project(self.client, self.token, "Claim Ownership Project", "Build a queue-safe dashboard")
+
+        db = get_session()
+        try:
+            project = db.get(Project, project_id)
+            execution = Execution(
+                project_id=project_id,
+                owner_id=project.owner_id,
+                status="pending",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a queue-safe dashboard"}]),
+                is_active_head=True,
+            )
+            db.add(execution)
+            db.commit()
+            db.refresh(execution)
+            execution_id = execution.id
+        finally:
+            db.close()
+
+        self.assertTrue(try_claim_execution_for_run(execution_id))
+        self.assertFalse(try_claim_execution_for_run(execution_id))
+
+        db = get_session()
+        try:
+            execution = db.get(Execution, execution_id)
+            self.assertIsNotNone(execution)
+            self.assertEqual(execution.status, "running")
+            self.assertEqual(execution.scheduler_worker_id, SCHEDULER_WORKER_ID)
+            self.assertIsNotNone(execution.scheduler_claimed_at)
+            self.assertIsNotNone(execution.scheduler_heartbeat_at)
+        finally:
+            db.close()
+
+    def test_recover_stale_running_executions_fails_expired_execution(self):
+        project_id = _create_project(self.client, self.token, "Stale Recovery Project", "Build a resilient dashboard")
+        os.environ["ARCHON_EXECUTION_STALE_TIMEOUT_SECONDS"] = "60"
+
+        db = get_session()
+        try:
+            project = db.get(Project, project_id)
+            project.status = "running"
+            execution = Execution(
+                project_id=project_id,
+                owner_id=project.owner_id,
+                status="running",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a resilient dashboard"}]),
+                is_active_head=True,
+                scheduler_worker_id="stale-worker",
+                scheduler_claimed_at=utcnow_naive() - timedelta(seconds=180),
+                scheduler_heartbeat_at=utcnow_naive() - timedelta(seconds=180),
+            )
+            db.add(execution)
+            db.commit()
+            db.refresh(execution)
+            execution_id = execution.id
+        finally:
+            db.close()
+
+        recovered = recover_stale_running_executions()
+        self.assertEqual(recovered, 1)
+
+        db = get_session()
+        try:
+            execution = db.get(Execution, execution_id)
+            project = db.get(Project, project_id)
+            self.assertIsNotNone(execution)
+            self.assertEqual(execution.status, "failed")
+            self.assertEqual(
+                execution.error_message,
+                "Scheduler heartbeat expired before pipeline completion.",
+            )
+            self.assertIsNone(execution.scheduler_worker_id)
+            self.assertIsNone(execution.scheduler_claimed_at)
+            self.assertIsNone(execution.scheduler_heartbeat_at)
+            self.assertIsNotNone(project)
+            self.assertEqual(project.status, "failed")
         finally:
             db.close()
 
