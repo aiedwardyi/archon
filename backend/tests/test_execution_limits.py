@@ -57,6 +57,33 @@ def _create_project(client, token: str, name: str, description: str = "") -> int
     return response.get_json()["id"]
 
 
+def _cleanup_test_users(*, exclude_user_id: int | None = None) -> None:
+    db = get_session()
+    try:
+        users = db.query(User).filter(User.email.like("limits-%@archon-test.com")).all()
+        users = [user for user in users if exclude_user_id is None or user.id != exclude_user_id]
+        if not users:
+            db.rollback()
+            return
+
+        user_ids = [user.id for user in users]
+        execution_ids = [
+            execution_id
+            for (execution_id,) in db.query(Execution.id).filter(Execution.owner_id.in_(user_ids)).all()
+        ]
+        if execution_ids:
+            db.query(PipelineSlotLease).filter(PipelineSlotLease.execution_id.in_(execution_ids)).delete(synchronize_session=False)
+        db.query(Execution).filter(Execution.owner_id.in_(user_ids)).delete(synchronize_session=False)
+        db.query(Project).filter(Project.owner_id.in_(user_ids)).delete(synchronize_session=False)
+        for user in users:
+            managed_user = db.get(User, user.id)
+            if managed_user:
+                db.delete(managed_user)
+        db.commit()
+    finally:
+        db.close()
+
+
 def _running_state(execution_id: int) -> dict:
     return {
         "running": True,
@@ -86,17 +113,24 @@ def _queued_state(execution_id: int) -> dict:
 class ExecutionLimitTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        _cleanup_test_users()
         app.config["TESTING"] = True
         cls.client = app.test_client()
         cls.token, cls.user_id, cls.email = _register_user(cls.client)
 
     @classmethod
     def tearDownClass(cls):
+        _cleanup_test_users()
         db = get_session()
         try:
             user = db.get(User, cls.user_id)
             if user:
-                db.query(PipelineSlotLease).delete(synchronize_session=False)
+                execution_ids = [
+                    execution_id
+                    for (execution_id,) in db.query(Execution.id).filter(Execution.owner_id == user.id).all()
+                ]
+                if execution_ids:
+                    db.query(PipelineSlotLease).filter(PipelineSlotLease.execution_id.in_(execution_ids)).delete(synchronize_session=False)
                 db.query(Execution).filter(Execution.owner_id == user.id).delete(synchronize_session=False)
                 db.query(Project).filter(Project.owner_id == user.id).delete(synchronize_session=False)
                 db.delete(user)
@@ -105,9 +139,15 @@ class ExecutionLimitTests(unittest.TestCase):
             db.close()
 
     def setUp(self):
+        _cleanup_test_users(exclude_user_id=self.user_id)
         db = get_session()
         try:
-            db.query(PipelineSlotLease).delete(synchronize_session=False)
+            execution_ids = [
+                execution_id
+                for (execution_id,) in db.query(Execution.id).filter(Execution.owner_id == self.user_id).all()
+            ]
+            if execution_ids:
+                db.query(PipelineSlotLease).filter(PipelineSlotLease.execution_id.in_(execution_ids)).delete(synchronize_session=False)
             db.query(Execution).filter(Execution.owner_id == self.user_id).delete(synchronize_session=False)
             db.query(Project).filter(Project.owner_id == self.user_id).delete(synchronize_session=False)
             db.commit()
@@ -664,6 +704,78 @@ class ExecutionLimitTests(unittest.TestCase):
         self.assertFalse(execution_state[queued_project_id]["running"])
         self.assertEqual(len(pipeline_queue), 1)
         self.assertEqual(pipeline_queue[0]["project_id"], queued_project_id)
+
+    def test_dispatch_queued_pipelines_adopts_db_pending_execution_without_local_queue_seed(self):
+        pending_project_id = _create_project(self.client, self.token, "Direct Durable Dispatch Project", "Build a queue-safe dashboard")
+        os.environ["ARCHON_MAX_CONCURRENT_PIPELINES"] = "1"
+
+        db = get_session()
+        try:
+            pending_project = db.get(Project, pending_project_id)
+            pending_project.status = "in_progress"
+            pending_execution = Execution(
+                project_id=pending_project_id,
+                owner_id=pending_project.owner_id,
+                status="pending",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a queue-safe dashboard"}]),
+                is_active_head=True,
+            )
+            db.add(pending_execution)
+            db.commit()
+            db.refresh(pending_execution)
+            pending_execution_id = pending_execution.id
+        finally:
+            db.close()
+
+        with mock.patch("app.start_pipeline_job") as start_job:
+            dispatched = dispatch_queued_pipelines()
+
+        self.assertEqual(dispatched, 1)
+        start_job.assert_called_once()
+        self.assertEqual(start_job.call_args.args[0]["project_id"], pending_project_id)
+        self.assertEqual(start_job.call_args.args[0]["execution_id"], pending_execution_id)
+        self.assertTrue(start_job.call_args.kwargs["from_queue"])
+        self.assertTrue(execution_state[pending_project_id]["running"])
+        self.assertFalse(execution_state[pending_project_id]["queued"])
+        self.assertEqual(len(pipeline_queue), 0)
+
+    def test_dispatch_queued_pipelines_recovers_missing_local_queue_entry_for_same_execution(self):
+        queued_project_id = _create_project(self.client, self.token, "Queue Drift Recovery Project", "Build a queue-safe dashboard")
+        os.environ["ARCHON_MAX_CONCURRENT_PIPELINES"] = "1"
+
+        db = get_session()
+        try:
+            queued_project = db.get(Project, queued_project_id)
+            queued_project.status = "in_progress"
+            queued_execution = Execution(
+                project_id=queued_project_id,
+                owner_id=queued_project.owner_id,
+                status="pending",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a queue-safe dashboard"}]),
+                is_active_head=True,
+            )
+            db.add(queued_execution)
+            db.commit()
+            db.refresh(queued_execution)
+            queued_execution_id = queued_execution.id
+        finally:
+            db.close()
+
+        execution_state[queued_project_id] = _queued_state(queued_execution_id)
+
+        with mock.patch("app.start_pipeline_job") as start_job:
+            dispatched = dispatch_queued_pipelines()
+
+        self.assertEqual(dispatched, 1)
+        start_job.assert_called_once()
+        self.assertEqual(start_job.call_args.args[0]["project_id"], queued_project_id)
+        self.assertEqual(start_job.call_args.args[0]["execution_id"], queued_execution_id)
+        self.assertTrue(start_job.call_args.kwargs["from_queue"])
+        self.assertTrue(execution_state[queued_project_id]["running"])
+        self.assertFalse(execution_state[queued_project_id]["queued"])
+        self.assertEqual(len(pipeline_queue), 0)
 
     def test_run_scheduler_maintenance_once_recovers_stale_and_adopts_pending_work(self):
         stale_project_id = _create_project(self.client, self.token, "Stale Poller Project", "Build a stale-run dashboard")

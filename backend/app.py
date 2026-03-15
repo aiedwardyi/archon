@@ -591,6 +591,65 @@ def queue_pipeline_job(job: dict[str, Any]) -> int | str:
         return len(pipeline_queue)
 
 
+def collect_pending_jobs_for_dispatch(
+    *,
+    limit: int,
+    exclude_execution_ids: set[int] | None = None,
+) -> list[dict[str, Any]]:
+    if limit <= 0:
+        return []
+
+    excluded = set(exclude_execution_ids or set())
+    session = get_session()
+    jobs: list[dict[str, Any]] = []
+    try:
+        durable_active_execution_ids = {
+            execution_id
+            for (execution_id,) in session.query(PipelineSlotLease.execution_id).all()
+        }
+        durable_active_execution_ids.update(
+            execution_id
+            for (execution_id,) in (
+                session.query(Execution.id)
+                .filter(Execution.status == "running")
+                .all()
+            )
+        )
+
+        pending_executions = (
+            session.query(Execution)
+            .filter(Execution.status == "pending", Execution.is_active_head == True)
+            .order_by(Execution.created_at.asc(), Execution.id.asc())
+            .all()
+        )
+
+        for execution in pending_executions:
+            if len(jobs) >= limit:
+                break
+            if execution.id in excluded or execution.id in durable_active_execution_ids:
+                continue
+            project = session.get(Project, execution.project_id)
+            if not project or project.status not in {"pending", "in_progress", "running"}:
+                continue
+
+            prompt_history = load_execution_prompt_history(execution)
+            jobs.append({
+                "project_id": execution.project_id,
+                "execution_id": execution.id,
+                "version": execution.version,
+                "task_description": derive_execution_task_description(project, prompt_history),
+                "prompt_history": prompt_history,
+                "reference_images": collect_execution_reference_images(execution.project_id, execution.version),
+                "nlu_result": None,
+                "created_at": execution.created_at,
+            })
+            excluded.add(execution.id)
+    finally:
+        session.close()
+
+    return jobs
+
+
 def claim_execution_for_pipeline_start(project_id: int, execution_id: int | None) -> bool:
     if execution_id is None:
         return True
@@ -642,6 +701,8 @@ def dispatch_queued_pipelines() -> int:
         return 0
 
     jobs_to_start: list[dict[str, Any]] = []
+    started_execution_ids: set[int] = set()
+    adopted_project_ids: list[int] = []
     with execution_state_lock:
         while (
             available_slots > 0
@@ -660,7 +721,43 @@ def dispatch_queued_pipelines() -> int:
             state["queued_at"] = None
             state["last_heartbeat_at"] = None
             jobs_to_start.append(job)
+            execution_id = job.get("execution_id")
+            if execution_id is not None:
+                started_execution_ids.add(execution_id)
             available_slots -= 1
+
+    adopted_jobs = collect_pending_jobs_for_dispatch(
+        limit=available_slots,
+        exclude_execution_ids=started_execution_ids,
+    )
+    if adopted_jobs:
+        with execution_state_lock:
+            for job in adopted_jobs:
+                if available_slots <= 0:
+                    break
+                project_id = job.get("project_id")
+                execution_id = job.get("execution_id")
+                if project_id is None:
+                    continue
+                state = _ensure_project_state_unlocked(project_id)
+                if state.get("running"):
+                    continue
+                current_execution_id = state.get("current_execution_id")
+                if state.get("queued") and current_execution_id not in {None, execution_id}:
+                    continue
+                state["queued"] = False
+                state["running"] = True
+                state["started_at"] = time.time()
+                state["queued_at"] = None
+                state["last_heartbeat_at"] = None
+                state["result_ready"] = False
+                state["current_execution_id"] = execution_id
+                jobs_to_start.append(job)
+                adopted_project_ids.append(project_id)
+                available_slots -= 1
+
+    for project_id in adopted_project_ids:
+        add_log("Scheduler: Adopted pending pipeline from durable queue.", project_id=project_id)
 
     for job in jobs_to_start:
         start_pipeline_job(job, from_queue=True)
