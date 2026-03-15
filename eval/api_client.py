@@ -102,12 +102,14 @@ class BuilderAPI:
         )
         resp.raise_for_status()
 
-    def trigger_build(self, project_id: int) -> dict:
+    def trigger_build(self, project_id: int, enqueue_on_limit: bool = False) -> dict:
         """Trigger a build via POST /api/execute-task.
 
         Returns dict with keys: execution_id, version, project_id.
         """
         payload = {"project_id": project_id}
+        if enqueue_on_limit:
+            payload["enqueue_on_limit"] = True
         resp = self.session.post(self._url("/api/execute-task"), json=payload, timeout=30)
         resp.raise_for_status()
         data = resp.json()
@@ -115,10 +117,19 @@ class BuilderAPI:
         if data.get("response_type") == "chat":
             raise BuildError(f"Build rejected: {data.get('message')}")
 
-        logger.info(
-            f"Build started: project={data['project_id']} "
-            f"execution={data['execution_id']} version={data['version']}"
-        )
+        if data.get("status") == "queued":
+            logger.info(
+                "Build queued: project=%s execution=%s version=%s queue_position=%s",
+                data["project_id"],
+                data["execution_id"],
+                data["version"],
+                data.get("queue_position"),
+            )
+        else:
+            logger.info(
+                f"Build started: project={data['project_id']} "
+                f"execution={data['execution_id']} version={data['version']}"
+            )
         return {
             "execution_id": data["execution_id"],
             "version": data["version"],
@@ -172,13 +183,19 @@ class BuilderAPI:
         """Return the preview URL for a given project/version."""
         return f"{self.base_url}/api/preview/{project_id}/{version}"
 
-    def create_and_build(self, name: str, description: str, timeout: int = 300) -> dict:
+    def create_and_build(
+        self,
+        name: str,
+        description: str,
+        timeout: int = 300,
+        enqueue_on_limit: bool = False,
+    ) -> dict:
         """Convenience: create project, set description, trigger build, poll to completion.
 
         Returns dict with: project_id, version, execution_id, preview_url.
         """
         project_id = self.create_project(name, description)
-        build_info = self.trigger_build(project_id)
+        build_info = self.trigger_build(project_id, enqueue_on_limit=enqueue_on_limit)
         result = self.poll_until_done(project_id=project_id, timeout=timeout)
         preview_url = self.get_preview_url(project_id, build_info["version"])
         return {

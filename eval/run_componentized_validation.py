@@ -132,9 +132,21 @@ def _ensure_backend_available(base_url: str) -> None:
         raise SystemExit(f"Backend not reachable at {base_url}")
 
 
-def _create_and_build_sync(*, base_url: str, name: str, description: str, timeout: int) -> dict[str, Any]:
+def _create_and_build_sync(
+    *,
+    base_url: str,
+    name: str,
+    description: str,
+    timeout: int,
+    enqueue_on_limit: bool,
+) -> dict[str, Any]:
     api = BuilderAPI(base_url=base_url)
-    return api.create_and_build(name=name, description=description, timeout=timeout)
+    return api.create_and_build(
+        name=name,
+        description=description,
+        timeout=timeout,
+        enqueue_on_limit=enqueue_on_limit,
+    )
 
 
 def _score_sync(*, screenshot_path: Path, archetype: str, scorer_model: str) -> dict[str, Any]:
@@ -160,6 +172,7 @@ async def _run_archetype(
     results_dir: Path,
     base_url: str,
     build_timeout: int,
+    enqueue_on_limit: bool,
     wait_seconds: float,
     scorer_model: str,
     semaphore: asyncio.Semaphore,
@@ -183,6 +196,7 @@ async def _run_archetype(
                 name=f"componentized_{archetype}_{datetime.now().strftime('%H%M%S_%f')}",
                 description=prompt,
                 timeout=build_timeout,
+                enqueue_on_limit=enqueue_on_limit,
             )
             item["project_id"] = build_result["project_id"]
             item["version"] = build_result["version"]
@@ -271,6 +285,7 @@ async def run() -> None:
     parser.add_argument("--max-parallel", type=int, default=1)
     parser.add_argument("--backend-url", default="http://127.0.0.1:5000")
     parser.add_argument("--build-timeout", type=int, default=900)
+    parser.add_argument("--enqueue-on-limit", action="store_true")
     parser.add_argument("--wait-seconds", type=float, default=3.0)
     parser.add_argument("--scorer-model", default="gemini-2.5-flash")
     args = parser.parse_args()
@@ -291,6 +306,7 @@ async def run() -> None:
                 results_dir=results_dir,
                 base_url=args.backend_url,
                 build_timeout=args.build_timeout,
+                enqueue_on_limit=args.enqueue_on_limit,
                 wait_seconds=args.wait_seconds,
                 scorer_model=args.scorer_model,
                 semaphore=semaphore,

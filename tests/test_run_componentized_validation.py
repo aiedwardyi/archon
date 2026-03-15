@@ -12,6 +12,28 @@ from eval import run_componentized_validation as runner
 
 
 class RunComponentizedValidationTests(unittest.TestCase):
+    def test_create_and_build_sync_forwards_enqueue_flag(self):
+        builder = mock.Mock()
+        builder.create_and_build.return_value = {"project_id": 1, "version": 1, "execution_id": 1}
+
+        with mock.patch.object(runner, "BuilderAPI", return_value=builder) as builder_cls:
+            result = runner._create_and_build_sync(
+                base_url="http://127.0.0.1:5000",
+                name="componentized_dashboard_test",
+                description="Build a dashboard",
+                timeout=30,
+                enqueue_on_limit=True,
+            )
+
+        builder_cls.assert_called_once_with(base_url="http://127.0.0.1:5000")
+        builder.create_and_build.assert_called_once_with(
+            name="componentized_dashboard_test",
+            description="Build a dashboard",
+            timeout=30,
+            enqueue_on_limit=True,
+        )
+        self.assertEqual(result["project_id"], 1)
+
     def test_load_preview_build_uses_fallback_file(self):
         with tempfile.TemporaryDirectory() as td:
             version_dir = Path(td) / "generated" / "101" / "v1"
@@ -39,7 +61,7 @@ class RunComponentizedValidationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             results_dir = Path(td)
 
-            def fake_create_and_build_sync(*, base_url, name, description, timeout):
+            def fake_create_and_build_sync(*, base_url, name, description, timeout, enqueue_on_limit):
                 raise BuildError("simulated failure")
 
             with mock.patch.object(runner, "_create_and_build_sync", side_effect=fake_create_and_build_sync):
@@ -50,6 +72,7 @@ class RunComponentizedValidationTests(unittest.TestCase):
                         results_dir=results_dir,
                         base_url="http://127.0.0.1:5000",
                         build_timeout=30,
+                        enqueue_on_limit=False,
                         wait_seconds=0,
                         scorer_model="gemini-2.5-flash",
                         semaphore=asyncio.Semaphore(1),

@@ -4,6 +4,7 @@ load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env")
 
 from flask import Flask, request, jsonify, send_file, Response
 from flask_cors import CORS
+from collections import deque
 import json
 import os
 import shutil
@@ -158,12 +159,15 @@ SEED_PROJECTS = [
 
 execution_state: dict = {}  # keyed by project_id (int)
 execution_state_lock = threading.Lock()
+pipeline_queue = deque()
 
 
 def _default_project_state() -> dict[str, Any]:
     return {
         "running": False,
+        "queued": False,
         "started_at": None,
+        "queued_at": None,
         "current_execution_id": None,
         "logs": [],
         "result_ready": False,
@@ -195,38 +199,67 @@ def count_running_pipelines() -> int:
         return sum(1 for state in execution_state.values() if state.get("running"))
 
 
+def _queue_position_unlocked(project_id: int | None) -> int | None:
+    if project_id is None:
+        return None
+    for index, job in enumerate(pipeline_queue, start=1):
+        if job.get("project_id") == project_id:
+            return index
+    return None
+
+
 def get_scheduler_snapshot(project_id: int | None = None) -> dict[str, Any]:
     with execution_state_lock:
         active_pipelines = sum(1 for state in execution_state.values() if state.get("running"))
+        queued_pipelines = len(pipeline_queue)
         project_running = False
+        project_queued = False
+        queue_position = _queue_position_unlocked(project_id)
         if project_id is not None and project_id in execution_state:
             project_running = bool(execution_state[project_id].get("running"))
+            project_queued = bool(execution_state[project_id].get("queued"))
     return {
         "active_pipelines": active_pipelines,
+        "queued_pipelines": queued_pipelines,
         "max_concurrent_pipelines": get_max_concurrent_pipelines(),
         "project_running": project_running,
+        "project_queued": project_queued,
+        "queue_position": queue_position,
     }
 
 
-def claim_pipeline_slot(project_id: int) -> str | None:
+def claim_pipeline_slot(project_id: int, enqueue_on_limit: bool = False) -> str | None:
     with execution_state_lock:
         state = _ensure_project_state_unlocked(project_id)
         if state.get("running"):
             return "project_running"
+        if state.get("queued"):
+            return "project_queued"
 
-        if count := sum(1 for item in execution_state.values() if item.get("running")):
-            if count >= get_max_concurrent_pipelines():
-                return "worker_limit"
+        running_count = sum(1 for item in execution_state.values() if item.get("running"))
+        if running_count >= get_max_concurrent_pipelines():
+            if enqueue_on_limit:
+                state["running"] = False
+                state["queued"] = True
+                state["started_at"] = None
+                state["queued_at"] = time.time()
+                state["current_execution_id"] = None
+                state["logs"] = []
+                state["result_ready"] = False
+                return "queued"
+            return "worker_limit"
 
         state["running"] = True
+        state["queued"] = False
         state["started_at"] = time.time()
+        state["queued_at"] = None
         state["current_execution_id"] = None
         state["logs"] = []
         state["result_ready"] = False
         return None
 
 
-def attach_execution_to_state(project_id: int, execution_id: int) -> None:
+def attach_execution_to_state(project_id: int, execution_id: int | None) -> None:
     if project_id is None:
         return
     with execution_state_lock:
@@ -242,15 +275,126 @@ def release_pipeline_slot(project_id: int) -> None:
         state["running"] = False
         state["started_at"] = None
 
+
+def cancel_queued_pipeline(project_id: int | None) -> None:
+    if project_id is None:
+        return
+    with execution_state_lock:
+        if pipeline_queue:
+            remaining_jobs = [job for job in pipeline_queue if job.get("project_id") != project_id]
+            pipeline_queue.clear()
+            pipeline_queue.extend(remaining_jobs)
+
+        state = _ensure_project_state_unlocked(project_id)
+        state["queued"] = False
+        state["queued_at"] = None
+        state["started_at"] = None
+
+
+def coerce_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def queue_pipeline_job(job: dict[str, Any]) -> int | str:
+    project_id = job.get("project_id")
+    execution_id = job.get("execution_id")
+    if project_id is None:
+        return "project_missing"
+
+    with execution_state_lock:
+        state = _ensure_project_state_unlocked(project_id)
+        if state.get("running"):
+            return "project_running"
+
+        existing_position = _queue_position_unlocked(project_id)
+        if existing_position is not None:
+            if state.get("current_execution_id") not in {None, execution_id}:
+                return "project_queued"
+            return existing_position
+
+        if state.get("queued") and state.get("current_execution_id") not in {None, execution_id}:
+            return "project_queued"
+
+        state["queued"] = True
+        state["queued_at"] = state.get("queued_at") or time.time()
+        state["started_at"] = None
+        state["result_ready"] = False
+        if execution_id is not None:
+            state["current_execution_id"] = execution_id
+        pipeline_queue.append(job)
+        return len(pipeline_queue)
+
+
+def start_pipeline_job(job: dict[str, Any], *, from_queue: bool = False) -> None:
+    project_id = job["project_id"]
+    version = job.get("version")
+    task_description = job["task_description"]
+
+    if from_queue:
+        add_log("Scheduler: Dequeued pipeline and starting execution.", project_id=project_id)
+
+    print(f"Starting v{version} for project {project_id}: {task_description}")
+    thread = threading.Thread(
+        target=run_full_pipeline_async,
+        args=(
+            task_description,
+            job.get("prompt_history"),
+            project_id,
+            job.get("reference_images"),
+            job.get("nlu_result"),
+        ),
+        daemon=True,
+    )
+    thread.start()
+
+
+def dispatch_queued_pipelines() -> int:
+    jobs_to_start: list[dict[str, Any]] = []
+    with execution_state_lock:
+        while (
+            sum(1 for state in execution_state.values() if state.get("running"))
+            < get_max_concurrent_pipelines()
+            and pipeline_queue
+        ):
+            job = pipeline_queue.popleft()
+            project_id = job.get("project_id")
+            if project_id is None:
+                continue
+            state = _ensure_project_state_unlocked(project_id)
+            if not state.get("queued"):
+                continue
+            state["queued"] = False
+            state["running"] = True
+            state["started_at"] = time.time()
+            state["queued_at"] = None
+            jobs_to_start.append(job)
+
+    for job in jobs_to_start:
+        start_pipeline_job(job, from_queue=True)
+
+    return len(jobs_to_start)
+
+
+def release_and_dispatch_pipeline_slot(project_id: int | None) -> None:
+    release_pipeline_slot(project_id)
+    dispatch_queued_pipelines()
+
 def any_pipeline_running() -> bool:
     return count_running_pipelines() > 0
 
 
 def pipeline_busy_response(reason: str, project_id: int | None = None):
     scheduler = get_scheduler_snapshot(project_id)
-    if reason == "project_running":
+    if reason in {"project_running", "project_queued"}:
+        message = "A pipeline is already running for this project"
+        if reason == "project_queued":
+            message = "A pipeline is already queued for this project"
         return jsonify({
-            "error": "A pipeline is already running for this project",
+            "error": message,
             "reason": reason,
             "project_id": project_id,
             **scheduler,
@@ -265,6 +409,23 @@ def pipeline_busy_response(reason: str, project_id: int | None = None):
         "project_id": project_id,
         **scheduler,
     }), 429
+
+
+def queued_pipeline_response(
+    *,
+    project_id: int,
+    execution_id: int,
+    version: int,
+    queue_position: int,
+):
+    return jsonify({
+        "status": "queued",
+        "project_id": project_id,
+        "execution_id": execution_id,
+        "version": version,
+        "queue_position": queue_position,
+        **get_scheduler_snapshot(project_id),
+    }), 202
 
 
 def read_json_file(filepath: Path) -> Dict[str, Any] | None:
@@ -3102,7 +3263,7 @@ def run_full_pipeline_async(
             })
 
     finally:
-        release_pipeline_slot(project_id)
+        release_and_dispatch_pipeline_slot(project_id)
         session.close()
         print("Pipeline complete")
 
@@ -3481,7 +3642,12 @@ def get_version_logs(project_id: int, version: int):
 def iterate_project(project_id: int):
     user_id = get_optional_request_user_id()
     session = get_session()
+    project = None
+    execution = None
+    current_head = None
+    previous_project_status = None
     slot_claimed = False
+    queued_submission = False
     try:
         # Accept either JSON or multipart/form-data (for file uploads)
         if request.content_type and "multipart/form-data" in request.content_type:
@@ -3499,10 +3665,12 @@ def iterate_project(project_id: int):
                 except Exception:
                     data["nlu_result"] = nlu_payload
         else:
-            data = request.get_json()
+            data = request.get_json() or {}
 
         if not data or not data.get("prompt"):
             return jsonify({"error": "prompt is required"}), 400
+
+        enqueue_on_limit = coerce_bool(data.get("enqueue_on_limit"))
 
         project = session.get(Project, project_id)
         if not project:
@@ -3510,11 +3678,6 @@ def iterate_project(project_id: int):
         access_error = get_project_access_error(project, user_id)
         if access_error:
             return access_error
-
-        slot_error = claim_pipeline_slot(project_id)
-        if slot_error:
-            return pipeline_busy_response(slot_error, project_id)
-        slot_claimed = True
 
         prompt = data["prompt"]
         prompt_history = data.get("prompt_history", [])
@@ -3526,13 +3689,6 @@ def iterate_project(project_id: int):
                 provided_nlu_result = json.loads(provided_nlu_result)
             except Exception:
                 provided_nlu_result = None
-        if isinstance(provided_nlu_result, dict):
-            nlu_result = provided_nlu_result
-            print("[NLU] Using provided analysis from /chat")
-            print(f"[NLU] Full analysis: {nlu_result}")
-        else:
-            nlu_result = nlu_agent.analyze(prompt)
-            print(f"[NLU] Full analysis: {nlu_result}")
 
         requested_archetype = detect_requested_archetype(prompt)
         if (
@@ -3540,8 +3696,6 @@ def iterate_project(project_id: int):
             and requested_archetype
             and requested_archetype != project.locked_ui_archetype
         ):
-            release_pipeline_slot(project_id)
-            slot_claimed = False
             return jsonify({
                 "response_type": "chat",
                 "message": (
@@ -3549,6 +3703,21 @@ def iterate_project(project_id: int):
                     f"{requested_archetype}. To switch app types, please start a new project."
                 ),
             }), 200
+
+        slot_error = claim_pipeline_slot(project_id, enqueue_on_limit=enqueue_on_limit)
+        if slot_error and slot_error != "queued":
+            return pipeline_busy_response(slot_error, project_id)
+        queued_submission = slot_error == "queued"
+        slot_claimed = not queued_submission
+
+        nlu_result = None
+        if isinstance(provided_nlu_result, dict):
+            nlu_result = provided_nlu_result
+            print("[NLU] Using provided analysis from /chat")
+            print(f"[NLU] Full analysis: {nlu_result}")
+        else:
+            nlu_result = nlu_agent.analyze(prompt)
+            print(f"[NLU] Full analysis: {nlu_result}")
 
         current_head = (
             session.query(Execution)
@@ -3559,6 +3728,7 @@ def iterate_project(project_id: int):
             .first()
         )
 
+        previous_project_status = project.status
         if current_head:
             current_head.is_active_head = False
             session.commit()
@@ -3611,13 +3781,43 @@ def iterate_project(project_id: int):
             if reference_images:
                 print(f"Saved {len(reference_images)} reference image(s) for project {project_id} v{next_version}")
 
-        print(f"Starting iteration v{next_version} for project {project_id}: {prompt}")
-        thread = threading.Thread(
-            target=run_full_pipeline_async,
-            args=(prompt, prompt_history, project_id, reference_images, nlu_result),
-            daemon=True,
-        )
-        thread.start()
+        job = {
+            "project_id": project_id,
+            "execution_id": execution.id,
+            "version": next_version,
+            "task_description": prompt,
+            "prompt_history": prompt_history,
+            "reference_images": reference_images,
+            "nlu_result": nlu_result,
+        }
+
+        if queued_submission:
+            queue_position = queue_pipeline_job(job)
+            if isinstance(queue_position, str):
+                attach_execution_to_state(project_id, None)
+                cancel_queued_pipeline(project_id)
+                queued_submission = False
+                queued_execution = session.get(Execution, execution.id)
+                if queued_execution:
+                    session.delete(queued_execution)
+                if current_head:
+                    restored_head = session.get(Execution, current_head.id)
+                    if restored_head:
+                        restored_head.is_active_head = True
+                project.status = previous_project_status
+                project.updated_at = datetime.now(timezone.utc)
+                session.commit()
+                return pipeline_busy_response(queue_position, project_id)
+
+            add_log("Scheduler: Queued pipeline, waiting for worker slot.", project_id=project_id)
+            return queued_pipeline_response(
+                project_id=project_id,
+                execution_id=execution.id,
+                version=next_version,
+                queue_position=queue_position,
+            )
+
+        start_pipeline_job(job)
 
         return jsonify({
             "status": "started",
@@ -3628,8 +3828,29 @@ def iterate_project(project_id: int):
         }), 200
 
     except Exception as e:
-        if slot_claimed:
-            release_pipeline_slot(project_id)
+        session.rollback()
+        if queued_submission:
+            attach_execution_to_state(project_id, None)
+            cancel_queued_pipeline(project_id)
+            try:
+                if execution is not None:
+                    queued_execution = session.get(Execution, execution.id)
+                    if queued_execution:
+                        session.delete(queued_execution)
+                if current_head is not None:
+                    restored_head = session.get(Execution, current_head.id)
+                    if restored_head:
+                        restored_head.is_active_head = True
+                if project is not None and previous_project_status is not None:
+                    managed_project = session.get(Project, project.id)
+                    if managed_project:
+                        managed_project.status = previous_project_status
+                        managed_project.updated_at = datetime.now(timezone.utc)
+                session.commit()
+            except Exception:
+                session.rollback()
+        elif slot_claimed:
+            release_and_dispatch_pipeline_slot(project_id)
         print(f"Error in iterate_project: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
@@ -3683,17 +3904,22 @@ def execute_task():
     project_id = None
     user_id = get_optional_request_user_id()
     session = get_session()
+    project = None
+    execution = None
+    previous_project_status = None
     created_project = False
     slot_claimed = False
+    queued_submission = False
     try:
-        req_data = request.get_json()
+        req_data = request.get_json() or {}
         if not req_data:
             return jsonify({"error": "No JSON payload provided"}), 400
 
+        enqueue_on_limit = coerce_bool(req_data.get("enqueue_on_limit"))
         project_id = req_data.get("project_id")
 
         if not project_id:
-            project = Project(name="Untitled Project", description="", status="in_progress", owner_id=user_id)
+            project = Project(name="Untitled Project", description="", status="pending", owner_id=user_id)
             session.add(project)
             session.commit()
             session.refresh(project)
@@ -3707,30 +3933,13 @@ def execute_task():
             if access_error:
                 return access_error
 
-        slot_error = claim_pipeline_slot(project_id)
-        if slot_error:
-            if created_project:
-                session.delete(project)
-                session.commit()
-            return pipeline_busy_response(slot_error, project_id)
-        slot_claimed = True
-
-        project.status = "in_progress"
-        project.updated_at = datetime.now(timezone.utc)
-        session.commit()
-
-        next_version = get_next_version(session, project_id)
         task_description = project.description or project.name
-        nlu_result = nlu_agent.analyze(task_description)
-        print(f"[NLU] Full analysis: {nlu_result}")
         requested_archetype = detect_requested_archetype(task_description)
         if (
             project.locked_ui_archetype
             and requested_archetype
             and requested_archetype != project.locked_ui_archetype
         ):
-            release_pipeline_slot(project_id)
-            slot_claimed = False
             return jsonify({
                 "response_type": "chat",
                 "message": (
@@ -3738,6 +3947,22 @@ def execute_task():
                     f"{requested_archetype}. To switch app types, please start a new project."
                 ),
             }), 200
+
+        slot_error = claim_pipeline_slot(project_id, enqueue_on_limit=enqueue_on_limit)
+        if slot_error and slot_error != "queued":
+            if created_project:
+                session.delete(project)
+                session.commit()
+            return pipeline_busy_response(slot_error, project_id)
+        queued_submission = slot_error == "queued"
+        slot_claimed = not queued_submission
+
+        previous_project_status = project.status
+        project.status = "in_progress"
+        project.updated_at = datetime.now(timezone.utc)
+        session.commit()
+
+        next_version = get_next_version(session, project_id)
         initial_history = [{"role": "user", "content": task_description}]
 
         execution = Execution(
@@ -3754,13 +3979,47 @@ def execute_task():
         session.refresh(execution)
         attach_execution_to_state(project_id, execution.id)
 
-        print(f"Starting v{next_version} for project {project_id}: {task_description}")
-        thread = threading.Thread(
-            target=run_full_pipeline_async,
-            args=(task_description, initial_history, project_id, None, nlu_result),
-            daemon=True,
-        )
-        thread.start()
+        nlu_result = nlu_agent.analyze(task_description)
+        print(f"[NLU] Full analysis: {nlu_result}")
+
+        job = {
+            "project_id": project_id,
+            "execution_id": execution.id,
+            "version": next_version,
+            "task_description": task_description,
+            "prompt_history": initial_history,
+            "reference_images": None,
+            "nlu_result": nlu_result,
+        }
+
+        if queued_submission:
+            queue_position = queue_pipeline_job(job)
+            if isinstance(queue_position, str):
+                attach_execution_to_state(project_id, None)
+                cancel_queued_pipeline(project_id)
+                queued_submission = False
+                queued_execution = session.get(Execution, execution.id)
+                if queued_execution:
+                    session.delete(queued_execution)
+                if created_project:
+                    managed_project = session.get(Project, project.id)
+                    if managed_project:
+                        session.delete(managed_project)
+                else:
+                    project.status = previous_project_status
+                    project.updated_at = datetime.now(timezone.utc)
+                session.commit()
+                return pipeline_busy_response(queue_position, project_id)
+
+            add_log("Scheduler: Queued pipeline, waiting for worker slot.", project_id=project_id)
+            return queued_pipeline_response(
+                project_id=project_id,
+                execution_id=execution.id,
+                version=next_version,
+                queue_position=queue_position,
+            )
+
+        start_pipeline_job(job)
 
         return jsonify({
             "status": "started",
@@ -3771,8 +4030,29 @@ def execute_task():
         }), 200
 
     except Exception as e:
-        if project_id and slot_claimed:
-            release_pipeline_slot(project_id)
+        session.rollback()
+        if queued_submission and project_id:
+            attach_execution_to_state(project_id, None)
+            cancel_queued_pipeline(project_id)
+            try:
+                if execution is not None:
+                    queued_execution = session.get(Execution, execution.id)
+                    if queued_execution:
+                        session.delete(queued_execution)
+                if created_project and project is not None:
+                    managed_project = session.get(Project, project.id)
+                    if managed_project:
+                        session.delete(managed_project)
+                elif project is not None and previous_project_status is not None:
+                    managed_project = session.get(Project, project.id)
+                    if managed_project:
+                        managed_project.status = previous_project_status
+                        managed_project.updated_at = datetime.now(timezone.utc)
+                session.commit()
+            except Exception:
+                session.rollback()
+        elif project_id and slot_claimed:
+            release_and_dispatch_pipeline_slot(project_id)
         print(f"Error in execute_task: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
@@ -3875,10 +4155,10 @@ def execution_status():
             **scheduler,
         }), 200
 
-    if state["running"]:
+    if state["running"] or state.get("queued"):
         return jsonify({
             "status": "RUNNING",
-            "currentStage": current_stage,
+            "currentStage": current_stage if state["running"] else "pm",
             "logs": logs,
             "engineerTasks": [],
             "locked_ui_archetype": project.locked_ui_archetype if project else None,

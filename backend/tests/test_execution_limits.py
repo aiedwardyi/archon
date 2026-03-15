@@ -2,10 +2,11 @@ import os
 import sys
 import unittest
 import uuid
+from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from app import app, execution_state
+from app import app, execution_state, pipeline_queue, release_and_dispatch_pipeline_slot
 from models import Execution, Project, User, get_session
 
 
@@ -39,6 +40,30 @@ def _create_project(client, token: str, name: str, description: str = "") -> int
     return response.get_json()["id"]
 
 
+def _running_state(execution_id: int) -> dict:
+    return {
+        "running": True,
+        "queued": False,
+        "started_at": 123.0,
+        "queued_at": None,
+        "current_execution_id": execution_id,
+        "logs": [],
+        "result_ready": False,
+    }
+
+
+def _queued_state(execution_id: int) -> dict:
+    return {
+        "running": False,
+        "queued": True,
+        "started_at": None,
+        "queued_at": 456.0,
+        "current_execution_id": execution_id,
+        "logs": [],
+        "result_ready": False,
+    }
+
+
 class ExecutionLimitTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -61,10 +86,12 @@ class ExecutionLimitTests(unittest.TestCase):
 
     def setUp(self):
         execution_state.clear()
+        pipeline_queue.clear()
         self._old_worker_limit = os.environ.get("ARCHON_MAX_CONCURRENT_PIPELINES")
 
     def tearDown(self):
         execution_state.clear()
+        pipeline_queue.clear()
         if self._old_worker_limit is None:
             os.environ.pop("ARCHON_MAX_CONCURRENT_PIPELINES", None)
         else:
@@ -72,13 +99,7 @@ class ExecutionLimitTests(unittest.TestCase):
 
     def test_execute_task_rejects_same_project_overlap(self):
         project_id = _create_project(self.client, self.token, "Overlap Guard Project", "Build a dashboard")
-        execution_state[project_id] = {
-            "running": True,
-            "started_at": 123.0,
-            "current_execution_id": 999,
-            "logs": [],
-            "result_ready": False,
-        }
+        execution_state[project_id] = _running_state(999)
 
         response = self.client.post(
             "/api/execute-task",
@@ -105,13 +126,7 @@ class ExecutionLimitTests(unittest.TestCase):
         blocked_project_id = _create_project(self.client, self.token, "Blocked Project", "Build a portfolio")
         os.environ["ARCHON_MAX_CONCURRENT_PIPELINES"] = "1"
 
-        execution_state[running_project_id] = {
-            "running": True,
-            "started_at": 123.0,
-            "current_execution_id": 1001,
-            "logs": [],
-            "result_ready": False,
-        }
+        execution_state[running_project_id] = _running_state(1001)
 
         response = self.client.post(
             "/api/execute-task",
@@ -139,13 +154,7 @@ class ExecutionLimitTests(unittest.TestCase):
         blocked_project_id = _create_project(self.client, self.token, "Blocked Iterate Project")
         os.environ["ARCHON_MAX_CONCURRENT_PIPELINES"] = "1"
 
-        execution_state[running_project_id] = {
-            "running": True,
-            "started_at": 123.0,
-            "current_execution_id": 1002,
-            "logs": [],
-            "result_ready": False,
-        }
+        execution_state[running_project_id] = _running_state(1002)
 
         response = self.client.post(
             f"/api/projects/{blocked_project_id}/iterate",
@@ -167,6 +176,82 @@ class ExecutionLimitTests(unittest.TestCase):
             self.assertEqual(executions, 0)
         finally:
             db.close()
+
+    def test_execute_task_queues_when_global_worker_limit_is_full_and_requested(self):
+        running_project_id = _create_project(self.client, self.token, "Running Queue Project")
+        queued_project_id = _create_project(self.client, self.token, "Queued Project", "Build a portfolio")
+        os.environ["ARCHON_MAX_CONCURRENT_PIPELINES"] = "1"
+
+        execution_state[running_project_id] = _running_state(1003)
+
+        response = self.client.post(
+            "/api/execute-task",
+            json={"project_id": queued_project_id, "enqueue_on_limit": True},
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
+
+        self.assertEqual(response.status_code, 202)
+        payload = response.get_json()
+        self.assertEqual(payload["status"], "queued")
+        self.assertEqual(payload["project_id"], queued_project_id)
+        self.assertEqual(payload["queue_position"], 1)
+        self.assertEqual(payload["active_pipelines"], 1)
+        self.assertEqual(payload["queued_pipelines"], 1)
+        self.assertEqual(payload["max_concurrent_pipelines"], 1)
+        self.assertFalse(payload["project_running"])
+        self.assertTrue(payload["project_queued"])
+
+        db = get_session()
+        try:
+            execution = (
+                db.query(Execution)
+                .filter(Execution.project_id == queued_project_id)
+                .order_by(Execution.id.desc())
+                .first()
+            )
+            self.assertIsNotNone(execution)
+            self.assertEqual(execution.status, "pending")
+        finally:
+            db.close()
+
+        status_response = self.client.get(
+            "/api/execution-status",
+            query_string={"project_id": queued_project_id},
+        )
+        self.assertEqual(status_response.status_code, 200)
+        status_payload = status_response.get_json()
+        self.assertEqual(status_payload["status"], "RUNNING")
+        self.assertEqual(status_payload["currentStage"], "pm")
+        self.assertTrue(status_payload["project_queued"])
+        self.assertEqual(status_payload["queue_position"], 1)
+
+    def test_release_and_dispatch_pipeline_slot_starts_next_queued_job(self):
+        running_project_id = _create_project(self.client, self.token, "Active Dispatch Project")
+        queued_project_id = _create_project(self.client, self.token, "Queued Dispatch Project")
+        os.environ["ARCHON_MAX_CONCURRENT_PIPELINES"] = "1"
+
+        execution_state[running_project_id] = _running_state(1004)
+        execution_state[queued_project_id] = _queued_state(1005)
+        pipeline_queue.append({
+            "project_id": queued_project_id,
+            "execution_id": 1005,
+            "version": 1,
+            "task_description": "Build a dashboard",
+            "prompt_history": [{"role": "user", "content": "Build a dashboard"}],
+            "reference_images": None,
+            "nlu_result": {"intent": "build"},
+        })
+
+        with mock.patch("app.start_pipeline_job") as start_job:
+            release_and_dispatch_pipeline_slot(running_project_id)
+
+        start_job.assert_called_once()
+        self.assertEqual(start_job.call_args.args[0]["project_id"], queued_project_id)
+        self.assertTrue(start_job.call_args.kwargs["from_queue"])
+        self.assertFalse(execution_state[running_project_id]["running"])
+        self.assertTrue(execution_state[queued_project_id]["running"])
+        self.assertFalse(execution_state[queued_project_id]["queued"])
+        self.assertEqual(len(pipeline_queue), 0)
 
 
 if __name__ == "__main__":
