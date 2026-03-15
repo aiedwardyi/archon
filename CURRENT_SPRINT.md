@@ -13,7 +13,9 @@ Short status update for the active branch:
 - Added preview-safe generated-asset routing so componentized fan-page images now resolve through preview-served HTML, JS, and CSS instead of breaking at runtime.
 - Added stricter dashboard/fintech density guards and runtime normalization for chart-helper scope plus safe dependency syncing so componentized previews recover more reliably before quality scoring.
 - Added deterministic dashboard/fintech polish guards so support modules, action affordance, and support-rail hierarchy can improve in preview without relying on another prompt rewrite pass.
-- Current gap: the new app pipeline is more stable than `main`, and the latest fintech rerun recovered to a 72.5 preview score after the runtime/polish fixes, but dashboard still needs a clean retry after the latest validation timed out at the 900s build cap.
+- Added tighter componentized refinement scoping so generated lockfiles, icon libraries, runtime polish guards, and low-signal stub CSS files no longer dilute dashboard/fintech repair passes.
+- Added a runtime shell layout guard for fixed-sidebar grid dashboards plus broader watchlist/activity/button polish coverage so collapsed preview shells can recover before scoring.
+- Current gap: the dashboard 900s timeout is fixed, and a clean rerun on March 15, 2026 recovered to 73.5 in `support_module_gate_v10_dashboard_layout_guard` with the follow-up support-module rerun landing at 73.0, but dashboard polish still trails the 81.0 branch benchmark.
 
 ## Completed Phases
 

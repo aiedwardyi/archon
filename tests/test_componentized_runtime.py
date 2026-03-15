@@ -20,6 +20,7 @@ from backend.app import (
 )
 from utils.componentized_runtime import (
     build_componentized_preview,
+    collect_componentized_editable_files,
     collect_componentized_reverse_dependents,
     ensure_componentized_workspace_support,
     collect_existing_code_context,
@@ -32,6 +33,7 @@ from utils.componentized_runtime import (
     stage_componentized_design_assets,
 )
 from utils.componentized_quality import (
+    classify_componentized_content_file,
     collect_quality_issue_codes,
     evaluate_componentized_density,
     evaluate_componentized_multi_file_completeness,
@@ -817,11 +819,17 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertIn(".kpi-value", polish_guard)
             self.assertIn(".guard-news-lead", polish_guard)
             self.assertIn(".guard-accent-action", polish_guard)
+            self.assertIn(".guard-fixed-sidebar-shell", polish_guard)
+            self.assertIn(".watchlist-card", polish_guard)
+            self.assertIn(".activity-feed .feed-header", polish_guard)
+            self.assertIn("--guard-sidebar-offset", polish_guard)
             self.assertIn("Runtime shell polish guard for fintech", polish_guard)
             self.assertIn("requestAnimationFrame", polish_runtime)
             self.assertIn(".kpi-value", polish_runtime)
             self.assertIn("applyNewsHierarchyGuard", polish_runtime)
             self.assertIn("applyActionGuard", polish_runtime)
+            self.assertIn("applyShellLayoutGuard", polish_runtime)
+            self.assertIn("guard-fixed-sidebar-shell", polish_runtime)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
@@ -1814,6 +1822,94 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertIn("src/data/watchlist.ts", scope)
             self.assertIn("src/pages/Dashboard.tsx", scope)
             self.assertNotIn("src/base.css", scope)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_collect_componentized_editable_files_skips_generated_lockfile(self):
+        code_dir = _case_dir("componentized-editable-files")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "package-lock.json").write_text('{"name":"demo","lockfileVersion":3}\n', encoding="utf-8")
+            (code_dir / "package.json").write_text('{"name":"demo"}\n', encoding="utf-8")
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() { return <main>Demo</main>; }\n",
+                encoding="utf-8",
+            )
+
+            editable_files = collect_componentized_editable_files(code_dir)
+
+            self.assertIn("package.json", editable_files)
+            self.assertIn("src/App.tsx", editable_files)
+            self.assertNotIn("package-lock.json", editable_files)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_classify_componentized_content_file_skips_icons_and_polish_guards(self):
+        icon_report = classify_componentized_content_file(
+            "src/components/Icons.tsx",
+            "export const UserIcon = () => <svg><circle cx=\"12\" cy=\"7\" r=\"4\" /></svg>;\n",
+        )
+        guard_report = classify_componentized_content_file(
+            "src/polish-guard.ts",
+            "const COUNT_SELECTORS = ['.kpi-value']; export function applyPolishGuard() {}\n",
+        )
+
+        self.assertEqual("config", icon_report["role"])
+        self.assertFalse(icon_report["is_content_bearing"])
+        self.assertEqual("config", guard_report["role"])
+        self.assertFalse(guard_report["is_content_bearing"])
+
+    def test_select_componentized_refinement_scope_skips_generated_support_noise(self):
+        code_dir = _case_dir("componentized-quality-shell-noise")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            (code_dir / "src" / "base.css").write_text(":root { --accent: #3a82f6; }\n", encoding="utf-8")
+            (code_dir / "src" / "index.css").write_text(
+                "/* App-specific overrides live here. Keep this file intentionally minimal. */\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "styles.css").write_text(
+                "/* This file is intentionally left blank. Custom overrides are in style.css */\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "polish-guard.css").write_text(
+                ".chart-card { box-shadow: 0 20px 40px rgba(2, 6, 23, 0.3); }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "style.css").write_text(
+                ".dashboard-shell { font-family: 'Space Grotesk', sans-serif; box-shadow: 0 20px 40px rgba(2, 6, 23, 0.3); }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "main.tsx").write_text(
+                "import './base.css';\nimport './index.css';\nimport './styles.css';\nimport './polish-guard.css';\nimport '../style.css';\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() { return <div className=\"dashboard-shell\">Portfolio Value</div>; }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "components" / "Dashboard.tsx").write_text(
+                "export default function Dashboard() { return <section><h2>Candlestick Chart</h2><div>Watchlist</div><div>2 hours ago</div></section>; }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "package-lock.json").write_text(
+                '{"name":"demo","packages":{"":{"description":"watchlist chart delta"}}}\n',
+                encoding="utf-8",
+            )
+
+            scope = select_componentized_refinement_scope(
+                code_dir,
+                ["typography_hierarchy", "chart_missing", "side_panel_thin", "text_density"],
+            )
+
+            self.assertIn("src/base.css", scope)
+            self.assertIn("style.css", scope)
+            self.assertIn("src/App.tsx", scope)
+            self.assertIn("src/components/Dashboard.tsx", scope)
+            self.assertNotIn("package-lock.json", scope)
+            self.assertNotIn("src/polish-guard.css", scope)
+            self.assertNotIn("src/index.css", scope)
+            self.assertNotIn("src/styles.css", scope)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 

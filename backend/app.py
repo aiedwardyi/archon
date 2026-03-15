@@ -57,6 +57,7 @@ from utils.componentized_runtime import (
     summarize_componentized_build_error,
 )
 from utils.componentized_quality import (
+    classify_componentized_content_file,
     collect_quality_issue_codes,
     evaluate_componentized_density,
     evaluate_componentized_multi_file_completeness,
@@ -1212,7 +1213,13 @@ def select_componentized_refinement_scope(
                 "src/styles/style.css",
             ]
         )
-    selected = {path for path in preferred_files if (code_dir / path).exists()}
+    selected: set[str] = set()
+    for rel_path in preferred_files:
+        if not _componentized_scope_path_exists(code_dir, rel_path):
+            continue
+        if _is_low_signal_componentized_style_target(code_dir, rel_path):
+            continue
+        selected.add(rel_path)
     for rel_path in weak_file_paths or []:
         normalized = rel_path.replace("\\", "/").strip("/")
         if normalized:
@@ -1246,15 +1253,22 @@ def select_componentized_refinement_scope(
     }
 
     for rel_path in editable_files:
-        path = code_dir / rel_path
-        try:
-            content = path.read_text(encoding="utf-8", errors="replace").lower()
-        except OSError:
+        content = _read_componentized_scope_file(code_dir, rel_path)
+        if content is None:
             continue
+        if _is_low_signal_componentized_style_target(code_dir, rel_path, content=content):
+            continue
+        classification = classify_componentized_content_file(rel_path, content)
+        if classification["role"] == "config":
+            continue
+        if not classification.get("is_content_bearing") and classification["role"] not in {"style", "layout"}:
+            continue
+
+        normalized_content = content.lower()
 
         for issue in issues:
             patterns = issue_patterns.get(issue, ())
-            if any(pattern in content for pattern in patterns):
+            if any(pattern in normalized_content for pattern in patterns):
                 selected.add(rel_path)
                 break
 
@@ -1372,7 +1386,8 @@ def extend_componentized_scope(
     if include_common_targets:
         common_targets = ["index.html", "src/main.tsx", "src/App.tsx"]
         for rel_path in common_targets:
-            scoped.add(rel_path)
+            if _componentized_scope_path_exists(code_dir, rel_path):
+                scoped.add(rel_path)
 
     if include_style_targets:
         common_style_targets = [
@@ -1382,13 +1397,20 @@ def extend_componentized_scope(
             "src/styles.css",
         ]
         for rel_path in common_style_targets:
+            if not _componentized_scope_path_exists(code_dir, rel_path):
+                continue
+            if _is_low_signal_componentized_style_target(code_dir, rel_path):
+                continue
             scoped.add(rel_path)
 
         styles_dir = code_dir / "src" / "styles"
         if styles_dir.exists():
             for path in styles_dir.rglob("*"):
                 if path.is_file():
-                    scoped.add(path.relative_to(code_dir).as_posix())
+                    rel_path = path.relative_to(code_dir).as_posix()
+                    if _is_low_signal_componentized_style_target(code_dir, rel_path):
+                        continue
+                    scoped.add(rel_path)
 
     if include_direct_support:
         for rel_path in collect_componentized_direct_dependencies(
@@ -1399,6 +1421,54 @@ def extend_componentized_scope(
             scoped.add(rel_path)
 
     return sorted(scoped)
+
+
+AUTO_MANAGED_COMPONENTIZED_STYLE_PATHS = {
+    "src/polish-guard.css",
+}
+
+LOW_SIGNAL_COMPONENTIZED_STYLE_MARKERS = (
+    "keep this file intentionally minimal",
+    "intentionally left blank. custom overrides are in style.css",
+    "generated fallback stylesheet to satisfy a referenced local css import",
+)
+
+
+def _componentized_scope_path_exists(code_dir: Path, rel_path: str) -> bool:
+    path = code_dir / rel_path.replace("\\", "/").strip("/")
+    return path.exists() and path.is_file()
+
+
+def _read_componentized_scope_file(code_dir: Path, rel_path: str) -> str | None:
+    path = code_dir / rel_path.replace("\\", "/").strip("/")
+    if not path.exists() or not path.is_file():
+        return None
+    try:
+        return path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+
+
+def _is_low_signal_componentized_style_target(
+    code_dir: Path,
+    rel_path: str,
+    *,
+    content: str | None = None,
+) -> bool:
+    normalized = rel_path.replace("\\", "/").strip("/")
+    if normalized in AUTO_MANAGED_COMPONENTIZED_STYLE_PATHS:
+        return True
+    if not normalized.endswith(".css"):
+        return False
+    if content is None:
+        content = _read_componentized_scope_file(code_dir, normalized)
+    if content is None:
+        return True
+    compact = " ".join(content.split()).lower()
+    return (
+        normalized in {"src/index.css", "src/style.css", "src/styles.css"}
+        and any(marker in compact for marker in LOW_SIGNAL_COMPONENTIZED_STYLE_MARKERS)
+    )
 
 
 def build_componentized_build_repair_prompt(

@@ -186,7 +186,9 @@ Current work on `feat/componentized-builder-pipeline`:
 - Added preview-safe generated-asset routing so componentized fan-page bundles now resolve local design images correctly through preview-served HTML, JS, and CSS.
 - Added stricter dashboard/fintech density gates plus runtime normalization for chart-helper scope and safe dependency syncing so fresh componentized previews fail less often and preserve richer shell behavior.
 - Added deterministic dashboard/fintech polish guards so preview-time depth, support-module hierarchy, and action affordance can improve without another broad prompt rewrite.
-- Current branch status: build stability is materially improved, fan-page benchmark routing is cleaner, and image-heavy outputs are rendering much closer to target; the latest fintech validation recovered to 72.5 after the runtime/polish fixes, while dashboard still needs a clean retry after the latest validation hit the 900s build timeout before preview.
+- Added tighter componentized refinement scoping so generated lockfiles, icon libraries, runtime polish guards, and low-signal stub CSS files stop consuming dashboard/fintech repair bandwidth.
+- Added a runtime shell layout repair for fixed-sidebar grid dashboards plus broader support-module/button polish guards so collapsed previews recover before scoring.
+- Current branch status: build stability is materially improved, fan-page benchmark routing is cleaner, and image-heavy outputs are rendering much closer to target; the latest fintech validation recovered to 72.5 after the runtime/polish fixes, and dashboard no longer times out at 900s, with March 15, 2026 reruns landing at 73.5 (`support_module_gate_v10_dashboard_layout_guard`) and 73.0 (`support_module_gate_v11_dashboard_support_module_guard`). The remaining gap is dashboard polish versus the 81.0 branch benchmark.
 
 ### Phase 9 — Pipeline Page & Classifier Improvements (⬜ Planned)
 - ✅ Classifier too sensitive — opinion questions triggering builds

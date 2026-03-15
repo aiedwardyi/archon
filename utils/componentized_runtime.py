@@ -29,12 +29,15 @@ TEXT_EXTENSIONS = {
 TEXT_FILENAMES = {
     ".gitignore",
     "index.html",
-    "package-lock.json",
     "package.json",
     "README.md",
     "tsconfig.json",
     "tsconfig.node.json",
     "vite.config.ts",
+}
+
+NON_EDITABLE_COMPONENTIZED_FILENAMES = {
+    "package-lock.json",
 }
 
 SKIP_DIRS = {
@@ -249,6 +252,8 @@ def collect_existing_code_context(
             continue
 
         name = path.name
+        if name in NON_EDITABLE_COMPONENTIZED_FILENAMES:
+            continue
         if path.suffix.lower() not in TEXT_EXTENSIONS and name not in TEXT_FILENAMES:
             continue
 
@@ -572,6 +577,8 @@ def collect_componentized_editable_files(code_dir: Path) -> list[str]:
         if any(part in SKIP_DIRS for part in rel.parts[:-1]):
             continue
         name = path.name
+        if name in NON_EDITABLE_COMPONENTIZED_FILENAMES:
+            continue
         if path.suffix.lower() not in TEXT_EXTENSIONS and name not in TEXT_FILENAMES:
             continue
         editable_files.append(rel.as_posix())
@@ -1491,6 +1498,48 @@ def _build_componentized_polish_guard_css(ui_archetype: str) -> str | None:
         ".content-area {\n"
         "  position: relative;\n"
         "}\n\n"
+        ".guard-fixed-sidebar-shell {\n"
+        "  display: grid !important;\n"
+        "  grid-template-columns: var(--guard-sidebar-offset, 240px) minmax(0, 1fr) !important;\n"
+        "  align-items: start !important;\n"
+        "}\n\n"
+        ".guard-fixed-sidebar-shell > .main-content,\n"
+        ".guard-fixed-sidebar-shell > .content-area,\n"
+        ".guard-fixed-sidebar-shell > .dashboard-main,\n"
+        ".guard-fixed-sidebar-shell > .workspace-main,\n"
+        ".guard-fixed-sidebar-shell > main {\n"
+        "  grid-column: 2 / -1 !important;\n"
+        "  min-width: 0 !important;\n"
+        "  width: auto !important;\n"
+        "}\n\n"
+        ".guard-fixed-sidebar-shell > .main-content {\n"
+        "  margin-left: 0 !important;\n"
+        "}\n\n"
+        ".guard-fixed-sidebar-shell .content-area,\n"
+        ".guard-fixed-sidebar-shell .dashboard-main,\n"
+        ".guard-fixed-sidebar-shell .workspace-main,\n"
+        ".guard-fixed-sidebar-shell .kpi-grid,\n"
+        ".guard-fixed-sidebar-shell .data-table-wrapper,\n"
+        ".guard-fixed-sidebar-shell .chart-card {\n"
+        "  min-width: 0 !important;\n"
+        "  width: 100% !important;\n"
+        "}\n\n"
+        ".guard-fixed-sidebar-shell .kpi-grid {\n"
+        "  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)) !important;\n"
+        "}\n\n"
+        ".guard-fixed-sidebar-shell .grid-2col,\n"
+        ".guard-fixed-sidebar-shell .content-grid,\n"
+        ".guard-fixed-sidebar-shell .dashboard-grid {\n"
+        "  grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.96fr) !important;\n"
+        "  align-items: start !important;\n"
+        "}\n\n"
+        "@media (max-width: 1080px) {\n"
+        "  .guard-fixed-sidebar-shell .grid-2col,\n"
+        "  .guard-fixed-sidebar-shell .content-grid,\n"
+        "  .guard-fixed-sidebar-shell .dashboard-grid {\n"
+        "    grid-template-columns: 1fr !important;\n"
+        "  }\n"
+        "}\n\n"
         ".topbar,\n"
         ".header-bar,\n"
         ".sidebar {\n"
@@ -1570,6 +1619,8 @@ def _build_componentized_polish_guard_css(ui_archetype: str) -> str | None:
         "    var(--card-bg, var(--surface, #111827)) !important;\n"
         "}\n\n"
         ".watchlist-panel,\n"
+        ".watchlist-card,\n"
+        ".activity-feed,\n"
         ".activity-panel,\n"
         ".alerts-panel,\n"
         ".alert-panel {\n"
@@ -1657,6 +1708,50 @@ def _build_componentized_polish_guard_css(ui_archetype: str) -> str | None:
         "  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.028)) !important;\n"
         "  border-color: rgba(255, 255, 255, 0.12) !important;\n"
         "  color: var(--text, #f8fafc) !important;\n"
+        "}\n\n"
+        ".activity-feed,\n"
+        ".watchlist-card,\n"
+        ".watchlist-panel {\n"
+        "  overflow: hidden;\n"
+        "}\n\n"
+        ".activity-feed .feed-header,\n"
+        ".watchlist-card .feed-header,\n"
+        ".watchlist-panel .feed-header {\n"
+        "  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));\n"
+        "  border-bottom-color: rgba(255, 255, 255, 0.08) !important;\n"
+        "}\n\n"
+        ".activity-item,\n"
+        ".watchlist-item,\n"
+        ".feed-item {\n"
+        "  position: relative;\n"
+        "  transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease !important;\n"
+        "}\n\n"
+        ".activity-item:hover,\n"
+        ".watchlist-item:hover,\n"
+        ".feed-item:hover {\n"
+        "  transform: translateX(2px);\n"
+        "  box-shadow: inset 2px 0 0 rgba(var(--accent-rgb, 16, 185, 129), 0.55);\n"
+        "}\n\n"
+        ".watchlist-price,\n"
+        ".activity-time,\n"
+        ".cell-action,\n"
+        ".table-action,\n"
+        ".action-link {\n"
+        "  font-family: var(--font-mono, 'JetBrains Mono', monospace) !important;\n"
+        "}\n\n"
+        ".cell-action,\n"
+        ".table-action,\n"
+        ".action-link,\n"
+        ".trade-btn {\n"
+        "  color: rgba(var(--accent-rgb, 16, 185, 129), 0.92) !important;\n"
+        "  text-decoration: none;\n"
+        "}\n\n"
+        ".cell-action:hover,\n"
+        ".table-action:hover,\n"
+        ".action-link:hover,\n"
+        ".trade-btn:hover {\n"
+        "  color: var(--text, #f8fafc) !important;\n"
+        "  text-shadow: 0 0 14px rgba(var(--accent-rgb, 16, 185, 129), 0.24);\n"
         "}\n\n"
         ".chart-action-btn,\n"
         ".chart-timeframe-btn,\n"
@@ -1784,7 +1879,13 @@ def _build_componentized_polish_guard_runtime(ui_archetype: str) -> str | None:
         '  ".primary-btn",\n'
         '  "button"\n'
         "] as const;\n\n"
+        "const SHELL_LAYOUT_SELECTORS = [\n"
+        '  ".dashboard-layout",\n'
+        '  ".fintech-shell"\n'
+        "] as const;\n\n"
         "const NEWS_ITEM_SELECTOR = '.news-item, .feed-item, article, li';\n"
+        "const SHELL_MAIN_SELECTOR = '.main-content, .content-area, .dashboard-main, .workspace-main, main';\n"
+        "const SHELL_SIDEBAR_SELECTOR = '.sidebar, .app-sidebar, .left-rail, .side-rail';\n"
         "const PRIMARY_ACTION_RE = /\\b(buy|trade|deposit|rebalance|review|add position|open)\\b/i;\n"
         "const SECONDARY_ACTION_RE = /\\b(sell|withdraw|trim|hedge|close|reduce)\\b/i;\n\n"
         "function parseCountValue(text: string): { value: number; prefix: string; suffix: string; decimals: number } | null {\n"
@@ -1866,10 +1967,41 @@ def _build_componentized_polish_guard_runtime(ui_archetype: str) -> str | None:
         "    }\n"
         "  });\n"
         "}\n\n"
+        "function applyShellLayoutGuard(root: ParentNode = document): void {\n"
+        "  if (typeof window === 'undefined' || window.innerWidth < 960) {\n"
+        "    return;\n"
+        "  }\n"
+        "  SHELL_LAYOUT_SELECTORS.forEach((selector) => {\n"
+        "    root.querySelectorAll<HTMLElement>(selector).forEach((shell) => {\n"
+        "      const sidebar = shell.querySelector<HTMLElement>(SHELL_SIDEBAR_SELECTOR);\n"
+        "      const main = shell.querySelector<HTMLElement>(SHELL_MAIN_SELECTOR);\n"
+        "      if (!sidebar || !main) {\n"
+        "        shell.classList.remove('guard-fixed-sidebar-shell');\n"
+        "        shell.style.removeProperty('--guard-sidebar-offset');\n"
+        "        return;\n"
+        "      }\n"
+        "      const shellStyle = window.getComputedStyle(shell);\n"
+        "      const sidebarStyle = window.getComputedStyle(sidebar);\n"
+        "      const sidebarWidth = Math.round(sidebar.getBoundingClientRect().width);\n"
+        "      const mainRect = main.getBoundingClientRect();\n"
+        "      const fixedSidebarGrid = shellStyle.display.includes('grid') && sidebarStyle.position === 'fixed';\n"
+        "      const contentCollapsed = sidebarWidth > 0 && mainRect.width > 0 && mainRect.width <= Math.max(sidebarWidth + 80, window.innerWidth * 0.42);\n"
+        "      const contentPinnedLeft = sidebarWidth > 0 && mainRect.x < Math.max(16, sidebarWidth - 12);\n"
+        "      if (fixedSidebarGrid && (contentCollapsed || contentPinnedLeft)) {\n"
+        "        shell.classList.add('guard-fixed-sidebar-shell');\n"
+        "        shell.style.setProperty('--guard-sidebar-offset', `${Math.max(64, sidebarWidth)}px`);\n"
+        "      } else {\n"
+        "        shell.classList.remove('guard-fixed-sidebar-shell');\n"
+        "        shell.style.removeProperty('--guard-sidebar-offset');\n"
+        "      }\n"
+        "    });\n"
+        "  });\n"
+        "}\n\n"
         "function applyPolishGuard(root: ParentNode = document): void {\n"
         "  applyCountGuard(root);\n"
         "  applyNewsHierarchyGuard(root);\n"
         "  applyActionGuard(root);\n"
+        "  applyShellLayoutGuard(root);\n"
         "}\n\n"
         "if (typeof window !== 'undefined') {\n"
         "  window.addEventListener('load', () => {\n"

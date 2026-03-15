@@ -200,6 +200,25 @@ def classify_componentized_content_file(path: str, content: str) -> dict[str, An
     normalized_content = content.lower()
     signals: list[str] = []
 
+    if "polish-guard" in normalized_path:
+        return {
+            "path": rel_path,
+            "role": "config",
+            "is_content_bearing": False,
+            "signals": ["runtime polish guard"],
+        }
+
+    if (
+        normalized_path.endswith(("/icons.ts", "/icons.tsx", "/icons.js", "/icons.jsx"))
+        or "/icons/" in f"/{normalized_path}"
+    ):
+        return {
+            "path": rel_path,
+            "role": "config",
+            "is_content_bearing": False,
+            "signals": ["icon library"],
+        }
+
     if normalized_path.endswith((".css", ".scss", ".less")):
         return {
             "path": rel_path,
