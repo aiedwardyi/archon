@@ -113,6 +113,8 @@ def _make_summary(results: list[dict[str, Any]]) -> str:
         lines.append(f"## {item['archetype']}")
         lines.append(f"- Project: {item.get('project_id')} v{item.get('version')}")
         lines.append(f"- Scaffold mode: {item.get('scaffold_mode')}")
+        if item.get("build_only"):
+            lines.append("- Mode: build-only")
         queue_telemetry = item.get("queue_telemetry") or {}
         if queue_telemetry:
             lines.append(
@@ -126,6 +128,8 @@ def _make_summary(results: list[dict[str, Any]]) -> str:
         lines.append(f"- Previous site: {item.get('previous_site_path')}")
         if item.get("score"):
             lines.append(f"- New score: {item['score'].get('weighted_total')}")
+        elif item.get("score_skipped"):
+            lines.append("- New score: skipped (build-only mode)")
         else:
             lines.append(f"- New score: {item.get('score_error') or 'None'}")
         lines.append(
@@ -216,12 +220,14 @@ async def _run_archetype(
     queue_timeout: int | None,
     wait_seconds: float,
     scorer_model: str,
+    build_only: bool,
     semaphore: asyncio.Semaphore,
 ) -> dict[str, Any]:
     async with semaphore:
         item: dict[str, Any] = {
             "archetype": archetype,
             "prompt": prompt,
+            "build_only": build_only,
             **BASELINES[archetype],
             "started_at": datetime.now().isoformat(timespec="seconds"),
         }
@@ -260,34 +266,42 @@ async def _run_archetype(
                     item["project_id"],
                     item["version"],
                 )
-                screenshotter = Screenshotter(viewport_width=1440, viewport_height=900)
-                screenshots = await screenshotter.capture_both(
-                    url=build_result["preview_url"],
-                    output_dir=outdir,
-                    wait_seconds=wait_seconds,
-                )
-                item["screenshots"] = {key: str(value) for key, value in screenshots.items()}
-                screenshot_path = screenshots.get("full_page", screenshots["viewport"])
-                score_dict = await asyncio.to_thread(
-                    _score_sync,
-                    screenshot_path=screenshot_path,
-                    archetype=archetype,
-                    scorer_model=scorer_model,
-                )
-                item["score"] = score_dict
-                item["delta_vs_previous_best"] = round(
-                    float(score_dict["weighted_total"]) - float(item["previous_best_score"]),
-                    1,
-                )
-                (outdir / "scores.json").write_text(
-                    json.dumps(score_dict, indent=2, ensure_ascii=False) + "\n",
-                    encoding="utf-8",
-                )
-                logger.info(
-                    "Completed %s validation with score %.1f",
-                    archetype,
-                    float(score_dict["weighted_total"]),
-                )
+                if build_only:
+                    item["score_skipped"] = True
+                    item["delta_vs_previous_best"] = None
+                    logger.info(
+                        "Completed %s validation in build-only mode",
+                        archetype,
+                    )
+                else:
+                    screenshotter = Screenshotter(viewport_width=1440, viewport_height=900)
+                    screenshots = await screenshotter.capture_both(
+                        url=build_result["preview_url"],
+                        output_dir=outdir,
+                        wait_seconds=wait_seconds,
+                    )
+                    item["screenshots"] = {key: str(value) for key, value in screenshots.items()}
+                    screenshot_path = screenshots.get("full_page", screenshots["viewport"])
+                    score_dict = await asyncio.to_thread(
+                        _score_sync,
+                        screenshot_path=screenshot_path,
+                        archetype=archetype,
+                        scorer_model=scorer_model,
+                    )
+                    item["score"] = score_dict
+                    item["delta_vs_previous_best"] = round(
+                        float(score_dict["weighted_total"]) - float(item["previous_best_score"]),
+                        1,
+                    )
+                    (outdir / "scores.json").write_text(
+                        json.dumps(score_dict, indent=2, ensure_ascii=False) + "\n",
+                        encoding="utf-8",
+                    )
+                    logger.info(
+                        "Completed %s validation with score %.1f",
+                        archetype,
+                        float(score_dict["weighted_total"]),
+                    )
             else:
                 item["score_error"] = "preview_unavailable"
                 item["delta_vs_previous_best"] = None
@@ -333,6 +347,7 @@ async def run() -> None:
     parser.add_argument("--build-timeout", type=int, default=900)
     parser.add_argument("--queue-timeout", type=int, default=1800)
     parser.add_argument("--enqueue-on-limit", action="store_true")
+    parser.add_argument("--build-only", action="store_true")
     parser.add_argument("--wait-seconds", type=float, default=3.0)
     parser.add_argument("--scorer-model", default="gemini-2.5-flash")
     args = parser.parse_args()
@@ -357,6 +372,7 @@ async def run() -> None:
                 queue_timeout=args.queue_timeout,
                 wait_seconds=args.wait_seconds,
                 scorer_model=args.scorer_model,
+                build_only=args.build_only,
                 semaphore=semaphore,
             )
         )
