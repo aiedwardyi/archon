@@ -393,6 +393,54 @@ def get_scheduler_snapshot(project_id: int | None = None) -> dict[str, Any]:
     }
 
 
+def derive_scheduler_busy_reason(project_id: int | None = None) -> str:
+    runtime = build_scheduler_runtime_snapshot(project_id)
+    if runtime["project_running"] or runtime.get("project_db_status") == "running":
+        return "project_running"
+    if runtime["project_queued"] or runtime.get("project_db_status") == "pending":
+        return "project_queued"
+    if runtime["queued_pipelines"] >= runtime["max_queued_pipelines"]:
+        return "queue_limit"
+    return "worker_limit"
+
+
+def restore_unstarted_execution_state(
+    session,
+    *,
+    project_id: int | None,
+    execution_id: int | None,
+    restore_project_status: str | None,
+    restore_head_execution_id: int | None = None,
+    delete_project: bool = False,
+) -> None:
+    if project_id is not None:
+        release_pipeline_slot(project_id)
+        attach_execution_to_state(project_id, restore_head_execution_id)
+
+    if execution_id is not None:
+        managed_execution = session.get(Execution, execution_id)
+        if managed_execution:
+            session.delete(managed_execution)
+
+    if restore_head_execution_id is not None:
+        restored_head = session.get(Execution, restore_head_execution_id)
+        if restored_head:
+            restored_head.is_active_head = True
+
+    if project_id is None:
+        return
+
+    managed_project = session.get(Project, project_id)
+    if not managed_project:
+        return
+    if delete_project:
+        session.delete(managed_project)
+        return
+    if restore_project_status is not None:
+        managed_project.status = restore_project_status
+        managed_project.updated_at = datetime.now(timezone.utc)
+
+
 def claim_pipeline_slot(project_id: int, enqueue_on_limit: bool = False) -> str | None:
     runtime = build_scheduler_runtime_snapshot(project_id)
     with execution_state_lock:
@@ -4360,7 +4408,16 @@ def iterate_project(project_id: int):
                 queue_position=queue_position,
             )
 
-        start_pipeline_job(job)
+        if not start_pipeline_job(job):
+            restore_unstarted_execution_state(
+                session,
+                project_id=project_id,
+                execution_id=execution.id,
+                restore_project_status=previous_project_status,
+                restore_head_execution_id=current_head.id if current_head else None,
+            )
+            session.commit()
+            return pipeline_busy_response(derive_scheduler_busy_reason(project_id), project_id)
 
         return jsonify({
             "status": "started",
@@ -4563,7 +4620,16 @@ def execute_task():
                 queue_position=queue_position,
             )
 
-        start_pipeline_job(job)
+        if not start_pipeline_job(job):
+            restore_unstarted_execution_state(
+                session,
+                project_id=project_id,
+                execution_id=execution.id,
+                restore_project_status=previous_project_status,
+                delete_project=created_project,
+            )
+            session.commit()
+            return pipeline_busy_response(derive_scheduler_busy_reason(project_id), project_id)
 
         return jsonify({
             "status": "started",

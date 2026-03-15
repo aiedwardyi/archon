@@ -224,6 +224,37 @@ class ExecutionLimitTests(unittest.TestCase):
         self.assertEqual(payload["queued_pipelines"], 1)
         self.assertEqual(payload["queue_position"], 1)
 
+    def test_execute_task_restores_execution_when_startup_fails_before_thread_launch(self):
+        project_id = _create_project(self.client, self.token, "Startup Failure Project", "Build a startup-safe dashboard")
+
+        with mock.patch("app.start_pipeline_job", return_value=False):
+            response = self.client.post(
+                "/api/execute-task",
+                json={"project_id": project_id},
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+
+        self.assertEqual(response.status_code, 429)
+        payload = response.get_json()
+        self.assertEqual(payload["reason"], "worker_limit")
+        self.assertEqual(payload["project_id"], project_id)
+        self.assertEqual(payload["active_pipelines"], 0)
+
+        project_state = execution_state[project_id]
+        self.assertFalse(project_state["running"])
+        self.assertFalse(project_state["queued"])
+        self.assertIsNone(project_state["current_execution_id"])
+
+        db = get_session()
+        try:
+            executions = db.query(Execution).filter(Execution.project_id == project_id).count()
+            self.assertEqual(executions, 0)
+            project = db.get(Project, project_id)
+            self.assertIsNotNone(project)
+            self.assertEqual(project.status, "pending")
+        finally:
+            db.close()
+
     def test_execute_task_rejects_when_global_worker_limit_is_full(self):
         running_project_id = _create_project(self.client, self.token, "Running Project")
         blocked_project_id = _create_project(self.client, self.token, "Blocked Project", "Build a portfolio")
