@@ -1813,6 +1813,122 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_repairs_lightweight_chart_helper_corruption(self):
+        code_dir = _case_dir("componentized-runtime-lightweight-chart-helper")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "import React, { useCallback, useEffect, useRef, useState } from 'react';\n"
+                "import { createChart, IChartApi, ISeriesApi, CandlestickData, LineData, Time } from 'lightweight-charts';\n"
+                "const generateRandomCandlestickData = (count: number, basePrice: number): CandlestickData[] => {  const data: CandlestickData[] = [];\n"
+                "let lastPrice = basePrice;\n"
+                "for (let i = 0; i < count; i++) {    const open = lastPrice + (Math.random() - 0.5) * 5;\n"
+                "const close = open + (Math.random() - 0.5) * 10;\n"
+                "const high = Math.max(open, close) + Math.random() * 5;\n"
+                "const low = Math.min(open, close) - Math.random() * 5;    lastPrice = close;    data.push({      time: (1672531200 + i * 86400) as Time, /* Start from Jan 1, 2023      open,\n"
+                "      high,\n"
+                "      low,\n"
+                "      close,\n"
+                "    });  }\n"
+                "return data;};\n"
+                "const generateLineData = (count: number, basePrice: number): LineData[] => {  const data: LineData[] = [];\n"
+                "let lastValue = basePrice;\n"
+                "for (let i = 0; i < count; i++) {    lastValue += (Math.random() - 0.5) * 2; /* Simulate small fluctuations data.push({ */\n"
+                "time: (1672531200 + i * 86400) as Time,\n"
+                "      value: lastValue,\n"
+                "    });  }\n"
+                "return data;};\n"
+                "export default function App() {\n"
+                "  const [chartTimeframe] = useState<'1D' | '1W' | '1M' | '1Y' | 'ALL'>('1M');\n"
+                "  const [currentChartData, setCurrentChartData] = useState<CandlestickData[]>([]);\n"
+                "  const [currentVolumeData, setCurrentVolumeData] = useState<LineData[]>([]);\n"
+                "  const chartContainerRef = useRef<HTMLDivElement>(null);\n"
+                "  const chartRef = useRef<IChartApi | null>(null);\n"
+                "  const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);\n"
+                "  const volumeSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);\n"
+                "  const getChartDataForSymbol = useCallback((symbol: string, timeframe: typeof chartTimeframe) => {    /* This would fetch real data, here we simulate */\n"
+                "const basePrice = (symbol === 'SPY' ? 500 : (symbol === 'GOOGL' ? 150 : 170)) + Math.random() * 20;\n"
+                "let count = 60; /* Default for 1M if (timeframe === '1D') count = 30; Hourly */\n"
+                "if (timeframe === '1W') count = 7;\n"
+                "if (timeframe === '1Y') count = 250; // Daily    if (timeframe === 'ALL') count = 500; */\n"
+                "const newCandlestickData = generateRandomCandlestickData(count, basePrice);\n"
+                "const newVolumeData = newCandlestickData.map(d => ({\n"
+                "      time: d.time,\n"
+                "      value: Math.random() * 10000000 + 5000000, /* Simulate volume }));\n"
+                "setCurrentChartData(newCandlestickData);    setCurrentVolumeData(newVolumeData);  }, []);\n"
+                "useEffect(() => {    if (chartContainerRef.current) {      if (!chartRef.current) {\n"
+                "        const chart = createChart(chartContainerRef.current, {\n"
+                "          crosshair: {\n"
+                "            mode: 0, /* Magnet mode }, */\n"
+                "handleScroll: { vertTouchDrag: true, }, handleScale: { axisPressedMo/* useMove: true, */\n"
+                "}        });\n"
+                "        chartRef.current = chart;\n"
+                "        candlestickSeriesRef.current = chart.addCandlestickSeries({ upColor: '#00C853', downColor: '#FF3D00', borderVisible: false, wickUpColor: '#00C853', wickDownColor: '#FF3D00' });\n"
+                "        volumeSeriesRef.current = chart.addLineSeries({ color: '#A0A0A5', lineWidth: 1, priceFormat: { type: 'volume' }, overlay: true, scaleMargins: { top: 0.8, bottom: 0 } });\n"
+                "      }\n"
+                "    }  }, [currentChartData, currentVolumeData]);\n"
+                "  return <div ref={chartContainerRef} />;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("open,", app_source)
+            self.assertIn("const newVolumeData = newCandlestickData.map((datum) => ({", app_source)
+            self.assertIn("if (timeframe === '1D') count = 30;", app_source)
+            self.assertIn("handleScale: { axisPressedMouseMove: true }", app_source)
+            self.assertNotIn("axisPressedMo/* useMove: true, */", app_source)
+            self.assertNotIn("Simulate volume }));", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_inline_block_comment_note_code_bleed(self):
+        code_dir = _case_dir("componentized-runtime-inline-note-code-bleed")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  useEffect(() => {    /* This */\n"
+                "  useEffect is to trigger the price flash animation    tickers.forEach((ticker) => console.log(ticker));\n"
+                "  }, [tickers]);\n"
+                "  return null;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("/* This useEffect is to trigger the price flash animation */", app_source)
+            self.assertIn("tickers.forEach((ticker) => console.log(ticker));", app_source)
+            self.assertNotIn("useEffect is to trigger the price flash animation    tickers.forEach", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_rewrites_duplicate_label_object_fields(self):
+        code_dir = _case_dir("componentized-runtime-duplicate-label-field")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  const kpis = [\n"
+                "    { label: 'Best Performer', value: 3.2, deltaType: 'positive', unit: '%', label: 'TSLA' },\n"
+                "  ];\n"
+                "  return <pre>{JSON.stringify(kpis)}</pre>;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("asset: 'TSLA'", app_source)
+            self.assertNotIn("unit: '%', label: 'TSLA'", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_ensure_componentized_workspace_support_repairs_orphan_comment_split_identifiers_in_jsx(self):
         code_dir = _case_dir("componentized-runtime-orphan-jsx-identifier-split")
         try:

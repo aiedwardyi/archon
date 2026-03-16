@@ -110,6 +110,11 @@ COMMENT_NOTE_CONTINUATION_RE = re.compile(
     r"(?P=indent)(?P<tail>[a-z][A-Za-z0-9_./&,\- '()]{6,180})\s*$\n"
     r"(?=(?P=indent)(?:const|let|var|function|export|type|interface|class)\b)"
 )
+INLINE_BLOCK_COMMENT_NOTE_CODE_BLEED_RE = re.compile(
+    r"(?m)^(?P<prefix>[^\n]*?)/\*\s*(?P<comment>[^*\n]{1,80})\s*\*/\s*$\n"
+    r"(?P<indent>[ \t]*)(?P<tail>[A-Za-z][A-Za-z0-9_./&,\- '()]{4,160}?)\s{2,}"
+    r"(?P<code>(?:if\s*\(|for\s*\(|while\s*\(|const\b|let\b|var\b|return\b|set[A-Z]\w*\(|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\s*\()[^\n]*)"
+)
 JSX_COMMENT_SWALLOWED_TAG_BOUNDARY_RE = re.compile(
     r"/\*\s*[\s\S]{0,320}?(?P<boundary>(?:/?>)\s*</[A-Za-z][A-Za-z0-9-]*>\s*<[A-Za-z][A-Za-z0-9-]*)\s*\*/",
     re.MULTILINE,
@@ -269,6 +274,26 @@ JS_EVENT_HANDLER_RE = re.compile(r"\bon(Click|Change|Submit|Input|KeyDown|KeyUp|
 DOM_EVENT_LISTENER_RE = re.compile(r"addEventListener\(\s*['\"]([a-z]+)['\"]")
 CSS_BLOCK_RE = re.compile(r"(?P<selector>[^{}]+)\{(?P<body>[^{}]*)\}", re.MULTILINE)
 GOOGLE_FONT_IMPORT_LINE_RE = re.compile(r"^\s*@import\s+url\([^)]+fonts\.googleapis\.com[^)]*\)\s*;\s*$", re.MULTILINE)
+LIGHTWEIGHT_CHART_CANDLE_HELPER_RE = re.compile(
+    r"const generateRandomCandlestickData = \(count: number, basePrice: number\): CandlestickData\[\] => \{[\s\S]{0,2400}?return data;\};",
+    re.MULTILINE,
+)
+LIGHTWEIGHT_CHART_LINE_HELPER_RE = re.compile(
+    r"const generateLineData = \(count: number, basePrice: number\): LineData\[\] => \{[\s\S]{0,2400}?return data;\};",
+    re.MULTILINE,
+)
+LIGHTWEIGHT_CHART_DATA_CALLBACK_RE = re.compile(
+    r"const getChartDataForSymbol = useCallback\(\(symbol: string, timeframe: typeof chartTimeframe\) => \{[\s\S]{0,2400}?\}, \[\]\);",
+    re.MULTILINE,
+)
+LIGHTWEIGHT_CHART_SETUP_EFFECT_RE = re.compile(
+    r"useEffect\(\(\) => \{\s*if \(chartContainerRef\.current\) \{\s*if \(!chartRef\.current\) \{[\s\S]{0,3200}?\}\s*\}, \[currentChartData, currentVolumeData\]\);",
+    re.MULTILINE,
+)
+DUPLICATE_LABEL_OBJECT_FIELD_RE = re.compile(
+    r"(?P<prefix>\{[^{}]{0,240}\blabel\s*:\s*['\"][^'\"]+['\"][^{}]{0,240}),\s*label\s*:\s*(?P<value>['\"][^'\"]+['\"])",
+    re.MULTILINE,
+)
 
 SAFE_COMPONENTIZED_DEPENDENCIES = {
     "@heroicons/react": "^2.2.0",
@@ -1904,12 +1929,14 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
     elif rel_path.endswith((".ts", ".tsx", ".js", ".jsx")):
         updated = LOCAL_CODE_IMPORT_RE.sub(r"\1\2\4", updated)
         updated = _normalize_componentized_field_aliases(updated)
+        updated = _repair_componentized_lightweight_chart_corruption(updated)
         updated = _repair_interface_field_comment_bleed(updated)
         updated = _repair_inline_block_comment_code_bleed(updated)
         updated = _repair_block_comment_control_flow_bleed(updated)
         updated = _repair_unterminated_block_comment_line_notes(updated)
         updated = _repair_multiline_block_comment_line_notes(updated)
         updated = _repair_inline_block_comment_continuations(updated)
+        updated = _repair_inline_block_comment_note_code_bleed(updated)
         updated = _normalize_run_on_inline_comments(updated)
         updated = _repair_componentized_comment_split_identifiers(updated)
         updated = _repair_componentized_comment_tail_split_identifiers(updated)
@@ -3351,6 +3378,155 @@ def _normalize_run_on_inline_comments(source: str) -> str:
     return INLINE_COMMENT_RUNON_RE.sub(lambda m: f"/* {m.group(1).strip()} */\n", source)
 
 
+def _repair_componentized_lightweight_chart_corruption(source: str) -> str:
+    if "lightweight-charts" not in source:
+        return source
+
+    updated = source
+    if "Start from Jan 1, 2023" in updated:
+        updated = LIGHTWEIGHT_CHART_CANDLE_HELPER_RE.sub(
+            (
+                "const generateRandomCandlestickData = (count: number, basePrice: number): CandlestickData[] => {\n"
+                "  const data: CandlestickData[] = [];\n"
+                "  let lastPrice = basePrice;\n"
+                "  for (let i = 0; i < count; i++) {\n"
+                "    const open = lastPrice + (Math.random() - 0.5) * 5;\n"
+                "    const close = open + (Math.random() - 0.5) * 10;\n"
+                "    const high = Math.max(open, close) + Math.random() * 5;\n"
+                "    const low = Math.min(open, close) - Math.random() * 5;\n"
+                "    lastPrice = close;\n"
+                "    data.push({\n"
+                "      time: (1672531200 + i * 86400) as Time,\n"
+                "      open,\n"
+                "      high,\n"
+                "      low,\n"
+                "      close,\n"
+                "    });\n"
+                "  }\n"
+                "  return data;\n"
+                "};"
+            ),
+            updated,
+        )
+    if "Simulate small fluctuations data.push({" in updated:
+        updated = LIGHTWEIGHT_CHART_LINE_HELPER_RE.sub(
+            (
+                "const generateLineData = (count: number, basePrice: number): LineData[] => {\n"
+                "  const data: LineData[] = [];\n"
+                "  let lastValue = basePrice;\n"
+                "  for (let i = 0; i < count; i++) {\n"
+                "    lastValue += (Math.random() - 0.5) * 2;\n"
+                "    data.push({\n"
+                "      time: (1672531200 + i * 86400) as Time,\n"
+                "      value: lastValue,\n"
+                "    });\n"
+                "  }\n"
+                "  return data;\n"
+                "};"
+            ),
+            updated,
+        )
+    if "Default for 1M if (timeframe === '1D') count = 30; Hourly" in updated or "Simulate volume }));" in updated:
+        updated = LIGHTWEIGHT_CHART_DATA_CALLBACK_RE.sub(
+            (
+                "const getChartDataForSymbol = useCallback((symbol: string, timeframe: typeof chartTimeframe) => {\n"
+                "  const basePrice = (symbol === 'SPY' ? 500 : (symbol === 'GOOGL' ? 150 : 170)) + Math.random() * 20;\n"
+                "  let count = 60; /* Default for 1M */\n"
+                "  if (timeframe === '1D') count = 30;\n"
+                "  if (timeframe === '1W') count = 7;\n"
+                "  if (timeframe === '1Y') count = 250;\n"
+                "  if (timeframe === 'ALL') count = 500;\n"
+                "  const newCandlestickData = generateRandomCandlestickData(count, basePrice);\n"
+                "  const newVolumeData = newCandlestickData.map((datum) => ({\n"
+                "    time: datum.time,\n"
+                "    value: Math.random() * 10000000 + 5000000,\n"
+                "  }));\n"
+                "  setCurrentChartData(newCandlestickData);\n"
+                "  setCurrentVolumeData(newVolumeData);\n"
+                "}, []);"
+            ),
+            updated,
+        )
+    if "axisPressedMo/* useMove: true, */" in updated:
+        updated = LIGHTWEIGHT_CHART_SETUP_EFFECT_RE.sub(
+            (
+                "useEffect(() => {\n"
+                "  if (!chartContainerRef.current) {\n"
+                "    return;\n"
+                "  }\n"
+                "\n"
+                "  if (!chartRef.current) {\n"
+                "    const chart = createChart(chartContainerRef.current, {\n"
+                "      layout: {\n"
+                "        backgroundColor: 'transparent',\n"
+                "        textColor: '#E0E0E0',\n"
+                "      },\n"
+                "      grid: {\n"
+                "        vertLines: { color: '#2A2A2E' },\n"
+                "        horzLines: { color: '#2A2A2E' },\n"
+                "      },\n"
+                "      rightPriceScale: {\n"
+                "        borderColor: '#2A2A2E',\n"
+                "      },\n"
+                "      timeScale: {\n"
+                "        borderColor: '#2A2A2E',\n"
+                "        timeVisible: true,\n"
+                "        secondsVisible: false,\n"
+                "      },\n"
+                "      crosshair: {\n"
+                "        mode: 0, /* Magnet mode */\n"
+                "      },\n"
+                "      handleScroll: { vertTouchDrag: true },\n"
+                "      handleScale: { axisPressedMouseMove: true },\n"
+                "    });\n"
+                "    chartRef.current = chart;\n"
+                "    candlestickSeriesRef.current = chart.addCandlestickSeries({\n"
+                "      upColor: '#00C853',\n"
+                "      downColor: '#FF3D00',\n"
+                "      borderVisible: false,\n"
+                "      wickUpColor: '#00C853',\n"
+                "      wickDownColor: '#FF3D00',\n"
+                "    });\n"
+                "    volumeSeriesRef.current = chart.addLineSeries({\n"
+                "      color: '#A0A0A5',\n"
+                "      lineWidth: 1,\n"
+                "      priceFormat: {\n"
+                "        type: 'volume',\n"
+                "      },\n"
+                "      overlay: true,\n"
+                "      scaleMargins: {\n"
+                "        top: 0.8,\n"
+                "        bottom: 0,\n"
+                "      },\n"
+                "    });\n"
+                "  }\n"
+                "\n"
+                "  const handleResize = () => {\n"
+                "    chartRef.current?.applyOptions({ width: chartContainerRef.current?.clientWidth || 0 });\n"
+                "  };\n"
+                "\n"
+                "  handleResize();\n"
+                "  window.addEventListener('resize', handleResize);\n"
+                "\n"
+                "  if (candlestickSeriesRef.current && currentChartData.length > 0) {\n"
+                "    candlestickSeriesRef.current.setData(currentChartData);\n"
+                "    chartRef.current?.timeScale().fitContent();\n"
+                "  }\n"
+                "  if (volumeSeriesRef.current && currentVolumeData.length > 0) {\n"
+                "    volumeSeriesRef.current.setData(currentVolumeData);\n"
+                "  }\n"
+                "\n"
+                "  return () => {\n"
+                "    window.removeEventListener('resize', handleResize);\n"
+                "  };\n"
+                "}, [currentChartData, currentVolumeData]);"
+            ),
+            updated,
+        )
+
+    return updated
+
+
 def _repair_interface_field_comment_bleed(source: str) -> str:
     def _repl(match: re.Match[str]) -> str:
         comment = " ".join(match.group("comment").replace("}", " ").split()).strip()
@@ -3524,6 +3700,17 @@ def _repair_componentized_comment_note_continuations(source: str) -> str:
         ),
         source,
     )
+
+
+def _repair_inline_block_comment_note_code_bleed(source: str) -> str:
+    def _repl(match: re.Match[str]) -> str:
+        prefix = match.group("prefix").rstrip()
+        if ";" in prefix:
+            return match.group(0)
+        merged = " ".join((match.group("comment") + " " + match.group("tail")).split()).strip()
+        return f"{prefix} /* {merged} */\n{match.group('indent')}{match.group('code').lstrip()}"
+
+    return INLINE_BLOCK_COMMENT_NOTE_CODE_BLEED_RE.sub(_repl, source)
 
 
 def _repair_componentized_comment_url_bleed(source: str) -> str:
@@ -3824,7 +4011,10 @@ def _normalize_componentized_field_aliases(source: str) -> str:
             continue
         for alias in aliases:
             updated = re.sub(rf"\b{re.escape(alias)}\b", canonical, updated)
-    return updated
+    return DUPLICATE_LABEL_OBJECT_FIELD_RE.sub(
+        lambda match: f"{match.group('prefix')}, asset: {match.group('value')}",
+        updated,
+    )
 
 
 def _normalize_componentized_currency_formatting(source: str) -> str:
