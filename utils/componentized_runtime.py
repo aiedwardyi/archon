@@ -113,7 +113,7 @@ TRAILING_SECTION_LINE_COMMENT_RE = re.compile(
     re.MULTILINE,
 )
 ORPHAN_COMMENT_CLOSE_AFTER_STATEMENT_RE = re.compile(
-    r"(?P<stmt>(?:\)\s*;|}\s*;))\s*\*/(?=\s*(?:\r?\n\s*)?(?:const|function|export|type|interface|class|return|$))",
+    r"(?P<stmt>(?:\)\s*;|}\s*;|\]\s*;))\s*\*/(?=\s*(?:\r?\n\s*)?(?:const|function|export|type|interface|class|return|$))",
     re.MULTILINE,
 )
 CONTROL_FLOW_ORPHAN_COMMENT_CLOSE_RE = re.compile(
@@ -164,7 +164,7 @@ JSX_BLOCK_COMMENT_BLEED_RE = re.compile(
     re.MULTILINE,
 )
 JSX_TEXT_COMMENT_CLOSE_BLEED_RE = re.compile(
-    r">(?P<prefix>[^<>{\n]{1,120}?)\s*\*/\s*(?:\r?\n\s*(?:\d+\s*\|\s*)?)?(?P<suffix>[A-Za-z][^<>{\n]{0,120}?)<",
+    r">(?P<prefix>[^<>{\n]{1,120}?)\s*\*/\s*(?:\r?\n\s*(?:\d+\s*\|\s*)?)?(?P<suffix>[A-Za-z][^<>{\n]{0,120}?)\s*<",
     re.MULTILINE,
 )
 VOID_JSX_ELEMENT_RE = re.compile(
@@ -222,6 +222,7 @@ SAFE_COMPONENTIZED_DEPENDENCIES = {
     "@heroicons/react": "^2.2.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.564.0",
+    "react-feather": "^2.0.10",
     "recharts": "2.15.0",
 }
 
@@ -3089,10 +3090,64 @@ def _repair_inline_block_comment_continuations(source: str) -> str:
 
 
 def _normalize_run_on_natural_language_notes(source: str) -> str:
-    return RUNON_NATURAL_LANGUAGE_NOTE_RE.sub(
+    updated = RUNON_NATURAL_LANGUAGE_NOTE_RE.sub(
         lambda match: f"/* {match.group('note').strip()} */\n",
         source,
     )
+    lines = updated.splitlines()
+    normalized_lines: list[str] = []
+    index = 0
+
+    while index < len(lines):
+        line = lines[index]
+        comment_match = re.match(r"^([ \t]*)/\*\s*([^*\n]{2,200}?)\s*\*/\s*$", line)
+        if not comment_match:
+            normalized_lines.append(line)
+            index += 1
+            continue
+
+        indent = comment_match.group(1)
+        comment_parts = [comment_match.group(2).strip()]
+        note_index = index + 1
+        consumed_note = False
+
+        while note_index < len(lines):
+            candidate = lines[note_index]
+            stripped = candidate.strip()
+            if not stripped:
+                break
+            if not candidate.startswith(indent):
+                break
+            if stripped.startswith(("/*", "//", "*", "*/", "{", "}", ")", "]", "</", "<")):
+                break
+            if re.match(
+                r"^(?:const|let|var|if|for|while|switch|return|export|import|function|class|type|interface|window|document)\b",
+                stripped,
+            ) and "/" not in stripped:
+                break
+            if re.match(r"^[A-Za-z_$][\w$]*\s*=", stripped):
+                break
+            if re.match(r"^[A-Za-z_$][\w$]*\s*\(", stripped):
+                break
+            if not re.search(r"[A-Za-z]", stripped):
+                break
+            if re.match(r"^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*$", stripped):
+                break
+
+            comment_parts.append(stripped)
+            note_index += 1
+            consumed_note = True
+
+        if consumed_note:
+            merged = " ".join(" ".join(part.split()) for part in comment_parts if part).strip()
+            normalized_lines.append(f"{indent}/* {merged} */")
+            index = note_index
+            continue
+
+        normalized_lines.append(line)
+        index += 1
+
+    return "\n".join(normalized_lines) + ("\n" if updated.endswith("\n") else "")
 
 
 def _normalize_run_on_explanatory_labels(source: str) -> str:
@@ -3139,6 +3194,10 @@ def _repair_componentized_comment_url_bleed(source: str) -> str:
             return match.group("stmt") + "\n"
         return f"{match.group('stmt')}\n/* {label} */\n"
 
+    updated = BLOCK_COMMENT_SWALLOWED_ARRAY_CLOSE_RE.sub(
+        lambda match: f"/* {' '.join(match.group('comment').split()).strip()} */\n];",
+        updated,
+    )
     updated = TRAILING_SECTION_LINE_COMMENT_RE.sub(_rewrite_section_comment, updated)
     updated = ORPHAN_COMMENT_CLOSE_AFTER_STATEMENT_RE.sub(
         lambda match: match.group("stmt"),
@@ -3146,10 +3205,6 @@ def _repair_componentized_comment_url_bleed(source: str) -> str:
     )
     updated = CONTROL_FLOW_ORPHAN_COMMENT_CLOSE_RE.sub(
         lambda match: match.group("prefix"),
-        updated,
-    )
-    updated = BLOCK_COMMENT_SWALLOWED_ARRAY_CLOSE_RE.sub(
-        lambda match: f"/* {' '.join(match.group('comment').split()).strip()} */\n];",
         updated,
     )
     return updated

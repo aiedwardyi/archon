@@ -25,6 +25,7 @@ from utils.componentized_runtime import (
     collect_componentized_editable_files,
     collect_componentized_reverse_dependents,
     ensure_componentized_workspace_support,
+    _normalize_run_on_natural_language_notes,
     collect_existing_code_context,
     extract_feature_inventory,
     extract_visual_dna,
@@ -792,6 +793,30 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_repairs_jsx_text_comment_close_bleed_before_next_line_closing_tag(self):
+        code_dir = _case_dir("componentized-runtime-jsx-text-comment-close-next-line")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return (\n"
+                "    <button>\n"
+                "      <svg></svg> Export */\n"
+                "      CSV\n"
+                "    </button>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("Export CSV", app_source)
+            self.assertNotIn("Export */", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_ensure_componentized_workspace_support_self_closes_void_jsx_elements(self):
         code_dir = _case_dir("componentized-runtime-void-jsx-elements")
         try:
@@ -1305,6 +1330,30 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_merges_post_comment_run_on_note(self):
+        code_dir = _case_dir("componentized-runtime-post-comment-note")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  useEffect(() => {\n"
+                "    /* This effect ensures */\n"
+                "    Alpine.js reacts to React's isCartOpen state\n"
+                "    const next = window.Alpine;\n"
+                "  }, []);\n"
+                "  return null;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("/* This effect ensures Alpine.js reacts to React's isCartOpen state */", app_source)
+            self.assertNotIn("Alpine.js reacts to React's isCartOpen state\n", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_ensure_componentized_workspace_support_normalizes_run_on_data_notes(self):
         code_dir = _case_dir("componentized-runtime-data-note")
         try:
@@ -1488,6 +1537,29 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             data_source = (code_dir / "src" / "data.ts").read_text(encoding="utf-8")
             self.assertIn("/* TSLA { label: 'Open Positions', value: 12 }, */", data_source)
             self.assertIn("];\nexport const generatePortfolio", data_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_strips_orphan_comment_close_after_array_statement(self):
+        code_dir = _case_dir("componentized-runtime-array-orphan-comment-close")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "const items = [\n"
+                "  'a',\n"
+                "  'b',\n"
+                "]; */\n"
+                "export default function App() {\n"
+                "  return <div>{items.join(', ')}</div>;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("];\nexport default function App()", app_source)
+            self.assertNotIn("]; */", app_source)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
@@ -2963,6 +3035,54 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertIn("src/main.tsx", scope)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_syncs_react_feather_dependency(self):
+        code_dir = _case_dir("componentized-react-feather-dependency")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            (code_dir / "package.json").write_text(
+                '{\n  "name": "demo",\n  "dependencies": {\n    "react": "^18.3.1"\n  }\n}\n',
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "components" / "Sidebar.tsx").write_text(
+                "import { Home } from 'react-feather';\n"
+                "export default function Sidebar() { return <Home />; }\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            package_json = (code_dir / "package.json").read_text(encoding="utf-8")
+            self.assertIn('"react-feather": "^2.0.10"', package_json)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_normalize_run_on_natural_language_notes_merges_multiline_prose_after_comment(self):
+        source = (
+            "useEffect(() => {\n"
+            "  /* This assumes */\n"
+            "  Alpine.js is initialized and available on the window\n"
+            "  // and that the x-data scope on this element can be accessed.\n"
+            "  /* For mixed React/Alpine, React controls rendering, Alpine controls */\n"
+            "  class/visibility.\n"
+            "  if (isCartDrawerOpen) {\n"
+            "    openDrawer();\n"
+            "  }\n"
+            "}, [isCartDrawerOpen]);\n"
+        )
+
+        normalized = _normalize_run_on_natural_language_notes(source)
+
+        self.assertIn(
+            "  /* This assumes Alpine.js is initialized and available on the window */\n",
+            normalized,
+        )
+        self.assertIn(
+            "  /* For mixed React/Alpine, React controls rendering, Alpine controls class/visibility. */\n",
+            normalized,
+        )
+        self.assertNotIn("\n  Alpine.js is initialized and available on the window\n", normalized)
+        self.assertNotIn("\n  class/visibility.\n", normalized)
 
 
 if __name__ == "__main__":
