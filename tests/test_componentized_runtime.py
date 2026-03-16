@@ -1743,6 +1743,76 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_strips_inline_jsx_attribute_comments(self):
+        code_dir = _case_dir("componentized-runtime-jsx-attr-comment-bleed")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "const chartHeight = 200;\n"
+                "export default function App() {\n"
+                "  return (\n"
+                "    <svg>\n"
+                "      <text y={chartHeight + 15} /* Below the chart */ x={-5} // Left of the chart\n"
+                "        textAnchor=\"middle\"\n"
+                "      >Jan</text>\n"
+                "    </svg>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("y={chartHeight + 15}", app_source)
+            self.assertIn("x={-5}", app_source)
+            self.assertNotIn("/* Below the chart */", app_source)
+            self.assertNotIn("// Left of the chart", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_svg_namespace_protocol(self):
+        code_dir = _case_dir("componentized-runtime-svg-xmlns-protocol")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return <svg xmlns=\"http:www.w3.org/2000/svg\"><circle cx=\"12\" cy=\"12\" r=\"10\" /></svg>;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn('xmlns="http://www.w3.org/2000/svg"', app_source)
+            self.assertNotIn('xmlns="http:www.w3.org/2000/svg"', app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_normalizes_broken_responsive_css_tail(self):
+        code_dir = _case_dir("componentized-runtime-broken-responsive-tail")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "index.css").write_text(
+                ":root{--text-secondary:#A0A0AAB;}.activity-feed{color:#fff;}/* Responsive Adjustments */"
+                "@media (max-width: 1200px) {.kpi-grid{grid-template-columns:1fr;}.content-area{padding:1rem;}.activity-feed{position:static;}}"
+                ".activity-feed{max-height:400px;}.header-bar{padding:0 1rem;}.sidebar{border-right:none;}}"
+                "@media (max-width: 768px) {.sidebar{display:none;}}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            css_source = (code_dir / "src" / "index.css").read_text(encoding="utf-8")
+            self.assertIn("--text-secondary:#A0A0AA;", css_source)
+            self.assertNotIn("#A0A0AAB", css_source)
+            self.assertIn("@media (max-width: 1200px)", css_source)
+            self.assertIn("max-height: 400px;", css_source)
+            self.assertNotIn("}}.activity-feed", css_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_ensure_componentized_workspace_support_repairs_orphan_comment_split_identifiers_in_jsx(self):
         code_dir = _case_dir("componentized-runtime-orphan-jsx-identifier-split")
         try:

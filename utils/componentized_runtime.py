@@ -162,6 +162,10 @@ ALPINE_JSX_DIRECTIVE_NOTE_RE = re.compile(
     r"/\*\s*@ts-ignore\s*\*/\s*Alpine\.js specific directive",
     re.IGNORECASE,
 )
+ALPINE_JSX_DIRECTIVE_TEXT_RE = re.compile(
+    r"\s*Alpine\.js specific directive",
+    re.IGNORECASE,
+)
 ALPINE_JSX_ATTR_RE = re.compile(
     r"(?P<leading>\s+)(?:x-[A-Za-z0-9_.:-]+|@[A-Za-z0-9_.:-]+)\s*=\s*(?:\{`[^`]*`\}|\{[^{}]*\}|\"[^\"]*\"|'[^']*')",
     re.MULTILINE,
@@ -202,6 +206,12 @@ JSX_EVENT_HANDLER_ARROW_BLEED_RE = re.compile(
 )
 CSS_DATA_URI_ESCAPED_QUOTE_BLEED_RE = re.compile(
     r"\\'\\''(?=\s+[A-Za-z-]+=)"
+)
+JSX_ATTR_COMMENT_BLEED_RE = re.compile(
+    r"(?P<attr>\b[A-Za-z_:][-A-Za-z0-9_:.]*=\{[^}\n]+\}|\b[A-Za-z_:][-A-Za-z0-9_:.]*=(?:\"[^\n\"]*\"|'[^\n']*'))\s*/\*\s*(?P<comment>[^*\n]{1,160})\s*\*/"
+)
+JSX_ATTR_LINE_COMMENT_BLEED_RE = re.compile(
+    r"(?P<attr>\b[A-Za-z_:][-A-Za-z0-9_:.]*=\{[^}\n]+\}|\b[A-Za-z_:][-A-Za-z0-9_:.]*=(?:\"[^\n\"]*\"|'[^\n']*'))\s*//\s*(?P<comment>[^\n]{1,160})"
 )
 DECLARATION_BOUNDARY_RE = re.compile(
     r"(?<=})(?=(?:interface\b|type\b|const\b|let\b|var\b|function\b|export\b|class\b|return\b))"
@@ -251,6 +261,10 @@ FONT_FAMILY_RE = re.compile(r"font-family\s*:\s*([^;}{]+);")
 BORDER_RADIUS_RE = re.compile(r"border-radius\s*:\s*([^;}{]+);")
 BOX_SHADOW_RE = re.compile(r"box-shadow\s*:\s*([^;}{]+);")
 MEDIA_QUERY_RE = re.compile(r"@media[^{]*?(?:max|min)-width\s*:\s*([0-9]+px)", re.IGNORECASE)
+INVALID_SEVEN_DIGIT_HEX_RE = re.compile(r"#(?P<value>[0-9a-fA-F]{7})(?![0-9a-fA-F])")
+SVG_XMLNS_PROTOCOL_SLASH_RE = re.compile(
+    r'(?P<prefix>\bxmlns\s*=\s*)(?P<quote>["\'])(?P<scheme>https?):(?P<rest>(?!//)[^"\']+)(?P=quote)'
+)
 JS_EVENT_HANDLER_RE = re.compile(r"\bon(Click|Change|Submit|Input|KeyDown|KeyUp|MouseEnter|MouseLeave|Focus|Blur)\s*=")
 DOM_EVENT_LISTENER_RE = re.compile(r"addEventListener\(\s*['\"]([a-z]+)['\"]")
 CSS_BLOCK_RE = re.compile(r"(?P<selector>[^{}]+)\{(?P<body>[^{}]*)\}", re.MULTILINE)
@@ -263,6 +277,97 @@ SAFE_COMPONENTIZED_DEPENDENCIES = {
     "react-feather": "^2.0.10",
     "recharts": "2.15.0",
 }
+
+SAFE_COMPONENTIZED_RESPONSIVE_TAIL = """/* Responsive Adjustments */
+@media (max-width: 1200px) {
+  .kpi-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+  .grid-2col,
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .main-content {
+    margin-left: 240px;
+  }
+  .content-area {
+    padding: var(--spacing-xxl) var(--spacing-lg);
+  }
+  .activity-feed {
+    position: static;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  .header-bar {
+    padding: 0 var(--spacing-lg);
+  }
+  .sidebar {
+    border-right: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+  .main-content {
+    margin-left: 0;
+  }
+  .header-bar {
+    flex-direction: column;
+    height: auto;
+    padding: var(--spacing-md) var(--spacing-lg);
+    gap: var(--spacing-md);
+    align-items: flex-start;
+  }
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+  }
+  .header-search {
+    min-width: unset;
+    flex-grow: 1;
+  }
+  .content-area {
+    padding: var(--spacing-xxl) var(--spacing-md);
+  }
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  .data-table th,
+  .data-table td {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: 0.8rem;
+  }
+  .data-table .cell-action {
+    font-size: 0.7rem;
+  }
+  .activity-feed {
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+  .activity-item {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  .chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+  }
+  .chart-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .chart-period-toggles {
+    width: 100%;
+    justify-content: space-around;
+  }
+  .interactive-chip {
+    width: 100%;
+    justify-content: center;
+  }
+}
+"""
 
 COMPONENTIZED_MODULE_EXTENSIONS = (".tsx", ".ts", ".jsx", ".js")
 COMPONENTIZED_IMPORT_ALIAS_CANDIDATES: dict[str, tuple[str, ...]] = {
@@ -1811,6 +1916,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_componentized_jsx_comment_swallowed_tag_boundaries(updated)
         updated = _repair_componentized_jsx_block_comment_bleed(updated)
         updated = _repair_componentized_jsx_text_comment_bleed(updated)
+        updated = _repair_componentized_jsx_attribute_comment_bleed(updated)
         updated = _repair_componentized_jsx_expression_comment_split_identifiers(updated)
         updated = _repair_componentized_orphan_comment_split_identifiers(updated)
         updated = _repair_componentized_orphan_comment_split_string_literals(updated)
@@ -1829,6 +1935,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_componentized_jsx_code_block_literals(updated)
         updated = _repair_componentized_jsx_event_handler_arrow_bleed(updated)
         updated = _repair_componentized_comment_url_bleed(updated)
+        updated = _repair_componentized_svg_namespace_protocol(updated)
         updated = _normalize_run_on_imports(updated)
         updated = _normalize_componentized_currency_formatting(updated)
         if rel_path.replace("\\", "/") == "src/main.tsx":
@@ -2007,6 +2114,8 @@ def _normalize_componentized_index_css(source: str) -> str:
     ):
         return "/* App-specific overrides live here. Keep this file intentionally minimal. */\n"
     updated = re.sub(r"^\s*@extend\s+[^;]+;\s*$\n?", "", source, flags=re.MULTILINE)
+    updated = _normalize_componentized_invalid_hex_colors(updated)
+    updated = _normalize_componentized_broken_responsive_tail(updated)
     return updated
 
 
@@ -3143,6 +3252,8 @@ def _normalize_componentized_override_css(
     has_mono_font: bool,
 ) -> str:
     updated = source
+    updated = _normalize_componentized_invalid_hex_colors(updated)
+    updated = _normalize_componentized_broken_responsive_tail(updated)
 
     if has_mono_font:
         updated = updated.replace("Roboto Mono", "JetBrains Mono")
@@ -3163,6 +3274,29 @@ def _normalize_componentized_override_css(
         )
 
     return updated
+
+
+def _normalize_componentized_invalid_hex_colors(source: str) -> str:
+    return INVALID_SEVEN_DIGIT_HEX_RE.sub(
+        lambda match: f"#{match.group('value')[:6]}",
+        source,
+    )
+
+
+def _normalize_componentized_broken_responsive_tail(source: str) -> str:
+    marker = "/* Responsive Adjustments */"
+    marker_index = source.find(marker)
+    if marker_index < 0:
+        return source
+
+    tail = source[marker_index:]
+    if "}}." not in tail and "}}@media" not in tail:
+        return source
+
+    head = source[:marker_index].rstrip()
+    if not head:
+        return SAFE_COMPONENTIZED_RESPONSIVE_TAIL
+    return f"{head}\n\n{SAFE_COMPONENTIZED_RESPONSIVE_TAIL}"
 
 
 def _rewrite_override_selector_font_family(
@@ -3424,6 +3558,17 @@ def _repair_componentized_comment_url_bleed(source: str) -> str:
     return updated
 
 
+def _repair_componentized_svg_namespace_protocol(source: str) -> str:
+    return SVG_XMLNS_PROTOCOL_SLASH_RE.sub(
+        lambda match: (
+            f"{match.group('prefix')}{match.group('quote')}"
+            f"{match.group('scheme')}://{match.group('rest')}"
+            f"{match.group('quote')}"
+        ),
+        source,
+    )
+
+
 def _repair_componentized_comment_split_identifiers(source: str) -> str:
     def _repl(match: re.Match[str]) -> str:
         comment = " ".join(match.group("comment").split()).strip()
@@ -3509,6 +3654,7 @@ def _repair_componentized_jsx_comment_swallowed_tag_boundaries(source: str) -> s
 
 def _strip_componentized_alpine_jsx_directives(source: str) -> str:
     updated = ALPINE_JSX_DIRECTIVE_NOTE_RE.sub("", source)
+    updated = ALPINE_JSX_DIRECTIVE_TEXT_RE.sub("", updated)
     for _ in range(8):
         repaired = ALPINE_JSX_ATTR_RE.sub("", updated)
         if repaired == updated:
@@ -3551,6 +3697,17 @@ def _repair_componentized_jsx_text_comment_bleed(source: str) -> str:
         return f">{prefix} {suffix}<"
 
     return JSX_TEXT_COMMENT_CLOSE_BLEED_RE.sub(_repl, source)
+
+
+def _repair_componentized_jsx_attribute_comment_bleed(source: str) -> str:
+    updated = JSX_ATTR_COMMENT_BLEED_RE.sub(
+        lambda match: match.group("attr"),
+        source,
+    )
+    return JSX_ATTR_LINE_COMMENT_BLEED_RE.sub(
+        lambda match: match.group("attr"),
+        updated,
+    )
 
 
 def _repair_componentized_jsx_code_block_literals(source: str) -> str:
