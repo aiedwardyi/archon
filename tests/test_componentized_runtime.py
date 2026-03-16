@@ -1264,6 +1264,38 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_converts_alert_game_ctas_to_inline_details(self):
+        code_dir = _case_dir("componentized-runtime-game-alert-detail-ctas")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "import React, { useState } from 'react';\n"
+                "interface LocationCardProps { region: string; name: string; description: string; }\n"
+                "const LocationCard: React.FC<LocationCardProps> = ({ region, name, description }) => {\n"
+                "  const [showDetails, setShowDetails] = useState(false);\n"
+                "  const handleAccessLogs = () => {\n"
+                "    setShowDetails(!showDetails);\n"
+                "    if (!showDetails) {\n"
+                "      alert(`Accessing logs for ${name}...`);\n"
+                "    }\n"
+                "  };\n"
+                "  return <button onClick={handleAccessLogs} className=\"btn-primary\">ACCESS LOGS</button>;\n"
+                "};\n"
+                "export default function App() { return <LocationCard region=\"Halo Ring\" name=\"ALPHA HALO\" description=\"Forerunner site.\" />; }\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir, ui_archetype="game")
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("<details className=\"runtime-inline-detail\">", app_source)
+            self.assertIn("<div className=\"runtime-inline-detail-kicker\">{region}</div>", app_source)
+            self.assertIn("<h4 className=\"runtime-inline-detail-title\">{name}</h4>", app_source)
+            self.assertNotIn("alert(`Accessing logs", app_source)
+            self.assertNotIn("const [showDetails, setShowDetails]", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_ensure_componentized_workspace_support_replaces_game_map_placeholder_image(self):
         code_dir = _case_dir("componentized-runtime-game-map-placeholder")
         try:
@@ -2110,6 +2142,62 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertTrue((code_dir / "public" / "generated-assets" / "badge_cascade.svg").exists())
             self.assertIn("public/generated-assets/badge_boulder.svg", result["created_files"])
             self.assertIn("public/generated-assets/badge_cascade.svg", result["created_files"])
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_rewrites_remote_game_image_fields_to_local_placeholders(self):
+        code_dir = _case_dir("componentized-runtime-remote-game-images")
+        try:
+            (code_dir / "public" / "generated-assets").mkdir(parents=True)
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "CharacterCards.tsx").write_text(
+                "const cards = [\n"
+                "  { name: 'Master Chief', image: 'https://via.placeholder.com/320x400/1a1e22/e6e8eb?text=Master+Chief' },\n"
+                "  { name: 'Cortana', image: 'https://images.unsplash.com/photo-12345?w=600&q=80' },\n"
+                "];\n"
+                "export default function CharacterCards() { return <div>{cards.length}</div>; }\n",
+                encoding="utf-8",
+            )
+
+            result = ensure_componentized_workspace_support(code_dir, ui_archetype="game")
+
+            source = (code_dir / "src" / "CharacterCards.tsx").read_text(encoding="utf-8")
+            self.assertNotIn("via.placeholder.com", source)
+            self.assertNotIn("images.unsplash.com", source)
+            self.assertIn("generated-assets/master_chief.svg", source)
+            self.assertIn("generated-assets/cortana.svg", source)
+            self.assertTrue((code_dir / "public" / "generated-assets" / "master_chief.svg").exists())
+            self.assertTrue((code_dir / "public" / "generated-assets" / "cortana.svg").exists())
+            self.assertIn("public/generated-assets/master_chief.svg", result["created_files"])
+            self.assertIn("public/generated-assets/cortana.svg", result["created_files"])
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_rewrites_remote_ecommerce_images_to_local_placeholders(self):
+        code_dir = _case_dir("componentized-runtime-remote-ecommerce-images")
+        try:
+            (code_dir / "public" / "generated-assets").mkdir(parents=True)
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "const products = [\n"
+                "  { id: 1, name: 'Ceramic Vase', image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600&q=80' },\n"
+                "];\n"
+                "export default function App() {\n"
+                "  return <img src=\"https://images.unsplash.com/photo-1505740420928-5e560c06f2e0?q=80&w=2070\" alt=\"Limited Editions\" />;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            result = ensure_componentized_workspace_support(code_dir, ui_archetype="ecommerce")
+
+            source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertNotIn("images.unsplash.com", source)
+            self.assertIn("generated-assets/ceramic_vase.svg", source)
+            self.assertIn("generated-assets/limited_editions.svg", source)
+            self.assertTrue((code_dir / "public" / "generated-assets" / "ceramic_vase.svg").exists())
+            self.assertTrue((code_dir / "public" / "generated-assets" / "limited_editions.svg").exists())
+            self.assertIn("public/generated-assets/ceramic_vase.svg", result["created_files"])
+            self.assertIn("public/generated-assets/limited_editions.svg", result["created_files"])
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 

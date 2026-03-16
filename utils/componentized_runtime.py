@@ -201,6 +201,18 @@ GENERATED_ASSET_REFERENCE_RE = re.compile(
     r"(?:^|[\"'(\s=])(?:\./)?generated-assets/(?P<filename>[^\"')\s]+)",
     re.IGNORECASE,
 )
+REMOTE_OBJECT_IMAGE_URL_RE = re.compile(
+    r"(?P<prefix>\b(?:image|imageUrl|imageSrc|src)\s*:\s*)(?P<quote>['\"])(?P<url>https?://[^'\"\n]+)(?P=quote)",
+    re.IGNORECASE,
+)
+REMOTE_NAMED_OBJECT_IMAGE_URL_RE = re.compile(
+    r"(?P<prefix>\{[\s\S]{0,260}?\bname\s*:\s*(?P<name_quote>['\"])(?P<name>[^'\"]+)(?P=name_quote)[\s\S]{0,260}?\b(?:image|imageUrl|imageSrc|src)\s*:\s*)(?P<quote>['\"])(?P<url>https?://[^'\"\n]+)(?P=quote)",
+    re.IGNORECASE,
+)
+REMOTE_JSX_IMAGE_SRC_RE = re.compile(
+    r"(?P<prefix><img[^>]*?\bsrc=)(?P<quote>['\"])(?P<url>https?://[^'\"\n>]+)(?P=quote)(?P<rest>[^>]*>)",
+    re.IGNORECASE,
+)
 REMOTE_BADGE_OBJECT_IMAGE_RE = re.compile(
     r"(?P<prefix>\{\s*name\s*:\s*(?P<name_quote>['\"])(?P<name>[^'\"]+)(?P=name_quote)(?P<body>[\s\S]{0,260}?image\s*:\s*))(?P<url_quote>['\"])(?P<url>https?://[^'\"]+)(?P=url_quote)",
     re.IGNORECASE,
@@ -891,6 +903,19 @@ def _build_componentized_svg_placeholder(filename: str) -> bytes:
     return svg.encode("utf-8")
 
 
+def _build_componentized_remote_image_placeholder_filename(label: str, url: str) -> str:
+    raw = label.strip()
+    if not raw:
+        raw = Path(url.split("?", 1)[0]).stem.replace("-", " ").replace("_", " ")
+    tokens = [
+        token
+        for token in re.split(r"[^a-z0-9]+", raw.lower())
+        if token and token not in {"https", "http", "com", "www", "image", "img", "photo", "placeholder"}
+    ]
+    slug = "_".join(tokens[:4]) or "image_asset"
+    return f"{slug}.svg"
+
+
 def _sync_componentized_generated_asset_references(code_dir: Path) -> list[str]:
     public_dir = code_dir / "public" / "generated-assets"
     if not public_dir.exists():
@@ -901,8 +926,6 @@ def _sync_componentized_generated_asset_references(code_dir: Path) -> list[str]:
         for path in public_dir.iterdir()
         if path.is_file()
     }
-    if not existing_files:
-        return []
 
     referenced: set[str] = set()
     for rel_path in collect_componentized_editable_files(code_dir):
@@ -1167,9 +1190,12 @@ def ensure_componentized_workspace_support(
         updated = _normalize_componentized_file(rel_path, original)
         if ui_archetype and (ui_archetype == "game" or ui_archetype.startswith("game_")):
             updated = _normalize_componentized_game_remote_badge_images(updated)
+            updated = _normalize_componentized_remote_image_urls(updated)
             if rel_path.endswith((".tsx", ".jsx")):
                 updated = _normalize_componentized_game_detail_ctas(updated)
                 updated = _normalize_componentized_game_placeholder_maps(updated)
+        elif ui_archetype == "ecommerce":
+            updated = _normalize_componentized_remote_image_urls(updated)
         if rel_path.endswith((".tsx", ".jsx")):
             updated, extracted_css = _extract_componentized_css_tail(updated)
             if extracted_css:
@@ -1483,7 +1509,38 @@ def _normalize_componentized_game_placeholder_maps(source: str) -> str:
     )
 
 
+def _normalize_componentized_remote_image_urls(source: str) -> str:
+    def _replace_named_object(match: re.Match[str]) -> str:
+        url = match.group("url").strip()
+        label = match.group("name").strip()
+        filename = _build_componentized_remote_image_placeholder_filename(label, url)
+        return f"{match.group('prefix')}{match.group('quote')}generated-assets/{filename}{match.group('quote')}"
+
+    updated = REMOTE_NAMED_OBJECT_IMAGE_URL_RE.sub(_replace_named_object, source)
+
+    def _replace_object(match: re.Match[str]) -> str:
+        url = match.group("url").strip()
+        filename = _build_componentized_remote_image_placeholder_filename("", url)
+        return f"{match.group('prefix')}{match.group('quote')}generated-assets/{filename}{match.group('quote')}"
+
+    updated = REMOTE_OBJECT_IMAGE_URL_RE.sub(_replace_object, updated)
+
+    def _replace_jsx(match: re.Match[str]) -> str:
+        url = match.group("url").strip()
+        rest = match.group("rest") or ">"
+        alt_match = re.search(r"""\balt=(['"])(?P<alt>[^'"]+)\1""", rest, flags=re.IGNORECASE)
+        label = alt_match.group("alt") if alt_match else ""
+        filename = _build_componentized_remote_image_placeholder_filename(label, url)
+        return f"{match.group('prefix')}{match.group('quote')}generated-assets/{filename}{match.group('quote')}{rest}"
+
+    return REMOTE_JSX_IMAGE_SRC_RE.sub(_replace_jsx, updated)
+
+
 def _normalize_componentized_game_detail_ctas(source: str) -> str:
+    component_re = re.compile(
+        r"const\s+(?P<component>[A-Za-z_$][\w$]*)\s*:\s*React\.FC<[^>]+>\s*=\s*\(\{\s*(?P<params>[^}]*)\}\s*\)\s*=>\s*\{(?P<body>[\s\S]*?)\n\};",
+        re.DOTALL,
+    )
     map_re = re.compile(
         r"\{(?P<collection>\w+)\.map\(\((?P<params>[^)]*)\)\s*=>\s*\((?P<body>.*?)\)\)\}",
         re.DOTALL,
@@ -1513,6 +1570,55 @@ def _normalize_componentized_game_detail_ctas(source: str) -> str:
             f'</details>'
         )
 
+    def build_component_detail_markup(params: list[str], summary_label: str, class_name: str, attrs: str, tail: str) -> str:
+        summary_attrs = " ".join(
+            part.strip()
+            for part in (attrs, tail)
+            if part.strip() and "onClick=" not in part
+        ).strip()
+        summary_attr_text = f" {summary_attrs}" if summary_attrs else ""
+        kicker_var = next((name for name in ("role", "type", "region", "owner") if name in params), None)
+        title_var = "name" if "name" in params else ("title" if "title" in params else None)
+        copy_var = next((name for name in ("description", "desc", "lore") if name in params), None)
+
+        if "stats" in params:
+            stats_expr = (
+                '<div className="runtime-inline-detail-stats">'
+                '{stats.map((stat, index) => ('
+                '<span className="runtime-inline-detail-chip" key={index}>{stat.label} {stat.value}</span>'
+                '))}'
+                '</div>'
+            )
+        else:
+            chip_nodes: list[str] = []
+            for name in ("weapon", "owner", "atk", "mag", "def", "spd"):
+                if name not in params:
+                    continue
+                if name in {"atk", "mag", "def", "spd"}:
+                    chip_nodes.append(
+                        f'{{typeof {name} === "number" ? <span className="runtime-inline-detail-chip">{name.upper()} {{{name}}}</span> : null}}'
+                    )
+                else:
+                    chip_nodes.append(
+                        f'{{{name} ? <span className="runtime-inline-detail-chip">{name.capitalize()} {{{name}}}</span> : null}}'
+                    )
+            stats_expr = f'<div className="runtime-inline-detail-stats">{"".join(chip_nodes)}</div>' if chip_nodes else ""
+
+        kicker_expr = f"{{{kicker_var}}}" if kicker_var else "Archive Detail"
+        title_expr = f"{{{title_var}}}" if title_var else "Field Brief"
+        copy_expr = f"{{{copy_var}}}" if copy_var else "This dossier uses local mock archive data to keep the interaction alive."
+        return (
+            f'<details className="runtime-inline-detail">'
+            f'<summary className="{class_name}"{summary_attr_text}>{summary_label}</summary>'
+            f'<div className="runtime-inline-detail-panel">'
+            f'<div className="runtime-inline-detail-kicker">{kicker_expr}</div>'
+            f'<h4 className="runtime-inline-detail-title">{title_expr}</h4>'
+            f'<p className="runtime-inline-detail-copy">{copy_expr}</p>'
+            f'{stats_expr}'
+            f'</div>'
+            f'</details>'
+        )
+
     def patch_body(item_var: str, body: str) -> str:
         def replace_button(match: re.Match[str]) -> str:
             attrs = match.group("attrs") or ""
@@ -1530,6 +1636,61 @@ def _normalize_componentized_game_detail_ctas(source: str) -> str:
 
         return button_re.sub(replace_button, body)
 
+    def replace_component(match: re.Match[str]) -> str:
+        params = [part.strip() for part in match.group("params").split(",") if part.strip()]
+        body = match.group("body")
+        if "alert(" not in body or "<button" not in body:
+            return match.group(0)
+
+        button_match = re.search(
+            r"<button(?P<before>[^>]*)onClick=\{(?P<handler>[A-Za-z_$][\w$]*)\}(?P<after>[^>]*)className=(?P<quote>[\"'])(?P<classname>[^\"']*\b(?:btn-primary|weapon-cta)\b[^\"']*)(?P=quote)(?P<tail>[^>]*)>(?P<label>.*?)</button>",
+            body,
+            re.DOTALL,
+        ) or re.search(
+            r"<button(?P<before>[^>]*)className=(?P<quote>[\"'])(?P<classname>[^\"']*\b(?:btn-primary|weapon-cta)\b[^\"']*)(?P=quote)(?P<mid>[^>]*)onClick=\{(?P<handler>[A-Za-z_$][\w$]*)\}(?P<tail>[^>]*)>(?P<label>.*?)</button>",
+            body,
+            re.DOTALL,
+        )
+        if not button_match:
+            return match.group(0)
+
+        label = re.sub(r"\s+", " ", button_match.group("label") or "").strip()
+        if not label:
+            return match.group(0)
+        attrs = " ".join(
+            part.strip()
+            for part in (
+                button_match.groupdict().get("before", ""),
+                button_match.groupdict().get("after", ""),
+                button_match.groupdict().get("mid", ""),
+            )
+            if part and part.strip()
+        ).strip()
+        replacement = build_component_detail_markup(
+            params,
+            label,
+            re.sub(r"\s+", " ", button_match.group("classname")).strip(),
+            attrs,
+            button_match.group("tail") or "",
+        )
+        updated_body = body.replace(button_match.group(0), replacement, 1)
+        handler = button_match.group("handler")
+        updated_body = re.sub(
+            rf"\n?\s*const\s+{re.escape(handler)}\s*=\s*\(\)\s*=>\s*\{{[\s\S]*?\n\s*\}};\s*",
+            "\n",
+            updated_body,
+            count=1,
+        )
+        updated_body = re.sub(
+            r"\n\s*const \[showDetails,\s*setShowDetails\] = useState\(false\);\s*",
+            "\n",
+            updated_body,
+            count=1,
+        )
+        return match.group(0).replace(body, updated_body)
+
+    updated = component_re.sub(replace_component, source)
+
     def replace_map(match: re.Match[str]) -> str:
         params = (match.group("params") or "").strip()
         item_var = params.split(",", 1)[0].strip()
@@ -1541,7 +1702,7 @@ def _normalize_componentized_game_detail_ctas(source: str) -> str:
             return match.group(0)
         return "{%s.map((%s) => (%s))}" % (match.group("collection"), params, updated_body)
 
-    return map_re.sub(replace_map, source)
+    return map_re.sub(replace_map, updated)
 
 
 def _looks_like_componentized_badge_label(label: str) -> bool:
