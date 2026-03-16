@@ -47,15 +47,20 @@ Every app is generated from a single prompt — no templates, no manual coding. 
 
 ![Crypto Dashboard](docs/screenshots/dashboard-crypto.jpg)
 
+### Halo Fan Page — Concurrent Runtime Demo
+> Prompt: *"Build a premium Halo fan page centered on Master Chief, Cortana, and the Arbiter. Include a cinematic hero, polished character dossiers, a legendary weapon showcase, and an explorable ringworld atlas."*
+
+[![Halo Fan Page 2026](docs/screenshots/game-halo-20260316-thumb.jpg)](docs/screenshots/game-halo-20260316-full.jpg)
+
 ### Final Fantasy VIII Fan Page — Branch Benchmark
 > Prompt: *"Build a Final Fantasy VIII fan page with character profiles, weapons gallery, and world map"*
 
 [![FF8 Fan Page 2026](docs/screenshots/game-ff8-20260316-thumb.jpg)](docs/screenshots/game-ff8-20260316-full.jpg)
 
-### Final Fantasy VIII Fan Page
-> Prompt: *"Build a Final Fantasy VIII fan page with character profiles, weapons gallery, and world map"*
+### Metroid Fan Page
+> Prompt: *"Build a premium Metroid fan page centered on Samus Aran. Include a cinematic hero, a polished dossier, a power suit showcase, and an explorable Zebes world map."*
 
-[![FF8 Fan Page](docs/screenshots/game-ff8-thumb.jpg)](docs/screenshots/game-ff8-full.jpg)
+[![Metroid Fan Page 2026](docs/screenshots/game-metroid-20260316-thumb.jpg)](docs/screenshots/game-metroid-20260316-full.jpg)
 
 ### Pokemon Kanto Starters Fan Page
 > Prompt: *"Build a premium Pokemon fan page centered on Charizard, Blastoise, and Venusaur. Include a cinematic hero, polished character dossiers, a full evolution showcase, a Kanto region map, and a gym badge collection."*

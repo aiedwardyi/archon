@@ -1166,6 +1166,9 @@ def ensure_componentized_workspace_support(
         updated = _normalize_componentized_file(rel_path, original)
         if ui_archetype and (ui_archetype == "game" or ui_archetype.startswith("game_")):
             updated = _normalize_componentized_game_remote_badge_images(updated)
+            if rel_path.endswith((".tsx", ".jsx")):
+                updated = _normalize_componentized_game_detail_ctas(updated)
+                updated = _normalize_componentized_game_placeholder_maps(updated)
         if rel_path.endswith((".tsx", ".jsx")):
             updated, extracted_css = _extract_componentized_css_tail(updated)
             if extracted_css:
@@ -1457,6 +1460,89 @@ def _normalize_componentized_game_remote_badge_images(source: str) -> str:
     return REMOTE_BADGE_OBJECT_IMAGE_RE.sub(_replace, source)
 
 
+def _normalize_componentized_game_placeholder_maps(source: str) -> str:
+    placeholder_img_re = re.compile(
+        r'<img(?P<attrs>[^>]*?)src=(?P<quote>["\'])data:image/svg\+xml,[^"\']*(?:Placeholder|PLACEHOLDER)[^"\']*(?P=quote)(?P<rest>[^>]*)/?>',
+        re.IGNORECASE | re.DOTALL,
+    )
+    if not placeholder_img_re.search(source):
+        return source
+    return placeholder_img_re.sub(
+        (
+            '<div className="runtime-world-map-fallback">'
+            '<div className="runtime-world-map-grid" aria-hidden="true"></div>'
+            '<div className="runtime-world-map-copy">'
+            '<span className="runtime-world-map-eyebrow">Strategic Atlas</span>'
+            '<strong className="runtime-world-map-title">World Survey Interface</strong>'
+            '<p className="runtime-world-map-text">Key regions remain explorable through the dossiers and sector cards below.</p>'
+            '</div>'
+            '</div>'
+        ),
+        source,
+    )
+
+
+def _normalize_componentized_game_detail_ctas(source: str) -> str:
+    map_re = re.compile(
+        r"\{(?P<collection>\w+)\.map\(\((?P<params>[^)]*)\)\s*=>\s*\((?P<body>.*?)\)\)\}",
+        re.DOTALL,
+    )
+    button_re = re.compile(
+        r"<button(?P<attrs>[^>]*)className=(?P<quote>[\"'])(?P<classname>[^\"']*\b(?:btn-primary|weapon-cta)\b[^\"']*)(?P=quote)(?P<tail>[^>]*)>(?P<label>.*?)</button>",
+        re.DOTALL,
+    )
+
+    def build_detail_markup(item_var: str, summary_label: str, class_name: str, attrs: str, tail: str) -> str:
+        summary_attrs = " ".join(part.strip() for part in (attrs, tail) if part.strip()).strip()
+        summary_attr_text = f" {summary_attrs}" if summary_attrs else ""
+        return (
+            f'<details className="runtime-inline-detail">'
+            f'<summary className="{class_name}"{summary_attr_text}>{summary_label}</summary>'
+            f'<div className="runtime-inline-detail-panel">'
+            f'<div className="runtime-inline-detail-kicker">{{{item_var}.type || {item_var}.region || {item_var}.owner || "Archive Detail"}}</div>'
+            f'<h4 className="runtime-inline-detail-title">{{{item_var}.name || {item_var}.title || "Field Brief"}}</h4>'
+            f'<p className="runtime-inline-detail-copy">{{{item_var}.description || {item_var}.desc || {item_var}.lore || "This dossier uses local mock archive data to keep the interaction alive."}}</p>'
+            f'<div className="runtime-inline-detail-stats">'
+            f'{{typeof {item_var}.atk === "number" ? <span className="runtime-inline-detail-chip">ATK {{{item_var}.atk}}</span> : null}}'
+            f'{{typeof {item_var}.mag === "number" ? <span className="runtime-inline-detail-chip">MAG {{{item_var}.mag}}</span> : null}}'
+            f'{{typeof {item_var}.def === "number" ? <span className="runtime-inline-detail-chip">DEF {{{item_var}.def}}</span> : null}}'
+            f'{{typeof {item_var}.spd === "number" ? <span className="runtime-inline-detail-chip">SPD {{{item_var}.spd}}</span> : null}}'
+            f'</div>'
+            f'</div>'
+            f'</details>'
+        )
+
+    def patch_body(item_var: str, body: str) -> str:
+        def replace_button(match: re.Match[str]) -> str:
+            attrs = match.group("attrs") or ""
+            tail = match.group("tail") or ""
+            if "onClick=" in attrs or "onClick=" in tail:
+                return match.group(0)
+            label = re.sub(r"\s+", " ", match.group("label") or "").strip()
+            if not label:
+                return match.group(0)
+            lowered = label.lower()
+            if not any(keyword in lowered for keyword in ("inspect", "view", "access", "open", "logs", "schematic", "dossier", "details")):
+                return match.group(0)
+            class_name = re.sub(r"\s+", " ", match.group("classname")).strip()
+            return build_detail_markup(item_var, label, class_name, attrs, tail)
+
+        return button_re.sub(replace_button, body)
+
+    def replace_map(match: re.Match[str]) -> str:
+        params = (match.group("params") or "").strip()
+        item_var = params.split(",", 1)[0].strip()
+        body = match.group("body")
+        if not item_var or not body or "<button" not in body:
+            return match.group(0)
+        updated_body = patch_body(item_var, body)
+        if updated_body == body:
+            return match.group(0)
+        return "{%s.map((%s) => (%s))}" % (match.group("collection"), params, updated_body)
+
+    return map_re.sub(replace_map, source)
+
+
 def _looks_like_componentized_badge_label(label: str) -> bool:
     tokens = _tokenize_componentized_asset_name(label)
     return bool(tokens & {"badge", "crest", "emblem", "sigil", "icon"})
@@ -1638,6 +1724,15 @@ def _repair_json_leading_comma_noise(source: str) -> str:
     return re.sub(r'(^[ \t]*),([ \t]*(?:"|\{|\[))', r"\1\2", source, flags=re.MULTILINE)
 
 
+def _repair_json_missing_property_commas(source: str) -> str:
+    value_expr = r'(?:"(?:[^"\\]|\\.)*"|\btrue\b|\bfalse\b|\bnull\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|\}|\])'
+    return re.sub(
+        rf"({value_expr})(\s*\n\s*)(?=\")",
+        r"\1,\2",
+        source,
+    )
+
+
 def _sync_componentized_package_dependencies(code_dir: Path) -> list[str]:
     package_json_path = code_dir / "package.json"
     if not package_json_path.exists():
@@ -1689,7 +1784,9 @@ def _sync_componentized_package_dependencies(code_dir: Path) -> list[str]:
 
 
 def _normalize_componentized_tsconfig(source: str) -> str:
-    source = _repair_json_leading_comma_noise(_repair_json_escape_noise(source))
+    source = _repair_json_missing_property_commas(
+        _repair_json_leading_comma_noise(_repair_json_escape_noise(source))
+    )
     try:
         data = json.loads(source)
     except json.JSONDecodeError:
@@ -1927,6 +2024,104 @@ def _build_componentized_polish_guard_css(ui_archetype: str) -> str | None:
             "  object-fit: contain !important;\n"
             "  padding: 0.8rem;\n"
             "  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015));\n"
+            "}\n\n"
+            ".runtime-inline-detail {\n"
+            "  margin-top: 1rem;\n"
+            "}\n\n"
+            ".runtime-inline-detail > summary {\n"
+            "  list-style: none;\n"
+            "  cursor: pointer;\n"
+            "}\n\n"
+            ".runtime-inline-detail > summary::-webkit-details-marker {\n"
+            "  display: none;\n"
+            "}\n\n"
+            ".runtime-inline-detail-panel {\n"
+            "  margin-top: 0.85rem;\n"
+            "  padding: 1rem 1.05rem;\n"
+            "  border: 1px solid rgba(255, 255, 255, 0.1);\n"
+            "  border-radius: 18px;\n"
+            "  background: linear-gradient(180deg, rgba(72, 171, 240, 0.12), rgba(7, 12, 20, 0.78));\n"
+            "  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.24);\n"
+            "  animation: runtimeGameDetailIn 220ms ease-out;\n"
+            "}\n\n"
+            ".runtime-inline-detail-kicker {\n"
+            "  font-size: 0.72rem;\n"
+            "  letter-spacing: 0.18em;\n"
+            "  text-transform: uppercase;\n"
+            "  color: rgba(110, 214, 255, 0.88);\n"
+            "}\n\n"
+            ".runtime-inline-detail-title {\n"
+            "  margin: 0.45rem 0 0.35rem;\n"
+            "  font-size: 1rem;\n"
+            "}\n\n"
+            ".runtime-inline-detail-copy {\n"
+            "  margin: 0;\n"
+            "  color: rgba(228, 235, 255, 0.82);\n"
+            "}\n\n"
+            ".runtime-inline-detail-stats {\n"
+            "  display: flex;\n"
+            "  flex-wrap: wrap;\n"
+            "  gap: 0.55rem;\n"
+            "  margin-top: 0.85rem;\n"
+            "}\n\n"
+            ".runtime-inline-detail-chip {\n"
+            "  display: inline-flex;\n"
+            "  align-items: center;\n"
+            "  padding: 0.35rem 0.7rem;\n"
+            "  border-radius: 999px;\n"
+            "  border: 1px solid rgba(110, 214, 255, 0.24);\n"
+            "  background: rgba(9, 20, 35, 0.72);\n"
+            "  color: rgba(110, 214, 255, 0.96);\n"
+            "  font-size: 0.75rem;\n"
+            "  letter-spacing: 0.08em;\n"
+            "  text-transform: uppercase;\n"
+            "}\n\n"
+            ".runtime-world-map-fallback {\n"
+            "  position: relative;\n"
+            "  min-height: clamp(260px, 36vw, 420px);\n"
+            "  overflow: hidden;\n"
+            "  border-radius: 28px;\n"
+            "  border: 1px solid rgba(255, 255, 255, 0.08);\n"
+            "  background: radial-gradient(circle at 50% 35%, rgba(72, 171, 240, 0.12), transparent 34%), linear-gradient(135deg, rgba(10, 18, 29, 0.98), rgba(6, 9, 16, 0.94));\n"
+            "}\n\n"
+            ".runtime-world-map-grid {\n"
+            "  position: absolute;\n"
+            "  inset: 0;\n"
+            "  background-image: linear-gradient(rgba(110, 214, 255, 0.09) 1px, transparent 1px), linear-gradient(90deg, rgba(110, 214, 255, 0.09) 1px, transparent 1px);\n"
+            "  background-size: 56px 56px;\n"
+            "  mask-image: radial-gradient(circle at center, black 48%, transparent 100%);\n"
+            "}\n\n"
+            ".runtime-world-map-copy {\n"
+            "  position: relative;\n"
+            "  z-index: 1;\n"
+            "  display: grid;\n"
+            "  place-items: center;\n"
+            "  min-height: inherit;\n"
+            "  padding: 2rem;\n"
+            "  text-align: center;\n"
+            "}\n\n"
+            ".runtime-world-map-eyebrow {\n"
+            "  display: inline-block;\n"
+            "  margin-bottom: 0.65rem;\n"
+            "  font-size: 0.72rem;\n"
+            "  letter-spacing: 0.22em;\n"
+            "  text-transform: uppercase;\n"
+            "  color: rgba(110, 214, 255, 0.82);\n"
+            "}\n\n"
+            ".runtime-world-map-title {\n"
+            "  display: block;\n"
+            "  font-size: clamp(1.4rem, 2vw + 1rem, 2.2rem);\n"
+            "  letter-spacing: 0.06em;\n"
+            "  text-transform: uppercase;\n"
+            "}\n\n"
+            ".runtime-world-map-text {\n"
+            "  max-width: 34rem;\n"
+            "  margin: 0.8rem auto 0;\n"
+            "  color: rgba(228, 235, 255, 0.82);\n"
+            "}\n\n"
+            "@keyframes runtimeGameDetailIn {\n"
+            "  from { opacity: 0; transform: translateY(8px) scale(0.985); }\n"
+            "  to { opacity: 1; transform: translateY(0) scale(1); }\n"
             "}\n"
         )
 

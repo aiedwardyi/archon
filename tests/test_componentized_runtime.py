@@ -1215,6 +1215,50 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_converts_dead_game_ctas_to_inline_details(self):
+        code_dir = _case_dir("componentized-runtime-game-detail-ctas")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  const weapons = [{ name: 'Needler', type: 'Projectile', owner: 'Covenant', description: 'Crystal shards.', atk: 75, mag: 80 }];\n"
+                "  const locations = [{ name: 'Reach', region: 'Colony', description: 'Frontier world.' }];\n"
+                "  return <><div>{weapons.map((weapon) => (<div><button className=\"btn-primary weapon-cta\">Inspect Weapon</button></div>))}</div><div>{locations.map((loc) => (<div><button className=\"btn-primary\">ACCESS LOGS</button></div>))}</div></>;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir, ui_archetype="game")
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("<details className=\"runtime-inline-detail\">", app_source)
+            self.assertIn("{weapon.name || weapon.title || \"Field Brief\"}", app_source)
+            self.assertIn("{loc.name || loc.title || \"Field Brief\"}", app_source)
+            self.assertNotIn(">Inspect Weapon</button>", app_source)
+            self.assertNotIn(">ACCESS LOGS</button>", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_replaces_game_map_placeholder_image(self):
+        code_dir = _case_dir("componentized-runtime-game-map-placeholder")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return <div className=\"world-map-image\"><img src=\"data:image/svg+xml,%3Csvg%3EImage Placeholder%3C/svg%3E\" alt=\"Map\" /></div>;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir, ui_archetype="game")
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("runtime-world-map-fallback", app_source)
+            self.assertIn("World Survey Interface", app_source)
+            self.assertNotIn("Image Placeholder", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_ensure_componentized_workspace_support_repairs_block_comment_code_bleed(self):
         code_dir = _case_dir("componentized-runtime-comment-bleed")
         try:
@@ -2853,6 +2897,30 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertIn("src/main.tsx", scope)
             self.assertIn("src/App.tsx", scope)
             self.assertNotIn("src/components/Sidebar.tsx", scope)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_tsconfig_missing_commas(self):
+        code_dir = _case_dir("componentized-tsconfig-missing-commas")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "tsconfig.node.json").write_text(
+                "{\n"
+                "  \"compilerOptions\": {\n"
+                "    \"target\": \"ES2020\"\n"
+                "    \"allowSyntheticDefaultImports\": true\n"
+                "  },\n"
+                "  \"include\": [\"vite.config.ts\"]\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            tsconfig_source = (code_dir / "tsconfig.node.json").read_text(encoding="utf-8")
+            self.assertIn('"target": "ES2020",', tsconfig_source)
+            self.assertIn('"allowSyntheticDefaultImports": true', tsconfig_source)
+            self.assertIn('"allowImportingTsExtensions": true', tsconfig_source)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 

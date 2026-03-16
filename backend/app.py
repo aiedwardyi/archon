@@ -4949,6 +4949,36 @@ def execution_status():
     version = None
     execution_id = state.get("current_execution_id")
     project = None
+    STATUS_MAP = {
+        "success": "COMPLETED", "error": "FAILED",
+        "completed": "COMPLETED", "failed": "FAILED",
+        "pending": "RUNNING", "running": "RUNNING",
+    }
+
+    def _artifact_status_payload(execution_obj, current_project):
+        if not execution_obj:
+            return None
+        if state.get("running") or state.get("queued"):
+            return None
+        if getattr(execution_obj, "scheduler_worker_id", None):
+            return None
+        artifact_path = get_version_dir(execution_obj.project_id, execution_obj.version) / "last_execution_result.json"
+        data = read_json_file(artifact_path)
+        if data is None:
+            return None
+        scheduler = get_scheduler_snapshot(project_id)
+        raw_status = str(data.get("status", "success")).lower()
+        frontend_status = STATUS_MAP.get(raw_status, "COMPLETED")
+        return {
+            "status": frontend_status,
+            "currentStage": "engineer",
+            "logs": state.get("logs", []),
+            "engineerTasks": [],
+            "locked_ui_archetype": current_project.locked_ui_archetype if current_project else None,
+            "project_id": project_id,
+            "execution_id": execution_obj.id,
+            **scheduler,
+        }
 
     if not execution_id:
         session = get_session()
@@ -4977,6 +5007,10 @@ def execution_status():
                         **scheduler,
                     }), 200
                 if execution.status in ("pending", "running"):
+                    if execution.status == "running":
+                        artifact_payload = _artifact_status_payload(execution, project)
+                        if artifact_payload is not None:
+                            return jsonify(artifact_payload), 200
                     return jsonify({
                         "status": "RUNNING",
                         "currentStage": "pm",
@@ -5015,6 +5049,9 @@ def execution_status():
                         **scheduler,
                     }), 200
                 if not state["running"] and execution.status == "running":
+                    artifact_payload = _artifact_status_payload(execution, project)
+                    if artifact_payload is not None:
+                        return jsonify(artifact_payload), 200
                     scheduler = get_scheduler_snapshot(project_id)
                     return jsonify({
                         "status": "RUNNING",
@@ -5047,12 +5084,6 @@ def execution_status():
         result_file = get_version_dir(project_id, version) / "last_execution_result.json"
 
     data = read_json_file(result_file) if result_file else None
-
-    STATUS_MAP = {
-        "success": "COMPLETED", "error": "FAILED",
-        "completed": "COMPLETED", "failed": "FAILED",
-        "pending": "RUNNING", "running": "RUNNING",
-    }
 
     logs = state.get("logs", [])
     current_stage = "pm"

@@ -14,6 +14,7 @@ from app import (
     claim_execution_for_pipeline_start,
     dispatch_queued_pipelines,
     execution_state,
+    get_version_dir,
     pipeline_queue,
     recover_pending_pipeline_jobs,
     recover_stale_running_executions,
@@ -1481,6 +1482,46 @@ class ExecutionLimitTests(unittest.TestCase):
         payload = response.get_json()
         self.assertEqual(payload["status"], "RUNNING")
         self.assertEqual(payload["currentStage"], "pm")
+        self.assertEqual(payload["execution_id"], execution_id)
+
+    def test_execution_status_prefers_result_artifact_over_stale_running_row(self):
+        project_id = _create_project(self.client, self.token, "Artifact Override Project", "Build a recovered dashboard")
+
+        db = get_session()
+        try:
+            project = db.get(Project, project_id)
+            project.status = "in_progress"
+            execution = Execution(
+                project_id=project_id,
+                owner_id=project.owner_id,
+                status="running",
+                version=1,
+                prompt_history=json.dumps([{"role": "user", "content": "Build a recovered dashboard"}]),
+                is_active_head=True,
+            )
+            db.add(execution)
+            db.commit()
+            db.refresh(execution)
+            execution_id = execution.id
+        finally:
+            db.close()
+
+        version_dir = get_version_dir(project_id, 1)
+        version_dir.mkdir(parents=True, exist_ok=True)
+        with open(version_dir / "last_execution_result.json", "w", encoding="utf-8") as handle:
+            json.dump({"status": "success"}, handle)
+
+        execution_state.pop(project_id, None)
+
+        response = self.client.get(
+            "/api/execution-status",
+            query_string={"project_id": project_id},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["status"], "COMPLETED")
+        self.assertEqual(payload["currentStage"], "engineer")
         self.assertEqual(payload["execution_id"], execution_id)
 
     def test_execution_status_uses_db_active_head_when_local_state_is_missing_for_completed(self):
