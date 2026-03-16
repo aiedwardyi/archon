@@ -188,6 +188,8 @@ Use local app asset URLs exactly as provided.
 For componentized apps, asset paths will normally look like /generated-assets/filename.png.
 Do NOT emit backend-only API asset URLs inside the app source.
 Do NOT use external placeholder image services.
+Do NOT invent additional generated-assets filenames that were not provided.
+If a section needs more visuals than the provided assets cover, intentionally reuse a provided asset path or render that slot with CSS, gradients, or inline SVG instead of referencing a missing file.
 
 QUALITY TARGET
 

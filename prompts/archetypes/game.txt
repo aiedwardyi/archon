@@ -178,6 +178,11 @@ Use these for:
 - Weapons banner: the combined weapons panorama
 - World map: the aerial/isometric map illustration
 
+CRITICAL ASSET RULE:
+- Only reference exact asset filenames that appear in the DESIGN ASSETS list.
+- Do NOT invent extra generated-assets names for badges, evolution stages, ability icons, or gallery thumbnails unless those filenames are explicitly listed.
+- If the layout needs more supporting visuals than the supplied assets cover, reuse an existing provided asset intentionally or render those smaller slots as CSS/inline-SVG treatments instead of broken image tags.
+
 For EVERY <img> tag, add an onerror fallback:
   onerror="this.style.background='linear-gradient(135deg,var(--surface-1),var(--surface-2))';this.style.minHeight='200px'"
 
@@ -207,6 +212,8 @@ CONTENT RULES
 - Include at least one click-triggered reveal interaction on the page; hover alone is not enough
 - Use premium SVG-style icons only; never use emoji as UI icons
 - Include at least one animated quantitative UI detail such as count-up numbers, filling stat bars, or glowing meter states
+- Typography consistency matters: hero title, nav links, eyebrow labels, character names, badge/location names, and the scroll-indicator label must all use the display font instead of drifting back to a plain body font.
+- The scroll indicator must sit centered beneath the hero content, with its own clear stacking order. It must never look tucked behind CTA buttons or float off-axis.
 - Character descriptions: 2-3 sentences of actual character lore
 - Weapon descriptions: 1-2 sentences about the weapon's lore and capabilities
 - Location descriptions: 1-2 sentences about the place

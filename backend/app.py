@@ -1368,7 +1368,9 @@ def build_design_context(
             + "\n".join(asset_lines)
             + "\nIMPORTANT: Use these exact local paths in <img> tags or CSS background-image. "
               "Do not emit backend API asset URLs in componentized apps. "
-              "Do not substitute Unsplash, Pollinations, or other remote image hosts when a matching local asset is provided.\n"
+              "Do not substitute Unsplash, Pollinations, or other remote image hosts when a matching local asset is provided. "
+              "Do not invent additional generated-assets filenames that are not listed here. "
+              "If you need more visual slots than the supplied assets cover, intentionally reuse one of the listed asset paths or render a CSS/inline-SVG fallback instead.\n"
         )
 
     for asset in design_assets:

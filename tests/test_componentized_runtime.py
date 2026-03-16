@@ -11,6 +11,7 @@ sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "backend"))
 
 from backend.app import (
+    build_design_context,
     build_componentized_refinement_prompt,
     detect_componentized_quality_issues,
     extend_componentized_scope,
@@ -1869,6 +1870,94 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertIn("public/generated-assets/world_map.png", result["created_files"])
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_creates_svg_placeholders_and_game_polish_guard(self):
+        code_dir = _case_dir("componentized-runtime-game-svg-placeholder")
+        try:
+            (code_dir / "public" / "generated-assets").mkdir(parents=True)
+            (code_dir / "public" / "generated-assets" / "hero_background.png").write_bytes(b"hero")
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "main.tsx").write_text(
+                "import React from 'react';\n"
+                "import ReactDOM from 'react-dom/client';\n"
+                "import App from './App';\n"
+                "ReactDOM.createRoot(document.getElementById('root')!).render(<App />);\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return (\n"
+                "    <section className='hero-cinematic'>\n"
+                "      <div className='hero-content'>\n"
+                "        <div className='scroll-indicator'><span className='scroll-indicator-text'>Scroll</span></div>\n"
+                "        <div className='pokemon-name'>Pikachu</div>\n"
+                "      </div>\n"
+                "      <img src='generated-assets/icon_ultrahand.svg' alt='Ability icon' />\n"
+                "    </section>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            result = ensure_componentized_workspace_support(code_dir, ui_archetype="game")
+
+            svg_path = code_dir / "public" / "generated-assets" / "icon_ultrahand.svg"
+            self.assertTrue(svg_path.exists())
+            self.assertIn("<svg", svg_path.read_text(encoding="utf-8"))
+            self.assertIn("public/generated-assets/icon_ultrahand.svg", result["created_files"])
+            polish_guard = (code_dir / "src" / "polish-guard.css").read_text(encoding="utf-8")
+            self.assertIn(".pokemon-name", polish_guard)
+            self.assertIn(".scroll-indicator", polish_guard)
+            self.assertIn(".fade-up-section", polish_guard)
+            self.assertFalse((code_dir / "src" / "polish-guard.ts").exists())
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_prefers_showcase_aliases_for_game_badges(self):
+        code_dir = _case_dir("componentized-runtime-game-badge-alias")
+        try:
+            (code_dir / "public" / "generated-assets").mkdir(parents=True)
+            (code_dir / "public" / "generated-assets" / "character_charizard_portrait.png").write_bytes(b"charizard")
+            (code_dir / "public" / "generated-assets" / "evolution_showcase_illustration.png").write_bytes(b"showcase")
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return <img src='generated-assets/badge_boulder.png' alt='Boulder badge' />;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            alias_path = code_dir / "public" / "generated-assets" / "badge_boulder.png"
+            self.assertTrue(alias_path.exists())
+            self.assertEqual(alias_path.read_bytes(), b"showcase")
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_build_design_context_for_componentized_apps_forbids_invented_asset_names(self):
+        version_dir = _case_dir("componentized-design-context")
+        try:
+            hero = version_dir / "hero_background.png"
+            hero.write_bytes(b"hero")
+            context = build_design_context(
+                version_dir=version_dir,
+                design_assets=[
+                    {
+                        "key": "hero_background",
+                        "purpose": "hero image",
+                        "local_path": str(hero),
+                    }
+                ],
+                project_id=99,
+                version=1,
+                scaffold_mode="componentized_app",
+            )
+
+            self.assertIn("Do not invent additional generated-assets filenames", context)
+            self.assertIn("reuse one of the listed asset paths", context)
+        finally:
+            shutil.rmtree(version_dir, ignore_errors=True)
 
     def test_density_audit_flags_sparse_dashboard_shells(self):
         code_dir = _case_dir("componentized-quality-density")

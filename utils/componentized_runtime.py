@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
 import shutil
 import subprocess
+from html import escape as html_escape
 from pathlib import Path
 from typing import Any
 
@@ -254,7 +256,7 @@ MAIN_CSS_IMPORT_LINE_RE = re.compile(r'^\s*import\s+["\'](?P<path>\./[^"\']+\.cs
 MAIN_ENTRY_PREFERRED_CSS_ORDER = ("./index.css", "./style.css", "./styles.css", "./base.css")
 POLISH_GUARD_IMPORT = "./polish-guard.css"
 POLISH_GUARD_RUNTIME_IMPORT = "./polish-guard"
-POLISH_GUARD_ARCHETYPES = {"dashboard", "fintech"}
+POLISH_GUARD_ARCHETYPES = {"dashboard", "fintech", "game"}
 COMPONENTIZED_UTILITY_FALLBACKS: dict[str, str] = {
     "font-display": "font-family: var(--font-display, 'Space Grotesk', 'Inter', sans-serif); letter-spacing: -0.02em;",
     "font-body": "font-family: var(--font-body, 'Inter', sans-serif);",
@@ -800,6 +802,75 @@ def _normalize_componentized_generated_asset_paths(source: str) -> str:
     return re.sub(r'([("\'=\s])\/generated-assets\/', r"\1generated-assets/", source)
 
 
+def _supports_componentized_polish_guard(ui_archetype: str) -> bool:
+    return ui_archetype in POLISH_GUARD_ARCHETYPES or ui_archetype.startswith("game_")
+
+
+def _stable_componentized_asset_choice(filename: str, candidates: list[Path]) -> Path | None:
+    unique_candidates = sorted(dict.fromkeys(candidates), key=lambda path: path.name.lower())
+    if not unique_candidates:
+        return None
+    digest = hashlib.sha1(filename.encode("utf-8")).digest()
+    index = int.from_bytes(digest[:4], "big") % len(unique_candidates)
+    return unique_candidates[index]
+
+
+def _tokenize_componentized_asset_name(filename: str) -> set[str]:
+    stopwords = {
+        "generated",
+        "assets",
+        "asset",
+        "image",
+        "img",
+        "file",
+        "final",
+        "cover",
+    }
+    return {
+        token
+        for token in re.split(r"[^a-z0-9]+", Path(filename).stem.lower())
+        if token and token not in stopwords
+    }
+
+
+def _build_componentized_svg_placeholder(filename: str) -> bytes:
+    ordered_tokens = [
+        token.capitalize()
+        for token in re.split(r"[^a-z0-9]+", Path(filename).stem.lower())
+        if token and len(token) > 1
+    ]
+    label = " ".join(ordered_tokens) or "Game Asset"
+    label = " ".join(label.split()[:3])
+    palette = (
+        ("#0f766e", "#5eead4"),
+        ("#1d4ed8", "#93c5fd"),
+        ("#be123c", "#fda4af"),
+        ("#92400e", "#fcd34d"),
+        ("#4c1d95", "#c4b5fd"),
+    )
+    accent_from, accent_to = palette[int(hashlib.sha1(filename.encode("utf-8")).hexdigest()[:2], 16) % len(palette)]
+    safe_label = html_escape(label)
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none">'
+        "<defs>"
+        f'<linearGradient id="g" x1="24" y1="20" x2="228" y2="236" gradientUnits="userSpaceOnUse">'
+        f'<stop stop-color="{accent_from}"/><stop offset="1" stop-color="{accent_to}"/>'
+        "</linearGradient>"
+        '<linearGradient id="card" x1="20" y1="24" x2="236" y2="232" gradientUnits="userSpaceOnUse">'
+        '<stop stop-color="#0f172a"/><stop offset="1" stop-color="#111827"/>'
+        "</linearGradient>"
+        "</defs>"
+        '<rect width="256" height="256" rx="28" fill="#020617"/>'
+        '<rect x="18" y="18" width="220" height="220" rx="24" fill="url(#card)" stroke="#FFFFFF" stroke-opacity="0.12"/>'
+        '<rect x="38" y="38" width="180" height="180" rx="28" fill="url(#g)" opacity="0.2"/>'
+        '<path d="M128 66 176 90v52c0 32-19 55-48 72-29-17-48-40-48-72V90l48-24Z" fill="url(#g)" opacity="0.95"/>'
+        '<path d="M128 98v60m-28-30h56" stroke="#E5F7FF" stroke-width="14" stroke-linecap="round"/>'
+        f'<text x="128" y="212" text-anchor="middle" fill="#E5E7EB" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700" letter-spacing="1.4">{safe_label}</text>'
+        "</svg>"
+    )
+    return svg.encode("utf-8")
+
+
 def _sync_componentized_generated_asset_references(code_dir: Path) -> list[str]:
     public_dir = code_dir / "public" / "generated-assets"
     if not public_dir.exists():
@@ -831,10 +902,15 @@ def _sync_componentized_generated_asset_references(code_dir: Path) -> list[str]:
         lowered = filename.lower()
         if lowered in existing_files:
             continue
+        dest = public_dir / filename
+        if dest.suffix.lower() == ".svg":
+            dest.write_bytes(_build_componentized_svg_placeholder(filename))
+            existing_files[lowered] = dest
+            created_aliases.append(f"public/generated-assets/{filename}")
+            continue
         alias_source = _select_componentized_generated_asset_alias(filename, existing_files)
         if not alias_source:
             continue
-        dest = public_dir / filename
         shutil.copy2(alias_source, dest)
         existing_files[lowered] = dest
         created_aliases.append(f"public/generated-assets/{filename}")
@@ -846,19 +922,95 @@ def _select_componentized_generated_asset_alias(
     existing_files: dict[str, Path],
 ) -> Path | None:
     lowered = filename.lower()
-    priority_groups = [
-        ("map", "world", "atlas", "realm", "landscape", "background"),
-        ("hero", "background", "banner"),
-        ("portrait", "character", "monster", "tamer"),
-        ("weapon", "device", "artifact", "gear"),
+    requested_suffix = Path(lowered).suffix.lower()
+    if requested_suffix == ".svg":
+        svg_candidates = [
+            path
+            for existing_name, path in existing_files.items()
+            if Path(existing_name).suffix.lower() == ".svg"
+        ]
+        return _stable_componentized_asset_choice(filename, svg_candidates)
+
+    request_tokens = _tokenize_componentized_asset_name(filename)
+    semantic_preferences = [
+        (
+            {"map", "world", "atlas", "realm", "landscape", "location", "region", "landmark"},
+            {"map", "world", "atlas", "realm", "landscape", "region", "landmark", "background"},
+        ),
+        (
+            {"hero", "background", "banner", "cover"},
+            {"hero", "background", "banner", "cover", "landscape"},
+        ),
+        (
+            {"badge", "crest", "emblem", "sigil", "icon", "ability", "abilities", "showcase", "evolution", "stage"},
+            {"illustration", "showcase", "map", "landmark", "background", "portrait", "character"},
+        ),
+        (
+            {"portrait", "character", "hero", "villain", "ally", "monster", "pokemon", "creature", "guardian"},
+            {"portrait", "character", "hero", "monster", "creature", "guardian"},
+        ),
+        (
+            {"weapon", "device", "artifact", "gear"},
+            {"weapon", "device", "artifact", "gear", "illustration", "showcase"},
+        ),
     ]
-    for group in priority_groups:
-        if not any(token in lowered for token in group):
+
+    scored_candidates: list[tuple[int, Path]] = []
+    for existing_name, path in existing_files.items():
+        if Path(existing_name).suffix.lower() == ".svg":
             continue
-        for existing_name, path in existing_files.items():
-            if any(token in existing_name for token in group):
-                return path
-    return next(iter(existing_files.values()), None)
+        existing_tokens = _tokenize_componentized_asset_name(existing_name)
+        score = len(request_tokens & existing_tokens) * 10
+        for request_group, candidate_group in semantic_preferences:
+            if request_tokens & request_group and existing_tokens & candidate_group:
+                score += 6
+        if "background" in request_tokens and "background" in existing_tokens:
+            score += 3
+        if "portrait" in request_tokens and "portrait" in existing_tokens:
+            score += 3
+        if score > 0:
+            scored_candidates.append((score, path))
+
+    if scored_candidates:
+        top_score = max(score for score, _ in scored_candidates)
+        return _stable_componentized_asset_choice(
+            filename,
+            [path for score, path in scored_candidates if score == top_score],
+        )
+
+    showcase_candidates = [
+        path
+        for existing_name, path in existing_files.items()
+        if Path(existing_name).suffix.lower() != ".svg"
+        and any(token in existing_name for token in ("illustration", "showcase", "map", "landmark"))
+    ]
+    portrait_candidates = [
+        path
+        for existing_name, path in existing_files.items()
+        if Path(existing_name).suffix.lower() != ".svg"
+        and any(token in existing_name for token in ("portrait", "character", "hero"))
+    ]
+    background_candidates = [
+        path
+        for existing_name, path in existing_files.items()
+        if Path(existing_name).suffix.lower() != ".svg"
+        and any(token in existing_name for token in ("background", "banner"))
+    ]
+    generic_candidates = [
+        path
+        for existing_name, path in existing_files.items()
+        if Path(existing_name).suffix.lower() != ".svg"
+    ]
+
+    if request_tokens & {"badge", "crest", "emblem", "sigil", "icon", "ability", "abilities"}:
+        return _stable_componentized_asset_choice(filename, showcase_candidates or portrait_candidates or generic_candidates)
+    if request_tokens & {"evolution", "stage", "companion", "team", "roster"}:
+        return _stable_componentized_asset_choice(filename, showcase_candidates or portrait_candidates or generic_candidates)
+    if request_tokens & {"map", "world", "atlas", "region", "landmark", "location"}:
+        return _stable_componentized_asset_choice(filename, showcase_candidates or background_candidates or generic_candidates)
+    if request_tokens & {"portrait", "character", "hero", "villain", "ally", "monster", "pokemon", "creature"}:
+        return _stable_componentized_asset_choice(filename, portrait_candidates or showcase_candidates or generic_candidates)
+    return _stable_componentized_asset_choice(filename, generic_candidates)
 
 
 def _iter_local_import_specifiers(source: str) -> list[str]:
@@ -1535,12 +1687,19 @@ def _sync_componentized_polish_guard(
             if original_runtime != target_runtime:
                 runtime_path.write_text(target_runtime, encoding="utf-8")
                 rewritten_files.append("src/polish-guard.ts")
+    elif runtime_path.exists():
+        runtime_path.unlink()
+        rewritten_files.append("src/polish-guard.ts")
 
     if main_path.exists():
         original_main = main_path.read_text(encoding="utf-8", errors="replace")
+        if target_runtime is None:
+            main_with_runtime = _remove_main_side_effect_import(original_main, POLISH_GUARD_RUNTIME_IMPORT)
+        else:
+            main_with_runtime = _ensure_main_side_effect_import(original_main, POLISH_GUARD_RUNTIME_IMPORT)
         updated_main = _normalize_componentized_main_entry(
             _ensure_css_import(
-                _ensure_main_side_effect_import(original_main, POLISH_GUARD_RUNTIME_IMPORT),
+                main_with_runtime,
                 POLISH_GUARD_IMPORT,
             )
         )
@@ -1552,8 +1711,91 @@ def _sync_componentized_polish_guard(
 
 
 def _build_componentized_polish_guard_css(ui_archetype: str) -> str | None:
-    if ui_archetype not in POLISH_GUARD_ARCHETYPES:
+    if not _supports_componentized_polish_guard(ui_archetype):
         return None
+
+    if ui_archetype == "game" or ui_archetype.startswith("game_"):
+        return (
+            "/* Runtime shell polish guard for game fan-page shells. */\n"
+            ".hero-cinematic {\n"
+            "  position: relative !important;\n"
+            "  isolation: isolate;\n"
+            "}\n\n"
+            ".hero-cinematic .hero-bg-image,\n"
+            ".hero-cinematic .hero-bg-overlay {\n"
+            "  pointer-events: none;\n"
+            "}\n\n"
+            ".hero-cinematic .hero-content {\n"
+            "  position: relative;\n"
+            "  z-index: 3;\n"
+            "}\n\n"
+            ".hero-cinematic .hero-ctas {\n"
+            "  position: relative;\n"
+            "  z-index: 3;\n"
+            "  margin-bottom: clamp(3.4rem, 8vh, 5.4rem) !important;\n"
+            "}\n\n"
+            ".hero-cinematic > .scroll-indicator,\n"
+            ".hero-cinematic .hero-content > .scroll-indicator {\n"
+            "  position: absolute !important;\n"
+            "  left: 50% !important;\n"
+            "  bottom: clamp(24px, 4vw, 42px) !important;\n"
+            "  transform: translateX(-50%) !important;\n"
+            "  z-index: 4 !important;\n"
+            "  width: max-content;\n"
+            "  pointer-events: none;\n"
+            "}\n\n"
+            ".hero-cinematic .scroll-indicator,\n"
+            ".hero-cinematic .scroll-indicator .mouse-icon,\n"
+            ".hero-cinematic .scroll-indicator-text {\n"
+            "  filter: drop-shadow(0 12px 24px rgba(4, 10, 22, 0.32));\n"
+            "}\n\n"
+            ".hero-eyebrow,\n"
+            ".eyebrow,\n"
+            ".nav-link,\n"
+            ".nav-links a,\n"
+            ".section-title,\n"
+            ".char-name,\n"
+            ".character-name,\n"
+            ".pokemon-name,\n"
+            ".badge-name,\n"
+            ".location-name,\n"
+            ".location-card h3,\n"
+            ".hero-title-name,\n"
+            ".hero-title-numeral,\n"
+            ".scroll-indicator-text {\n"
+            "  font-family: var(--font-display, 'Space Grotesk', 'Inter', sans-serif) !important;\n"
+            "}\n\n"
+            ".pokemon-name,\n"
+            ".badge-name,\n"
+            ".location-name,\n"
+            ".char-name,\n"
+            ".character-name {\n"
+            "  font-size: clamp(1.02rem, 0.46vw + 0.96rem, 1.32rem) !important;\n"
+            "  font-weight: 700 !important;\n"
+            "  letter-spacing: 0.03em !important;\n"
+            "}\n\n"
+            ".badge-details,\n"
+            ".char-role,\n"
+            ".pokemon-type,\n"
+            ".location-region,\n"
+            ".section-subtitle {\n"
+            "  font-family: var(--font-body, 'Inter', sans-serif) !important;\n"
+            "}\n\n"
+            ".fade-up-section,\n"
+            ".scroll-reveal,\n"
+            ".fade-in-up {\n"
+            "  opacity: 1 !important;\n"
+            "  transform: none !important;\n"
+            "}\n\n"
+            ".ability-card img[src$='.svg'],\n"
+            ".badge-card img[src$='.svg'],\n"
+            ".evolution-stage img[src$='.svg'],\n"
+            ".world-map-image img[src$='.svg'] {\n"
+            "  object-fit: contain !important;\n"
+            "  padding: 0.8rem;\n"
+            "  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015));\n"
+            "}\n"
+        )
 
     if ui_archetype == "fintech":
         accent_glow = "rgba(24, 144, 255, 0.32)"
@@ -2134,7 +2376,9 @@ def _build_componentized_polish_guard_css(ui_archetype: str) -> str | None:
 
 
 def _build_componentized_polish_guard_runtime(ui_archetype: str) -> str | None:
-    if ui_archetype not in POLISH_GUARD_ARCHETYPES:
+    if not _supports_componentized_polish_guard(ui_archetype):
+        return None
+    if ui_archetype == "game" or ui_archetype.startswith("game_"):
         return None
 
     return (
