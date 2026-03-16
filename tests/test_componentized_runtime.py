@@ -1929,6 +1929,58 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_wraps_adjacent_jsx_roots_and_repairs_protocol_slashes(self):
+        code_dir = _case_dir("componentized-runtime-adjacent-jsx-roots")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            (code_dir / "src" / "components" / "Topbar.tsx").write_text(
+                "import React from 'react';\n"
+                "export default function Topbar() {\n"
+                "  return (<header className=\"topbar\"><img src=\"https:api.dicebear.com/7.x/initials/svg?seed=JD\" alt=\"Avatar\" /></header><section className=\"ticker-row\"><span>BTC</span></section>);\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            topbar_source = (code_dir / "src" / "components" / "Topbar.tsx").read_text(encoding="utf-8")
+            self.assertIn('src="https://api.dicebear.com/7.x/initials/svg?seed=JD"', topbar_source)
+            self.assertIn("return (<><header", topbar_source)
+            self.assertIn("</section></>);", topbar_source)
+            self.assertNotIn('src="https:api.dicebear.com', topbar_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_tradingview_placeholder_corruption(self):
+        code_dir = _case_dir("componentized-runtime-tradingview-placeholder")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            (code_dir / "src" / "components" / "CandlestickChart.tsx").write_text(
+                "import React from 'react';\n"
+                "export const CandlestickChart: React.FC = () => {\n"
+                "  /* This component would typically integrate a charting library like */\n"
+                "TradingView.\n"
+                "  /* React.useEffect(() => { const widget = new window.TradingView.widget({ */\n"
+                "container_id: \"tradingview_chart\", symbol: \"BINANCE:BTCUSDT\" /* ... */\n"
+                "return () =>widget.remove(); }, []); /* return<div id=\"tradingview_chart\" className=\"tradingview-chart-container\" />;\n"
+                "const chartData = [{ x: 50, open: 200, close: 220, high: 230, low: 190, color: 'var(--success)' }];\n"
+                "return <div />;\n"
+                "};\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            chart_source = (code_dir / "src" / "components" / "CandlestickChart.tsx").read_text(encoding="utf-8")
+            self.assertIn("type ChartDatum = {", chart_source)
+            self.assertIn("export const CandlestickChart: React.FC = () => {", chart_source)
+            self.assertIn("const chartData: ChartDatum[] = [", chart_source)
+            self.assertIn("export default CandlestickChart;", chart_source)
+            self.assertNotIn("return () =>widget.remove();", chart_source)
+            self.assertNotIn("container_id: \"tradingview_chart\"", chart_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_ensure_componentized_workspace_support_repairs_orphan_comment_split_identifiers_in_jsx(self):
         code_dir = _case_dir("componentized-runtime-orphan-jsx-identifier-split")
         try:

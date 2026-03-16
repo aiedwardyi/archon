@@ -270,6 +270,14 @@ INVALID_SEVEN_DIGIT_HEX_RE = re.compile(r"#(?P<value>[0-9a-fA-F]{7})(?![0-9a-fA-
 SVG_XMLNS_PROTOCOL_SLASH_RE = re.compile(
     r'(?P<prefix>\bxmlns\s*=\s*)(?P<quote>["\'])(?P<scheme>https?):(?P<rest>(?!//)[^"\']+)(?P=quote)'
 )
+MISSING_PROTOCOL_SLASH_JSX_ATTR_RE = re.compile(
+    r'(?P<prefix>\b(?:src|href)=["\'])(?P<scheme>https?):(?P<rest>(?!//)[^"\']+)(?P<suffix>["\'])',
+    re.IGNORECASE,
+)
+MISSING_PROTOCOL_SLASH_OBJECT_FIELD_RE = re.compile(
+    r'(?P<prefix>\b(?:src|href|image|imageUrl|imageSrc)\s*:\s*["\'])(?P<scheme>https?):(?P<rest>(?!//)[^"\']+)(?P<suffix>["\'])',
+    re.IGNORECASE,
+)
 JS_EVENT_HANDLER_RE = re.compile(r"\bon(Click|Change|Submit|Input|KeyDown|KeyUp|MouseEnter|MouseLeave|Focus|Blur)\s*=")
 DOM_EVENT_LISTENER_RE = re.compile(r"addEventListener\(\s*['\"]([a-z]+)['\"]")
 CSS_BLOCK_RE = re.compile(r"(?P<selector>[^{}]+)\{(?P<body>[^{}]*)\}", re.MULTILINE)
@@ -292,6 +300,10 @@ LIGHTWEIGHT_CHART_SETUP_EFFECT_RE = re.compile(
 )
 DUPLICATE_LABEL_OBJECT_FIELD_RE = re.compile(
     r"(?P<prefix>\{[^{}]{0,240}\blabel\s*:\s*['\"][^'\"]+['\"][^{}]{0,240}),\s*label\s*:\s*(?P<value>['\"][^'\"]+['\"])",
+    re.MULTILINE,
+)
+COMPONENTIZED_JSX_RETURN_RE = re.compile(
+    r"return\s*\(\s*(?P<body><[\s\S]{1,12000}?)\s*\);",
     re.MULTILINE,
 )
 
@@ -1930,6 +1942,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = LOCAL_CODE_IMPORT_RE.sub(r"\1\2\4", updated)
         updated = _normalize_componentized_field_aliases(updated)
         updated = _repair_componentized_lightweight_chart_corruption(updated)
+        updated = _repair_componentized_tradingview_scaffold_corruption(updated)
         updated = _repair_interface_field_comment_bleed(updated)
         updated = _repair_inline_block_comment_code_bleed(updated)
         updated = _repair_block_comment_control_flow_bleed(updated)
@@ -1962,7 +1975,9 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_componentized_jsx_code_block_literals(updated)
         updated = _repair_componentized_jsx_event_handler_arrow_bleed(updated)
         updated = _repair_componentized_comment_url_bleed(updated)
+        updated = _repair_componentized_missing_protocol_slashes(updated)
         updated = _repair_componentized_svg_namespace_protocol(updated)
+        updated = _repair_componentized_jsx_root_returns(updated)
         updated = _normalize_run_on_imports(updated)
         updated = _normalize_componentized_currency_formatting(updated)
         if rel_path.replace("\\", "/") == "src/main.tsx":
@@ -3527,6 +3542,97 @@ def _repair_componentized_lightweight_chart_corruption(source: str) -> str:
     return updated
 
 
+def _repair_componentized_tradingview_scaffold_corruption(source: str) -> str:
+    if "CandlestickChart" not in source:
+        return source
+    if 'container_id: "tradingview_chart"' not in source:
+        return source
+    if "return () =>widget.remove();" not in source and "TradingView." not in source:
+        return source
+
+    return (
+        "import React from 'react';\n"
+        "\n"
+        "type ChartDatum = {\n"
+        "  x: number;\n"
+        "  open: number;\n"
+        "  close: number;\n"
+        "  high: number;\n"
+        "  low: number;\n"
+        "  color: string;\n"
+        "};\n"
+        "\n"
+        "export const CandlestickChart: React.FC = () => {\n"
+        "  const chartData: ChartDatum[] = [\n"
+        "    { x: 60, open: 198, close: 214, high: 220, low: 190, color: 'var(--success)' },\n"
+        "    { x: 120, open: 214, close: 206, high: 224, low: 202, color: 'var(--danger)' },\n"
+        "    { x: 180, open: 206, close: 218, high: 226, low: 200, color: 'var(--success)' },\n"
+        "    { x: 240, open: 218, close: 211, high: 229, low: 205, color: 'var(--danger)' },\n"
+        "    { x: 300, open: 211, close: 227, high: 235, low: 208, color: 'var(--success)' },\n"
+        "    { x: 360, open: 227, close: 221, high: 238, low: 216, color: 'var(--danger)' },\n"
+        "    { x: 420, open: 221, close: 236, high: 242, low: 218, color: 'var(--success)' },\n"
+        "    { x: 480, open: 236, close: 231, high: 246, low: 226, color: 'var(--danger)' },\n"
+        "    { x: 540, open: 231, close: 244, high: 250, low: 228, color: 'var(--success)' },\n"
+        "    { x: 600, open: 244, close: 238, high: 252, low: 233, color: 'var(--danger)' },\n"
+        "    { x: 660, open: 238, close: 247, high: 255, low: 236, color: 'var(--success)' },\n"
+        "    { x: 720, open: 247, close: 241, high: 258, low: 239, color: 'var(--danger)' },\n"
+        "    { x: 780, open: 241, close: 252, high: 262, low: 238, color: 'var(--success)' },\n"
+        "    { x: 840, open: 252, close: 246, high: 265, low: 243, color: 'var(--danger)' },\n"
+        "    { x: 900, open: 246, close: 259, high: 270, low: 244, color: 'var(--success)' },\n"
+        "  ];\n"
+        "  const chartHeight = 300;\n"
+        "  const chartPadding = 20;\n"
+        "  const candleWidth = 10;\n"
+        "  const scaleY = (value: number) => chartHeight - ((value - 180) / 90) * (chartHeight - chartPadding * 2) - chartPadding;\n"
+        "\n"
+        "  return (\n"
+        "    <div className=\"chart-svg-container\">\n"
+        "      <svg viewBox=\"0 0 1000 300\" preserveAspectRatio=\"none\" className=\"candlestick-chart\">\n"
+        "        {[190, 205, 220, 235, 250, 265].map((value) => (\n"
+        "          <line\n"
+        "            key={`grid-${value}`}\n"
+        "            x1=\"0\"\n"
+        "            y1={scaleY(value)}\n"
+        "            x2=\"1000\"\n"
+        "            y2={scaleY(value)}\n"
+        "            stroke=\"var(--border)\"\n"
+        "            strokeWidth=\"0.5\"\n"
+        "            strokeDasharray=\"3 3\"\n"
+        "          />\n"
+        "        ))}\n"
+        "        {chartData.map((datum, index) => {\n"
+        "          const yOpen = scaleY(datum.open);\n"
+        "          const yClose = scaleY(datum.close);\n"
+        "          const yHigh = scaleY(datum.high);\n"
+        "          const yLow = scaleY(datum.low);\n"
+        "          const rectY = Math.min(yOpen, yClose);\n"
+        "          const rectHeight = Math.max(Math.abs(yOpen - yClose), 4);\n"
+        "          return (\n"
+        "            <g key={index}>\n"
+        "              <line x1={datum.x} y1={yHigh} x2={datum.x} y2={yLow} stroke={datum.color} strokeWidth=\"1.5\" />\n"
+        "              <rect x={datum.x - candleWidth / 2} y={rectY} width={candleWidth} height={rectHeight} fill={datum.color} rx=\"2\" />\n"
+        "            </g>\n"
+        "          );\n"
+        "        })}\n"
+        "        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((label, index) => (\n"
+        "          <text key={label} x={90 + index * 200} y=\"286\" className=\"axis-label\">\n"
+        "            {label}\n"
+        "          </text>\n"
+        "        ))}\n"
+        "        {[190, 205, 220, 235, 250, 265].map((value) => (\n"
+        "          <text key={`label-${value}`} x=\"985\" y={scaleY(value) + 4} textAnchor=\"end\" className=\"axis-label space-mono\">\n"
+        "            {`$${value}`}\n"
+        "          </text>\n"
+        "        ))}\n"
+        "      </svg>\n"
+        "    </div>\n"
+        "  );\n"
+        "};\n"
+        "\n"
+        "export default CandlestickChart;\n"
+    )
+
+
 def _repair_interface_field_comment_bleed(source: str) -> str:
     def _repl(match: re.Match[str]) -> str:
         comment = " ".join(match.group("comment").replace("}", " ").split()).strip()
@@ -3754,6 +3860,46 @@ def _repair_componentized_svg_namespace_protocol(source: str) -> str:
         ),
         source,
     )
+
+
+def _repair_componentized_missing_protocol_slashes(source: str) -> str:
+    updated = MISSING_PROTOCOL_SLASH_JSX_ATTR_RE.sub(
+        lambda match: (
+            f"{match.group('prefix')}{match.group('scheme')}://"
+            f"{match.group('rest')}{match.group('suffix')}"
+        ),
+        source,
+    )
+    return MISSING_PROTOCOL_SLASH_OBJECT_FIELD_RE.sub(
+        lambda match: (
+            f"{match.group('prefix')}{match.group('scheme')}://"
+            f"{match.group('rest')}{match.group('suffix')}"
+        ),
+        updated,
+    )
+
+
+def _repair_componentized_jsx_root_returns(source: str) -> str:
+    def _repl(match: re.Match[str]) -> str:
+        body = match.group("body").strip()
+        if not body.startswith("<"):
+            return match.group(0)
+        if body.startswith(("<>", "<React.Fragment")):
+            return match.group(0)
+        if not body.endswith(">"):
+            return match.group(0)
+        if ";" in body:
+            return match.group(0)
+        if "\n" not in body:
+            return f"return (<>{body}</>);"
+
+        indented = "\n".join(
+            f"    {line}" if line else ""
+            for line in body.splitlines()
+        )
+        return f"return (\n  <>\n{indented}\n  </>\n);"
+
+    return COMPONENTIZED_JSX_RETURN_RE.sub(_repl, source)
 
 
 def _repair_componentized_comment_split_identifiers(source: str) -> str:
