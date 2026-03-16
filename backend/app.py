@@ -2696,10 +2696,13 @@ def update_seed_factsheet(version_dir: Path, project: Project, execution: Execut
 
 def build_file_tree(root: Path, base: Path):
     nodes = []
+    excluded_dirs = {"node_modules", "dist", ".npm-cache", "__pycache__", ".pytest_cache"}
     try:
         items = sorted(root.iterdir(), key=lambda p: (p.is_file(), p.name.lower()))
         for item in items:
             if item.name.startswith("."):
+                continue
+            if item.is_dir() and item.name in excluded_dirs:
                 continue
             rel = item.relative_to(base)
             if item.is_dir():

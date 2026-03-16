@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -158,6 +159,7 @@ STYLE_FAMILY_LIBRARY: dict[str, dict[str, Any]] = {
 }
 
 BENCHMARK_STYLE_FAMILIES: dict[str, tuple[str, ...]] = {
+    "branch-ff8-garden-archive-20260316": ("cinematic_collector_fanpage",),
     "legacy-pokemon-starters-fan-page": ("playful_character_showcase",),
     "legacy-digimon-agumon-fan-page": ("cinematic_collector_fanpage",),
     "legacy-zell-dincht-fan-page": ("cinematic_collector_fanpage",),
@@ -171,6 +173,7 @@ BENCHMARK_STYLE_FAMILIES: dict[str, tuple[str, ...]] = {
 
 STYLE_FAMILY_ENTRY_BOOSTS: dict[str, dict[str, int]] = {
     "cinematic_collector_fanpage": {
+        "branch-ff8-garden-archive-20260316": 14,
         "legacy-ff7-legends-of-midgar": 12,
         "legacy-ff7-avalanche-archive": 10,
         "legacy-ff8-seed-operatives-fan-page": 9,
@@ -203,6 +206,15 @@ def _entry_search_text(entry: dict[str, Any]) -> str:
     return " ".join(parts).strip().lower()
 
 
+def _contains_registry_token(haystack: str, token: str) -> bool:
+    normalized_haystack = str(haystack or "").strip().lower()
+    normalized_token = str(token or "").strip().lower()
+    if not normalized_haystack or not normalized_token:
+        return False
+    pattern = re.compile(rf"(?<![a-z0-9]){re.escape(normalized_token)}(?![a-z0-9])")
+    return bool(pattern.search(normalized_haystack))
+
+
 def _entry_matches_variant(entry: dict[str, Any], archetype: str) -> bool:
     variant = BENCHMARK_VARIANT_RULES.get(_normalize_archetype_name(archetype))
     if not variant:
@@ -213,9 +225,9 @@ def _entry_matches_variant(entry: dict[str, Any], archetype: str) -> bool:
     haystack = _entry_search_text(entry)
     include_any = variant.get("include_any", [])
     exclude_any = variant.get("exclude_any", [])
-    if include_any and not any(token in haystack for token in include_any):
+    if include_any and not any(_contains_registry_token(haystack, token) for token in include_any):
         return False
-    if exclude_any and any(token in haystack for token in exclude_any):
+    if exclude_any and any(_contains_registry_token(haystack, token) for token in exclude_any):
         return False
     return True
 
@@ -347,6 +359,13 @@ def get_style_family_reference_build_entries(
         for item in entries
         if _entry_matches_style_family(item, style_family, archetype=normalized_archetype)
     ]
+    if normalized_archetype in BENCHMARK_VARIANT_RULES:
+        variant_matches = [
+            item for item in matches
+            if _entry_matches_variant(item, normalized_archetype)
+        ]
+        if variant_matches:
+            matches = variant_matches
     boosts = STYLE_FAMILY_ENTRY_BOOSTS.get(str(style_family or "").strip().lower(), {})
     return sorted(
         matches,
@@ -363,7 +382,7 @@ def get_sorted_reference_build_entries(archetype: str | None = None) -> list[dic
     return sorted(entries, key=lambda item: int(item.get("priority", 0)), reverse=True)
 
 
-def resolve_reference_build_source_paths(entry: dict[str, Any]) -> dict[str, Path] | None:
+def resolve_reference_build_source_paths(entry: dict[str, Any]) -> dict[str, Any] | None:
     project_id = int(entry["project_id"])
     version = int(entry.get("version", 1))
     benchmark_path = entry.get("benchmark_path")
@@ -373,6 +392,15 @@ def resolve_reference_build_source_paths(entry: dict[str, Any]) -> dict[str, Pat
     html_path = base / "code" / "src" / "index.html"
     css_path = base / "code" / "src" / "style.css"
     base_css_path = base / "code" / "src" / "base.css"
+    componentized_html_path = base / "code" / "src" / "App.tsx"
+    componentized_css_paths = [
+        path
+        for path in (
+            base / "code" / "src" / "style.css",
+            base / "code" / "src" / "index.css",
+        )
+        if path.exists()
+    ]
 
     if benchmark_path:
         benchmark_base = ROOT / str(benchmark_path)
@@ -397,12 +425,20 @@ def resolve_reference_build_source_paths(entry: dict[str, Any]) -> dict[str, Pat
             base_css_path = published_base_css
 
     if not html_path.exists() or not css_path.exists():
+        if componentized_html_path.exists() and componentized_css_paths:
+            return {
+                "html_path": componentized_html_path,
+                "css_path": componentized_css_paths[0],
+                "base_css_path": base_css_path,
+                "render_mode": "componentized",
+            }
         return None
 
     return {
         "html_path": html_path,
         "css_path": css_path,
         "base_css_path": base_css_path,
+        "render_mode": "legacy",
     }
 
 
@@ -502,11 +538,20 @@ def load_reference_build_content(entry: dict[str, Any]) -> dict[str, Any] | None
     html_path = source_paths["html_path"]
     css_path = source_paths["css_path"]
     base_css_path = source_paths["base_css_path"]
+    render_mode = str(source_paths.get("render_mode", "legacy"))
     factsheet_path = base / "last_factsheet.json"
     factsheet: dict[str, Any] = {}
 
     if factsheet_path.exists():
         factsheet = _read_json(factsheet_path)
+
+    html_code = html_path.read_text(encoding="utf-8")
+    css_parts = [css_path.read_text(encoding="utf-8")]
+    if render_mode == "componentized":
+        componentized_index_css = base / "code" / "src" / "index.css"
+        if componentized_index_css.exists() and componentized_index_css != css_path:
+            css_parts.append(componentized_index_css.read_text(encoding="utf-8"))
+    css_code = "\n\n".join(part for part in css_parts if part.strip())
 
     return {
         "project_id": project_id,
@@ -515,13 +560,14 @@ def load_reference_build_content(entry: dict[str, Any]) -> dict[str, Any] | None
         "label": entry.get("label", f"project-{project_id}"),
         "notes": entry.get("notes", ""),
         "prompt": factsheet.get("prompt_summary", "") or entry.get("prompt_summary", ""),
-        "html_code": html_path.read_text(encoding="utf-8"),
-        "css_code": css_path.read_text(encoding="utf-8"),
+        "html_code": html_code,
+        "css_code": css_code,
         "base_css": base_css_path.read_text(encoding="utf-8") if base_css_path.exists() else "",
         "eval_score": entry.get("eval_score"),
         "priority": int(entry.get("priority", 0)),
         "discovery_ingest": bool(entry.get("discovery_ingest", False)),
         "source": "local_benchmark",
+        "render_mode": render_mode,
     }
 
 

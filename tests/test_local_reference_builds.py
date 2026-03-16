@@ -75,6 +75,19 @@ def test_load_local_reference_build_returns_ff7_specific_benchmark_subset():
     assert "legacy-pokemon-starters-fan-page" not in reference["benchmark_guidance"]
 
 
+def test_load_local_reference_build_returns_ff8_branch_benchmark_subset():
+    reference = load_local_reference_build("game_ff8")
+
+    assert reference is not None
+    assert reference["archetype"] == "game_ff8"
+    assert reference["project_id"] == 440
+    assert reference["render_mode"] == "componentized"
+    assert "Squall Leonhart" in reference["html_code"]
+    assert ".hero-cinematic" in reference["css_code"]
+    assert "branch-ff8-garden-archive-20260316" in reference["benchmark_guidance"]
+    assert "legacy-ff7-legends-of-midgar" not in reference["benchmark_guidance"]
+
+
 def test_load_local_reference_build_uses_cinematic_family_for_digimon_prompt():
     reference = load_local_reference_build(
         "game",

@@ -47,6 +47,11 @@ Every app is generated from a single prompt — no templates, no manual coding. 
 
 ![Crypto Dashboard](docs/screenshots/dashboard-crypto.jpg)
 
+### Final Fantasy VIII Fan Page — Branch Benchmark
+> Prompt: *"Build a Final Fantasy VIII fan page with character profiles, weapons gallery, and world map"*
+
+[![FF8 Fan Page 2026](docs/screenshots/game-ff8-20260316-thumb.jpg)](docs/screenshots/game-ff8-20260316-full.jpg)
+
 ### Final Fantasy VIII Fan Page
 > Prompt: *"Build a Final Fantasy VIII fan page with character profiles, weapons gallery, and world map"*
 

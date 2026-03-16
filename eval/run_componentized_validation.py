@@ -43,9 +43,9 @@ BASELINES: dict[str, dict[str, Any]] = {
         "previous_site_path": str(ROOT / "generated" / "155" / "v1" / "code" / "src" / "index.html"),
     },
     "game": {
-        "previous_best_score": 84.5,
-        "previous_best_score_source": "benchmark:eval-best-game",
-        "previous_site_path": str(ROOT / "generated" / "161" / "v1" / "code" / "src" / "index.html"),
+        "previous_best_score": 88.0,
+        "previous_best_score_source": "benchmark:branch-ff8-garden-archive-20260316",
+        "previous_site_path": str(ROOT / "generated" / "440" / "v1" / "code" / "dist" / "index.html"),
     },
     "ecommerce": {
         "previous_best_score": 88.5,
