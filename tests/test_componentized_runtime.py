@@ -11,6 +11,7 @@ sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "backend"))
 
 from backend.app import (
+    build_componentized_shell_polish_guidance,
     build_design_context,
     build_componentized_refinement_prompt,
     detect_componentized_quality_issues,
@@ -35,6 +36,7 @@ from utils.componentized_runtime import (
     rewrite_preview_runtime_asset_references,
     stage_componentized_design_assets,
 )
+from utils.design_families import build_componentized_design_family_guidance
 from utils.componentized_quality import (
     classify_componentized_content_file,
     collect_quality_issue_codes,
@@ -56,6 +58,21 @@ def _case_dir(name: str) -> Path:
 
 
 class ComponentizedRuntimeTests(unittest.TestCase):
+    def test_data_dense_family_guidance_requires_explicit_typography_roles(self):
+        guidance = build_componentized_design_family_guidance("fintech")
+
+        self.assertIn("display face", guidance)
+        self.assertIn("mono/tabular numeric face", guidance)
+        self.assertIn("dominant center insight zone", guidance)
+        self.assertIn("equal-height card mosaics", guidance)
+
+    def test_fintech_shell_polish_guidance_requires_mono_numeric_consistency(self):
+        guidance = build_componentized_shell_polish_guidance("fintech")
+
+        self.assertIn("Mono treatment is mandatory across every numeric surface", guidance)
+        self.assertIn("JetBrains Mono or equivalent", guidance)
+        self.assertIn("right rail should hold at least two stacked support modules", guidance)
+
     def test_validate_componentized_contract_outputs_flags_missing_and_stubbed_files(self):
         files = [
             SimpleNamespace(path="package.json", content='{"name":"demo"}'),

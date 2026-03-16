@@ -64,6 +64,7 @@ def build_componentized_design_family_guidance(ui_archetype: str | None) -> str:
         "UNIVERSAL COMPONENTIZED APP CONTRACT:",
         "- Ship a real React app shell with a clear header/nav/main hierarchy, responsive breakpoints, and no dead empty columns.",
         "- Use a small, repeatable surface system. Prefer 3-4 deliberate panel/card treatments over many unrelated wrappers.",
+        "- Do not let the whole app collapse into one default sans stack. When the family calls for type roles, make display, UI, and mono treatments explicit from the first render.",
         "- Every primary CTA, tab, filter, or step control must show hover, focus-visible, and active state treatment.",
         "- Do not leak instructions or prose notes into source code. If helper notes are needed, keep them as valid comments only.",
         "- Do not place raw object literals or brace-heavy code samples directly into JSX text nodes. Render code examples as strings or escaped literals.",
@@ -72,9 +73,10 @@ def build_componentized_design_family_guidance(ui_archetype: str | None) -> str:
 
     family_rules = {
         "data_dense": [
-            "- Organize the desktop layout around one hero insight zone plus support modules, not a flat grid of equivalent cards.",
-            "- Make numeric hierarchy obvious with display typography for page titles and mono/tabular treatment for KPIs, prices, deltas, and timestamps.",
-            "- Support rails need real weight: watchlist, alerts, activity, news, or secondary analysis should occupy a meaningful lane.",
+            "- Organize the desktop layout around one dominant center insight zone plus subordinate support modules, not a flat grid of equivalent cards.",
+            "- Treat typography as structural, not decorative: use a display face for page and section headings, a compact UI sans for controls/body copy, and a mono/tabular numeric face for every KPI, price, delta, holding, timestamp, and axis label.",
+            "- Support rails need real weight: watchlist, alerts, activity, news, or secondary analysis should occupy a meaningful lane with at least two clearly separated modules instead of one thin afterthought card.",
+            "- Avoid generic admin defaults such as equal-height card mosaics, flat charcoal panels, or body-copy numerics that make the shell read like a template.",
         ],
         "workspace": [
             "- Default to a three-zone shell: navigation/context rail, primary work surface, and support rail or inspector.",
@@ -113,7 +115,8 @@ def build_componentized_shell_family_guidance(ui_archetype: str | None) -> str:
     guidance = {
         "data_dense": (
             "- Structure the shell around one dominant insight zone plus clearly subordinate support modules.\n"
-            "- Use obvious display-vs-UI-vs-mono typography roles so titles, controls, and numbers do not collapse into one texture.\n"
+            "- Treat display-vs-UI-vs-mono typography roles as mandatory and keep tabular/mono numerics consistent across KPIs, prices, table cells, delta chips, timestamps, and chart labels.\n"
+            "- Keep the center insight surface visibly larger than the support rail so the page does not collapse into equal-width panels.\n"
             "- Preserve visible hover/focus treatment on rails, pills, rows, and actions. Dense shells should still feel touchable.\n"
         ),
         "workspace": (
