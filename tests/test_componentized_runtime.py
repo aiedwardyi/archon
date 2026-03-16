@@ -766,6 +766,34 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_normalizes_jsx_code_template_literals(self):
+        code_dir = _case_dir("componentized-runtime-jsx-code-template-literal")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return (\n"
+                "    <code>\n"
+                "{`function applyFormatting(text, format) {\n"
+                "  console.log(`Applying ${format} to: ${text}`);\n"
+                "  return `<span class=\"${format}\">${text}</span>`;\n"
+                "}`}\n"
+                "    </code>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn('function applyFormatting(text, format)', app_source)
+            self.assertIn('console.log(`Applying $&#123;format&#125; to: $&#123;text&#125;`);', app_source)
+            self.assertIn('return `&lt;span class=\\"$&#123;format&#125;\\"&gt;$&#123;text&#125;&lt;/span&gt;`;', app_source)
+            self.assertNotIn("{`function applyFormatting", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_ensure_componentized_workspace_support_repairs_jsx_text_comment_close_bleed(self):
         code_dir = _case_dir("componentized-runtime-jsx-text-comment-close")
         try:
@@ -1338,6 +1366,58 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_repairs_jsx_expression_comment_split_identifiers(self):
+        code_dir = _case_dir("componentized-runtime-jsx-expression-comment-split")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  const formData = { workspaceName: 'alpha team' };\n"
+                "  return <span>https://app.ai-platform.com/{form */\n"
+                "Data.workspaceName.toLowerCase().replace(/\\s/g, '-')}/</span>;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("{formData.workspaceName.toLowerCase().replace(/\\s/g, '-')}", app_source)
+            self.assertNotIn("{form */", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_escapes_jsx_code_block_brace_literals(self):
+        code_dir = _case_dir("componentized-runtime-jsx-code-block-braces")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return (\n"
+                "    <pre>\n"
+                "      <code>\n"
+                "        const briefSchema = {{\n"
+                "          title: 'string',\n"
+                "          sections: [{{ heading: 'string' }}]\n"
+                "        }}\n"
+                "      </code>\n"
+                "    </pre>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("const briefSchema = &#123;", app_source)
+            self.assertIn("sections: [&#123; heading: 'string' &#125;]", app_source)
+            self.assertIn("&#125;", app_source)
+            self.assertNotIn("{{", app_source)
+            self.assertNotIn("}}", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_ensure_componentized_workspace_support_normalizes_run_on_natural_language_notes(self):
         code_dir = _case_dir("componentized-runtime-natural-language-note")
         try:
@@ -1386,6 +1466,29 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_merges_post_comment_instruction_note_with_underscores(self):
+        code_dir = _case_dir("componentized-runtime-post-comment-note-underscores")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  /* Inline helper components/ */\n"
+                "  functions to adhere to output_files constraint\n"
+                "  const InputField = () => <input />;\n"
+                "  return <InputField />;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("/* Inline helper components/ functions to adhere to output_files constraint */", app_source)
+            self.assertIn("const InputField = () => <input />;", app_source)
+            self.assertNotIn("functions to adhere to output_files constraint\n", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_ensure_componentized_workspace_support_normalizes_run_on_data_notes(self):
         code_dir = _case_dir("componentized-runtime-data-note")
         try:
@@ -1425,6 +1528,32 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertIn("setOpenPositions(prev => Math.max(1, prev + (Math.random() > 0.5 ? 1 : -1))); /* +/- 1 */", app_source)
             self.assertIn("}, 3000);", app_source)
             self.assertNotIn("/* +/- 1    }, 3000);", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_multiline_block_comment_line_notes(self):
+        code_dir = _case_dir("componentized-runtime-multiline-block-comment-line-note")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  if (true) {\n"
+                "    /* No specific validation needed for integration selection, keys are optional\n"
+                "    // Can add validation if integrations are required */\n"
+                "  }\n"
+                "  return null;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn(
+                "/* No specific validation needed for integration selection, keys are optional Can add validation if integrations are required */",
+                app_source,
+            )
+            self.assertNotIn("// Can add validation", app_source)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
@@ -2778,6 +2907,52 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertIn("external_placeholder_assets", issues)
             self.assertIn("typography_hierarchy", issues)
             self.assertIn("polish_flow", issues)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_detect_componentized_quality_issues_flags_understructured_workspace_shells(self):
+        code_dir = _case_dir("componentized-quality-workspace-visual-issues")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "base.css").write_text(
+                "body { font-family: Inter, sans-serif; }\n"
+                ".panel { box-shadow: 0 4px 10px rgba(0,0,0,0.15); }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return <main><section className=\"panel\">Editor</section></main>;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            issues = detect_componentized_quality_issues(code_dir, ui_archetype="editor")
+
+            self.assertIn("workspace_shell_balance", issues)
+            self.assertIn("typography_hierarchy", issues)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_detect_componentized_quality_issues_flags_guided_flow_shells_without_progression(self):
+        code_dir = _case_dir("componentized-quality-guided-flow-visual-issues")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "base.css").write_text(
+                "body { font-family: Inter, sans-serif; }\n"
+                ".panel { box-shadow: 0 4px 10px rgba(0,0,0,0.15); }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return <main><section className=\"panel\"><input aria-label=\"Company name\" /></section></main>;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            issues = detect_componentized_quality_issues(code_dir, ui_archetype="form")
+
+            self.assertIn("guided_flow_progression", issues)
+            self.assertIn("typography_hierarchy", issues)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 

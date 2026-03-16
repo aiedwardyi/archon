@@ -19,31 +19,13 @@ from pydantic import ValidationError
 
 from schemas.plan_schema import Task
 from schemas.engineering_schema import EngineeringResult, FileArtifact
+from utils.design_families import (
+    DESIGN_KIT_ALIASES,
+    build_componentized_design_family_guidance,
+)
 from utils.offline_engineer_scaffold import build_vite_react_ts_scaffold
 
 PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
-
-# Map similar archetypes to a shared design kit
-DESIGN_KIT_ALIASES = {
-    "ai_product": "saas_landing",
-    "dev_tool": "saas_landing",
-    "productivity_app": "saas_landing",
-    "game_companion": "game",
-    "fan_page": "game",
-    "game_ff7": "game",
-    "game_ff8": "game",
-    "game_ff9": "game",
-    "interactive_experience": "game",
-    "admin_panel": "dashboard",
-    "analytics": "dashboard",
-    "crm": "dashboard",
-    "online_store": "ecommerce",
-    "marketplace": "ecommerce",
-    "shop": "ecommerce",
-    "agency": "portfolio",
-    "personal_site": "portfolio",
-    "freelancer": "portfolio",
-}
 
 
 def _is_offline_mode() -> bool:
@@ -498,6 +480,14 @@ class EngineerAgent:
 
         if scaffold_mode == "componentized_app":
             prompt = (PROMPTS_DIR / "engineer_componentized.txt").read_text(encoding="utf-8")
+            family_guidance = build_componentized_design_family_guidance(archetype)
+            if family_guidance:
+                prompt += (
+                    "\n\n--- DESIGN FAMILY FOUNDATION ---\n"
+                    "Apply this shared family contract before archetype-specific flourish.\n"
+                    f"{family_guidance}\n"
+                    "--- END DESIGN FAMILY FOUNDATION ---"
+                )
             if archetype_txt and archetype_txt.exists():
                 prompt += (
                     "\n\n--- DESIGN KIT REFERENCE ---\n"

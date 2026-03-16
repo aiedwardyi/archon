@@ -31,7 +31,6 @@ from auth import auth_bp, claim_guest_project_for_user, init_jwt
 # NLU Agent — sentiment + keyword analysis before pipeline routing
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from agents.nlu_agent import NLUAgent
-from agents.engineer_agent import DESIGN_KIT_ALIASES
 from utils.reference_build_registry import (
     get_archetype_benchmark_guidance,
     load_local_reference_build,
@@ -40,6 +39,11 @@ from utils.reference_build_registry import (
 from utils.watson_discovery import DiscoveryClient
 from utils.image_asset_catalog import catalog_design_assets
 from utils.asset_filler import fill_missing_assets
+from utils.design_families import (
+    DESIGN_KIT_ALIASES,
+    build_componentized_shell_family_guidance,
+    resolve_componentized_design_family,
+)
 from utils.offline_engineer_scaffold import build_vite_react_ts_scaffold
 from utils.componentized_runtime import (
     build_componentized_preview,
@@ -1782,6 +1786,7 @@ def detect_componentized_quality_issues(code_dir: Path, *, ui_archetype: str | N
         return []
 
     normalized = context.lower()
+    design_family = resolve_componentized_design_family(ui_archetype)
     issues: list[str] = []
     display_font_markers = (
         "space grotesk",
@@ -1838,7 +1843,7 @@ def detect_componentized_quality_issues(code_dir: Path, *, ui_archetype: str | N
         )
     )
     layered_shadow_present = bool(re.search(r"box-shadow\s*:\s*[^;]+,[^;]+;", normalized))
-    if ui_archetype in {"dashboard", "fintech", "editor", "kanban", "chat", "ecommerce", "portfolio", "game", "landing"}:
+    if ui_archetype in {"dashboard", "fintech", "editor", "kanban", "chat", "form", "ecommerce", "portfolio", "game", "landing"}:
         if not any(marker in normalized for marker in display_font_markers) or font_family_count < 2 or title_scale_too_small:
             issues.append("typography_hierarchy")
         if hover_count < 6 or "focus-visible" not in normalized:
@@ -1865,6 +1870,43 @@ def detect_componentized_quality_issues(code_dir: Path, *, ui_archetype: str | N
             issues.append("weak_surface_depth")
     elif "linear-gradient" not in normalized and "radial-gradient" not in normalized and normalized.count("box-shadow") < 2:
         issues.append("weak_surface_depth")
+
+    if design_family == "workspace":
+        workspace_signal_count = sum(
+            1
+            for token in (
+                "toolbar",
+                "workspace",
+                "sidebar",
+                "inspector",
+                "editor",
+                "composer",
+                "thread",
+                "column",
+                "panel",
+            )
+            if token in normalized
+        )
+        if workspace_signal_count < 4:
+            issues.append("workspace_shell_balance")
+
+    if design_family == "guided_flow":
+        progression_signal_count = sum(
+            1
+            for token in (
+                "step",
+                "wizard",
+                "progress",
+                "continue",
+                "review",
+                "success",
+                "validation",
+                "summary",
+            )
+            if token in normalized
+        )
+        if progression_signal_count < 4:
+            issues.append("guided_flow_progression")
 
     return issues
 
@@ -1945,9 +1987,13 @@ def format_multi_file_evaluation_context(multi_file_evaluation: dict[str, Any] |
 
 
 def build_componentized_shell_polish_guidance(ui_archetype: str | None) -> str:
+    family_guidance = build_componentized_shell_family_guidance(ui_archetype)
+    family_block = f"{family_guidance}" if family_guidance else ""
+
     if ui_archetype == "dashboard":
         return (
             "APP-SHELL POLISH TARGET FOR DASHBOARD:\n"
+            f"{family_block}"
             "- Keep the product reading like analytics or operations, not a trading terminal.\n"
             "- Use the display font for the brand, page title, panel titles, and other short high-importance headings. Keep the UI sans for controls/body copy and the mono family for KPI values, chart labels, table numerics, and timestamps.\n"
             "- The desktop page title should land in a real display range, roughly 36-44px, and the KPI row should arrive within about 24-32px of the header. Do not leave a dead vertical gap before the first data cards.\n"
@@ -1961,6 +2007,7 @@ def build_componentized_shell_polish_guidance(ui_archetype: str | None) -> str:
     if ui_archetype == "fintech":
         return (
             "APP-SHELL POLISH TARGET FOR FINTECH:\n"
+            f"{family_block}"
             "- Keep the shell chart-first and market-focused. It should feel like a brokerage or monitoring workspace, not a generic admin dashboard.\n"
             "- Use the display font for the brand, page title, chart title, and key section headers. Keep the UI sans for controls and JetBrains Mono or equivalent for all prices, deltas, holdings, timestamps, and chart labels.\n"
             "- The desktop page title should read like a headline, roughly 36-44px, with a compact header-to-KPI transition instead of a large blank strip above the first cards.\n"
@@ -1974,6 +2021,7 @@ def build_componentized_shell_polish_guidance(ui_archetype: str | None) -> str:
     if ui_archetype == "ecommerce":
         return (
             "APP-SHELL POLISH TARGET FOR ECOMMERCE:\n"
+            f"{family_block}"
             "- Keep the storefront editorial and merchandise-led. It should read like a premium fashion drop, not a generic SaaS landing page with product cards.\n"
             "- Use the display font for the brand, hero title, collection titles, and other short high-importance headings. Keep a restrained UI sans for filters, pricing, badges, and support copy.\n"
             "- Favor a premium warm-metal or tonal accent system that matches the benchmark context. Avoid generic bright dashboard blue unless the brief explicitly asks for that direction.\n"
@@ -1986,10 +2034,20 @@ def build_componentized_shell_polish_guidance(ui_archetype: str | None) -> str:
     if ui_archetype in {"editor", "kanban", "chat"}:
         return (
             "APP-SHELL POLISH TARGET FOR WORKSPACES:\n"
-            "- Keep one stronger display treatment for brand and panel titles, a readable UI sans for controls, and a clear mono or tabular style wherever dense data appears.\n"
-            "- Multi-panel desktop layouts need differentiated surface depth so the work area, sidebars, and floating controls do not collapse into one flat sheet.\n"
+            f"{family_block}"
+            "- Use the display font for brand, document titles, panel titles, and short section headers. Keep the UI sans for control surfaces and preserve a restrained mono treatment anywhere the workspace shows structured metadata.\n"
+            "- The primary work surface should dominate the desktop canvas. Toolbars, sidebars, outlines, chat rails, and inspectors must read as supporting lanes rather than equal-width generic cards.\n"
+            "- Toolbar buttons, tabs, mentions, pills, thread items, drag handles, and inline actions need visible hover, focus, and selected states.\n"
         )
-    return ""
+    if resolve_componentized_design_family(ui_archetype) == "guided_flow":
+        return (
+            "APP-SHELL POLISH TARGET FOR GUIDED FLOWS:\n"
+            f"{family_block}"
+            "- Make progress unmistakable with a visible stepper, progress copy, or staged summary so the page reads like a guided sequence instead of a long static form.\n"
+            "- Keep one dominant active-step surface, then use a secondary rail or footer zone for trust copy, validation feedback, plan summary, or success context.\n"
+            "- Inputs, option cards, helper text, and validation states should feel like one designed system with clear focus and error treatment.\n"
+        )
+    return family_block
 
 
 CONTENT_REFINEMENT_ISSUES = {
@@ -2021,6 +2079,8 @@ SHELL_REFINEMENT_ISSUES = {
     "weak_surface_depth",
     "polish_flow",
     "numeric_data_typography",
+    "workspace_shell_balance",
+    "guided_flow_progression",
 }
 
 CONTENT_FIX_ISSUES = {
@@ -2325,6 +2385,8 @@ def select_componentized_refinement_scope(
         "weak_surface_depth": ("box-shadow", "linear-gradient", "radial-gradient", "background:", ":root", "backdrop-filter"),
         "content_authenticity": ("title", "subtitle", "description", "headline", "label", "copy", "caption"),
         "polish_flow": ("::selection", "scrollbar", "badge", "divider", "separator", "quote", "border-radius", "box-shadow", "focus-visible", ":hover"),
+        "workspace_shell_balance": ("toolbar", "workspace", "sidebar", "inspector", "editor", "composer", "thread", "column", "panel"),
+        "guided_flow_progression": ("step", "wizard", "progress", "continue", "review", "success", "validation", "summary"),
         "kpi_sparse": ("portfolio value", "revenue", "kpi", "metric", "delta", "sparkline"),
         "chart_missing": ("chart", "recharts", "sparkline", "polyline", "candlestick"),
         "chart_underdeveloped": ("chart", "tooltip", "range", "axis", "grid"),

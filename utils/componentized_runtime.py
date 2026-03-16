@@ -76,6 +76,11 @@ UNTERMINATED_BLOCK_COMMENT_LINE_NOTE_RE = re.compile(
     r"(?P<indent>[ \t]*)/\*\s*(?P<comment>[^*\n]{2,240}?)\s*//\s*(?P<tail>[^*\n]{2,240}?)\s+(?P<code>(?:console\.[A-Za-z_$][\w$]*\s*\(|return\b|const\b|let\b|var\b|if\s*\(|for\s*\(|while\s*\(|switch\s*\(|set[A-Z]\w*\s*\(|[A-Za-z_$][\w$]*\s*=|[A-Za-z_$][\w$]*\s*\())(?P<rest>[^\n]*)",
     re.MULTILINE,
 )
+MULTILINE_BLOCK_COMMENT_LINE_NOTE_RE = re.compile(
+    r"(?P<indent>[ \t]*)/\*\s*(?P<comment>[^*\n]{2,240}?)\s*\r?\n"
+    r"(?P=indent)[ \t]*//\s*(?P<tail>[^*\n]{2,240}?)\s*\*/",
+    re.MULTILINE,
+)
 INLINE_BLOCK_COMMENT_CONTINUATION_RE = re.compile(
     r"(?m)^(?P<prefix>[^\n]*?)/\*\s*(?P<comment>[^*\n]{2,240}?)\s{2,}(?P<code>(?:[)}\]],?\s*[^\n]*|[A-Za-z_:][-A-Za-z0-9_:.]*=\s*[^\n]*|[A-Za-z_$][\w$]*\s*:\s*[^\n]*|(?:const|let|var|return|if|for|while|switch)\b[^\n]*|set[A-Z]\w*\s*\([^\n]*))(?:\s*//\s*(?P<label>[^*\n]{2,200}?))?\s*(?:\*/)?\s*$",
     re.MULTILINE,
@@ -99,6 +104,11 @@ BARE_SECTION_LABEL_RE = re.compile(
 )
 COMMENT_FILENAME_LABEL_RE = re.compile(
     r"(?m)^/\*\s*(?P<comment>[^*\n]{1,200}?)\s*\*/\s*$\n^(?P<filename>[A-Za-z0-9_-]+\.(?:tsx|ts|jsx|js|css|html|json|md))\s*$"
+)
+COMMENT_NOTE_CONTINUATION_RE = re.compile(
+    r"(?m)^(?P<indent>[ \t]*)/\*\s*(?P<comment>[^*\n]{2,200}?)\s*\*/\s*$\n"
+    r"(?P=indent)(?P<tail>[a-z][A-Za-z0-9_./&,\- '()]{6,180})\s*$\n"
+    r"(?=(?P=indent)(?:const|let|var|function|export|type|interface|class)\b)"
 )
 JSX_COMMENT_SWALLOWED_TAG_BOUNDARY_RE = re.compile(
     r"/\*\s*[\s\S]{0,320}?(?P<boundary>(?:/?>)\s*</[A-Za-z][A-Za-z0-9-]*>\s*<[A-Za-z][A-Za-z0-9-]*)\s*\*/",
@@ -140,6 +150,10 @@ ORPHAN_COMMENT_SPLIT_STRING_LITERAL_RE = re.compile(
     r"(?P<prefix>(?:\?|:|=|\(|,|\{)\s*)(?P<quote>['\"])\s*\*/\s*\n(?P<indent>[ \t]*)(?P<content>[^'\"\n]{1,120})(?P=quote)",
     re.MULTILINE,
 )
+JSX_EXPR_COMMENT_SPLIT_IDENTIFIER_RE = re.compile(
+    r"\{(?P<prefix>[a-z][A-Za-z0-9_$]{1,32})\s*\*/\s*\n(?P<indent>[ \t]*)(?P<suffix>[A-Z][A-Za-z0-9_$]{1,64})(?P<rest>[^}]*)\}",
+    re.MULTILINE,
+)
 ORPHAN_COMMENT_CLOSE_IN_STRING_LITERAL_RE = re.compile(
     r"(?P<prefix>(?:\[|,|:|=|\(|\{)\s*)(?P<quote>['\"])(?P<before>[^'\"\n]*?)\s*\*/\s*\n\s*(?P<after>[^'\"\n]*?)(?P=quote)",
     re.MULTILINE,
@@ -166,6 +180,18 @@ JSX_BLOCK_COMMENT_BLEED_RE = re.compile(
 JSX_TEXT_COMMENT_CLOSE_BLEED_RE = re.compile(
     r">(?P<prefix>[^<>{\n]{1,120}?)\s*\*/\s*(?:\r?\n\s*(?:\d+\s*\|\s*)?)?(?P<suffix>[A-Za-z][^<>{\n]{0,120}?)\s*<",
     re.MULTILINE,
+)
+JSX_CODE_TAG_RE = re.compile(
+    r"(?P<open><code\b[^>]*>)(?P<body>[\s\S]{0,12000}?)(?P<close></code>)",
+    re.IGNORECASE,
+)
+JSX_CODE_TEMPLATE_LITERAL_RE = re.compile(
+    r"(?P<open><code\b[^>]*>\s*)\{\s*`(?P<body>[\s\S]{0,12000}?)`\s*\}(?P<close>\s*</code>)",
+    re.IGNORECASE,
+)
+JSX_PRE_TEXT_TAG_RE = re.compile(
+    r"(?P<open><pre\b[^>]*>)(?P<body>(?:(?!<code\b)[\s\S]){0,12000}?)(?P<close></pre>)",
+    re.IGNORECASE,
 )
 VOID_JSX_ELEMENT_RE = re.compile(
     r"(?<![A-Za-z0-9_\"'])<(?P<tag>area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)\b(?P<attrs>[^<>]*?)(?<!/)>",
@@ -1777,6 +1803,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_inline_block_comment_code_bleed(updated)
         updated = _repair_block_comment_control_flow_bleed(updated)
         updated = _repair_unterminated_block_comment_line_notes(updated)
+        updated = _repair_multiline_block_comment_line_notes(updated)
         updated = _repair_inline_block_comment_continuations(updated)
         updated = _normalize_run_on_inline_comments(updated)
         updated = _repair_componentized_comment_split_identifiers(updated)
@@ -1784,6 +1811,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_componentized_jsx_comment_swallowed_tag_boundaries(updated)
         updated = _repair_componentized_jsx_block_comment_bleed(updated)
         updated = _repair_componentized_jsx_text_comment_bleed(updated)
+        updated = _repair_componentized_jsx_expression_comment_split_identifiers(updated)
         updated = _repair_componentized_orphan_comment_split_identifiers(updated)
         updated = _repair_componentized_orphan_comment_split_string_literals(updated)
         updated = _repair_componentized_orphan_comment_close_in_string_literals(updated)
@@ -1791,11 +1819,14 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _normalize_componentized_void_jsx_elements(updated)
         updated = _normalize_componentized_declaration_boundaries(updated)
         updated = _hoist_componentized_chart_helper_declarations(updated)
+        updated = _repair_componentized_comment_note_continuations(updated)
         updated = _normalize_run_on_natural_language_notes(updated)
         updated = _normalize_lowercase_object_field_labels(updated)
         updated = _normalize_run_on_explanatory_labels(updated)
         updated = _normalize_bare_section_labels(updated)
         updated = _normalize_comment_filename_labels(updated)
+        updated = _normalize_componentized_jsx_code_template_literals(updated)
+        updated = _repair_componentized_jsx_code_block_literals(updated)
         updated = _repair_componentized_jsx_event_handler_arrow_bleed(updated)
         updated = _repair_componentized_comment_url_bleed(updated)
         updated = _normalize_run_on_imports(updated)
@@ -3233,6 +3264,16 @@ def _repair_unterminated_block_comment_line_notes(source: str) -> str:
     return UNTERMINATED_BLOCK_COMMENT_LINE_NOTE_RE.sub(_repl, source)
 
 
+def _repair_multiline_block_comment_line_notes(source: str) -> str:
+    return MULTILINE_BLOCK_COMMENT_LINE_NOTE_RE.sub(
+        lambda match: (
+            f"{match.group('indent')}/* "
+            f"{' '.join((match.group('comment') + ' ' + match.group('tail')).split()).strip()} */"
+        ),
+        source,
+    )
+
+
 def _repair_inline_block_comment_continuations(source: str) -> str:
     def _repl(match: re.Match[str]) -> str:
         prefix = match.group("prefix").rstrip()
@@ -3282,9 +3323,11 @@ def _normalize_run_on_natural_language_notes(source: str) -> str:
             if stripped.startswith(("/*", "//", "*", "*/", "{", "}", ")", "]", "</", "<")):
                 break
             if re.match(
-                r"^(?:const|let|var|if|for|while|switch|return|export|import|function|class|type|interface|window|document)\b",
+                r"^(?:const|let|var|if|for|while|switch|return|export|import|function|type|interface|window|document)\b",
                 stripped,
-            ) and "/" not in stripped:
+            ):
+                break
+            if re.match(r"^class(?:\s+[A-Za-z_$]|[{(<])", stripped):
                 break
             if re.match(r"^[A-Za-z_$][\w$]*\s*=", stripped):
                 break
@@ -3335,6 +3378,16 @@ def _normalize_bare_section_labels(source: str) -> str:
 def _normalize_comment_filename_labels(source: str) -> str:
     return COMMENT_FILENAME_LABEL_RE.sub(
         lambda match: f"/* {match.group('comment').strip()} {match.group('filename').strip()} */",
+        source,
+    )
+
+
+def _repair_componentized_comment_note_continuations(source: str) -> str:
+    return COMMENT_NOTE_CONTINUATION_RE.sub(
+        lambda match: (
+            f"{match.group('indent')}/* "
+            f"{' '.join((match.group('comment') + ' ' + match.group('tail')).split()).strip()} */\n"
+        ),
         source,
     )
 
@@ -3421,6 +3474,13 @@ def _repair_componentized_orphan_comment_split_string_literals(source: str) -> s
     return ORPHAN_COMMENT_SPLIT_STRING_LITERAL_RE.sub(_repl, source)
 
 
+def _repair_componentized_jsx_expression_comment_split_identifiers(source: str) -> str:
+    return JSX_EXPR_COMMENT_SPLIT_IDENTIFIER_RE.sub(
+        lambda match: f"{{{match.group('prefix').strip()}{match.group('suffix').strip()}{match.group('rest')}}}",
+        source,
+    )
+
+
 def _repair_componentized_orphan_comment_close_in_string_literals(source: str) -> str:
     updated = source
 
@@ -3491,6 +3551,32 @@ def _repair_componentized_jsx_text_comment_bleed(source: str) -> str:
         return f">{prefix} {suffix}<"
 
     return JSX_TEXT_COMMENT_CLOSE_BLEED_RE.sub(_repl, source)
+
+
+def _repair_componentized_jsx_code_block_literals(source: str) -> str:
+    def _escape_braces(body: str) -> str:
+        if "{" not in body and "}" not in body and "<" not in body and ">" not in body:
+            return body
+        updated = body.replace("<", "&lt;").replace(">", "&gt;")
+        updated = updated.replace("{{", "&#123;").replace("}}", "&#125;")
+        updated = updated.replace("{", "&#123;").replace("}", "&#125;")
+        return updated
+
+    updated = JSX_CODE_TAG_RE.sub(
+        lambda match: f"{match.group('open')}{_escape_braces(match.group('body'))}{match.group('close')}",
+        source,
+    )
+    return JSX_PRE_TEXT_TAG_RE.sub(
+        lambda match: f"{match.group('open')}{_escape_braces(match.group('body'))}{match.group('close')}",
+        updated,
+    )
+
+
+def _normalize_componentized_jsx_code_template_literals(source: str) -> str:
+    return JSX_CODE_TEMPLATE_LITERAL_RE.sub(
+        lambda match: f"{match.group('open')}{{{json.dumps(match.group('body'))}}}{match.group('close')}",
+        source,
+    )
 
 
 def _normalize_componentized_void_jsx_elements(source: str) -> str:
