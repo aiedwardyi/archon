@@ -1183,6 +1183,38 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_rewrites_missing_component_alias_imports(self):
+        code_dir = _case_dir("componentized-runtime-component-import-aliases")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "import Hero from './components/Hero';\n"
+                "import CharacterCards from './components/CharacterCards';\n"
+                "import WeaponSection from './components/WeaponSection';\n"
+                "export default function App() { return <><Hero /><CharacterCards /><WeaponSection /></>; }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "components" / "HeroSection.tsx").write_text(
+                "export default function HeroSection() { return <section>Hero</section>; }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "components" / "CharacterSection.tsx").write_text(
+                "export default function CharacterSection() { return <section>Characters</section>; }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "components" / "WeaponShowcase.tsx").write_text(
+                "export default function WeaponShowcase() { return <section>Weapons</section>; }\n",
+                encoding="utf-8",
+            )
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("from './components/HeroSection'", app_source)
+            self.assertIn("from './components/CharacterSection'", app_source)
+            self.assertIn("from './components/WeaponShowcase'", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_ensure_componentized_workspace_support_repairs_block_comment_code_bleed(self):
         code_dir = _case_dir("componentized-runtime-comment-bleed")
         try:
@@ -1908,6 +1940,8 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             polish_guard = (code_dir / "src" / "polish-guard.css").read_text(encoding="utf-8")
             self.assertIn(".pokemon-name", polish_guard)
             self.assertIn(".scroll-indicator", polish_guard)
+            self.assertIn("padding-bottom: clamp(5.5rem, 10vh, 7.5rem)", polish_guard)
+            self.assertIn("display: inline-flex", polish_guard)
             self.assertIn(".fade-up-section", polish_guard)
             self.assertFalse((code_dir / "src" / "polish-guard.ts").exists())
         finally:
@@ -1932,6 +1966,34 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             alias_path = code_dir / "public" / "generated-assets" / "badge_boulder.png"
             self.assertTrue(alias_path.exists())
             self.assertEqual(alias_path.read_bytes(), b"showcase")
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_rewrites_remote_badge_urls_to_local_svg_placeholders(self):
+        code_dir = _case_dir("componentized-runtime-remote-badge-urls")
+        try:
+            (code_dir / "public" / "generated-assets").mkdir(parents=True)
+            (code_dir / "public" / "generated-assets" / "badge_collection.png").write_bytes(b"collection")
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "GymBadgeCollection.tsx").write_text(
+                "const badges = [\n"
+                "  { name: 'Boulder Badge', image: 'https://archives.bulbagarden.net/media/upload/d/d4/Boulder_Badge.png' },\n"
+                "  { name: 'Cascade Badge', image: 'https://archives.bulbagarden.net/media/upload/c/c9/Cascade_Badge.png' },\n"
+                "];\n"
+                "export default function GymBadgeCollection() { return <div>{badges.length}</div>; }\n",
+                encoding="utf-8",
+            )
+
+            result = ensure_componentized_workspace_support(code_dir, ui_archetype="game")
+
+            source = (code_dir / "src" / "GymBadgeCollection.tsx").read_text(encoding="utf-8")
+            self.assertIn("generated-assets/badge_boulder.svg", source)
+            self.assertIn("generated-assets/badge_cascade.svg", source)
+            self.assertNotIn("bulbagarden.net", source)
+            self.assertTrue((code_dir / "public" / "generated-assets" / "badge_boulder.svg").exists())
+            self.assertTrue((code_dir / "public" / "generated-assets" / "badge_cascade.svg").exists())
+            self.assertIn("public/generated-assets/badge_boulder.svg", result["created_files"])
+            self.assertIn("public/generated-assets/badge_cascade.svg", result["created_files"])
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 

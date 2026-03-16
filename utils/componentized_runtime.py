@@ -201,6 +201,10 @@ GENERATED_ASSET_REFERENCE_RE = re.compile(
     r"(?:^|[\"'(\s=])(?:\./)?generated-assets/(?P<filename>[^\"')\s]+)",
     re.IGNORECASE,
 )
+REMOTE_BADGE_OBJECT_IMAGE_RE = re.compile(
+    r"(?P<prefix>\{\s*name\s*:\s*(?P<name_quote>['\"])(?P<name>[^'\"]+)(?P=name_quote)(?P<body>[\s\S]{0,260}?image\s*:\s*))(?P<url_quote>['\"])(?P<url>https?://[^'\"]+)(?P=url_quote)",
+    re.IGNORECASE,
+)
 RUNTIME_GENERATED_ASSET_REFERENCE_RE = re.compile(
     r'(?P<prefix>^|["\'(\s=,:])(?P<path>(?:\./)?/?generated-assets/(?P<subpath>[^"\'\s)]+))',
     re.IGNORECASE,
@@ -219,6 +223,21 @@ SAFE_COMPONENTIZED_DEPENDENCIES = {
     "clsx": "^2.1.1",
     "lucide-react": "^0.564.0",
     "recharts": "2.15.0",
+}
+
+COMPONENTIZED_MODULE_EXTENSIONS = (".tsx", ".ts", ".jsx", ".js")
+COMPONENTIZED_IMPORT_ALIAS_CANDIDATES: dict[str, tuple[str, ...]] = {
+    "CharacterCards": ("CharacterSection",),
+    "Characters": ("CharacterSection",),
+    "Hero": ("HeroSection",),
+    "HeroBanner": ("HeroSection",),
+    "MapSection": ("WorldMap",),
+    "NavBar": ("Navbar",),
+    "SiteFooter": ("Footer",),
+    "WeaponGallery": ("WeaponShowcase", "WeaponSection"),
+    "WeaponSection": ("WeaponShowcase",),
+    "Weapons": ("WeaponShowcase", "WeaponSection"),
+    "WorldMapSection": ("WorldMap",),
 }
 
 DISPLAY_SELECTOR_HINTS = (
@@ -1145,6 +1164,8 @@ def ensure_componentized_workspace_support(
         path = code_dir / rel_path
         original = path.read_text(encoding="utf-8", errors="replace")
         updated = _normalize_componentized_file(rel_path, original)
+        if ui_archetype and (ui_archetype == "game" or ui_archetype.startswith("game_")):
+            updated = _normalize_componentized_game_remote_badge_images(updated)
         if rel_path.endswith((".tsx", ".jsx")):
             updated, extracted_css = _extract_componentized_css_tail(updated)
             if extracted_css:
@@ -1166,6 +1187,7 @@ def ensure_componentized_workspace_support(
 
     created_files.extend(_backfill_missing_local_css_imports(code_dir))
     created_files.extend(_sync_componentized_generated_asset_references(code_dir))
+    rewritten_files.extend(_rewrite_componentized_import_aliases(code_dir))
     rewritten_files.extend(_normalize_componentized_design_overrides(code_dir))
     rewritten_files.extend(_backfill_componentized_utility_classes(code_dir))
 
@@ -1343,6 +1365,112 @@ def _backfill_missing_local_css_imports(code_dir: Path) -> list[str]:
             target.write_text("/* Generated fallback stylesheet to satisfy a referenced local CSS import. */\n", encoding="utf-8")
             created.append(target.relative_to(code_dir).as_posix())
     return created
+
+
+def _rewrite_componentized_import_aliases(code_dir: Path) -> list[str]:
+    rewritten: list[str] = []
+    root_dir = code_dir.resolve()
+
+    for rel_path in collect_componentized_editable_files(code_dir):
+        if not rel_path.endswith((".ts", ".tsx", ".js", ".jsx")):
+            continue
+        source_path = code_dir / rel_path
+        try:
+            original = source_path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+
+        def _replace(match: re.Match[str]) -> str:
+            raw_import = match.group("from") or match.group("dynamic") or match.group("bare")
+            if not raw_import:
+                return match.group(0)
+            resolved = _resolve_componentized_import_alias(
+                source_path=source_path,
+                raw_import=raw_import,
+                root_dir=root_dir,
+            )
+            if not resolved or resolved == raw_import:
+                return match.group(0)
+            return match.group(0).replace(raw_import, resolved)
+
+        updated = LOCAL_REL_IMPORT_RE.sub(_replace, original)
+        if updated != original:
+            source_path.write_text(updated, encoding="utf-8")
+            rewritten.append(rel_path)
+
+    return rewritten
+
+
+def _resolve_componentized_import_alias(
+    *,
+    source_path: Path,
+    raw_import: str,
+    root_dir: Path,
+) -> str | None:
+    normalized_import = raw_import.replace("\\", "/")
+    if not normalized_import.startswith("."):
+        return None
+
+    target_base = (source_path.parent / normalized_import).resolve()
+    try:
+        target_base.relative_to(root_dir)
+    except ValueError:
+        return None
+
+    if _componentized_module_exists(target_base):
+        return normalized_import
+
+    module_name = target_base.name
+    for candidate_name in COMPONENTIZED_IMPORT_ALIAS_CANDIDATES.get(module_name, ()):
+        candidate_base = target_base.parent / candidate_name
+        if not _componentized_module_exists(candidate_base):
+            continue
+        rel_path = Path(os.path.relpath(candidate_base, source_path.parent)).as_posix()
+        return rel_path if rel_path.startswith(".") else f"./{rel_path}"
+
+    return None
+
+
+def _componentized_module_exists(module_base: Path) -> bool:
+    if module_base.is_dir():
+        for ext in COMPONENTIZED_MODULE_EXTENSIONS:
+            if (module_base / f"index{ext}").exists():
+                return True
+    for ext in COMPONENTIZED_MODULE_EXTENSIONS:
+        if Path(f"{module_base}{ext}").exists():
+            return True
+    return False
+
+
+def _normalize_componentized_game_remote_badge_images(source: str) -> str:
+    def _replace(match: re.Match[str]) -> str:
+        badge_name = match.group("name").strip()
+        if not _looks_like_componentized_badge_label(badge_name):
+            return match.group(0)
+        filename = _build_componentized_badge_placeholder_filename(badge_name)
+        return (
+            f"{match.group('prefix')}{match.group('url_quote')}"
+            f"generated-assets/{filename}"
+            f"{match.group('url_quote')}"
+        )
+
+    return REMOTE_BADGE_OBJECT_IMAGE_RE.sub(_replace, source)
+
+
+def _looks_like_componentized_badge_label(label: str) -> bool:
+    tokens = _tokenize_componentized_asset_name(label)
+    return bool(tokens & {"badge", "crest", "emblem", "sigil", "icon"})
+
+
+def _build_componentized_badge_placeholder_filename(label: str) -> str:
+    tokens = [
+        token
+        for token in _tokenize_componentized_asset_name(label)
+        if token not in {"badge", "crest", "emblem", "sigil", "icon", "gym", "collection"}
+    ]
+    if not tokens:
+        tokens = ["emblem"]
+    return f"badge_{'_'.join(tokens[:3])}.svg"
 
 
 def _ensure_css_import(source: str, import_path: str) -> str:
@@ -1728,20 +1856,25 @@ def _build_componentized_polish_guard_css(ui_archetype: str) -> str | None:
             ".hero-cinematic .hero-content {\n"
             "  position: relative;\n"
             "  z-index: 3;\n"
+            "  padding-bottom: clamp(5.5rem, 10vh, 7.5rem) !important;\n"
             "}\n\n"
             ".hero-cinematic .hero-ctas {\n"
             "  position: relative;\n"
             "  z-index: 3;\n"
-            "  margin-bottom: clamp(3.4rem, 8vh, 5.4rem) !important;\n"
+            "  margin-bottom: clamp(4.8rem, 9vh, 6.8rem) !important;\n"
             "}\n\n"
             ".hero-cinematic > .scroll-indicator,\n"
             ".hero-cinematic .hero-content > .scroll-indicator {\n"
             "  position: absolute !important;\n"
             "  left: 50% !important;\n"
-            "  bottom: clamp(24px, 4vw, 42px) !important;\n"
+            "  bottom: clamp(18px, 3vw, 30px) !important;\n"
             "  transform: translateX(-50%) !important;\n"
             "  z-index: 4 !important;\n"
             "  width: max-content;\n"
+            "  display: inline-flex;\n"
+            "  flex-direction: column;\n"
+            "  align-items: center;\n"
+            "  gap: 0.35rem;\n"
             "  pointer-events: none;\n"
             "}\n\n"
             ".hero-cinematic .scroll-indicator,\n"

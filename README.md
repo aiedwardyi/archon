@@ -57,6 +57,16 @@ Every app is generated from a single prompt — no templates, no manual coding. 
 
 [![FF8 Fan Page](docs/screenshots/game-ff8-thumb.jpg)](docs/screenshots/game-ff8-full.jpg)
 
+### Pokemon Kanto Starters Fan Page
+> Prompt: *"Build a premium Pokemon fan page centered on Charizard, Blastoise, and Venusaur. Include a cinematic hero, polished character dossiers, a full evolution showcase, a Kanto region map, and a gym badge collection."*
+
+[![Pokemon Fan Page 2026](docs/screenshots/game-pokemon-20260316-thumb.jpg)](docs/screenshots/game-pokemon-20260316-full.jpg)
+
+### Legend of Zelda Fan Page
+> Prompt: *"Build a premium Legend of Zelda fan page centered on Link, Princess Zelda, and Ganondorf. Include a cinematic hero, polished character dossiers, a legendary gear showcase, and an explorable Hyrule world map."*
+
+[![Zelda Fan Page 2026](docs/screenshots/game-zelda-20260316-thumb.jpg)](docs/screenshots/game-zelda-20260316-full.jpg)
+
 ### SaaS Landing Page
 > Prompt: *"Build a landing page for an AI-powered writing assistant with features, pricing, and testimonials"*
 

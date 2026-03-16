@@ -182,6 +182,9 @@ CRITICAL ASSET RULE:
 - Only reference exact asset filenames that appear in the DESIGN ASSETS list.
 - Do NOT invent extra generated-assets names for badges, evolution stages, ability icons, or gallery thumbnails unless those filenames are explicitly listed.
 - If the layout needs more supporting visuals than the supplied assets cover, reuse an existing provided asset intentionally or render those smaller slots as CSS/inline-SVG treatments instead of broken image tags.
+- Never fetch franchise art, sprites, badge PNGs, map icons, or UI ornaments from remote URLs. Stay local: use the provided generated assets, gradients, CSS, or inline SVG.
+- If the task includes a badge / crest / emblem collection and the DESIGN ASSETS list only provides one combined collection image, show that combined collection art once and render the individual badge entries as styled text chips, counters, or inline-SVG tokens. Do NOT hand-type separate external badge image URLs.
+- If the task includes evolution lines and the DESIGN ASSETS list only provides one evolution showcase image, treat that image as the primary visual and keep per-stage mini markers text-first or inline-SVG. Do NOT fetch franchise sprite sheets from external sites.
 
 For EVERY <img> tag, add an onerror fallback:
   onerror="this.style.background='linear-gradient(135deg,var(--surface-1),var(--surface-2))';this.style.minHeight='200px'"
