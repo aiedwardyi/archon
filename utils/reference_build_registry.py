@@ -202,8 +202,9 @@ STYLE_FAMILY_LIBRARY: dict[str, dict[str, Any]] = {
         ),
         "guidance_lines": [
             "Keep the desktop shell split and productized, with a substantial progress rail and a dominant active-step panel.",
-            "Use real progression cues like validation, readiness, or confirmation states instead of a stack of generic form rows.",
-            "Group the main step into clear sections and keep any result preview connected to the same flow rather than tacked on below.",
+            "Use real progression cues like validation, readiness, blocker, or confirmation states instead of a stack of generic form rows.",
+            "Group the main step into clear sections and keep any review or result preview connected to the same flow rather than tacked on below.",
+            "Keep one compact blocker/readiness/review card visible so the setup state is legible before submission.",
         ],
     },
     "market_terminal_workspace": {

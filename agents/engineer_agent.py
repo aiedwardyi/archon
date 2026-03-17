@@ -48,6 +48,8 @@ STYLE_FAMILY_CONTRACTS: dict[str, tuple[str, ...]] = {
     "guided_setup_wizard": (
         "Keep the desktop layout split between progress/context and the active configuration flow.",
         "Show grouped step content plus at least one visible validation, readiness, or result-preview surface in the same flow.",
+        "Keep a compact review, blocker, or readiness card visible beside the active step so the flow feels like a product sequence, not a plain form stack.",
+        "Use concrete setup states like validating, blocked, pending approval, ready to launch, or confirmed instead of generic helper copy.",
         "Avoid long flat form stacks, narrow floating cards, or disconnected success panels.",
     ),
     "market_terminal_workspace": (

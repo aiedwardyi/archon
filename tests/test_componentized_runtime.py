@@ -162,6 +162,19 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertIn("`View` / `Details`", guidance)
         self.assertIn("`Activity Feed`, `Recent Updates`, or plain `Watchlist` filler", guidance)
 
+    def test_guided_flow_family_guidance_requires_review_and_blocker_context(self):
+        guidance = build_componentized_design_family_guidance("form")
+
+        self.assertIn("review, blocker, or readiness card", guidance)
+        self.assertIn("one dominant active step plus one compact review/result preview", guidance)
+        self.assertIn("ready to launch", guidance)
+
+    def test_guided_flow_shell_polish_guidance_requires_compact_review_states(self):
+        guidance = build_componentized_shell_polish_guidance("form")
+
+        self.assertIn("review, blocker, or readiness card", guidance)
+        self.assertIn("equal-height stacked panels", guidance)
+
     def test_validate_componentized_contract_outputs_flags_missing_and_stubbed_files(self):
         files = [
             SimpleNamespace(path="package.json", content='{"name":"demo"}'),

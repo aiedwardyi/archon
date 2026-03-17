@@ -103,6 +103,9 @@ def build_componentized_design_family_guidance(ui_archetype: str | None) -> str:
             "- Default to a wizard or staged flow with clear progress, back/continue controls, validation states, and a meaningful review or success step.",
             "- Keep the active step visually dominant while secondary guidance, summaries, or trust signals live in a side panel or footer band.",
             "- Inputs, toggles, summaries, and validation messages must feel connected to the current step, not scattered across unrelated cards.",
+            "- Keep a visible review, blocker, or readiness card in the flow so setup state is legible before submission.",
+            "- Do not fully expand every setup phase at once; one dominant active step plus one compact review/result preview is usually enough.",
+            "- Use concrete state language like validating, blocked, pending approval, ready to launch, or confirmed instead of generic helper filler.",
         ],
         "commerce": [
             "- Keep one clear campaign narrative: hero, merch grouping, product grid, and cart or quick-add behavior should feel like the same storefront.",
@@ -147,6 +150,8 @@ def build_componentized_shell_family_guidance(ui_archetype: str | None) -> str:
             "- Keep the flow visibly step-based with clear progression, current-step emphasis, and believable back/continue/review controls.\n"
             "- Pair the active form area with contextual guidance, summary, trust, or validation feedback so the page does not read like a plain form stack.\n"
             "- Inputs, option cards, and status messaging need one cohesive hierarchy with strong focus and error states.\n"
+            "- Keep a compact review, blocker, or readiness card visible in the same flow, not hidden as a distant final section.\n"
+            "- Avoid turning validation, review, success, and failure into equal-height stacked panels; keep later states compact and connected to the active step.\n"
         ),
         "commerce": (
             "- Keep the storefront editorial and product-led rather than collapsing into generic marketing panels.\n"

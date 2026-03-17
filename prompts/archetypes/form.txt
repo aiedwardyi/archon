@@ -45,6 +45,7 @@ REQUIRED FLOW STRUCTURE
 - Show 4-5 steps with one active, prior steps complete, later steps pending.
 - Include progress percentage or progress meter.
 - Use meaningful step labels, not Step 1 / Step 2 only.
+- Avoid generic step titles like `Step 1`, `Details`, `Review`, and `Done` with no domain context. The labels should reflect the actual setup flow.
 - The active step must feel like a real product setup checkpoint, not a generic card in the middle of the page.
 
 3. ACTIVE FORM STEP
@@ -64,6 +65,7 @@ REQUIRED FLOW STRUCTURE
 - Left side should include benefits, checklist, or trust/progress messaging.
 - Add a summary or signal card showing the current configuration in non-zero terms.
 - Include one premium state treatment such as validation log lines, success notice, or readiness score.
+- Keep one compact review, blocker, readiness, or next-step card visible before the final submit state so the current setup status is obvious at a glance.
 - Side rail content must be visually substantial: progress rail, current plan, readiness summary, and reassurance copy. Avoid empty dark columns.
 
 5. SUCCESS / RESULT VISIBILITY
@@ -94,6 +96,7 @@ INTERACTION RULES
 - Final state sections should feel like polished status cards, not tiny text islands floating in empty space.
 - Avoid giant empty vertical gaps inside the main panel. If a section is short, the next relevant section should follow with deliberate spacing instead of leaving large dark voids.
 - Keep the active step, review block, and result preview visually connected in one cohesive column. Do not separate them with screen-sized whitespace.
+- Do not expand validation, review, success, and failure into four equally tall panels. Later-state surfaces should stay compact and subordinate to the active step.
 
 ═══════════════════════════════════════
 CONTENT RULES
@@ -118,6 +121,7 @@ SELF-CHECK BEFORE OUTPUT
 □ One control shows validation/help/error state
 □ Summary/signal card uses realistic non-zero data
 □ Success/result preview is visible somewhere in the flow
+□ A compact blocker/readiness/review card is visible before final submission
 □ Buttons and chips have obvious interaction states
 □ No empty placeholder copy or zero values
 □ The side rail is visually substantial, not an empty dark column
