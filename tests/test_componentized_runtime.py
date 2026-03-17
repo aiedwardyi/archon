@@ -158,8 +158,9 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         guidance = build_componentized_shell_polish_guidance("dashboard")
 
         self.assertIn("Dashboard Overview", guidance)
+        self.assertIn("Portfolio Overview", guidance)
         self.assertIn("`View` / `Details`", guidance)
-        self.assertIn("`Activity Feed` or `Recent Updates` filler", guidance)
+        self.assertIn("`Activity Feed`, `Recent Updates`, or plain `Watchlist` filler", guidance)
 
     def test_validate_componentized_contract_outputs_flags_missing_and_stubbed_files(self):
         files = [
@@ -3227,6 +3228,40 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_semantic_evaluation_flags_generic_dense_shell_copy(self):
+        code_dir = _case_dir("componentized-quality-semantic-generic-dense-shell")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return (\n"
+                "    <main>\n"
+                "      <header><h1>Portfolio Overview</h1></header>\n"
+                "      <section><div>Revenue at Risk</div><div>$124,832.50</div></section>\n"
+                "      <table><tbody><tr><td>North Hub</td><td><button>View</button></td></tr><tr><td>South Hub</td><td><button>Details</button></td></tr><tr><td>West Hub</td><td><button>View</button></td></tr></tbody></table>\n"
+                "      <aside><section><h2>Watchlist</h2><p>Flagged item</p></section><section><h2>Recent Updates</h2><p>Status note posted.</p></section></aside>\n"
+                "    </main>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            evaluation = evaluate_componentized_semantic_completeness(code_dir, ui_archetype="dashboard")
+
+            self.assertFalse(evaluation["passed"])
+            self.assertLess(evaluation["dimensions"]["placeholder_text"]["score"], 15)
+            self.assertLess(evaluation["dimensions"]["contextual_labeling"]["score"], 10)
+            self.assertIn(
+                "Dense-shell copy still uses template titles or repeated generic row actions.",
+                evaluation["findings"],
+            )
+            self.assertIn(
+                "Support-rail modules still use generic labels instead of product-specific context.",
+                evaluation["findings"],
+            )
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_semantic_evaluation_does_not_require_kpis_for_game_archives(self):
         code_dir = _case_dir("componentized-quality-fanpage-semantic")
         try:
@@ -3345,6 +3380,30 @@ class ComponentizedRuntimeTests(unittest.TestCase):
 
             weak_report = next(item for item in evaluation["weak_files"] if item["path"] == "src/components/PortfolioBreakdownTable.tsx")
             self.assertIn("table_trend_missing", weak_report["weakness_codes"])
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_multi_file_evaluation_flags_generic_dense_shell_table_copy(self):
+        code_dir = _case_dir("componentized-quality-dashboard-table-template-copy")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            (code_dir / "src" / "components" / "QueueTable.tsx").write_text(
+                "const rows = [\n"
+                "  { name: 'North Hub', status: 'Open', updated: '2 hours ago' },\n"
+                "  { name: 'South Hub', status: 'Pending', updated: 'Mar 14, 2026' },\n"
+                "  { name: 'West Hub', status: 'Escalated', updated: '5 min ago' },\n"
+                "];\n"
+                "export default function QueueTable() {\n"
+                "  return <table><tbody>{rows.map((item) => <tr key={item.name}><td>{item.name}</td><td>{item.status}</td><td>{item.updated}</td><td><button>View</button></td></tr>)}</tbody></table>;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            evaluation = evaluate_componentized_multi_file_completeness(code_dir, ui_archetype="dashboard")
+
+            weak_report = next(item for item in evaluation["weak_files"] if item["path"] == "src/components/QueueTable.tsx")
+            self.assertIn("placeholder_text", weak_report["weakness_codes"])
+            self.assertIn("content_authenticity", weak_report["weakness_codes"])
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 

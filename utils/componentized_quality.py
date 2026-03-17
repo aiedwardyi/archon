@@ -39,6 +39,50 @@ SUPPORT_MODULE_HINTS: dict[str, tuple[str, ...]] = {
     "orders": ("open orders", "order flow", "trade ideas", "rebalance"),
 }
 
+DENSE_SHELL_GENERIC_TITLE_RE = re.compile(
+    r"\b(?:dashboard overview|analytics dashboard|market dashboard|portfolio overview|operations dashboard)\b",
+    re.IGNORECASE,
+)
+DENSE_SHELL_GENERIC_RAIL_LABELS = (
+    "watchlist",
+    "activity feed",
+    "recent activity",
+    "recent updates",
+)
+DENSE_SHELL_AUTHORED_CONTEXT_TOKENS = (
+    "alerts",
+    "news",
+    "allocation",
+    "movers",
+    "incident",
+    "incidents",
+    "approval",
+    "approvals",
+    "deployment",
+    "deployments",
+    "route",
+    "routes",
+    "shipment",
+    "shipments",
+    "dispatch",
+    "settlement",
+    "funding",
+    "exception",
+    "exceptions",
+    "briefing",
+    "queue",
+    "queues",
+    "sla",
+    "backlog",
+    "renewal",
+    "churn",
+    "utilization",
+    "compliance",
+    "exposure",
+    "coverage",
+    "customer health",
+)
+
 PLACEHOLDER_PATTERNS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"\bmetric\s+\d+\b", re.IGNORECASE), "generic metric label"),
     (re.compile(r"\bchart title\b", re.IGNORECASE), "generic chart title"),
@@ -384,6 +428,19 @@ def _placeholder_hits(text: str) -> list[str]:
     return hits
 
 
+def _dense_shell_genericity_signals(strings: list[str], source: str) -> dict[str, Any]:
+    combined = " ".join(strings)
+    normalized = f"{combined}\n{source}".lower()
+    generic_action_count = sum(1 for value in strings if value.strip().lower() in {"view", "details"})
+    generic_action_count += len(re.findall(r">\s*(?:view|details)\s*<", source, re.IGNORECASE))
+    return {
+        "title_hits": len(DENSE_SHELL_GENERIC_TITLE_RE.findall(normalized)),
+        "generic_action_count": generic_action_count,
+        "generic_rail_count": sum(1 for label in DENSE_SHELL_GENERIC_RAIL_LABELS if label in normalized),
+        "has_authored_context": any(token in normalized for token in DENSE_SHELL_AUTHORED_CONTEXT_TOKENS),
+    }
+
+
 def _extract_display_numbers(strings: list[str], source: str) -> list[str]:
     values = DISPLAY_NUMBER_RE.findall(" ".join(strings))
     values.extend(DATA_NUMBER_RE.findall(source))
@@ -687,6 +744,10 @@ def evaluate_componentized_semantic_completeness(code_dir: Path, *, ui_archetype
     visible_strings = _visible_strings_from_records(content_records)
     visible_blob = " ".join(visible_strings)
     placeholder_hits = _placeholder_hits(visible_blob)
+    dense_shell_genericity = _dense_shell_genericity_signals(
+        visible_strings,
+        " ".join(record["content"] for record in content_records),
+    )
 
     numbers = _extract_display_numbers(visible_strings, " ".join(record["content"] for record in content_records))
     roundish = [token for token in numbers if _is_suspicious_round_number(token)]
@@ -717,6 +778,25 @@ def evaluate_componentized_semantic_completeness(code_dir: Path, *, ui_archetype
     if placeholder_hits:
         dimensions["placeholder_text"]["score"] = 0 if len(placeholder_hits) >= 3 else 8
         dimensions["placeholder_text"]["issues"].append("Placeholder content is still visible in the app copy.")
+
+    if _normalize_archetype(ui_archetype) in STRICT_APP_ARCHETYPES:
+        if dense_shell_genericity["title_hits"] or dense_shell_genericity["generic_action_count"] >= 3:
+            dimensions["placeholder_text"]["score"] = min(
+                dimensions["placeholder_text"]["score"],
+                4 if dense_shell_genericity["title_hits"] and dense_shell_genericity["generic_action_count"] >= 2 else 8,
+            )
+            dimensions["placeholder_text"]["issues"].append(
+                "Dense-shell copy still uses template titles or repeated generic row actions."
+            )
+        if dense_shell_genericity["generic_rail_count"] >= 2 and not dense_shell_genericity["has_authored_context"]:
+            dimensions["contextual_labeling"]["score"] = min(dimensions["contextual_labeling"]["score"], 4)
+            dimensions["contextual_labeling"]["issues"].append(
+                "Support-rail modules still use generic labels instead of product-specific context."
+            )
+            dimensions["data_specificity"]["score"] = min(dimensions["data_specificity"]["score"], 6)
+            dimensions["data_specificity"]["issues"].append(
+                "Support modules need more product-specific labels and domain context."
+            )
 
     if numbers and family == "data_app":
         ratio = len(roundish) / max(len(numbers), 1)
@@ -978,6 +1058,7 @@ def _evaluate_file_content(
     visible_strings = _extract_visible_strings(record["content"])
     visible_blob = " ".join(visible_strings)
     placeholder_hits = _placeholder_hits(visible_blob)
+    dense_shell_genericity = _dense_shell_genericity_signals(visible_strings, record["content"])
     weakness_codes: list[str] = []
     weaknesses: list[str] = []
     score = 100
@@ -988,6 +1069,22 @@ def _evaluate_file_content(
         score -= 25 if len(placeholder_hits) >= 2 else 12
         weakness_codes.append("placeholder_text")
         weaknesses.append("Placeholder or generic labels are still present.")
+
+    if (ui_archetype or "").lower() in STRICT_APP_ARCHETYPES and role in {"page", "table", "feed", "data"}:
+        if dense_shell_genericity["title_hits"] or dense_shell_genericity["generic_action_count"] >= 2:
+            score -= 18
+            if "placeholder_text" not in weakness_codes:
+                weakness_codes.append("placeholder_text")
+            if "content_authenticity" not in weakness_codes:
+                weakness_codes.append("content_authenticity")
+            weaknesses.append("Dense-shell copy still uses template titles or repeated generic row actions.")
+        if dense_shell_genericity["generic_rail_count"] >= 2 and not dense_shell_genericity["has_authored_context"]:
+            score -= 12
+            if "contextual_labeling" not in weakness_codes:
+                weakness_codes.append("contextual_labeling")
+            if "content_authenticity" not in weakness_codes:
+                weakness_codes.append("content_authenticity")
+            weaknesses.append("Support modules still rely on generic rail labels instead of product-specific context.")
 
     numbers = _extract_display_numbers(visible_strings, record["content"])
     if role in {"kpi", "chart", "table", "data"} and (has_inline_seed_data or not prop_driven_component or role == "data"):

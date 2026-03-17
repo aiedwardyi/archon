@@ -1864,9 +1864,9 @@ def detect_componentized_quality_issues(code_dir: Path, *, ui_archetype: str | N
         if support_rail_signal_count < 2:
             issues.append("panel_stacking")
         generic_dense_title_present = bool(
-            re.search(r"\b(?:dashboard overview|analytics dashboard|market dashboard)\b", normalized)
+            re.search(r"\b(?:dashboard overview|analytics dashboard|market dashboard|portfolio overview|operations dashboard)\b", normalized)
         )
-        generic_dense_action_count = len(re.findall(r">\s*(?:view|details)\s*<", normalized))
+        generic_dense_action_count = len(re.findall(r">\s*(?:view|details)\s*<|[\"'`](?:view|details)[\"'`]", normalized))
         generic_dense_rail_count = sum(
             1 for token in ("activity feed", "recent activity", "recent updates", "watchlist") if token in normalized
         )
@@ -1885,12 +1885,25 @@ def detect_componentized_quality_issues(code_dir: Path, *, ui_archetype: str | N
                 "deployments",
                 "route",
                 "routes",
+                "shipment",
+                "shipments",
+                "dispatch",
                 "settlement",
                 "funding",
                 "exception",
                 "exceptions",
                 "briefing",
                 "queue",
+                "queues",
+                "sla",
+                "backlog",
+                "renewal",
+                "churn",
+                "utilization",
+                "compliance",
+                "exposure",
+                "coverage",
+                "customer health",
             )
         )
         if generic_dense_title_present or generic_dense_action_count >= 3:
@@ -2038,12 +2051,12 @@ def build_componentized_shell_polish_guidance(ui_archetype: str | None) -> str:
             "- Use the display font for the brand, page title, panel titles, and other short high-importance headings. Keep the UI sans for controls/body copy and the mono family for KPI values, chart labels, table numerics, and timestamps.\n"
             "- Apply the mono treatment consistently anywhere structured numbers appear; do not let KPI values, timestamps, badge metrics, or table numerics fall back to the same body sans texture.\n"
             "- The desktop page title should land in a real display range, roughly 36-44px, and the KPI row should arrive within about 24-32px of the header. Do not leave a dead vertical gap before the first data cards.\n"
-            "- Do not ship bland dashboard copy such as `Dashboard Overview`, generic panel names, or repeated row actions like `View` / `Details`. Use workflow-specific titles, panel labels, and next actions instead.\n"
+            "- Do not ship bland dashboard copy such as `Dashboard Overview`, `Portfolio Overview`, generic panel names, or repeated row actions like `View` / `Details`. Use workflow-specific titles, panel labels, and next actions instead.\n"
             "- The header bar should feel like a real command surface: title plus status/action cluster, with a subtle tint or blur instead of a flat strip.\n"
             "- Strengthen depth with three surface levels: page backdrop, standard panel, and one clearly elevated highlight card or panel. Prefer layered shadows and soft gradients over flat slabs.\n"
             "- Charts should feel authored, not default library output: use a thicker line or richer area fill, clearer axis treatment, and a more intentional control rail than plain ghost buttons.\n"
             "- The desktop support rail must carry real visual weight. Stack at least two secondary modules or split the right rail into clearly separated subsections instead of leaving one lonely side card.\n"
-            "- Right-rail modules need authored labels and mixed entry types. Avoid thin generic `Activity Feed` or `Recent Updates` filler that does not feel tied to the product's real workflow.\n"
+            "- Right-rail modules need authored labels and mixed entry types. Avoid thin generic `Activity Feed`, `Recent Updates`, or plain `Watchlist` filler that does not feel tied to the product's real workflow.\n"
             "- Nav items, chips, table rows, badges, and action links need visible hover and active states.\n"
             "- Replace any remote avatar placeholders with styled initials, local assets, or inline SVG treatments.\n"
         )
@@ -2166,7 +2179,7 @@ def build_componentized_content_fix_prompt(
         + shell_block
         + "TARGETED CONTENT REMEDIATION:\n"
           "- Replace generic labels, duplicate rows, and repeated copy with domain-specific seeded content.\n"
-          "- For dense dashboard and finance shells, replace bland headings like `Dashboard Overview`, repeated `View` / `Details` row actions, and thin generic `Activity` / `Watchlist` filler with product-specific labels and next actions.\n"
+          "- For dense dashboard and finance shells, replace bland headings like `Dashboard Overview` or `Portfolio Overview`, repeated `View` / `Details` row actions, and thin generic `Activity` / `Watchlist` filler with product-specific labels and next actions.\n"
           "- Replace round placeholder numbers with plausible non-round values, mixed deltas, and varied entities.\n"
           "- Add missing context labels such as date ranges, update moments, comparison copy, and table subtitles.\n"
           "- Add realistic timestamps, recency cues, or dated entries where the audit calls for temporal realism.\n"
