@@ -1319,8 +1319,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         code_dir = _case_dir("componentized-runtime-run-on-imports")
         try:
             (code_dir / "vite.config.ts").write_text(
-                "import { defineConfig } from 'vite'import react from '@vitejs/plugin-react'\n"
-                "export default defineConfig({ plugins: [react()] })\n",
+                "import { defineConfig } from 'vite'import react from '@vitejs/plugin-react'export default defineConfig({ plugins: [react()] })\n",
                 encoding="utf-8",
             )
 
@@ -1328,6 +1327,38 @@ class ComponentizedRuntimeTests(unittest.TestCase):
 
             vite_config = (code_dir / "vite.config.ts").read_text(encoding="utf-8")
             self.assertIn("from 'vite'\nimport react", vite_config)
+            self.assertIn("plugin-react'\nexport default", vite_config)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_jsx_handler_comment_close_bleed(self):
+        code_dir = _case_dir("componentized-runtime-jsx-handler-comment-close")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            source_path = code_dir / "src" / "About.tsx"
+            source_path.write_text(
+                "export default function About() {\n"
+                "  return (\n"
+                "    <img\n"
+                "      src=\"https://images.unsplash.com/photo-12345?w=600&q=80\"\n"
+                "      alt=\"Portrait\"\n"
+                "      onError={(e) => { */\n"
+                "const target = e.target as HTMLImageElement;\n"
+                "        target.src = 'https://via.placeholder.com/600x800/111/eee?text=Fallback';\n"
+                "      }}\n"
+                "    />\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir, ui_archetype="portfolio")
+
+            source = source_path.read_text(encoding="utf-8")
+            self.assertNotIn("*/", source)
+            self.assertNotIn("images.unsplash.com", source)
+            self.assertNotIn("via.placeholder.com", source)
+            self.assertIn("generated-assets/portrait.svg", source)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
@@ -2692,6 +2723,38 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertTrue((code_dir / "public" / "generated-assets" / "limited_editions.svg").exists())
             self.assertIn("public/generated-assets/ceramic_vase.svg", result["created_files"])
             self.assertIn("public/generated-assets/limited_editions.svg", result["created_files"])
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_rewrites_remote_portfolio_images_to_local_placeholders(self):
+        code_dir = _case_dir("componentized-runtime-remote-portfolio-images")
+        try:
+            (code_dir / "public" / "generated-assets").mkdir(parents=True)
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return (\n"
+                "    <section>\n"
+                "      <img src=\"https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80\" alt=\"Alex Mercer\" />\n"
+                "      <div style={{ backgroundImage: 'url(https://via.placeholder.com/1200x800/101114/e5e7eb?text=Skills+Illustration)' }} />\n"
+                "    </section>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            result = ensure_componentized_workspace_support(code_dir, ui_archetype="portfolio")
+
+            source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertNotIn("images.unsplash.com", source)
+            self.assertNotIn("via.placeholder.com", source)
+            self.assertIn("generated-assets/alex_mercer.svg", source)
+            self.assertIn("url(generated-assets/", source)
+            self.assertTrue((code_dir / "public" / "generated-assets" / "alex_mercer.svg").exists())
+            self.assertIn("public/generated-assets/alex_mercer.svg", result["created_files"])
+            self.assertTrue(
+                any(path.startswith("public/generated-assets/") and path.endswith(".svg") and "alex_mercer.svg" not in path for path in result["created_files"])
+            )
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 

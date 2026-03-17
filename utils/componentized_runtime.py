@@ -1395,7 +1395,7 @@ def ensure_componentized_workspace_support(
                     updated,
                     fallback_asset_path=game_map_asset_reference,
                 )
-        elif ui_archetype == "ecommerce":
+        elif ui_archetype in {"ecommerce", "portfolio"}:
             updated = _normalize_componentized_remote_image_urls(updated)
         if rel_path.endswith((".tsx", ".jsx")):
             updated, extracted_css = _extract_componentized_css_tail(updated)
@@ -1769,7 +1769,31 @@ def _normalize_componentized_remote_image_urls(source: str) -> str:
         filename = _build_componentized_remote_image_placeholder_filename(label, url)
         return f"{match.group('prefix')}{match.group('quote')}generated-assets/{filename}{match.group('quote')}{rest}"
 
-    return REMOTE_JSX_IMAGE_SRC_RE.sub(_replace_jsx, updated)
+    updated = REMOTE_JSX_IMAGE_SRC_RE.sub(_replace_jsx, updated)
+
+    def _replace_assignment(match: re.Match[str]) -> str:
+        url = match.group("url").strip()
+        filename = _build_componentized_remote_image_placeholder_filename("", url)
+        return f"{match.group('prefix')}{match.group('quote')}generated-assets/{filename}{match.group('quote')}"
+
+    updated = re.sub(
+        r"(?P<prefix>\b[A-Za-z_$][\w$.]*\.src\s*=\s*)(?P<quote>['\"])(?P<url>https?://[^'\"]+)(?P=quote)",
+        _replace_assignment,
+        updated,
+        flags=re.IGNORECASE,
+    )
+
+    def _replace_style_url(match: re.Match[str]) -> str:
+        url = match.group("url").strip()
+        filename = _build_componentized_remote_image_placeholder_filename("", url)
+        return f"{match.group('prefix')}generated-assets/{filename}{match.group('suffix')}"
+
+    return re.sub(
+        r"(?P<prefix>backgroundImage\s*:\s*['\"]url\()(?P<url>https?://[^'\"\)]+)(?P<suffix>\)['\"])",
+        _replace_style_url,
+        updated,
+        flags=re.IGNORECASE,
+    )
 
 
 def _normalize_componentized_game_detail_ctas(source: str) -> str:
@@ -2062,6 +2086,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_componentized_jsx_block_comment_bleed(updated)
         updated = _repair_componentized_jsx_text_comment_bleed(updated)
         updated = _repair_componentized_jsx_attribute_comment_bleed(updated)
+        updated = _repair_componentized_jsx_handler_comment_close_bleed(updated)
         updated = _repair_componentized_jsx_expression_comment_split_identifiers(updated)
         updated = _repair_componentized_orphan_comment_split_identifiers(updated)
         updated = _repair_componentized_orphan_comment_split_string_literals(updated)
@@ -4192,6 +4217,14 @@ def _repair_componentized_jsx_event_handler_arrow_bleed(source: str) -> str:
     )
 
 
+def _repair_componentized_jsx_handler_comment_close_bleed(source: str) -> str:
+    return re.sub(
+        r"(?P<prefix>\bon[A-Z][A-Za-z0-9_]*=\{\([^)]*\)\s*=>\s*\{)\s*\*/\s*",
+        lambda match: f"{match.group('prefix')}\n",
+        source,
+    )
+
+
 def _normalize_componentized_declaration_boundaries(source: str) -> str:
     return DECLARATION_BOUNDARY_RE.sub("\n", source)
 
@@ -4285,7 +4318,7 @@ def _normalize_run_on_imports(source: str) -> str:
         ";\n",
         source,
     )
-    updated = re.sub(r"(?<=['\"])\s*(?=import\b)", "\n", updated)
+    updated = re.sub(r"(?<=['\"])\s*(?=(?:import\b|export\b))", "\n", updated)
     updated = re.sub(
         r"\*/\s*(?=(?:const\b|let\b|var\b|function\b|export\b|return\b|if\b|for\b|while\b|switch\b|type\b|interface\b|class\b|use[A-Z]\w*\b|ReactDOM\b|createRoot\b))",
         "*/\n",
