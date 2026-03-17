@@ -61,15 +61,21 @@ DOMAIN_OVERLAY_CONTRACTS: dict[str, tuple[str, ...]] = {
     "operations_control_tower": (
         "Make the main surfaces about exceptions, dispatch, route health, or network state rather than revenue or generic business KPIs.",
         "Show at least one active operational control surface such as a dispatch queue, route board, incident feed, or shipment exception panel.",
+        "Use workflow verbs like reroute, assign, escalate, acknowledge, or resolve instead of generic `View` / `Details` row actions.",
+        "Keep the support rail focused on live alerts, SLA risk, depot pressure, or dispatch ownership rather than generic activity filler.",
     ),
     "sales_deal_room": (
         "Make next actions, deal risk, stage movement, and account context visible so the screen feels like active deal execution.",
         "Use pipeline boards, account timelines, stakeholder notes, or forecast pressure modules instead of generic ops widgets.",
+        "Support rails should carry champion health, mutual action plans, call prep, or exec-sponsor asks instead of generic activity cards.",
+        "Use sales verbs like log call, send recap, pull in exec sponsor, update MAP, or advance stage instead of generic row actions.",
     ),
     "treasury_liquidity_terminal": (
         "Anchor the composition around cash positions, funding windows, settlement pressure, and entity or bank exposure.",
         "Avoid soft SaaS KPI decks or retail trading cues; the UI should read like treasury operations, not a generic dashboard.",
         "Keep a real desktop terminal shell with a visible side rail beside the main treasury surfaces, not stacked underneath them.",
+        "Use treasury operator verbs like release, hold, fund, reroute, or hedge on real payment, liquidity, or exposure objects.",
+        "Keep the support rail focused on cut-off alerts, counterparty pressure, and funding deadlines rather than generic news filler.",
     ),
 }
 

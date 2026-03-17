@@ -316,6 +316,8 @@ DOMAIN_OVERLAY_LIBRARY: dict[str, dict[str, Any]] = {
             "Use route health, shipment exceptions, depot or fleet state, and dispatch actions as first-class modules.",
             "Favor incident urgency, SLA risk, and operational feeds over revenue or generic admin summaries.",
             "Include at least one operational control surface such as a dispatch queue, route board, lane table, or exception panel.",
+            "Use workflow verbs like reroute, assign, escalate, acknowledge, or resolve instead of generic `View` / `Details` row actions.",
+            "Keep the support rail centered on live alerts, SLA pressure, depot load, or dispatch ownership rather than generic activity filler.",
         ],
     },
     "sales_deal_room": {
@@ -342,6 +344,8 @@ DOMAIN_OVERLAY_LIBRARY: dict[str, dict[str, Any]] = {
             "Keep pipeline state, forecast pressure, and deal-level next actions visibly connected in one workspace.",
             "Use call notes, stakeholder context, mutual action plans, or risk flags so the UI feels like active deal execution.",
             "Favor stage boards, account timelines, and opportunity tables over generic operations or finance widgets.",
+            "Use verbs like log call, send recap, pull in exec sponsor, update MAP, or advance stage instead of generic row actions.",
+            "Support rails should carry champion health, renewal risk, or next-meeting prep rather than generic activity cards.",
         ],
     },
     "treasury_liquidity_terminal": {
@@ -368,6 +372,8 @@ DOMAIN_OVERLAY_LIBRARY: dict[str, dict[str, Any]] = {
             "Use treasury artifacts like ladders, cut-off windows, entity balances, and exception queues rather than simple watchlists.",
             "Keep the numeric treatment disciplined and finance-native, but tie it to treasury operations instead of retail trading cues.",
             "On desktop, keep a true multi-zone terminal shell with navigation, a dominant treasury work area, and a visible support rail rather than stacking everything into one narrow column.",
+            "Use treasury operator verbs like release, hold, fund, reroute, or hedge on real payment, liquidity, or exposure objects.",
+            "Keep the support rail focused on cut-off alerts, counterparty pressure, and funding deadlines rather than generic news filler.",
         ],
     },
 }
@@ -782,7 +788,7 @@ def get_archetype_benchmark_guidance(
         description = str(overlay_meta.get("description", "")).strip()
         if description:
             overlay_lines.append(f"- DOMAIN OVERLAY ({domain_overlay}): {description}")
-        for line in overlay_meta.get("guidance_lines", [])[:3]:
+        for line in overlay_meta.get("guidance_lines", [])[:5]:
             text = str(line).strip()
             if text:
                 overlay_lines.append(f"- {text}")

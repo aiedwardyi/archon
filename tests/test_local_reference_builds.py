@@ -215,6 +215,23 @@ def test_load_local_reference_build_carries_logistics_overlay_guidance():
     assert reference["style_family"] == "operator_console_workspace"
     assert reference["domain_overlay"] == "operations_control_tower"
     assert "DOMAIN OVERLAY (operations_control_tower)" in reference["benchmark_guidance"]
+    assert "reroute" in reference["benchmark_guidance"] or "escalate" in reference["benchmark_guidance"]
+
+
+def test_load_local_reference_build_carries_sales_overlay_guidance():
+    reference = load_local_reference_build(
+        "dashboard",
+        prompt_text=(
+            "Create a sales deal room for account executives managing pipeline stages, champion risk, "
+            "renewal pressure, and mutual action plans."
+        ),
+    )
+
+    assert reference is not None
+    assert reference["style_family"] == "operator_console_workspace"
+    assert reference["domain_overlay"] == "sales_deal_room"
+    assert "DOMAIN OVERLAY (sales_deal_room)" in reference["benchmark_guidance"]
+    assert "log call" in reference["benchmark_guidance"] or "advance stage" in reference["benchmark_guidance"]
 
 
 def test_load_local_reference_build_carries_treasury_overlay_guidance():
@@ -230,6 +247,7 @@ def test_load_local_reference_build_carries_treasury_overlay_guidance():
     assert reference["style_family"] == "market_terminal_workspace"
     assert reference["domain_overlay"] == "treasury_liquidity_terminal"
     assert "DOMAIN OVERLAY (treasury_liquidity_terminal)" in reference["benchmark_guidance"]
+    assert "release" in reference["benchmark_guidance"] or "hedge" in reference["benchmark_guidance"]
 
 
 def test_load_local_reference_build_defaults_form_to_guided_setup_wizard_family():

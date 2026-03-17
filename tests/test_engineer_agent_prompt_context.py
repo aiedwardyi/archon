@@ -58,6 +58,19 @@ def test_componentized_family_prompt_block_adds_logistics_domain_overlay():
     assert "--- DOMAIN OVERLAY ---" in block
     assert "domain_overlay: operations_control_tower" in block
     assert "dispatch queue" in block or "dispatch alerts" in block
+    assert "reroute" in block or "escalate" in block
+
+
+def test_componentized_family_prompt_block_adds_sales_domain_overlay():
+    block = _build_componentized_family_prompt_block(
+        "dashboard",
+        "Create a live sales deal room for account executives with pipeline stages, champion risk, mutual action plans, and renewal pressure",
+    )
+
+    assert "style_family: operator_console_workspace" in block
+    assert "domain_overlay: sales_deal_room" in block
+    assert "mutual action plans" in block or "champion health" in block
+    assert "log call" in block or "advance stage" in block
 
 
 def test_componentized_family_prompt_block_adds_treasury_domain_overlay():
@@ -71,6 +84,7 @@ def test_componentized_family_prompt_block_adds_treasury_domain_overlay():
     assert "cash positions" in block
     assert "funding windows" in block
     assert "visible side rail" in block
+    assert "release" in block or "hedge" in block
 
 
 def test_componentized_family_prompt_block_skips_iteration_mode():
