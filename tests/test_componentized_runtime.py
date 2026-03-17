@@ -11,6 +11,7 @@ sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "backend"))
 
 from backend.app import (
+    build_componentized_shell_polish_guidance,
     build_design_context,
     build_componentized_refinement_prompt,
     detect_componentized_quality_issues,
@@ -35,6 +36,9 @@ from utils.componentized_runtime import (
     rewrite_preview_runtime_asset_references,
     stage_componentized_design_assets,
 )
+from utils.design_families import build_componentized_design_family_guidance
+from utils.design_families import build_componentized_shell_family_guidance
+from utils.design_families import should_apply_componentized_global_family_layer
 from utils.componentized_quality import (
     classify_componentized_content_file,
     collect_quality_issue_codes,
@@ -56,6 +60,97 @@ def _case_dir(name: str) -> Path:
 
 
 class ComponentizedRuntimeTests(unittest.TestCase):
+    def test_game_archetypes_bypass_componentized_global_family_layer(self):
+        self.assertFalse(should_apply_componentized_global_family_layer("game"))
+        self.assertFalse(should_apply_componentized_global_family_layer("game_ff7"))
+        self.assertFalse(should_apply_componentized_global_family_layer("fan_page"))
+        self.assertTrue(should_apply_componentized_global_family_layer("fintech"))
+
+    def test_game_archetypes_emit_no_global_family_guidance(self):
+        self.assertEqual(build_componentized_design_family_guidance("game_ff8"), "")
+        self.assertEqual(build_componentized_shell_family_guidance("game_ff9"), "")
+        self.assertIn("design_family: data_dense", build_componentized_design_family_guidance("fintech"))
+
+    def test_game_workspace_support_backfills_empty_region_images_with_local_asset(self):
+        code_dir = _case_dir("componentized-runtime-game-region-images")
+        try:
+            asset_dir = code_dir / "public" / "generated-assets"
+            asset_dir.mkdir(parents=True, exist_ok=True)
+            (asset_dir / "hero_background.png").write_bytes(b"png")
+
+            data_dir = code_dir / "src" / "data"
+            data_dir.mkdir(parents=True, exist_ok=True)
+            data_path = data_dir / "pokemonData.ts"
+            data_path.write_text(
+                (
+                    "export const REGIONS_DATA = [\n"
+                    "  { id: 'kanto', image: '' },\n"
+                    '  { id: "johto", image: "" },\n'
+                    "];\n"
+                ),
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir, ui_archetype="game")
+
+            updated = data_path.read_text(encoding="utf-8")
+            self.assertNotIn("image: ''", updated)
+            self.assertNotIn('image: ""', updated)
+            self.assertIn("generated-assets/hero_background.png", updated)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_game_workspace_support_replaces_literal_map_placeholder_cards(self):
+        code_dir = _case_dir("componentized-runtime-game-map-placeholder")
+        try:
+            asset_dir = code_dir / "public" / "generated-assets"
+            asset_dir.mkdir(parents=True, exist_ok=True)
+            (asset_dir / "hero_background.png").write_bytes(b"png")
+
+            component_dir = code_dir / "src" / "components"
+            component_dir.mkdir(parents=True, exist_ok=True)
+            component_path = component_dir / "LocationCard.tsx"
+            component_path.write_text(
+                (
+                    "export default function LocationCard({ region }: { region: { name: string; image: string } }) {\n"
+                    "  return (\n"
+                    "    <div className=\"location-image-wrapper\">\n"
+                    "      <div\n"
+                    "        style={{ width: '100%', height: '200px' }}\n"
+                    "      >Map Placeholder</div>\n"
+                    "      <h3>{region.name}</h3>\n"
+                    "    </div>\n"
+                    "  );\n"
+                    "}\n"
+                ),
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir, ui_archetype="game")
+
+            updated = component_path.read_text(encoding="utf-8")
+            self.assertNotIn("Map Placeholder", updated)
+            self.assertIn('<img className="location-image"', updated)
+            self.assertIn('src={region.image || "generated-assets/hero_background.png"}', updated)
+            self.assertIn('alt={`${region.name} map illustration`}', updated)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_data_dense_family_guidance_requires_explicit_typography_roles(self):
+        guidance = build_componentized_design_family_guidance("fintech")
+
+        self.assertIn("display face", guidance)
+        self.assertIn("mono/tabular numeric face", guidance)
+        self.assertIn("dominant center insight zone", guidance)
+        self.assertIn("equal-height card mosaics", guidance)
+
+    def test_fintech_shell_polish_guidance_requires_mono_numeric_consistency(self):
+        guidance = build_componentized_shell_polish_guidance("fintech")
+
+        self.assertIn("Mono treatment is mandatory across every numeric surface", guidance)
+        self.assertIn("JetBrains Mono or equivalent", guidance)
+        self.assertIn("right rail should hold at least two stacked support modules", guidance)
+
     def test_validate_componentized_contract_outputs_flags_missing_and_stubbed_files(self):
         files = [
             SimpleNamespace(path="package.json", content='{"name":"demo"}'),
@@ -766,6 +861,34 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_normalizes_jsx_code_template_literals(self):
+        code_dir = _case_dir("componentized-runtime-jsx-code-template-literal")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return (\n"
+                "    <code>\n"
+                "{`function applyFormatting(text, format) {\n"
+                "  console.log(`Applying ${format} to: ${text}`);\n"
+                "  return `<span class=\"${format}\">${text}</span>`;\n"
+                "}`}\n"
+                "    </code>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn('function applyFormatting(text, format)', app_source)
+            self.assertIn('console.log(`Applying $&#123;format&#125; to: $&#123;text&#125;`);', app_source)
+            self.assertIn('return `&lt;span class=\\"$&#123;format&#125;\\"&gt;$&#123;text&#125;&lt;/span&gt;`;', app_source)
+            self.assertNotIn("{`function applyFormatting", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_ensure_componentized_workspace_support_repairs_jsx_text_comment_close_bleed(self):
         code_dir = _case_dir("componentized-runtime-jsx-text-comment-close")
         try:
@@ -1027,6 +1150,34 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_adds_dashboard_specific_polish_guard_tuning(self):
+        code_dir = _case_dir("componentized-runtime-polish-guard-dashboard")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "main.tsx").write_text(
+                "import React from 'react';\n"
+                "import ReactDOM from 'react-dom/client';\n"
+                "import App from './App';\n"
+                "ReactDOM.createRoot(document.getElementById('root')!).render(<App />);\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return <div className=\"dashboard-layout\"><div className=\"kpi-card\" /><table className=\"data-table\"><thead><tr><th>Price</th></tr></thead></table><span className=\"cell-action\">View</span><div className=\"activity-item\"><span className=\"activity-time\">2 min ago</span></div></div>;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir, ui_archetype="dashboard")
+
+            polish_guard = (code_dir / "src" / "polish-guard.css").read_text(encoding="utf-8")
+            self.assertIn(".dashboard-layout .kpi-card", polish_guard)
+            self.assertIn(".dashboard-layout .data-table thead th", polish_guard)
+            self.assertIn(".dashboard-layout .cell-action", polish_guard)
+            self.assertIn(".dashboard-layout .activity-item .activity-time", polish_guard)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_ensure_componentized_workspace_support_skips_polish_guard_for_non_app_density_archetypes(self):
         code_dir = _case_dir("componentized-runtime-polish-guard-skip")
         try:
@@ -1243,8 +1394,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         code_dir = _case_dir("componentized-runtime-run-on-imports")
         try:
             (code_dir / "vite.config.ts").write_text(
-                "import { defineConfig } from 'vite'import react from '@vitejs/plugin-react'\n"
-                "export default defineConfig({ plugins: [react()] })\n",
+                "import { defineConfig } from 'vite'import react from '@vitejs/plugin-react'export default defineConfig({ plugins: [react()] })\n",
                 encoding="utf-8",
             )
 
@@ -1252,6 +1402,38 @@ class ComponentizedRuntimeTests(unittest.TestCase):
 
             vite_config = (code_dir / "vite.config.ts").read_text(encoding="utf-8")
             self.assertIn("from 'vite'\nimport react", vite_config)
+            self.assertIn("plugin-react'\nexport default", vite_config)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_jsx_handler_comment_close_bleed(self):
+        code_dir = _case_dir("componentized-runtime-jsx-handler-comment-close")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            source_path = code_dir / "src" / "About.tsx"
+            source_path.write_text(
+                "export default function About() {\n"
+                "  return (\n"
+                "    <img\n"
+                "      src=\"https://images.unsplash.com/photo-12345?w=600&q=80\"\n"
+                "      alt=\"Portrait\"\n"
+                "      onError={(e) => { */\n"
+                "const target = e.target as HTMLImageElement;\n"
+                "        target.src = 'https://via.placeholder.com/600x800/111/eee?text=Fallback';\n"
+                "      }}\n"
+                "    />\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir, ui_archetype="portfolio")
+
+            source = source_path.read_text(encoding="utf-8")
+            self.assertNotIn("*/", source)
+            self.assertNotIn("images.unsplash.com", source)
+            self.assertNotIn("via.placeholder.com", source)
+            self.assertIn("generated-assets/portrait.svg", source)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
@@ -1343,6 +1525,38 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_removes_dead_alert_handler_references_from_game_cards(self):
+        code_dir = _case_dir("componentized-runtime-game-alert-card-wrapper")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "import React from 'react';\n"
+                "interface LocationCardProps { region: { type: string; name: string; description: string; image: string }; }\n"
+                "const LocationCard: React.FC<LocationCardProps> = ({ region }) => {\n"
+                "  const handleExploreClick = () => {\n"
+                "    alert(`Exploring ${region.name}!`);\n"
+                "  };\n"
+                "  return (\n"
+                "    <div className=\"location-card\" onClick={handleExploreClick} role=\"button\">\n"
+                "      <button onClick={handleExploreClick} className=\"btn-primary\">Explore</button>\n"
+                "    </div>\n"
+                "  );\n"
+                "};\n"
+                "export default function App() { return <LocationCard region={{ type: 'Mainland', name: 'Kanto Region', description: 'Starter region.', image: '' }} />; }\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir, ui_archetype="game")
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertNotIn("handleExploreClick", app_source)
+            self.assertNotIn("onClick={handleExploreClick}", app_source)
+            self.assertIn('<div className="runtime-inline-detail-kicker">{region.type || region.region || region.owner || "Archive Detail"}</div>', app_source)
+            self.assertIn('<h4 className="runtime-inline-detail-title">{region.name || region.title || "Field Brief"}</h4>', app_source)
+            self.assertIn('<p className="runtime-inline-detail-copy">{region.description || region.desc || region.lore || "This dossier uses local mock archive data to keep the interaction alive."}</p>', app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_ensure_componentized_workspace_support_replaces_game_map_placeholder_image(self):
         code_dir = _case_dir("componentized-runtime-game-map-placeholder")
         try:
@@ -1382,6 +1596,58 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertIn("/* Initial delta from asset table */", app_source)
             self.assertIn("positive: assetToAdd.positive", app_source)
             self.assertNotIn("delta: ( */", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_jsx_expression_comment_split_identifiers(self):
+        code_dir = _case_dir("componentized-runtime-jsx-expression-comment-split")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  const formData = { workspaceName: 'alpha team' };\n"
+                "  return <span>https://app.ai-platform.com/{form */\n"
+                "Data.workspaceName.toLowerCase().replace(/\\s/g, '-')}/</span>;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("{formData.workspaceName.toLowerCase().replace(/\\s/g, '-')}", app_source)
+            self.assertNotIn("{form */", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_escapes_jsx_code_block_brace_literals(self):
+        code_dir = _case_dir("componentized-runtime-jsx-code-block-braces")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return (\n"
+                "    <pre>\n"
+                "      <code>\n"
+                "        const briefSchema = {{\n"
+                "          title: 'string',\n"
+                "          sections: [{{ heading: 'string' }}]\n"
+                "        }}\n"
+                "      </code>\n"
+                "    </pre>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("const briefSchema = &#123;", app_source)
+            self.assertIn("sections: [&#123; heading: 'string' &#125;]", app_source)
+            self.assertIn("&#125;", app_source)
+            self.assertNotIn("{{", app_source)
+            self.assertNotIn("}}", app_source)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
@@ -1433,6 +1699,29 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_merges_post_comment_instruction_note_with_underscores(self):
+        code_dir = _case_dir("componentized-runtime-post-comment-note-underscores")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  /* Inline helper components/ */\n"
+                "  functions to adhere to output_files constraint\n"
+                "  const InputField = () => <input />;\n"
+                "  return <InputField />;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("/* Inline helper components/ functions to adhere to output_files constraint */", app_source)
+            self.assertIn("const InputField = () => <input />;", app_source)
+            self.assertNotIn("functions to adhere to output_files constraint\n", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_ensure_componentized_workspace_support_normalizes_run_on_data_notes(self):
         code_dir = _case_dir("componentized-runtime-data-note")
         try:
@@ -1472,6 +1761,32 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertIn("setOpenPositions(prev => Math.max(1, prev + (Math.random() > 0.5 ? 1 : -1))); /* +/- 1 */", app_source)
             self.assertIn("}, 3000);", app_source)
             self.assertNotIn("/* +/- 1    }, 3000);", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_multiline_block_comment_line_notes(self):
+        code_dir = _case_dir("componentized-runtime-multiline-block-comment-line-note")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  if (true) {\n"
+                "    /* No specific validation needed for integration selection, keys are optional\n"
+                "    // Can add validation if integrations are required */\n"
+                "  }\n"
+                "  return null;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn(
+                "/* No specific validation needed for integration selection, keys are optional Can add validation if integrations are required */",
+                app_source,
+            )
+            self.assertNotIn("// Can add validation", app_source)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
@@ -1703,6 +2018,244 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             css_source = (code_dir / "src" / "style.css").read_text(encoding="utf-8")
             self.assertIn("baseFrequency=\\'0.9\\' numOctaves=\\'4\\'", css_source)
             self.assertNotIn("\\'\\'' numOctaves", css_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_strips_inline_jsx_attribute_comments(self):
+        code_dir = _case_dir("componentized-runtime-jsx-attr-comment-bleed")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "const chartHeight = 200;\n"
+                "export default function App() {\n"
+                "  return (\n"
+                "    <svg>\n"
+                "      <text y={chartHeight + 15} /* Below the chart */ x={-5} // Left of the chart\n"
+                "        textAnchor=\"middle\"\n"
+                "      >Jan</text>\n"
+                "    </svg>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("y={chartHeight + 15}", app_source)
+            self.assertIn("x={-5}", app_source)
+            self.assertNotIn("/* Below the chart */", app_source)
+            self.assertNotIn("// Left of the chart", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_svg_namespace_protocol(self):
+        code_dir = _case_dir("componentized-runtime-svg-xmlns-protocol")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return <svg xmlns=\"http:www.w3.org/2000/svg\"><circle cx=\"12\" cy=\"12\" r=\"10\" /></svg>;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn('xmlns="http://www.w3.org/2000/svg"', app_source)
+            self.assertNotIn('xmlns="http:www.w3.org/2000/svg"', app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_normalizes_broken_responsive_css_tail(self):
+        code_dir = _case_dir("componentized-runtime-broken-responsive-tail")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "index.css").write_text(
+                ":root{--text-secondary:#A0A0AAB;}.activity-feed{color:#fff;}/* Responsive Adjustments */"
+                "@media (max-width: 1200px) {.kpi-grid{grid-template-columns:1fr;}.content-area{padding:1rem;}.activity-feed{position:static;}}"
+                ".activity-feed{max-height:400px;}.header-bar{padding:0 1rem;}.sidebar{border-right:none;}}"
+                "@media (max-width: 768px) {.sidebar{display:none;}}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            css_source = (code_dir / "src" / "index.css").read_text(encoding="utf-8")
+            self.assertIn("--text-secondary:#A0A0AA;", css_source)
+            self.assertNotIn("#A0A0AAB", css_source)
+            self.assertIn("@media (max-width: 1200px)", css_source)
+            self.assertIn("max-height: 400px;", css_source)
+            self.assertNotIn("}}.activity-feed", css_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_lightweight_chart_helper_corruption(self):
+        code_dir = _case_dir("componentized-runtime-lightweight-chart-helper")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "import React, { useCallback, useEffect, useRef, useState } from 'react';\n"
+                "import { createChart, IChartApi, ISeriesApi, CandlestickData, LineData, Time } from 'lightweight-charts';\n"
+                "const generateRandomCandlestickData = (count: number, basePrice: number): CandlestickData[] => {  const data: CandlestickData[] = [];\n"
+                "let lastPrice = basePrice;\n"
+                "for (let i = 0; i < count; i++) {    const open = lastPrice + (Math.random() - 0.5) * 5;\n"
+                "const close = open + (Math.random() - 0.5) * 10;\n"
+                "const high = Math.max(open, close) + Math.random() * 5;\n"
+                "const low = Math.min(open, close) - Math.random() * 5;    lastPrice = close;    data.push({      time: (1672531200 + i * 86400) as Time, /* Start from Jan 1, 2023      open,\n"
+                "      high,\n"
+                "      low,\n"
+                "      close,\n"
+                "    });  }\n"
+                "return data;};\n"
+                "const generateLineData = (count: number, basePrice: number): LineData[] => {  const data: LineData[] = [];\n"
+                "let lastValue = basePrice;\n"
+                "for (let i = 0; i < count; i++) {    lastValue += (Math.random() - 0.5) * 2; /* Simulate small fluctuations data.push({ */\n"
+                "time: (1672531200 + i * 86400) as Time,\n"
+                "      value: lastValue,\n"
+                "    });  }\n"
+                "return data;};\n"
+                "export default function App() {\n"
+                "  const [chartTimeframe] = useState<'1D' | '1W' | '1M' | '1Y' | 'ALL'>('1M');\n"
+                "  const [currentChartData, setCurrentChartData] = useState<CandlestickData[]>([]);\n"
+                "  const [currentVolumeData, setCurrentVolumeData] = useState<LineData[]>([]);\n"
+                "  const chartContainerRef = useRef<HTMLDivElement>(null);\n"
+                "  const chartRef = useRef<IChartApi | null>(null);\n"
+                "  const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);\n"
+                "  const volumeSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);\n"
+                "  const getChartDataForSymbol = useCallback((symbol: string, timeframe: typeof chartTimeframe) => {    /* This would fetch real data, here we simulate */\n"
+                "const basePrice = (symbol === 'SPY' ? 500 : (symbol === 'GOOGL' ? 150 : 170)) + Math.random() * 20;\n"
+                "let count = 60; /* Default for 1M if (timeframe === '1D') count = 30; Hourly */\n"
+                "if (timeframe === '1W') count = 7;\n"
+                "if (timeframe === '1Y') count = 250; // Daily    if (timeframe === 'ALL') count = 500; */\n"
+                "const newCandlestickData = generateRandomCandlestickData(count, basePrice);\n"
+                "const newVolumeData = newCandlestickData.map(d => ({\n"
+                "      time: d.time,\n"
+                "      value: Math.random() * 10000000 + 5000000, /* Simulate volume }));\n"
+                "setCurrentChartData(newCandlestickData);    setCurrentVolumeData(newVolumeData);  }, []);\n"
+                "useEffect(() => {    if (chartContainerRef.current) {      if (!chartRef.current) {\n"
+                "        const chart = createChart(chartContainerRef.current, {\n"
+                "          crosshair: {\n"
+                "            mode: 0, /* Magnet mode }, */\n"
+                "handleScroll: { vertTouchDrag: true, }, handleScale: { axisPressedMo/* useMove: true, */\n"
+                "}        });\n"
+                "        chartRef.current = chart;\n"
+                "        candlestickSeriesRef.current = chart.addCandlestickSeries({ upColor: '#00C853', downColor: '#FF3D00', borderVisible: false, wickUpColor: '#00C853', wickDownColor: '#FF3D00' });\n"
+                "        volumeSeriesRef.current = chart.addLineSeries({ color: '#A0A0A5', lineWidth: 1, priceFormat: { type: 'volume' }, overlay: true, scaleMargins: { top: 0.8, bottom: 0 } });\n"
+                "      }\n"
+                "    }  }, [currentChartData, currentVolumeData]);\n"
+                "  return <div ref={chartContainerRef} />;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("open,", app_source)
+            self.assertIn("const newVolumeData = newCandlestickData.map((datum) => ({", app_source)
+            self.assertIn("if (timeframe === '1D') count = 30;", app_source)
+            self.assertIn("handleScale: { axisPressedMouseMove: true }", app_source)
+            self.assertNotIn("axisPressedMo/* useMove: true, */", app_source)
+            self.assertNotIn("Simulate volume }));", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_inline_block_comment_note_code_bleed(self):
+        code_dir = _case_dir("componentized-runtime-inline-note-code-bleed")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  useEffect(() => {    /* This */\n"
+                "  useEffect is to trigger the price flash animation    tickers.forEach((ticker) => console.log(ticker));\n"
+                "  }, [tickers]);\n"
+                "  return null;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("/* This useEffect is to trigger the price flash animation */", app_source)
+            self.assertIn("tickers.forEach((ticker) => console.log(ticker));", app_source)
+            self.assertNotIn("useEffect is to trigger the price flash animation    tickers.forEach", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_rewrites_duplicate_label_object_fields(self):
+        code_dir = _case_dir("componentized-runtime-duplicate-label-field")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  const kpis = [\n"
+                "    { label: 'Best Performer', value: 3.2, deltaType: 'positive', unit: '%', label: 'TSLA' },\n"
+                "  ];\n"
+                "  return <pre>{JSON.stringify(kpis)}</pre>;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("asset: 'TSLA'", app_source)
+            self.assertNotIn("unit: '%', label: 'TSLA'", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_wraps_adjacent_jsx_roots_and_repairs_protocol_slashes(self):
+        code_dir = _case_dir("componentized-runtime-adjacent-jsx-roots")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            (code_dir / "src" / "components" / "Topbar.tsx").write_text(
+                "import React from 'react';\n"
+                "export default function Topbar() {\n"
+                "  return (<header className=\"topbar\"><img src=\"https:api.dicebear.com/7.x/initials/svg?seed=JD\" alt=\"Avatar\" /></header><section className=\"ticker-row\"><span>BTC</span></section>);\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            topbar_source = (code_dir / "src" / "components" / "Topbar.tsx").read_text(encoding="utf-8")
+            self.assertIn('src="https://api.dicebear.com/7.x/initials/svg?seed=JD"', topbar_source)
+            self.assertIn("return (<><header", topbar_source)
+            self.assertIn("</section></>);", topbar_source)
+            self.assertNotIn('src="https:api.dicebear.com', topbar_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_tradingview_placeholder_corruption(self):
+        code_dir = _case_dir("componentized-runtime-tradingview-placeholder")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            (code_dir / "src" / "components" / "CandlestickChart.tsx").write_text(
+                "import React from 'react';\n"
+                "export const CandlestickChart: React.FC = () => {\n"
+                "  /* This component would typically integrate a charting library like */\n"
+                "TradingView.\n"
+                "  /* React.useEffect(() => { const widget = new window.TradingView.widget({ */\n"
+                "container_id: \"tradingview_chart\", symbol: \"BINANCE:BTCUSDT\" /* ... */\n"
+                "return () =>widget.remove(); }, []); /* return<div id=\"tradingview_chart\" className=\"tradingview-chart-container\" />;\n"
+                "const chartData = [{ x: 50, open: 200, close: 220, high: 230, low: 190, color: 'var(--success)' }];\n"
+                "return <div />;\n"
+                "};\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            chart_source = (code_dir / "src" / "components" / "CandlestickChart.tsx").read_text(encoding="utf-8")
+            self.assertIn("type ChartDatum = {", chart_source)
+            self.assertIn("export const CandlestickChart: React.FC = () => {", chart_source)
+            self.assertIn("const chartData: ChartDatum[] = [", chart_source)
+            self.assertIn("export default CandlestickChart;", chart_source)
+            self.assertNotIn("return () =>widget.remove();", chart_source)
+            self.assertNotIn("container_id: \"tradingview_chart\"", chart_source)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
@@ -2379,6 +2932,38 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_rewrites_remote_portfolio_images_to_local_placeholders(self):
+        code_dir = _case_dir("componentized-runtime-remote-portfolio-images")
+        try:
+            (code_dir / "public" / "generated-assets").mkdir(parents=True)
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return (\n"
+                "    <section>\n"
+                "      <img src=\"https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80\" alt=\"Alex Mercer\" />\n"
+                "      <div style={{ backgroundImage: 'url(https://via.placeholder.com/1200x800/101114/e5e7eb?text=Skills+Illustration)' }} />\n"
+                "    </section>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            result = ensure_componentized_workspace_support(code_dir, ui_archetype="portfolio")
+
+            source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertNotIn("images.unsplash.com", source)
+            self.assertNotIn("via.placeholder.com", source)
+            self.assertIn("generated-assets/alex_mercer.svg", source)
+            self.assertIn("url(generated-assets/", source)
+            self.assertTrue((code_dir / "public" / "generated-assets" / "alex_mercer.svg").exists())
+            self.assertIn("public/generated-assets/alex_mercer.svg", result["created_files"])
+            self.assertTrue(
+                any(path.startswith("public/generated-assets/") and path.endswith(".svg") and "alex_mercer.svg" not in path for path in result["created_files"])
+            )
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_build_design_context_for_componentized_apps_forbids_invented_asset_names(self):
         version_dir = _case_dir("componentized-design-context")
         try:
@@ -2956,6 +3541,52 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertIn("external_placeholder_assets", issues)
             self.assertIn("typography_hierarchy", issues)
             self.assertIn("polish_flow", issues)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_detect_componentized_quality_issues_flags_understructured_workspace_shells(self):
+        code_dir = _case_dir("componentized-quality-workspace-visual-issues")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "base.css").write_text(
+                "body { font-family: Inter, sans-serif; }\n"
+                ".panel { box-shadow: 0 4px 10px rgba(0,0,0,0.15); }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return <main><section className=\"panel\">Editor</section></main>;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            issues = detect_componentized_quality_issues(code_dir, ui_archetype="editor")
+
+            self.assertIn("workspace_shell_balance", issues)
+            self.assertIn("typography_hierarchy", issues)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_detect_componentized_quality_issues_flags_guided_flow_shells_without_progression(self):
+        code_dir = _case_dir("componentized-quality-guided-flow-visual-issues")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "base.css").write_text(
+                "body { font-family: Inter, sans-serif; }\n"
+                ".panel { box-shadow: 0 4px 10px rgba(0,0,0,0.15); }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return <main><section className=\"panel\"><input aria-label=\"Company name\" /></section></main>;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            issues = detect_componentized_quality_issues(code_dir, ui_archetype="form")
+
+            self.assertIn("guided_flow_progression", issues)
+            self.assertIn("typography_hierarchy", issues)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 

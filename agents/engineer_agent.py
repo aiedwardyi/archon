@@ -19,32 +19,15 @@ from pydantic import ValidationError
 
 from schemas.plan_schema import Task
 from schemas.engineering_schema import EngineeringResult, FileArtifact
+from utils.design_families import (
+    DESIGN_KIT_ALIASES,
+    build_componentized_design_family_guidance,
+    should_apply_componentized_global_family_layer,
+)
 from utils.offline_engineer_scaffold import build_vite_react_ts_scaffold
 from utils.reference_build_registry import get_style_family_context
 
 PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
-
-# Map similar archetypes to a shared design kit
-DESIGN_KIT_ALIASES = {
-    "ai_product": "saas_landing",
-    "dev_tool": "saas_landing",
-    "productivity_app": "saas_landing",
-    "game_companion": "game",
-    "fan_page": "game",
-    "game_ff7": "game",
-    "game_ff8": "game",
-    "game_ff9": "game",
-    "interactive_experience": "game",
-    "admin_panel": "dashboard",
-    "analytics": "dashboard",
-    "crm": "dashboard",
-    "online_store": "ecommerce",
-    "marketplace": "ecommerce",
-    "shop": "ecommerce",
-    "agency": "portfolio",
-    "personal_site": "portfolio",
-    "freelancer": "portfolio",
-}
 
 STYLE_FAMILY_CONTRACTS: dict[str, tuple[str, ...]] = {
     "operator_console_workspace": (
@@ -89,7 +72,6 @@ DOMAIN_OVERLAY_CONTRACTS: dict[str, tuple[str, ...]] = {
         "Keep a real desktop terminal shell with a visible side rail beside the main treasury surfaces, not stacked underneath them.",
     ),
 }
-
 
 def _is_offline_mode() -> bool:
     return os.getenv("OFFLINE_MODE", "").strip().lower() in {"1", "true", "yes", "y", "on"}
@@ -613,6 +595,16 @@ class EngineerAgent:
 
         if scaffold_mode == "componentized_app":
             prompt = (PROMPTS_DIR / "engineer_componentized.txt").read_text(encoding="utf-8")
+            family_guidance = ""
+            if should_apply_componentized_global_family_layer(archetype):
+                family_guidance = build_componentized_design_family_guidance(archetype)
+            if family_guidance:
+                prompt += (
+                    "\n\n--- DESIGN FAMILY FOUNDATION ---\n"
+                    "Apply this shared family contract before archetype-specific flourish.\n"
+                    f"{family_guidance}\n"
+                    "--- END DESIGN FAMILY FOUNDATION ---"
+                )
             prompt += _build_componentized_family_prompt_block(
                 archetype,
                 user_prompt or task.description,

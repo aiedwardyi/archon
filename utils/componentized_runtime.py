@@ -76,6 +76,11 @@ UNTERMINATED_BLOCK_COMMENT_LINE_NOTE_RE = re.compile(
     r"(?P<indent>[ \t]*)/\*\s*(?P<comment>[^*\n]{2,240}?)\s*//\s*(?P<tail>[^*\n]{2,240}?)\s+(?P<code>(?:console\.[A-Za-z_$][\w$]*\s*\(|return\b|const\b|let\b|var\b|if\s*\(|for\s*\(|while\s*\(|switch\s*\(|set[A-Z]\w*\s*\(|[A-Za-z_$][\w$]*\s*=|[A-Za-z_$][\w$]*\s*\())(?P<rest>[^\n]*)",
     re.MULTILINE,
 )
+MULTILINE_BLOCK_COMMENT_LINE_NOTE_RE = re.compile(
+    r"(?P<indent>[ \t]*)/\*\s*(?P<comment>[^*\n]{2,240}?)\s*\r?\n"
+    r"(?P=indent)[ \t]*//\s*(?P<tail>[^*\n]{2,240}?)\s*\*/",
+    re.MULTILINE,
+)
 INLINE_BLOCK_COMMENT_CONTINUATION_RE = re.compile(
     r"(?m)^(?P<prefix>[^\n]*?)/\*\s*(?P<comment>[^*\n]{2,240}?)\s{2,}(?P<code>(?:[)}\]],?\s*[^\n]*|[A-Za-z_:][-A-Za-z0-9_:.]*=\s*[^\n]*|[A-Za-z_$][\w$]*\s*:\s*[^\n]*|(?:const|let|var|return|if|for|while|switch)\b[^\n]*|set[A-Z]\w*\s*\([^\n]*))(?:\s*//\s*(?P<label>[^*\n]{2,200}?))?\s*(?:\*/)?\s*$",
     re.MULTILINE,
@@ -102,6 +107,16 @@ BARE_SECTION_LABEL_RE = re.compile(
 )
 COMMENT_FILENAME_LABEL_RE = re.compile(
     r"(?m)^/\*\s*(?P<comment>[^*\n]{1,200}?)\s*\*/\s*$\n^(?P<filename>[A-Za-z0-9_-]+\.(?:tsx|ts|jsx|js|css|html|json|md))\s*$"
+)
+COMMENT_NOTE_CONTINUATION_RE = re.compile(
+    r"(?m)^(?P<indent>[ \t]*)/\*\s*(?P<comment>[^*\n]{2,200}?)\s*\*/\s*$\n"
+    r"(?P=indent)(?P<tail>[a-z][A-Za-z0-9_./&,\- '()]{6,180})\s*$\n"
+    r"(?=(?P=indent)(?:const|let|var|function|export|type|interface|class)\b)"
+)
+INLINE_BLOCK_COMMENT_NOTE_CODE_BLEED_RE = re.compile(
+    r"(?m)^(?P<prefix>[^\n]*?)/\*\s*(?P<comment>[^*\n]{1,80})\s*\*/\s*$\n"
+    r"(?P<indent>[ \t]*)(?P<tail>[A-Za-z][A-Za-z0-9_./&,\- '()]{4,160}?)\s{2,}"
+    r"(?P<code>(?:if\s*\(|for\s*\(|while\s*\(|const\b|let\b|var\b|return\b|set[A-Z]\w*\(|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\s*\()[^\n]*)"
 )
 JSX_COMMENT_SWALLOWED_TAG_BOUNDARY_RE = re.compile(
     r"/\*\s*[\s\S]{0,320}?(?P<boundary>(?:/?>)\s*</[A-Za-z][A-Za-z0-9-]*>\s*<[A-Za-z][A-Za-z0-9-]*)\s*\*/",
@@ -143,12 +158,20 @@ ORPHAN_COMMENT_SPLIT_STRING_LITERAL_RE = re.compile(
     r"(?P<prefix>(?:\?|:|=|\(|,|\{)\s*)(?P<quote>['\"])\s*\*/\s*\n(?P<indent>[ \t]*)(?P<content>[^'\"\n]{1,120})(?P=quote)",
     re.MULTILINE,
 )
+JSX_EXPR_COMMENT_SPLIT_IDENTIFIER_RE = re.compile(
+    r"\{(?P<prefix>[a-z][A-Za-z0-9_$]{1,32})\s*\*/\s*\n(?P<indent>[ \t]*)(?P<suffix>[A-Z][A-Za-z0-9_$]{1,64})(?P<rest>[^}]*)\}",
+    re.MULTILINE,
+)
 ORPHAN_COMMENT_CLOSE_IN_STRING_LITERAL_RE = re.compile(
     r"(?P<prefix>(?:\[|,|:|=|\(|\{)\s*)(?P<quote>['\"])(?P<before>[^'\"\n]*?)\s*\*/\s*\n\s*(?P<after>[^'\"\n]*?)(?P=quote)",
     re.MULTILINE,
 )
 ALPINE_JSX_DIRECTIVE_NOTE_RE = re.compile(
     r"/\*\s*@ts-ignore\s*\*/\s*Alpine\.js specific directive",
+    re.IGNORECASE,
+)
+ALPINE_JSX_DIRECTIVE_TEXT_RE = re.compile(
+    r"\s*Alpine\.js specific directive",
     re.IGNORECASE,
 )
 ALPINE_JSX_ATTR_RE = re.compile(
@@ -170,6 +193,18 @@ JSX_TEXT_COMMENT_CLOSE_BLEED_RE = re.compile(
     r">(?P<prefix>[^<>{\n]{1,120}?)\s*\*/\s*(?:\r?\n\s*(?:\d+\s*\|\s*)?)?(?P<suffix>[A-Za-z][^<>{\n]{0,120}?)\s*<",
     re.MULTILINE,
 )
+JSX_CODE_TAG_RE = re.compile(
+    r"(?P<open><code\b[^>]*>)(?P<body>[\s\S]{0,12000}?)(?P<close></code>)",
+    re.IGNORECASE,
+)
+JSX_CODE_TEMPLATE_LITERAL_RE = re.compile(
+    r"(?P<open><code\b[^>]*>\s*)\{\s*`(?P<body>[\s\S]{0,12000}?)`\s*\}(?P<close>\s*</code>)",
+    re.IGNORECASE,
+)
+JSX_PRE_TEXT_TAG_RE = re.compile(
+    r"(?P<open><pre\b[^>]*>)(?P<body>(?:(?!<code\b)[\s\S]){0,12000}?)(?P<close></pre>)",
+    re.IGNORECASE,
+)
 VOID_JSX_ELEMENT_RE = re.compile(
     r"(?<![A-Za-z0-9_\"'])<(?P<tag>area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)\b(?P<attrs>[^<>]*?)(?<!/)>",
     re.IGNORECASE,
@@ -185,6 +220,12 @@ GENERIC_ARROW_BLEED_RE = re.compile(
 )
 CSS_DATA_URI_ESCAPED_QUOTE_BLEED_RE = re.compile(
     r"\\'\\''(?=\s+[A-Za-z-]+=)"
+)
+JSX_ATTR_COMMENT_BLEED_RE = re.compile(
+    r"(?P<attr>\b[A-Za-z_:][-A-Za-z0-9_:.]*=\{[^}\n]+\}|\b[A-Za-z_:][-A-Za-z0-9_:.]*=(?:\"[^\n\"]*\"|'[^\n']*'))\s*/\*\s*(?P<comment>[^*\n]{1,160})\s*\*/"
+)
+JSX_ATTR_LINE_COMMENT_BLEED_RE = re.compile(
+    r"(?P<attr>\b[A-Za-z_:][-A-Za-z0-9_:.]*=\{[^}\n]+\}|\b[A-Za-z_:][-A-Za-z0-9_:.]*=(?:\"[^\n\"]*\"|'[^\n']*'))\s*//\s*(?P<comment>[^\n]{1,160})"
 )
 DECLARATION_BOUNDARY_RE = re.compile(
     r"(?<=})(?=(?:interface\b|type\b|const\b|let\b|var\b|function\b|export\b|class\b|return\b))"
@@ -234,10 +275,46 @@ FONT_FAMILY_RE = re.compile(r"font-family\s*:\s*([^;}{]+);")
 BORDER_RADIUS_RE = re.compile(r"border-radius\s*:\s*([^;}{]+);")
 BOX_SHADOW_RE = re.compile(r"box-shadow\s*:\s*([^;}{]+);")
 MEDIA_QUERY_RE = re.compile(r"@media[^{]*?(?:max|min)-width\s*:\s*([0-9]+px)", re.IGNORECASE)
+INVALID_SEVEN_DIGIT_HEX_RE = re.compile(r"#(?P<value>[0-9a-fA-F]{7})(?![0-9a-fA-F])")
+SVG_XMLNS_PROTOCOL_SLASH_RE = re.compile(
+    r'(?P<prefix>\bxmlns\s*=\s*)(?P<quote>["\'])(?P<scheme>https?):(?P<rest>(?!//)[^"\']+)(?P=quote)'
+)
+MISSING_PROTOCOL_SLASH_JSX_ATTR_RE = re.compile(
+    r'(?P<prefix>\b(?:src|href)=["\'])(?P<scheme>https?):(?P<rest>(?!//)[^"\']+)(?P<suffix>["\'])',
+    re.IGNORECASE,
+)
+MISSING_PROTOCOL_SLASH_OBJECT_FIELD_RE = re.compile(
+    r'(?P<prefix>\b(?:src|href|image|imageUrl|imageSrc)\s*:\s*["\'])(?P<scheme>https?):(?P<rest>(?!//)[^"\']+)(?P<suffix>["\'])',
+    re.IGNORECASE,
+)
 JS_EVENT_HANDLER_RE = re.compile(r"\bon(Click|Change|Submit|Input|KeyDown|KeyUp|MouseEnter|MouseLeave|Focus|Blur)\s*=")
 DOM_EVENT_LISTENER_RE = re.compile(r"addEventListener\(\s*['\"]([a-z]+)['\"]")
 CSS_BLOCK_RE = re.compile(r"(?P<selector>[^{}]+)\{(?P<body>[^{}]*)\}", re.MULTILINE)
 GOOGLE_FONT_IMPORT_LINE_RE = re.compile(r"^\s*@import\s+url\([^)]+fonts\.googleapis\.com[^)]*\)\s*;\s*$", re.MULTILINE)
+LIGHTWEIGHT_CHART_CANDLE_HELPER_RE = re.compile(
+    r"const generateRandomCandlestickData = \(count: number, basePrice: number\): CandlestickData\[\] => \{[\s\S]{0,2400}?return data;\};",
+    re.MULTILINE,
+)
+LIGHTWEIGHT_CHART_LINE_HELPER_RE = re.compile(
+    r"const generateLineData = \(count: number, basePrice: number\): LineData\[\] => \{[\s\S]{0,2400}?return data;\};",
+    re.MULTILINE,
+)
+LIGHTWEIGHT_CHART_DATA_CALLBACK_RE = re.compile(
+    r"const getChartDataForSymbol = useCallback\(\(symbol: string, timeframe: typeof chartTimeframe\) => \{[\s\S]{0,2400}?\}, \[\]\);",
+    re.MULTILINE,
+)
+LIGHTWEIGHT_CHART_SETUP_EFFECT_RE = re.compile(
+    r"useEffect\(\(\) => \{\s*if \(chartContainerRef\.current\) \{\s*if \(!chartRef\.current\) \{[\s\S]{0,3200}?\}\s*\}, \[currentChartData, currentVolumeData\]\);",
+    re.MULTILINE,
+)
+DUPLICATE_LABEL_OBJECT_FIELD_RE = re.compile(
+    r"(?P<prefix>\{[^{}]{0,240}\blabel\s*:\s*['\"][^'\"]+['\"][^{}]{0,240}),\s*label\s*:\s*(?P<value>['\"][^'\"]+['\"])",
+    re.MULTILINE,
+)
+COMPONENTIZED_JSX_RETURN_RE = re.compile(
+    r"return\s*\(\s*(?P<body><[\s\S]{1,12000}?)\s*\);",
+    re.MULTILINE,
+)
 
 SAFE_COMPONENTIZED_DEPENDENCIES = {
     "@heroicons/react": "^2.2.0",
@@ -246,6 +323,97 @@ SAFE_COMPONENTIZED_DEPENDENCIES = {
     "react-feather": "^2.0.10",
     "recharts": "2.15.0",
 }
+
+SAFE_COMPONENTIZED_RESPONSIVE_TAIL = """/* Responsive Adjustments */
+@media (max-width: 1200px) {
+  .kpi-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+  .grid-2col,
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .main-content {
+    margin-left: 240px;
+  }
+  .content-area {
+    padding: var(--spacing-xxl) var(--spacing-lg);
+  }
+  .activity-feed {
+    position: static;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  .header-bar {
+    padding: 0 var(--spacing-lg);
+  }
+  .sidebar {
+    border-right: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+  .main-content {
+    margin-left: 0;
+  }
+  .header-bar {
+    flex-direction: column;
+    height: auto;
+    padding: var(--spacing-md) var(--spacing-lg);
+    gap: var(--spacing-md);
+    align-items: flex-start;
+  }
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+  }
+  .header-search {
+    min-width: unset;
+    flex-grow: 1;
+  }
+  .content-area {
+    padding: var(--spacing-xxl) var(--spacing-md);
+  }
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  .data-table th,
+  .data-table td {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: 0.8rem;
+  }
+  .data-table .cell-action {
+    font-size: 0.7rem;
+  }
+  .activity-feed {
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+  .activity-item {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  .chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+  }
+  .chart-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .chart-period-toggles {
+    width: 100%;
+    justify-content: space-around;
+  }
+  .interactive-chip {
+    width: 100%;
+    justify-content: center;
+  }
+}
+"""
 
 COMPONENTIZED_MODULE_EXTENSIONS = (".tsx", ".ts", ".jsx", ".js")
 COMPONENTIZED_IMPORT_ALIAS_CANDIDATES: dict[str, tuple[str, ...]] = {
@@ -930,11 +1098,7 @@ def _sync_componentized_generated_asset_references(code_dir: Path) -> list[str]:
     if not public_dir.exists():
         return []
 
-    existing_files = {
-        path.name.lower(): path
-        for path in public_dir.iterdir()
-        if path.is_file()
-    }
+    existing_files = _collect_componentized_generated_asset_index(code_dir)
 
     referenced: set[str] = set()
     for rel_path in collect_componentized_editable_files(code_dir):
@@ -967,6 +1131,30 @@ def _sync_componentized_generated_asset_references(code_dir: Path) -> list[str]:
         existing_files[lowered] = dest
         created_aliases.append(f"public/generated-assets/{filename}")
     return created_aliases
+
+
+def _collect_componentized_generated_asset_index(code_dir: Path) -> dict[str, Path]:
+    public_dir = code_dir / "public" / "generated-assets"
+    if not public_dir.exists():
+        return {}
+    return {
+        path.name.lower(): path
+        for path in public_dir.iterdir()
+        if path.is_file()
+    }
+
+
+def _select_componentized_generated_asset_reference(code_dir: Path, filename: str) -> str | None:
+    existing_files = _collect_componentized_generated_asset_index(code_dir)
+    if not existing_files:
+        return None
+    lowered = filename.lower()
+    if lowered in existing_files:
+        return f"generated-assets/{existing_files[lowered].name}"
+    alias_source = _select_componentized_generated_asset_alias(filename, existing_files)
+    if not alias_source:
+        return None
+    return f"generated-assets/{alias_source.name}"
 
 
 def _select_componentized_generated_asset_alias(
@@ -1155,6 +1343,12 @@ def ensure_componentized_workspace_support(
     created_files: list[str] = []
     rewritten_files: list[str] = []
     extracted_css_chunks: list[str] = []
+    is_game_archetype = bool(ui_archetype and (ui_archetype == "game" or ui_archetype.startswith("game_")))
+    game_map_asset_reference = (
+        _select_componentized_generated_asset_reference(code_dir, "region_world_map.png")
+        if is_game_archetype
+        else None
+    )
 
     for rel_path, content in _componentized_support_files().items():
         target = code_dir / rel_path
@@ -1197,13 +1391,20 @@ def ensure_componentized_workspace_support(
         path = code_dir / rel_path
         original = path.read_text(encoding="utf-8", errors="replace")
         updated = _normalize_componentized_file(rel_path, original)
-        if ui_archetype and (ui_archetype == "game" or ui_archetype.startswith("game_")):
+        if is_game_archetype:
             updated = _normalize_componentized_game_remote_badge_images(updated)
             updated = _normalize_componentized_remote_image_urls(updated)
+            updated = _normalize_componentized_game_empty_image_fields(
+                updated,
+                fallback_asset_path=game_map_asset_reference,
+            )
             if rel_path.endswith((".tsx", ".jsx")):
                 updated = _normalize_componentized_game_detail_ctas(updated)
-                updated = _normalize_componentized_game_placeholder_maps(updated)
-        elif ui_archetype == "ecommerce":
+                updated = _normalize_componentized_game_placeholder_maps(
+                    updated,
+                    fallback_asset_path=game_map_asset_reference,
+                )
+        elif ui_archetype in {"ecommerce", "portfolio"}:
             updated = _normalize_componentized_remote_image_urls(updated)
         if rel_path.endswith((".tsx", ".jsx")):
             updated, extracted_css = _extract_componentized_css_tail(updated)
@@ -1496,26 +1697,61 @@ def _normalize_componentized_game_remote_badge_images(source: str) -> str:
     return REMOTE_BADGE_OBJECT_IMAGE_RE.sub(_replace, source)
 
 
-def _normalize_componentized_game_placeholder_maps(source: str) -> str:
+def _normalize_componentized_game_empty_image_fields(
+    source: str,
+    fallback_asset_path: str | None = None,
+) -> str:
+    if not fallback_asset_path or "image" not in source:
+        return source
+    empty_image_re = re.compile(
+        r"(?P<prefix>\bimage\s*:\s*)(?P<quote>[\"'])(?P<value>\s*)(?P=quote)",
+        re.IGNORECASE,
+    )
+    if not empty_image_re.search(source):
+        return source
+
+    def _replace(match: re.Match[str]) -> str:
+        return f"{match.group('prefix')}{match.group('quote')}{fallback_asset_path}{match.group('quote')}"
+
+    return empty_image_re.sub(_replace, source)
+
+
+def _normalize_componentized_game_placeholder_maps(
+    source: str,
+    fallback_asset_path: str | None = None,
+) -> str:
     placeholder_img_re = re.compile(
         r'<img(?P<attrs>[^>]*?)src=(?P<quote>["\'])data:image/svg\+xml,[^"\']*(?:Placeholder|PLACEHOLDER)[^"\']*(?P=quote)(?P<rest>[^>]*)/?>',
         re.IGNORECASE | re.DOTALL,
     )
-    if not placeholder_img_re.search(source):
-        return source
-    return placeholder_img_re.sub(
-        (
-            '<div className="runtime-world-map-fallback">'
-            '<div className="runtime-world-map-grid" aria-hidden="true"></div>'
-            '<div className="runtime-world-map-copy">'
-            '<span className="runtime-world-map-eyebrow">Strategic Atlas</span>'
-            '<strong className="runtime-world-map-title">World Survey Interface</strong>'
-            '<p className="runtime-world-map-text">Key regions remain explorable through the dossiers and sector cards below.</p>'
-            '</div>'
-            '</div>'
-        ),
-        source,
-    )
+    updated = source
+    if placeholder_img_re.search(updated):
+        updated = placeholder_img_re.sub(
+            (
+                '<div className="runtime-world-map-fallback">'
+                '<div className="runtime-world-map-grid" aria-hidden="true"></div>'
+                '<div className="runtime-world-map-copy">'
+                '<span className="runtime-world-map-eyebrow">Strategic Atlas</span>'
+                '<strong className="runtime-world-map-title">World Survey Interface</strong>'
+                '<p className="runtime-world-map-text">Key regions remain explorable through the dossiers and sector cards below.</p>'
+                '</div>'
+                '</div>'
+            ),
+            updated,
+        )
+    if fallback_asset_path and "Map Placeholder" in updated:
+        placeholder_card_re = re.compile(
+            r"<div(?P<attrs>[^>]*)>\s*Map Placeholder\s*</div>",
+            re.IGNORECASE | re.DOTALL,
+        )
+        replacement = (
+            f'<img className="location-image" src={{region.image || "{fallback_asset_path}"}} '
+            'alt={`${region.name} map illustration`} loading="lazy" />'
+            if "region.name" in updated or "region.image" in updated
+            else f'<img className="location-image" src="{fallback_asset_path}" alt="World map illustration" loading="lazy" />'
+        )
+        updated = placeholder_card_re.sub(replacement, updated)
+    return updated
 
 
 def _normalize_componentized_remote_image_urls(source: str) -> str:
@@ -1542,7 +1778,31 @@ def _normalize_componentized_remote_image_urls(source: str) -> str:
         filename = _build_componentized_remote_image_placeholder_filename(label, url)
         return f"{match.group('prefix')}{match.group('quote')}generated-assets/{filename}{match.group('quote')}{rest}"
 
-    return REMOTE_JSX_IMAGE_SRC_RE.sub(_replace_jsx, updated)
+    updated = REMOTE_JSX_IMAGE_SRC_RE.sub(_replace_jsx, updated)
+
+    def _replace_assignment(match: re.Match[str]) -> str:
+        url = match.group("url").strip()
+        filename = _build_componentized_remote_image_placeholder_filename("", url)
+        return f"{match.group('prefix')}{match.group('quote')}generated-assets/{filename}{match.group('quote')}"
+
+    updated = re.sub(
+        r"(?P<prefix>\b[A-Za-z_$][\w$.]*\.src\s*=\s*)(?P<quote>['\"])(?P<url>https?://[^'\"]+)(?P=quote)",
+        _replace_assignment,
+        updated,
+        flags=re.IGNORECASE,
+    )
+
+    def _replace_style_url(match: re.Match[str]) -> str:
+        url = match.group("url").strip()
+        filename = _build_componentized_remote_image_placeholder_filename("", url)
+        return f"{match.group('prefix')}generated-assets/{filename}{match.group('suffix')}"
+
+    return re.sub(
+        r"(?P<prefix>backgroundImage\s*:\s*['\"]url\()(?P<url>https?://[^'\"\)]+)(?P<suffix>\)['\"])",
+        _replace_style_url,
+        updated,
+        flags=re.IGNORECASE,
+    )
 
 
 def _normalize_componentized_game_detail_ctas(source: str) -> str:
@@ -1589,6 +1849,14 @@ def _normalize_componentized_game_detail_ctas(source: str) -> str:
         kicker_var = next((name for name in ("role", "type", "region", "owner") if name in params), None)
         title_var = "name" if "name" in params else ("title" if "title" in params else None)
         copy_var = next((name for name in ("description", "desc", "lore") if name in params), None)
+        detail_object_var = next(
+            (
+                name
+                for name in ("item", "entry", "region", "location", "character", "pokemon", "weapon", "artifact", "card", "profile")
+                if name in params
+            ),
+            None,
+        )
 
         if "stats" in params:
             stats_expr = (
@@ -1613,9 +1881,33 @@ def _normalize_componentized_game_detail_ctas(source: str) -> str:
                     )
             stats_expr = f'<div className="runtime-inline-detail-stats">{"".join(chip_nodes)}</div>' if chip_nodes else ""
 
-        kicker_expr = f"{{{kicker_var}}}" if kicker_var else "Archive Detail"
-        title_expr = f"{{{title_var}}}" if title_var else "Field Brief"
-        copy_expr = f"{{{copy_var}}}" if copy_var else "This dossier uses local mock archive data to keep the interaction alive."
+        kicker_expr = (
+            f"{{{kicker_var}}}"
+            if kicker_var and (kicker_var != detail_object_var or title_var or copy_var)
+            else (
+                f'{{{detail_object_var}.type || {detail_object_var}.region || {detail_object_var}.owner || "Archive Detail"}}'
+                if detail_object_var
+                else "Archive Detail"
+            )
+        )
+        title_expr = (
+            f"{{{title_var}}}"
+            if title_var
+            else (
+                f'{{{detail_object_var}.name || {detail_object_var}.title || "Field Brief"}}'
+                if detail_object_var
+                else "Field Brief"
+            )
+        )
+        copy_expr = (
+            f"{{{copy_var}}}"
+            if copy_var
+            else (
+                f'{{{detail_object_var}.description || {detail_object_var}.desc || {detail_object_var}.lore || "This dossier uses local mock archive data to keep the interaction alive."}}'
+                if detail_object_var
+                else "This dossier uses local mock archive data to keep the interaction alive."
+            )
+        )
         return (
             f'<details className="runtime-inline-detail">'
             f'<summary className="{class_name}"{summary_attr_text}>{summary_label}</summary>'
@@ -1689,6 +1981,11 @@ def _normalize_componentized_game_detail_ctas(source: str) -> str:
             "\n",
             updated_body,
             count=1,
+        )
+        updated_body = re.sub(
+            rf"\s+onClick=\{{{re.escape(handler)}\}}",
+            "",
+            updated_body,
         )
         updated_body = re.sub(
             r"\n\s*const \[showDetails,\s*setShowDetails\] = useState\(false\);\s*",
@@ -1782,18 +2079,25 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
     elif rel_path.endswith((".ts", ".tsx", ".js", ".jsx")):
         updated = LOCAL_CODE_IMPORT_RE.sub(r"\1\2\4", updated)
         updated = _normalize_componentized_field_aliases(updated)
+        updated = _repair_componentized_lightweight_chart_corruption(updated)
+        updated = _repair_componentized_tradingview_scaffold_corruption(updated)
         updated = _repair_interface_field_comment_bleed(updated)
         updated = _repair_inline_block_comment_code_bleed(updated)
         updated = _repair_block_comment_control_flow_bleed(updated)
         updated = _repair_unterminated_block_comment_line_notes(updated)
         updated = _repair_multiline_block_comment_code_bleed(updated)
+        updated = _repair_multiline_block_comment_line_notes(updated)
         updated = _repair_inline_block_comment_continuations(updated)
+        updated = _repair_inline_block_comment_note_code_bleed(updated)
         updated = _normalize_run_on_inline_comments(updated)
         updated = _repair_componentized_comment_split_identifiers(updated)
         updated = _repair_componentized_comment_tail_split_identifiers(updated)
         updated = _repair_componentized_jsx_comment_swallowed_tag_boundaries(updated)
         updated = _repair_componentized_jsx_block_comment_bleed(updated)
         updated = _repair_componentized_jsx_text_comment_bleed(updated)
+        updated = _repair_componentized_jsx_attribute_comment_bleed(updated)
+        updated = _repair_componentized_jsx_handler_comment_close_bleed(updated)
+        updated = _repair_componentized_jsx_expression_comment_split_identifiers(updated)
         updated = _repair_componentized_orphan_comment_split_identifiers(updated)
         updated = _repair_componentized_orphan_comment_split_string_literals(updated)
         updated = _repair_componentized_orphan_comment_close_in_string_literals(updated)
@@ -1801,14 +2105,20 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _normalize_componentized_void_jsx_elements(updated)
         updated = _normalize_componentized_declaration_boundaries(updated)
         updated = _hoist_componentized_chart_helper_declarations(updated)
+        updated = _repair_componentized_comment_note_continuations(updated)
         updated = _normalize_run_on_natural_language_notes(updated)
         updated = _normalize_lowercase_object_field_labels(updated)
         updated = _normalize_run_on_explanatory_labels(updated)
         updated = _normalize_bare_section_labels(updated)
         updated = _normalize_comment_filename_labels(updated)
+        updated = _normalize_componentized_jsx_code_template_literals(updated)
+        updated = _repair_componentized_jsx_code_block_literals(updated)
         updated = _repair_componentized_jsx_event_handler_arrow_bleed(updated)
         updated = _repair_componentized_generic_arrow_bleed(updated)
         updated = _repair_componentized_comment_url_bleed(updated)
+        updated = _repair_componentized_missing_protocol_slashes(updated)
+        updated = _repair_componentized_svg_namespace_protocol(updated)
+        updated = _repair_componentized_jsx_root_returns(updated)
         updated = _normalize_run_on_imports(updated)
         updated = _normalize_componentized_currency_formatting(updated)
         updated = _normalize_componentized_preview_router(updated)
@@ -1990,6 +2300,8 @@ def _normalize_componentized_index_css(source: str) -> str:
     ):
         return "/* App-specific overrides live here. Keep this file intentionally minimal. */\n"
     updated = re.sub(r"^\s*@extend\s+[^;]+;\s*$\n?", "", source, flags=re.MULTILINE)
+    updated = _normalize_componentized_invalid_hex_colors(updated)
+    updated = _normalize_componentized_broken_responsive_tail(updated)
     return updated
 
 
@@ -2317,6 +2629,78 @@ def _build_componentized_polish_guard_css(ui_archetype: str) -> str | None:
             "radial-gradient(circle at top right, rgba(61, 117, 255, 0.16), transparent 26%),\n"
             "    radial-gradient(circle at bottom left, rgba(15, 193, 132, 0.08), transparent 24%),"
         )
+    dashboard_specific_css = (
+        ".dashboard-layout .kpi-card,\n"
+        ".dashboard-shell .kpi-card {\n"
+        "  --guard-panel-accent: rgba(var(--accent-rgb, 79, 144, 255), 0.52);\n"
+        "  background: linear-gradient(158deg, rgba(var(--accent-rgb, 79, 144, 255), 0.14), rgba(255, 255, 255, 0.018) 52%),\n"
+        "    var(--card-bg, var(--surface, #111827)) !important;\n"
+        "}\n\n"
+        ".dashboard-layout .kpi-card:nth-child(4n + 2),\n"
+        ".dashboard-layout .kpi-card:nth-child(4n + 3),\n"
+        ".dashboard-layout .kpi-card:nth-child(4n),\n"
+        ".dashboard-shell .kpi-card:nth-child(4n + 2),\n"
+        ".dashboard-shell .kpi-card:nth-child(4n + 3),\n"
+        ".dashboard-shell .kpi-card:nth-child(4n) {\n"
+        "  --guard-panel-accent: rgba(var(--accent-rgb, 79, 144, 255), 0.52);\n"
+        "}\n\n"
+        ".dashboard-layout .data-table thead th,\n"
+        ".dashboard-layout .asset-table thead th,\n"
+        ".dashboard-shell .data-table thead th,\n"
+        ".dashboard-shell .asset-table thead th {\n"
+        "  font-size: 0.76rem !important;\n"
+        "  font-weight: 700 !important;\n"
+        "  color: rgba(226, 232, 240, 0.74) !important;\n"
+        "  letter-spacing: 0.12em !important;\n"
+        "}\n\n"
+        ".dashboard-layout .activity-item,\n"
+        ".dashboard-layout .market-watch-item,\n"
+        ".dashboard-shell .activity-item,\n"
+        ".dashboard-shell .market-watch-item {\n"
+        "  cursor: pointer;\n"
+        "}\n\n"
+        ".dashboard-layout .activity-item .activity-time,\n"
+        ".dashboard-layout .market-watch-item .market-watch-name,\n"
+        ".dashboard-shell .activity-item .activity-time,\n"
+        ".dashboard-shell .market-watch-item .market-watch-name {\n"
+        "  font-size: 0.74rem !important;\n"
+        "  font-weight: 700 !important;\n"
+        "  text-transform: uppercase;\n"
+        "  letter-spacing: 0.12em !important;\n"
+        "  color: rgba(160, 174, 192, 0.8) !important;\n"
+        "}\n\n"
+        ".dashboard-layout .cell-action,\n"
+        ".dashboard-layout .table-action,\n"
+        ".dashboard-layout .action-link,\n"
+        ".dashboard-shell .cell-action,\n"
+        ".dashboard-shell .table-action,\n"
+        ".dashboard-shell .action-link {\n"
+        "  display: inline-flex;\n"
+        "  align-items: center;\n"
+        "  gap: 0.3rem;\n"
+        "  padding: 0.34rem 0.7rem;\n"
+        "  border-radius: 999px;\n"
+        "  border: 1px solid rgba(var(--accent-rgb, 79, 144, 255), 0.22);\n"
+        "  background: linear-gradient(135deg, rgba(var(--accent-rgb, 79, 144, 255), 0.16), rgba(255, 255, 255, 0.03));\n"
+        "  box-shadow: 0 10px 18px rgba(2, 6, 23, 0.18);\n"
+        "  font-size: 0.76rem !important;\n"
+        "  font-weight: 700 !important;\n"
+        "  letter-spacing: 0.08em !important;\n"
+        "  text-transform: uppercase;\n"
+        "}\n\n"
+        ".dashboard-layout .cell-action:hover,\n"
+        ".dashboard-layout .table-action:hover,\n"
+        ".dashboard-layout .action-link:hover,\n"
+        ".dashboard-shell .cell-action:hover,\n"
+        ".dashboard-shell .table-action:hover,\n"
+        ".dashboard-shell .action-link:hover {\n"
+        "  transform: translateY(-1px);\n"
+        "  border-color: rgba(var(--accent-rgb, 79, 144, 255), 0.42);\n"
+        "  box-shadow: 0 16px 26px rgba(2, 6, 23, 0.24), 0 0 0 1px rgba(var(--accent-rgb, 79, 144, 255), 0.18);\n"
+        "}\n\n"
+        if ui_archetype == "dashboard"
+        else ""
+    )
 
     return (
         f"/* Runtime shell polish guard for {ui_archetype} app shells. */\n"
@@ -2989,6 +3373,7 @@ def _build_componentized_polish_guard_css(ui_archetype: str) -> str | None:
         ".asset-table-panel {\n"
         "  outline: 1px solid rgba(255, 255, 255, 0.02);\n"
         "}\n"
+        f"{dashboard_specific_css}"
     )
 
 
@@ -3384,6 +3769,8 @@ def _normalize_componentized_override_css(
     has_mono_font: bool,
 ) -> str:
     updated = source
+    updated = _normalize_componentized_invalid_hex_colors(updated)
+    updated = _normalize_componentized_broken_responsive_tail(updated)
 
     if has_mono_font:
         updated = updated.replace("Roboto Mono", "JetBrains Mono")
@@ -3404,6 +3791,29 @@ def _normalize_componentized_override_css(
         )
 
     return updated
+
+
+def _normalize_componentized_invalid_hex_colors(source: str) -> str:
+    return INVALID_SEVEN_DIGIT_HEX_RE.sub(
+        lambda match: f"#{match.group('value')[:6]}",
+        source,
+    )
+
+
+def _normalize_componentized_broken_responsive_tail(source: str) -> str:
+    marker = "/* Responsive Adjustments */"
+    marker_index = source.find(marker)
+    if marker_index < 0:
+        return source
+
+    tail = source[marker_index:]
+    if "}}." not in tail and "}}@media" not in tail:
+        return source
+
+    head = source[:marker_index].rstrip()
+    if not head:
+        return SAFE_COMPONENTIZED_RESPONSIVE_TAIL
+    return f"{head}\n\n{SAFE_COMPONENTIZED_RESPONSIVE_TAIL}"
 
 
 def _rewrite_override_selector_font_family(
@@ -3458,6 +3868,246 @@ def _normalize_run_on_inline_comments(source: str) -> str:
     return INLINE_COMMENT_RUNON_RE.sub(lambda m: f"/* {m.group(1).strip()} */\n", source)
 
 
+def _repair_componentized_lightweight_chart_corruption(source: str) -> str:
+    if "lightweight-charts" not in source:
+        return source
+
+    updated = source
+    if "Start from Jan 1, 2023" in updated:
+        updated = LIGHTWEIGHT_CHART_CANDLE_HELPER_RE.sub(
+            (
+                "const generateRandomCandlestickData = (count: number, basePrice: number): CandlestickData[] => {\n"
+                "  const data: CandlestickData[] = [];\n"
+                "  let lastPrice = basePrice;\n"
+                "  for (let i = 0; i < count; i++) {\n"
+                "    const open = lastPrice + (Math.random() - 0.5) * 5;\n"
+                "    const close = open + (Math.random() - 0.5) * 10;\n"
+                "    const high = Math.max(open, close) + Math.random() * 5;\n"
+                "    const low = Math.min(open, close) - Math.random() * 5;\n"
+                "    lastPrice = close;\n"
+                "    data.push({\n"
+                "      time: (1672531200 + i * 86400) as Time,\n"
+                "      open,\n"
+                "      high,\n"
+                "      low,\n"
+                "      close,\n"
+                "    });\n"
+                "  }\n"
+                "  return data;\n"
+                "};"
+            ),
+            updated,
+        )
+    if "Simulate small fluctuations data.push({" in updated:
+        updated = LIGHTWEIGHT_CHART_LINE_HELPER_RE.sub(
+            (
+                "const generateLineData = (count: number, basePrice: number): LineData[] => {\n"
+                "  const data: LineData[] = [];\n"
+                "  let lastValue = basePrice;\n"
+                "  for (let i = 0; i < count; i++) {\n"
+                "    lastValue += (Math.random() - 0.5) * 2;\n"
+                "    data.push({\n"
+                "      time: (1672531200 + i * 86400) as Time,\n"
+                "      value: lastValue,\n"
+                "    });\n"
+                "  }\n"
+                "  return data;\n"
+                "};"
+            ),
+            updated,
+        )
+    if "Default for 1M if (timeframe === '1D') count = 30; Hourly" in updated or "Simulate volume }));" in updated:
+        updated = LIGHTWEIGHT_CHART_DATA_CALLBACK_RE.sub(
+            (
+                "const getChartDataForSymbol = useCallback((symbol: string, timeframe: typeof chartTimeframe) => {\n"
+                "  const basePrice = (symbol === 'SPY' ? 500 : (symbol === 'GOOGL' ? 150 : 170)) + Math.random() * 20;\n"
+                "  let count = 60; /* Default for 1M */\n"
+                "  if (timeframe === '1D') count = 30;\n"
+                "  if (timeframe === '1W') count = 7;\n"
+                "  if (timeframe === '1Y') count = 250;\n"
+                "  if (timeframe === 'ALL') count = 500;\n"
+                "  const newCandlestickData = generateRandomCandlestickData(count, basePrice);\n"
+                "  const newVolumeData = newCandlestickData.map((datum) => ({\n"
+                "    time: datum.time,\n"
+                "    value: Math.random() * 10000000 + 5000000,\n"
+                "  }));\n"
+                "  setCurrentChartData(newCandlestickData);\n"
+                "  setCurrentVolumeData(newVolumeData);\n"
+                "}, []);"
+            ),
+            updated,
+        )
+    if "axisPressedMo/* useMove: true, */" in updated:
+        updated = LIGHTWEIGHT_CHART_SETUP_EFFECT_RE.sub(
+            (
+                "useEffect(() => {\n"
+                "  if (!chartContainerRef.current) {\n"
+                "    return;\n"
+                "  }\n"
+                "\n"
+                "  if (!chartRef.current) {\n"
+                "    const chart = createChart(chartContainerRef.current, {\n"
+                "      layout: {\n"
+                "        backgroundColor: 'transparent',\n"
+                "        textColor: '#E0E0E0',\n"
+                "      },\n"
+                "      grid: {\n"
+                "        vertLines: { color: '#2A2A2E' },\n"
+                "        horzLines: { color: '#2A2A2E' },\n"
+                "      },\n"
+                "      rightPriceScale: {\n"
+                "        borderColor: '#2A2A2E',\n"
+                "      },\n"
+                "      timeScale: {\n"
+                "        borderColor: '#2A2A2E',\n"
+                "        timeVisible: true,\n"
+                "        secondsVisible: false,\n"
+                "      },\n"
+                "      crosshair: {\n"
+                "        mode: 0, /* Magnet mode */\n"
+                "      },\n"
+                "      handleScroll: { vertTouchDrag: true },\n"
+                "      handleScale: { axisPressedMouseMove: true },\n"
+                "    });\n"
+                "    chartRef.current = chart;\n"
+                "    candlestickSeriesRef.current = chart.addCandlestickSeries({\n"
+                "      upColor: '#00C853',\n"
+                "      downColor: '#FF3D00',\n"
+                "      borderVisible: false,\n"
+                "      wickUpColor: '#00C853',\n"
+                "      wickDownColor: '#FF3D00',\n"
+                "    });\n"
+                "    volumeSeriesRef.current = chart.addLineSeries({\n"
+                "      color: '#A0A0A5',\n"
+                "      lineWidth: 1,\n"
+                "      priceFormat: {\n"
+                "        type: 'volume',\n"
+                "      },\n"
+                "      overlay: true,\n"
+                "      scaleMargins: {\n"
+                "        top: 0.8,\n"
+                "        bottom: 0,\n"
+                "      },\n"
+                "    });\n"
+                "  }\n"
+                "\n"
+                "  const handleResize = () => {\n"
+                "    chartRef.current?.applyOptions({ width: chartContainerRef.current?.clientWidth || 0 });\n"
+                "  };\n"
+                "\n"
+                "  handleResize();\n"
+                "  window.addEventListener('resize', handleResize);\n"
+                "\n"
+                "  if (candlestickSeriesRef.current && currentChartData.length > 0) {\n"
+                "    candlestickSeriesRef.current.setData(currentChartData);\n"
+                "    chartRef.current?.timeScale().fitContent();\n"
+                "  }\n"
+                "  if (volumeSeriesRef.current && currentVolumeData.length > 0) {\n"
+                "    volumeSeriesRef.current.setData(currentVolumeData);\n"
+                "  }\n"
+                "\n"
+                "  return () => {\n"
+                "    window.removeEventListener('resize', handleResize);\n"
+                "  };\n"
+                "}, [currentChartData, currentVolumeData]);"
+            ),
+            updated,
+        )
+
+    return updated
+
+
+def _repair_componentized_tradingview_scaffold_corruption(source: str) -> str:
+    if "CandlestickChart" not in source:
+        return source
+    if 'container_id: "tradingview_chart"' not in source:
+        return source
+    if "return () =>widget.remove();" not in source and "TradingView." not in source:
+        return source
+
+    return (
+        "import React from 'react';\n"
+        "\n"
+        "type ChartDatum = {\n"
+        "  x: number;\n"
+        "  open: number;\n"
+        "  close: number;\n"
+        "  high: number;\n"
+        "  low: number;\n"
+        "  color: string;\n"
+        "};\n"
+        "\n"
+        "export const CandlestickChart: React.FC = () => {\n"
+        "  const chartData: ChartDatum[] = [\n"
+        "    { x: 60, open: 198, close: 214, high: 220, low: 190, color: 'var(--success)' },\n"
+        "    { x: 120, open: 214, close: 206, high: 224, low: 202, color: 'var(--danger)' },\n"
+        "    { x: 180, open: 206, close: 218, high: 226, low: 200, color: 'var(--success)' },\n"
+        "    { x: 240, open: 218, close: 211, high: 229, low: 205, color: 'var(--danger)' },\n"
+        "    { x: 300, open: 211, close: 227, high: 235, low: 208, color: 'var(--success)' },\n"
+        "    { x: 360, open: 227, close: 221, high: 238, low: 216, color: 'var(--danger)' },\n"
+        "    { x: 420, open: 221, close: 236, high: 242, low: 218, color: 'var(--success)' },\n"
+        "    { x: 480, open: 236, close: 231, high: 246, low: 226, color: 'var(--danger)' },\n"
+        "    { x: 540, open: 231, close: 244, high: 250, low: 228, color: 'var(--success)' },\n"
+        "    { x: 600, open: 244, close: 238, high: 252, low: 233, color: 'var(--danger)' },\n"
+        "    { x: 660, open: 238, close: 247, high: 255, low: 236, color: 'var(--success)' },\n"
+        "    { x: 720, open: 247, close: 241, high: 258, low: 239, color: 'var(--danger)' },\n"
+        "    { x: 780, open: 241, close: 252, high: 262, low: 238, color: 'var(--success)' },\n"
+        "    { x: 840, open: 252, close: 246, high: 265, low: 243, color: 'var(--danger)' },\n"
+        "    { x: 900, open: 246, close: 259, high: 270, low: 244, color: 'var(--success)' },\n"
+        "  ];\n"
+        "  const chartHeight = 300;\n"
+        "  const chartPadding = 20;\n"
+        "  const candleWidth = 10;\n"
+        "  const scaleY = (value: number) => chartHeight - ((value - 180) / 90) * (chartHeight - chartPadding * 2) - chartPadding;\n"
+        "\n"
+        "  return (\n"
+        "    <div className=\"chart-svg-container\">\n"
+        "      <svg viewBox=\"0 0 1000 300\" preserveAspectRatio=\"none\" className=\"candlestick-chart\">\n"
+        "        {[190, 205, 220, 235, 250, 265].map((value) => (\n"
+        "          <line\n"
+        "            key={`grid-${value}`}\n"
+        "            x1=\"0\"\n"
+        "            y1={scaleY(value)}\n"
+        "            x2=\"1000\"\n"
+        "            y2={scaleY(value)}\n"
+        "            stroke=\"var(--border)\"\n"
+        "            strokeWidth=\"0.5\"\n"
+        "            strokeDasharray=\"3 3\"\n"
+        "          />\n"
+        "        ))}\n"
+        "        {chartData.map((datum, index) => {\n"
+        "          const yOpen = scaleY(datum.open);\n"
+        "          const yClose = scaleY(datum.close);\n"
+        "          const yHigh = scaleY(datum.high);\n"
+        "          const yLow = scaleY(datum.low);\n"
+        "          const rectY = Math.min(yOpen, yClose);\n"
+        "          const rectHeight = Math.max(Math.abs(yOpen - yClose), 4);\n"
+        "          return (\n"
+        "            <g key={index}>\n"
+        "              <line x1={datum.x} y1={yHigh} x2={datum.x} y2={yLow} stroke={datum.color} strokeWidth=\"1.5\" />\n"
+        "              <rect x={datum.x - candleWidth / 2} y={rectY} width={candleWidth} height={rectHeight} fill={datum.color} rx=\"2\" />\n"
+        "            </g>\n"
+        "          );\n"
+        "        })}\n"
+        "        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((label, index) => (\n"
+        "          <text key={label} x={90 + index * 200} y=\"286\" className=\"axis-label\">\n"
+        "            {label}\n"
+        "          </text>\n"
+        "        ))}\n"
+        "        {[190, 205, 220, 235, 250, 265].map((value) => (\n"
+        "          <text key={`label-${value}`} x=\"985\" y={scaleY(value) + 4} textAnchor=\"end\" className=\"axis-label space-mono\">\n"
+        "            {`$${value}`}\n"
+        "          </text>\n"
+        "        ))}\n"
+        "      </svg>\n"
+        "    </div>\n"
+        "  );\n"
+        "};\n"
+        "\n"
+        "export default CandlestickChart;\n"
+    )
+
+
 def _repair_interface_field_comment_bleed(source: str) -> str:
     def _repl(match: re.Match[str]) -> str:
         comment = " ".join(match.group("comment").replace("}", " ").split()).strip()
@@ -3503,6 +4153,16 @@ def _repair_unterminated_block_comment_line_notes(source: str) -> str:
         return f"{comment_block}{indent}{code}"
 
     return UNTERMINATED_BLOCK_COMMENT_LINE_NOTE_RE.sub(_repl, source)
+
+
+def _repair_multiline_block_comment_line_notes(source: str) -> str:
+    return MULTILINE_BLOCK_COMMENT_LINE_NOTE_RE.sub(
+        lambda match: (
+            f"{match.group('indent')}/* "
+            f"{' '.join((match.group('comment') + ' ' + match.group('tail')).split()).strip()} */"
+        ),
+        source,
+    )
 
 
 def _repair_inline_block_comment_continuations(source: str) -> str:
@@ -3623,9 +4283,11 @@ def _normalize_run_on_natural_language_notes(source: str) -> str:
             if stripped.startswith(("/*", "//", "*", "*/", "{", "}", ")", "]", "</", "<")):
                 break
             if re.match(
-                r"^(?:const|let|var|if|for|while|switch|return|export|import|function|class|type|interface|window|document)\b",
+                r"^(?:const|let|var|if|for|while|switch|return|export|import|function|type|interface|window|document)\b",
                 stripped,
-            ) and "/" not in stripped:
+            ):
+                break
+            if re.match(r"^class(?:\s+[A-Za-z_$]|[{(<])", stripped):
                 break
             if re.match(r"^[A-Za-z_$][\w$]*\s*=", stripped):
                 break
@@ -3680,6 +4342,27 @@ def _normalize_comment_filename_labels(source: str) -> str:
     )
 
 
+def _repair_componentized_comment_note_continuations(source: str) -> str:
+    return COMMENT_NOTE_CONTINUATION_RE.sub(
+        lambda match: (
+            f"{match.group('indent')}/* "
+            f"{' '.join((match.group('comment') + ' ' + match.group('tail')).split()).strip()} */\n"
+        ),
+        source,
+    )
+
+
+def _repair_inline_block_comment_note_code_bleed(source: str) -> str:
+    def _repl(match: re.Match[str]) -> str:
+        prefix = match.group("prefix").rstrip()
+        if ";" in prefix:
+            return match.group(0)
+        merged = " ".join((match.group("comment") + " " + match.group("tail")).split()).strip()
+        return f"{prefix} /* {merged} */\n{match.group('indent')}{match.group('code').lstrip()}"
+
+    return INLINE_BLOCK_COMMENT_NOTE_CODE_BLEED_RE.sub(_repl, source)
+
+
 def _repair_componentized_comment_url_bleed(source: str) -> str:
     updated = URL_PROTOCOL_COMMENT_BLEED_RE.sub(
         lambda match: f"{match.group('scheme')}://",
@@ -3710,6 +4393,97 @@ def _repair_componentized_comment_url_bleed(source: str) -> str:
         updated,
     )
     return updated
+
+
+def _repair_componentized_svg_namespace_protocol(source: str) -> str:
+    return SVG_XMLNS_PROTOCOL_SLASH_RE.sub(
+        lambda match: (
+            f"{match.group('prefix')}{match.group('quote')}"
+            f"{match.group('scheme')}://{match.group('rest')}"
+            f"{match.group('quote')}"
+        ),
+        source,
+    )
+
+
+def _repair_componentized_missing_protocol_slashes(source: str) -> str:
+    updated = MISSING_PROTOCOL_SLASH_JSX_ATTR_RE.sub(
+        lambda match: (
+            f"{match.group('prefix')}{match.group('scheme')}://"
+            f"{match.group('rest')}{match.group('suffix')}"
+        ),
+        source,
+    )
+    return MISSING_PROTOCOL_SLASH_OBJECT_FIELD_RE.sub(
+        lambda match: (
+            f"{match.group('prefix')}{match.group('scheme')}://"
+            f"{match.group('rest')}{match.group('suffix')}"
+        ),
+        updated,
+    )
+
+
+def _repair_componentized_jsx_root_returns(source: str) -> str:
+    void_tags = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
+
+    def _has_single_top_level_jsx_root(body: str) -> bool:
+        stack: list[str] = []
+        top_level_roots = 0
+        cursor = 0
+
+        for match in JSX_TAG_TOKEN_RE.finditer(body):
+            if not stack and body[cursor:match.start()].strip():
+                return False
+
+            token = match.group(0)
+            tag = match.group("tag")
+            lower_tag = tag.lower()
+
+            if token.startswith("</"):
+                for reverse_index in range(len(stack) - 1, -1, -1):
+                    if stack[reverse_index] == tag:
+                        del stack[reverse_index]
+                        break
+                cursor = match.end()
+                continue
+
+            if not stack:
+                top_level_roots += 1
+                if top_level_roots > 1:
+                    return False
+
+            if not token.endswith("/>") and lower_tag not in void_tags:
+                stack.append(tag)
+
+            cursor = match.end()
+
+        if not stack and body[cursor:].strip():
+            return False
+
+        return top_level_roots == 1
+
+    def _repl(match: re.Match[str]) -> str:
+        body = match.group("body").strip()
+        if not body.startswith("<"):
+            return match.group(0)
+        if body.startswith(("<>", "<React.Fragment")):
+            return match.group(0)
+        if not body.endswith(">"):
+            return match.group(0)
+        if ";" in body:
+            return match.group(0)
+        if _has_single_top_level_jsx_root(body):
+            return match.group(0)
+        if "\n" not in body:
+            return f"return (<>{body}</>);"
+
+        indented = "\n".join(
+            f"    {line}" if line else ""
+            for line in body.splitlines()
+        )
+        return f"return (\n  <>\n{indented}\n  </>\n);"
+
+    return COMPONENTIZED_JSX_RETURN_RE.sub(_repl, source)
 
 
 def _repair_componentized_comment_split_identifiers(source: str) -> str:
@@ -3762,6 +4536,13 @@ def _repair_componentized_orphan_comment_split_string_literals(source: str) -> s
     return ORPHAN_COMMENT_SPLIT_STRING_LITERAL_RE.sub(_repl, source)
 
 
+def _repair_componentized_jsx_expression_comment_split_identifiers(source: str) -> str:
+    return JSX_EXPR_COMMENT_SPLIT_IDENTIFIER_RE.sub(
+        lambda match: f"{{{match.group('prefix').strip()}{match.group('suffix').strip()}{match.group('rest')}}}",
+        source,
+    )
+
+
 def _repair_componentized_orphan_comment_close_in_string_literals(source: str) -> str:
     updated = source
 
@@ -3790,6 +4571,7 @@ def _repair_componentized_jsx_comment_swallowed_tag_boundaries(source: str) -> s
 
 def _strip_componentized_alpine_jsx_directives(source: str) -> str:
     updated = ALPINE_JSX_DIRECTIVE_NOTE_RE.sub("", source)
+    updated = ALPINE_JSX_DIRECTIVE_TEXT_RE.sub("", updated)
     for _ in range(8):
         repaired = ALPINE_JSX_ATTR_RE.sub("", updated)
         if repaired == updated:
@@ -3975,6 +4757,43 @@ def _repair_componentized_jsx_text_comment_bleed(source: str) -> str:
     return JSX_TEXT_COMMENT_CLOSE_BLEED_RE.sub(_repl, source)
 
 
+def _repair_componentized_jsx_attribute_comment_bleed(source: str) -> str:
+    updated = JSX_ATTR_COMMENT_BLEED_RE.sub(
+        lambda match: match.group("attr"),
+        source,
+    )
+    return JSX_ATTR_LINE_COMMENT_BLEED_RE.sub(
+        lambda match: match.group("attr"),
+        updated,
+    )
+
+
+def _repair_componentized_jsx_code_block_literals(source: str) -> str:
+    def _escape_braces(body: str) -> str:
+        if "{" not in body and "}" not in body and "<" not in body and ">" not in body:
+            return body
+        updated = body.replace("<", "&lt;").replace(">", "&gt;")
+        updated = updated.replace("{{", "&#123;").replace("}}", "&#125;")
+        updated = updated.replace("{", "&#123;").replace("}", "&#125;")
+        return updated
+
+    updated = JSX_CODE_TAG_RE.sub(
+        lambda match: f"{match.group('open')}{_escape_braces(match.group('body'))}{match.group('close')}",
+        source,
+    )
+    return JSX_PRE_TEXT_TAG_RE.sub(
+        lambda match: f"{match.group('open')}{_escape_braces(match.group('body'))}{match.group('close')}",
+        updated,
+    )
+
+
+def _normalize_componentized_jsx_code_template_literals(source: str) -> str:
+    return JSX_CODE_TEMPLATE_LITERAL_RE.sub(
+        lambda match: f"{match.group('open')}{{{json.dumps(match.group('body'))}}}{match.group('close')}",
+        source,
+    )
+
+
 def _normalize_componentized_void_jsx_elements(source: str) -> str:
     return VOID_JSX_ELEMENT_RE.sub(
         lambda match: f"<{match.group('tag')}{match.group('attrs').rstrip()} />",
@@ -3996,6 +4815,14 @@ def _repair_componentized_jsx_event_handler_arrow_bleed(source: str) -> str:
 def _repair_componentized_generic_arrow_bleed(source: str) -> str:
     return GENERIC_ARROW_BLEED_RE.sub(
         lambda match: f"{match.group('prefix')}{match.group('param').strip()} =>",
+        source,
+    )
+
+
+def _repair_componentized_jsx_handler_comment_close_bleed(source: str) -> str:
+    return re.sub(
+        r"(?P<prefix>\bon[A-Z][A-Za-z0-9_]*=\{\([^)]*\)\s*=>\s*\{)\s*\*/\s*",
+        lambda match: f"{match.group('prefix')}\n",
         source,
     )
 
@@ -4076,7 +4903,10 @@ def _normalize_componentized_field_aliases(source: str) -> str:
             continue
         for alias in aliases:
             updated = re.sub(rf"\b{re.escape(alias)}\b", canonical, updated)
-    return updated
+    return DUPLICATE_LABEL_OBJECT_FIELD_RE.sub(
+        lambda match: f"{match.group('prefix')}, asset: {match.group('value')}",
+        updated,
+    )
 
 
 def _normalize_componentized_currency_formatting(source: str) -> str:
@@ -4096,7 +4926,7 @@ def _normalize_run_on_imports(source: str) -> str:
         ";\n",
         source,
     )
-    updated = re.sub(r"(?<=['\"])\s*(?=import\b)", "\n", updated)
+    updated = re.sub(r"(?<=['\"])\s*(?=(?:import\b|export\b))", "\n", updated)
     updated = re.sub(
         r"\*/\s*(?=(?:const\b|let\b|var\b|function\b|export\b|return\b|if\b|for\b|while\b|switch\b|type\b|interface\b|class\b|use[A-Z]\w*\b|ReactDOM\b|createRoot\b))",
         "*/\n",
