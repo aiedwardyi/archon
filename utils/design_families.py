@@ -89,6 +89,9 @@ def build_componentized_design_family_guidance(ui_archetype: str | None) -> str:
             "- Organize the desktop layout around one dominant center insight zone plus subordinate support modules, not a flat grid of equivalent cards.",
             "- Treat typography as structural, not decorative: use a display face for page and section headings, a compact UI sans for controls/body copy, and a mono/tabular numeric face for every KPI, price, delta, holding, timestamp, and axis label.",
             "- Support rails need real weight: watchlist, alerts, activity, news, or secondary analysis should occupy a meaningful lane with at least two clearly separated modules instead of one thin afterthought card.",
+            "- Reject boilerplate dense-shell copy: do not ship bland headings like `Dashboard Overview` or equally generic panel titles unless the prompt literally asks for that wording.",
+            "- Row actions must be domain-specific. Do not repeat the same generic `View` / `Details` verb on every row when the product should offer workflow-specific next actions.",
+            "- Support rails need authored language too: avoid thin filler modules named only `Watchlist`, `Activity`, or `Recent Updates` unless their entries, labels, and status cues make them feel product-specific.",
             "- Avoid generic admin defaults such as equal-height card mosaics, flat charcoal panels, or body-copy numerics that make the shell read like a template.",
         ],
         "workspace": [
@@ -132,6 +135,7 @@ def build_componentized_shell_family_guidance(ui_archetype: str | None) -> str:
             "- Structure the shell around one dominant insight zone plus clearly subordinate support modules.\n"
             "- Treat display-vs-UI-vs-mono typography roles as mandatory and keep tabular/mono numerics consistent across KPIs, prices, table cells, delta chips, timestamps, and chart labels.\n"
             "- Keep the center insight surface visibly larger than the support rail so the page does not collapse into equal-width panels.\n"
+            "- Reject lazy dense-shell copy such as `Dashboard Overview`, repeated `View` / `Details` row actions, and thin generic `Watchlist` / `Activity` rails that do not feel authored for the product.\n"
             "- Preserve visible hover/focus treatment on rails, pills, rows, and actions. Dense shells should still feel touchable.\n"
         ),
         "workspace": (

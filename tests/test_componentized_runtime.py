@@ -143,6 +143,9 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertIn("mono/tabular numeric face", guidance)
         self.assertIn("dominant center insight zone", guidance)
         self.assertIn("equal-height card mosaics", guidance)
+        self.assertIn("Dashboard Overview", guidance)
+        self.assertIn("`View` / `Details`", guidance)
+        self.assertIn("`Watchlist`, `Activity`, or `Recent Updates`", guidance)
 
     def test_fintech_shell_polish_guidance_requires_mono_numeric_consistency(self):
         guidance = build_componentized_shell_polish_guidance("fintech")
@@ -150,6 +153,13 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertIn("Mono treatment is mandatory across every numeric surface", guidance)
         self.assertIn("JetBrains Mono or equivalent", guidance)
         self.assertIn("right rail should hold at least two stacked support modules", guidance)
+
+    def test_dashboard_shell_polish_guidance_rejects_generic_dense_shell_copy(self):
+        guidance = build_componentized_shell_polish_guidance("dashboard")
+
+        self.assertIn("Dashboard Overview", guidance)
+        self.assertIn("`View` / `Details`", guidance)
+        self.assertIn("`Activity Feed` or `Recent Updates` filler", guidance)
 
     def test_validate_componentized_contract_outputs_flags_missing_and_stubbed_files(self):
         files = [
@@ -3390,6 +3400,17 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertIn("Table trend cues", prompt)
         self.assertIn("per-row trend context", prompt)
 
+    def test_build_componentized_refinement_prompt_rejects_generic_dense_shell_copy(self):
+        prompt = build_componentized_refinement_prompt(
+            task_description_with_assets="Build an operations dashboard.",
+            issues=["placeholder_text", "content_authenticity"],
+            ui_archetype="dashboard",
+        )
+
+        self.assertIn("Dashboard Overview", prompt)
+        self.assertIn("`View` / `Details`", prompt)
+        self.assertIn("Dense shells should read like a real operations or market product", prompt)
+
     def test_parse_componentized_build_errors_extracts_paths_and_error_classes(self):
         code_dir = _case_dir("componentized-quality-build-errors")
         try:
@@ -3510,6 +3531,35 @@ class ComponentizedRuntimeTests(unittest.TestCase):
 
             self.assertIn("typography_hierarchy", issues)
             self.assertIn("weak_surface_depth", issues)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_detect_componentized_quality_issues_flags_generic_dense_shell_copy(self):
+        code_dir = _case_dir("componentized-quality-generic-dense-shell-copy")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return (\n"
+                "    <main>\n"
+                "      <header><h1>Dashboard Overview</h1></header>\n"
+                "      <section className=\"kpi-grid\"><div className=\"kpi-card\">$124,832.50</div></section>\n"
+                "      <table><tbody><tr><td>North Hub</td><td><button>View</button></td></tr><tr><td>South Hub</td><td><button>Details</button></td></tr><tr><td>West Hub</td><td><button>View</button></td></tr></tbody></table>\n"
+                "      <aside>\n"
+                "        <section><h2>Watchlist</h2><p>Flagged item</p></section>\n"
+                "        <section><h2>Activity Feed</h2><p>Recent update</p></section>\n"
+                "      </aside>\n"
+                "    </main>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            issues = detect_componentized_quality_issues(code_dir, ui_archetype="dashboard")
+
+            self.assertIn("placeholder_text", issues)
+            self.assertIn("content_authenticity", issues)
+            self.assertIn("text_density", issues)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 

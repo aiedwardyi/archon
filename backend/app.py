@@ -1863,6 +1863,46 @@ def detect_componentized_quality_issues(code_dir: Path, *, ui_archetype: str | N
         )
         if support_rail_signal_count < 2:
             issues.append("panel_stacking")
+        generic_dense_title_present = bool(
+            re.search(r"\b(?:dashboard overview|analytics dashboard|market dashboard)\b", normalized)
+        )
+        generic_dense_action_count = len(re.findall(r">\s*(?:view|details)\s*<", normalized))
+        generic_dense_rail_count = sum(
+            1 for token in ("activity feed", "recent activity", "recent updates", "watchlist") if token in normalized
+        )
+        authored_rail_context = any(
+            token in normalized
+            for token in (
+                "alerts",
+                "news",
+                "allocation",
+                "movers",
+                "incident",
+                "incidents",
+                "approval",
+                "approvals",
+                "deployment",
+                "deployments",
+                "route",
+                "routes",
+                "settlement",
+                "funding",
+                "exception",
+                "exceptions",
+                "briefing",
+                "queue",
+            )
+        )
+        if generic_dense_title_present or generic_dense_action_count >= 3:
+            if "placeholder_text" not in issues:
+                issues.append("placeholder_text")
+            if "content_authenticity" not in issues:
+                issues.append("content_authenticity")
+        if generic_dense_rail_count >= 2 and not authored_rail_context:
+            if "content_authenticity" not in issues:
+                issues.append("content_authenticity")
+            if "text_density" not in issues:
+                issues.append("text_density")
 
     if ui_archetype in {"dashboard", "fintech"}:
         gradient_signal_count = normalized.count("linear-gradient") + normalized.count("radial-gradient")
@@ -1998,10 +2038,12 @@ def build_componentized_shell_polish_guidance(ui_archetype: str | None) -> str:
             "- Use the display font for the brand, page title, panel titles, and other short high-importance headings. Keep the UI sans for controls/body copy and the mono family for KPI values, chart labels, table numerics, and timestamps.\n"
             "- Apply the mono treatment consistently anywhere structured numbers appear; do not let KPI values, timestamps, badge metrics, or table numerics fall back to the same body sans texture.\n"
             "- The desktop page title should land in a real display range, roughly 36-44px, and the KPI row should arrive within about 24-32px of the header. Do not leave a dead vertical gap before the first data cards.\n"
+            "- Do not ship bland dashboard copy such as `Dashboard Overview`, generic panel names, or repeated row actions like `View` / `Details`. Use workflow-specific titles, panel labels, and next actions instead.\n"
             "- The header bar should feel like a real command surface: title plus status/action cluster, with a subtle tint or blur instead of a flat strip.\n"
             "- Strengthen depth with three surface levels: page backdrop, standard panel, and one clearly elevated highlight card or panel. Prefer layered shadows and soft gradients over flat slabs.\n"
             "- Charts should feel authored, not default library output: use a thicker line or richer area fill, clearer axis treatment, and a more intentional control rail than plain ghost buttons.\n"
             "- The desktop support rail must carry real visual weight. Stack at least two secondary modules or split the right rail into clearly separated subsections instead of leaving one lonely side card.\n"
+            "- Right-rail modules need authored labels and mixed entry types. Avoid thin generic `Activity Feed` or `Recent Updates` filler that does not feel tied to the product's real workflow.\n"
             "- Nav items, chips, table rows, badges, and action links need visible hover and active states.\n"
             "- Replace any remote avatar placeholders with styled initials, local assets, or inline SVG treatments.\n"
         )
@@ -2124,6 +2166,7 @@ def build_componentized_content_fix_prompt(
         + shell_block
         + "TARGETED CONTENT REMEDIATION:\n"
           "- Replace generic labels, duplicate rows, and repeated copy with domain-specific seeded content.\n"
+          "- For dense dashboard and finance shells, replace bland headings like `Dashboard Overview`, repeated `View` / `Details` row actions, and thin generic `Activity` / `Watchlist` filler with product-specific labels and next actions.\n"
           "- Replace round placeholder numbers with plausible non-round values, mixed deltas, and varied entities.\n"
           "- Add missing context labels such as date ranges, update moments, comparison copy, and table subtitles.\n"
           "- Add realistic timestamps, recency cues, or dated entries where the audit calls for temporal realism.\n"
@@ -2188,7 +2231,7 @@ def build_componentized_refinement_prompt(
             "- Numeric data typography: finance and dashboard shells must use a monospace or tabular numeric treatment for KPI values, prices, deltas, table numbers, and chart labels."
         ),
         "placeholder_text": (
-            "- Placeholder cleanup: replace every generic label, user stub, metric placeholder, or synthetic title with domain-specific seeded content."
+            "- Placeholder cleanup: replace every generic label, user stub, metric placeholder, or synthetic title with domain-specific seeded content. In dense dashboard and finance shells, that includes bland titles like `Dashboard Overview`, repeated `View` / `Details` row actions, and thin generic `Activity` / `Watchlist` filler."
         ),
         "numeric_authenticity": (
             "- Numeric authenticity: replace round placeholder numbers with plausible non-round values, mixed positive and negative deltas, and richer seeded metrics. For finance shells, avoid repeated trailing .00 values across every KPI and holding unless the domain truly requires it."
@@ -2222,7 +2265,7 @@ def build_componentized_refinement_prompt(
             "- Surface depth: strengthen layering with deliberate page/surface/elevated states, subtle gradients or tints, and more convincing shadows, borders, or soft glows. Cards should not read like flat dark rectangles; add at least one clearly elevated hero surface and richer panel treatments. Give the primary chart panel and support-rail modules their own tone shift or shadow treatment so they do not collapse into one flat sheet."
         ),
         "content_authenticity": (
-            "- Content authenticity: replace generic labels or filler with domain-specific names, metrics, microcopy, and section language that fit the product type."
+            "- Content authenticity: replace generic labels or filler with domain-specific names, metrics, microcopy, and section language that fit the product type. Dense shells should read like a real operations or market product, not a template with vague panel names and repeated generic actions."
         ),
         "polish_flow": (
             "- Polish and flow: add high-signal finish details such as section rhythm, overlap transitions, sticky sub-bars, badge treatments, selection styling, scrollbar styling, decorative dividers, quote treatments, or richer hover states where appropriate."
