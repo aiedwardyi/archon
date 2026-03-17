@@ -1,5 +1,6 @@
 from __future__ import annotations
 import json as _json
+import re
 from datetime import datetime, timezone
 from google import genai
 from schemas.prd_schema import PRD, PRDArtifact
@@ -70,8 +71,137 @@ class ClassifyResult(BaseModel):
     message: Optional[str] = Field(None, description="Chat response message (only for chat type)")
 
 
+_BUILD_VERBS = (
+    "build",
+    "create",
+    "make",
+    "add",
+    "fix",
+    "update",
+    "redesign",
+    "generate",
+    "convert",
+    "turn",
+    "polish",
+    "improve",
+)
+_BUILD_OBJECT_HINTS = (
+    "app",
+    "site",
+    "website",
+    "webpage",
+    "landing page",
+    "fanpage",
+    "page",
+    "dashboard",
+    "portal",
+    "workspace",
+    "admin",
+    "hero",
+    "navbar",
+    "section",
+    "form",
+    "checkout",
+    "map",
+    "gallery",
+)
+_QUESTION_OR_OPINION_PATTERNS = (
+    "do you think",
+    "what do you think",
+    "would it be better",
+    "should i",
+    "should we",
+    "can you help me decide",
+    "which is better",
+    "recommend",
+)
+_GREETING_PREFIXES = (
+    "hi",
+    "hello",
+    "hey",
+    "yo",
+    "thanks",
+    "thank you",
+)
+_BUILD_VERB_PATTERN = "|".join(_BUILD_VERBS)
+_LEADING_FILLER_RE = re.compile(r"^(?:(?:ok|okay|alright|well|so|just)\s+)+", re.IGNORECASE)
+_BUILD_COMMAND_RE = re.compile(
+    rf"^(?:please\s+)?(?:{_BUILD_VERB_PATTERN})\b",
+    re.IGNORECASE,
+)
+_BUILD_REQUEST_RE = re.compile(
+    r"^(?:please\s+)?(?:can you|could you|would you|i want you to|i need you to|help me)\s+"
+    rf"(?:{_BUILD_VERB_PATTERN})\b",
+    re.IGNORECASE,
+)
+_QUESTION_LEAD_RE = re.compile(
+    r"^(?:what|how|why|where|when|which|who|should|can|could|would|is|are|do|does|did)\b",
+    re.IGNORECASE,
+)
+
+
+def _default_chat_message(project_context: str | None = None) -> str:
+    if project_context:
+        return "Tell me exactly what you want changed in this project, and I’ll turn it into a concrete build step."
+    return "Tell me exactly what you want built or changed, and I’ll turn it into a concrete build request."
+
+
+def _normalize_message(user_message: str) -> str:
+    normalized = " ".join((user_message or "").strip().split())
+    return _LEADING_FILLER_RE.sub("", normalized).strip().lower()
+
+
+def _looks_like_build_command(normalized: str) -> bool:
+    if not normalized:
+        return False
+    if _BUILD_COMMAND_RE.match(normalized) or _BUILD_REQUEST_RE.match(normalized):
+        return True
+    return any(verb in normalized for verb in ("build me", "create me", "make me")) and any(
+        hint in normalized for hint in _BUILD_OBJECT_HINTS
+    )
+
+
+def fallback_classify_intent(user_message: str, project_context: str | None = None) -> dict:
+    normalized = _normalize_message(user_message)
+    if not normalized:
+        return {"type": "chat", "message": _default_chat_message(project_context)}
+
+    if "?" in (user_message or ""):
+        return {"type": "chat", "message": _default_chat_message(project_context)}
+
+    if _looks_like_build_command(normalized):
+        return {"type": "build"}
+
+    if any(pattern in normalized for pattern in _QUESTION_OR_OPINION_PATTERNS):
+        return {"type": "chat", "message": _default_chat_message(project_context)}
+
+    if _QUESTION_LEAD_RE.match(normalized):
+        return {"type": "chat", "message": _default_chat_message(project_context)}
+
+    if any(normalized == prefix or normalized.startswith(f"{prefix} ") for prefix in _GREETING_PREFIXES):
+        return {"type": "chat", "message": _default_chat_message(project_context)}
+
+    return {"type": "chat", "message": _default_chat_message(project_context)}
+
+
+def _normalize_classify_result(result: dict, user_message: str, project_context: str | None = None) -> dict:
+    if not isinstance(result, dict):
+        return fallback_classify_intent(user_message, project_context=project_context)
+
+    result_type = str(result.get("type", "")).strip().lower()
+    if result_type == "build":
+        return {"type": "build"}
+    if result_type == "chat":
+        return {
+            "type": "chat",
+            "message": str(result.get("message") or _default_chat_message(project_context)),
+        }
+    return fallback_classify_intent(user_message, project_context=project_context)
+
+
 class PMAgent:
     def __init__(self, client: genai.Client | None = None, api_key: str | None = None):
+        self._client_init_error: Exception | None = None
         if client is not None:
             self.client = client
         else:
@@ -80,13 +210,21 @@ class PMAgent:
             from pathlib import Path
             sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
             from utils.genai_client import get_genai_client
-            self.client = get_genai_client()
+            try:
+                self.client = get_genai_client()
+            except Exception as exc:
+                self.client = None
+                self._client_init_error = exc
 
     def classify_intent(self, user_message: str, project_context: str = None) -> dict:
         """
         Decides if the user wants to build something or just have a conversation.
         Returns {"type": "build"} or {"type": "chat", "message": "..."}
         """
+        if self.client is None:
+            print(f"[CLASSIFY] Client unavailable, using heuristic fallback: {self._client_init_error}", flush=True)
+            return fallback_classify_intent(user_message, project_context=project_context)
+
         system = CLASSIFY_SYSTEM
         if project_context:
             system += f"\n\nCURRENT PROJECT CONTEXT (use this to give specific advice):\n{project_context}"
@@ -105,15 +243,20 @@ class PMAgent:
                 },
             )
 
-        response = call_with_retry(_call, max_retries=2)
+        try:
+            response = call_with_retry(_call, max_retries=2)
+        except Exception as exc:
+            print(f"[CLASSIFY] Model call failed, using heuristic fallback: {exc}", flush=True)
+            return fallback_classify_intent(user_message, project_context=project_context)
 
         print(f"[CLASSIFY] Input: {user_message[:80]!r}", flush=True)
 
         if response.parsed is not None:
-            result = response.parsed.model_dump()
-            # Remove None message for build type
-            if result.get("message") is None:
-                result.pop("message", None)
+            result = _normalize_classify_result(
+                response.parsed.model_dump(),
+                user_message,
+                project_context=project_context,
+            )
             print(f"[CLASSIFY] Result: {result}", flush=True)
             return result
 
@@ -121,15 +264,22 @@ class PMAgent:
         raw = response.text.strip() if response.text else ""
         print(f"[CLASSIFY] Raw response: {raw}", flush=True)
         try:
-            return _json.loads(raw)
+            result = _normalize_classify_result(
+                _json.loads(raw),
+                user_message,
+                project_context=project_context,
+            )
+            print(f"[CLASSIFY] Parsed raw result: {result}", flush=True)
+            return result
         except Exception:
-            print("[CLASSIFY] JSON parse failed, defaulting to chat", flush=True)
-            return {
-                "type": "chat",
-                "message": "I'm not sure I understood that \u2014 could you rephrase?"
-            }
+            print("[CLASSIFY] JSON parse failed, using heuristic fallback", flush=True)
+            return fallback_classify_intent(user_message, project_context=project_context)
 
     def generate_prd(self, user_requirements: str) -> PRDArtifact:
+        if self.client is None:
+            raise RuntimeError(
+                "PM Agent client is unavailable. Set VERTEX_AI_PROJECT or GENAI_API_KEY."
+            ) from self._client_init_error
         contents = f"{SYSTEM_PROMPT}\n\nClient requirements:\n\n{user_requirements}"
 
         def _call():

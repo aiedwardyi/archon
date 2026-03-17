@@ -36,6 +36,7 @@ interface VersionsViewProps {
 
 export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onArtifactNavigate }: VersionsViewProps) => {
   const selected = selectedVersion;
+  const desktopPreviewHeight = "clamp(720px, 78vh, 1100px)";
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "mobile">("desktop");
   const [collapsed, setCollapsed] = useState(false);
   const [versions, setVersions] = useState<Version[]>([]);
@@ -359,7 +360,7 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
               </div>
             </div>
 
-            <div className="bg-secondary/20" style={{ height: 500 }}>
+            <div className="bg-secondary/20" style={{ height: desktopPreviewHeight }}>
               {previewDevice === "desktop" ? (
                 <div className="w-full h-full bg-background border border-border rounded-lg overflow-hidden shadow-sm flex flex-col">
                   <div className="h-8 bg-secondary/60 border-b border-border flex items-center gap-1.5 px-3 flex-shrink-0">

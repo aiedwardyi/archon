@@ -499,6 +499,10 @@ const LogsTab = ({ logs, version }: { logs: LogEntry[]; version: number | null }
 
 const PreviewTab = ({ device, onDeviceChange, projectId, version }: { device: "desktop" | "mobile"; onDeviceChange: (d: "desktop" | "mobile") => void; projectId: number | null; version: number | null }) => (
   <div>
+    {(() => {
+      const desktopPreviewHeight = "clamp(720px, 78vh, 1100px)";
+      return (
+        <>
     <div className="flex items-center justify-center gap-2 mb-4">
       <button
         onClick={() => onDeviceChange("desktop")}
@@ -518,9 +522,9 @@ const PreviewTab = ({ device, onDeviceChange, projectId, version }: { device: "d
       </button>
     </div>
 
-    <div className="flex items-start justify-center min-h-[500px]">
+    <div className="flex items-start justify-center" style={{ minHeight: desktopPreviewHeight }}>
       {device === "desktop" ? (
-        <div className="w-full border border-border rounded-lg overflow-hidden bg-background shadow-sm flex flex-col" style={{ height: 500 }}>
+        <div className="w-full border border-border rounded-lg overflow-hidden bg-background shadow-sm flex flex-col" style={{ height: desktopPreviewHeight }}>
           {/* Fake browser chrome */}
           <div className="h-8 bg-secondary/60 border-b border-border flex items-center gap-1.5 px-3 flex-shrink-0">
             <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />
@@ -547,6 +551,9 @@ const PreviewTab = ({ device, onDeviceChange, projectId, version }: { device: "d
         </div>
       )}
     </div>
+        </>
+      );
+    })()}
   </div>
 );
 

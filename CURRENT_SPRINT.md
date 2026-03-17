@@ -3,6 +3,14 @@
 ## Branch Alignment — `feat/componentized-multi-run-experiments`
 
 Short status update for the active branch:
+- March 17, 2026 artifact-surface hardening checklist from the live FF10 probe:
+  - [x] Code tabs now hide binary/generated asset files instead of rendering PNG bytes as junk text, which also removes the worst code-view lag path across enterprise, studio, and consumer.
+  - [x] Governance factsheet outputs/build-confidence now normalize `files_generated` from the real source tree instead of stale `result.files` counts, so componentized builds no longer show `0` code files when source files exist.
+  - [x] Publish now refreshes an existing slug, preserves generated image assets, and serves published pages with the correct base path so published componentized image links resolve.
+  - [x] Download bundles now exclude runtime/install directories such as `node_modules`, `dist`, and `.npm-cache`, so shipped zips stay source-sized instead of dependency-sized.
+  - [x] Preview panels were extended vertically on enterprise + studio so full-page inspection is less cramped on desktop.
+  - [x] Studio logs now load from the per-version backend logs endpoint instead of only session cache, restoring parity with enterprise for completed builds.
+  - [ ] Further polish follow-up if needed: lazy/on-demand code loading for very large source trees instead of fetching every visible file up front.
 - This branch was cut from `feat/componentized-builder-pipeline` after the March 15, 2026 dashboard/runtime recovery docs checkpoint so the validated builder work remains intact while scheduler experiments stay isolated.
 - Added a tracked Stage 1 multi-run validation runner at `eval/run_componentized_validation.py` with bounded concurrency, isolated API clients per worker, lazy scorer-only imports, backend reachability checks that do not require auth bootstrapping, and per-archetype progress/result artifacts for smoke-run debugging.
 - Added targeted regression coverage in `tests/test_run_componentized_validation.py` for preview-build fallback loading, backend health acceptance of 401, and result-file emission on build failure.

@@ -240,6 +240,8 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion,
   const [treeLoading, setTreeLoading] = useState(false)
   const [fileLoading, setFileLoading] = useState(false)
   const [treeError, setTreeError] = useState<string | null>(null)
+  const [logsData, setLogsData] = useState<Array<{ id: string; timestamp: number; message: string }>>([])
+  const [logsLoading, setLogsLoading] = useState(false)
 
   useEffect(() => {
     if (propProjectId != null) setProjectId(propProjectId)
@@ -289,6 +291,10 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion,
 
   useEffect(() => {
     if (activeTab === "tasks" && projectId && !planData) fetchPlan()
+  }, [activeTab, projectId, version])
+
+  useEffect(() => {
+    if (activeTab === "logs" && projectId && version) fetchLogs()
   }, [activeTab, projectId, version])
 
   const fetchPrd = async () => {
@@ -383,38 +389,39 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion,
     }
   }
 
+  const fetchLogs = async () => {
+    if (!projectId || !version) return
+    setLogsLoading(true)
+    try {
+      const res = await fetch(`${API_BASE}/api/projects/${projectId}/versions/${version}/logs`)
+      if (!res.ok) throw new Error("Failed to load logs")
+      const data = await res.json()
+      const normalized = Array.isArray(data) ? data.map((entry: any, index: number) => {
+        if (typeof entry === "string") {
+          return {
+            id: `log-${index}`,
+            timestamp: Date.now(),
+            message: entry,
+          }
+        }
+        return {
+          id: String(entry.id ?? `${version}-${index}`),
+          timestamp: Number(entry.timestamp ?? Date.now()),
+          message: String(entry.message ?? ""),
+        }
+      }) : []
+      setLogsData(normalized)
+    } catch {
+      setLogsData([])
+    } finally {
+      setLogsLoading(false)
+    }
+  }
+
   const handleFileSelect = (path: string, name: string) => {
     setSelectedFilePath(path)
     setSelectedFileName(name)
     fetchFileContent(path)
-  }
-
-  const getCachedLogs = () => {
-    // Try to find logs for the specific version being viewed
-    if (projectId && version) {
-      // Scan sessionStorage for an execution matching this project+version
-      const currentEid = sessionStorage.getItem("archon_current_execution_id")
-      const currentVer = sessionStorage.getItem("archon_current_version")
-      if (currentEid && currentVer && Number(currentVer) === version) {
-        try {
-          const logs = JSON.parse(sessionStorage.getItem(`archon_logs_${currentEid}`) || "[]")
-          if (logs.length) return logs
-        } catch {}
-      }
-      // Fallback: scan all archon_logs_* keys for any that match
-      for (let i = 0; i < sessionStorage.length; i++) {
-        const key = sessionStorage.key(i)
-        if (key && key.startsWith("archon_logs_")) {
-          try {
-            const logs = JSON.parse(sessionStorage.getItem(key) || "[]")
-            if (logs.length) return logs
-          } catch {}
-        }
-      }
-    }
-    const eid = sessionStorage.getItem("archon_current_execution_id")
-    if (!eid) return []
-    try { return JSON.parse(sessionStorage.getItem(`archon_logs_${eid}`) || "[]") } catch { return [] }
   }
 
   return (
@@ -731,10 +738,15 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion,
                 <span className="text-xs text-muted-foreground">{version ? `v${version}` : "â€”"}</span>
               </div>
               <div className="p-4 font-mono text-xs space-y-0.5">
-                {(() => {
-                  const logs = getCachedLogs()
-                  if (!logs.length) return <p className="text-muted-foreground italic">No logs cached. Run a pipeline to see logs here.</p>
-                  return logs.map((log: any) => (
+                {logsLoading ? (
+                  <div className="flex items-center gap-2 py-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    <span className="text-muted-foreground">Loading logs...</span>
+                  </div>
+                ) : !logsData.length ? (
+                  <p className="text-muted-foreground italic">No logs available for this version.</p>
+                ) : (
+                  logsData.map((log) => (
                     <div key={log.id} className="flex items-start gap-3 py-0.5">
                       <span className="text-muted-foreground/60 shrink-0 w-28">
                         {new Date(log.timestamp).toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })}
@@ -742,7 +754,7 @@ export function ArtifactViewer({ projectId: propProjectId, version: propVersion,
                       <span className="text-foreground/70">{log.message}</span>
                     </div>
                   ))
-                })()}
+                )}
               </div>
             </div>
           </div>

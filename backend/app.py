@@ -2696,19 +2696,171 @@ def update_seed_factsheet(version_dir: Path, project: Project, execution: Execut
     return factsheet
 
 
+CODE_BROWSER_EXCLUDED_DIRS = {"node_modules", "dist", ".npm-cache", "__pycache__", ".pytest_cache"}
+CODE_BROWSER_TEXT_EXTENSIONS = {
+    ".ts", ".tsx", ".js", ".jsx", ".mjs",
+    ".py", ".html", ".css", ".scss", ".sass", ".less",
+    ".json", ".md", ".txt", ".sh", ".yaml", ".yml",
+    ".xml", ".svg", ".sql", ".toml", ".ini", ".cfg",
+    ".env", ".ps1", ".bat",
+}
+CODE_BROWSER_HIDDEN_FILE_NAMES = {
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "yarn.lock",
+    "bun.lockb",
+}
+CODE_BROWSER_TEXT_FILE_NAMES = {
+    "dockerfile",
+    "makefile",
+    "procfile",
+    ".gitignore",
+    ".npmrc",
+    ".env",
+    ".env.example",
+}
+CODE_BROWSER_BINARY_EXTENSIONS = {
+    ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".avif", ".ico",
+    ".pdf", ".woff", ".woff2", ".ttf", ".otf", ".eot",
+    ".mp3", ".wav", ".ogg", ".mp4", ".mov", ".zip", ".gz",
+}
+GENERATED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
+
+
+def _relative_parts(path: Path, base: Path) -> tuple[str, ...]:
+    return path.relative_to(base).parts
+
+
+def _has_excluded_dir(path: Path, base: Path, excluded_dirs: set[str] | None = None) -> bool:
+    dir_names = excluded_dirs or CODE_BROWSER_EXCLUDED_DIRS
+    parts = _relative_parts(path, base)
+    return any(part in dir_names for part in parts[:-1])
+
+
+def is_code_browser_file(path: Path, base: Path) -> bool:
+    if _has_excluded_dir(path, base):
+        return False
+    name = path.name.lower()
+    if name in CODE_BROWSER_HIDDEN_FILE_NAMES:
+        return False
+    ext = path.suffix.lower()
+    if ext in CODE_BROWSER_BINARY_EXTENSIONS:
+        return False
+    if ext in CODE_BROWSER_TEXT_EXTENSIONS:
+        return True
+    return name in CODE_BROWSER_TEXT_FILE_NAMES
+
+
+def count_code_browser_files(code_dir: Path) -> int:
+    if not code_dir.exists():
+        return 0
+    return sum(
+        1
+        for file_path in code_dir.rglob("*")
+        if file_path.is_file() and is_code_browser_file(file_path, code_dir)
+    )
+
+
+def count_generated_images(version_dir: Path) -> int:
+    manifest = read_json_file(version_dir / "last_design_assets.json") or {}
+    assets = manifest.get("assets", [])
+    if isinstance(assets, list) and assets:
+        return len(assets)
+
+    seen: set[str] = set()
+    candidates = [
+        version_dir / "assets",
+        version_dir / "code" / "public" / "generated-assets",
+        version_dir / "code" / "src" / "assets",
+    ]
+    for root in candidates:
+        if not root.exists():
+            continue
+        for file_path in root.rglob("*"):
+            if not file_path.is_file():
+                continue
+            if file_path.suffix.lower() not in GENERATED_IMAGE_EXTENSIONS:
+                continue
+            seen.add(str(file_path.resolve()))
+    return len(seen)
+
+
+def normalize_factsheet_metrics(project_id: int, version: int, factsheet: Dict[str, Any]) -> Dict[str, Any]:
+    version_dir = get_version_dir(project_id, version)
+    code_dir = version_dir / "code"
+    files_generated = count_code_browser_files(code_dir)
+    images_generated = count_generated_images(version_dir)
+
+    outputs = factsheet.setdefault("outputs", {})
+    outputs["files_generated"] = files_generated
+    outputs["images_generated"] = images_generated
+
+    prompt_score = (factsheet.get("scoring") or {}).get("prompt_quality", {})
+    prompt_quality_score = prompt_score.get("score") or 0
+    pipeline = factsheet.setdefault("pipeline", {})
+    status = pipeline.get("status", "success")
+    ui_archetype = pipeline.get("ui_archetype")
+    duration_seconds = pipeline.get("duration_seconds")
+
+    try:
+        from agents.governance_agent import GovernanceAgent
+        build_score = GovernanceAgent()._score_build(
+            files_generated=files_generated,
+            images_generated=images_generated,
+            duration_seconds=duration_seconds,
+            ui_archetype=ui_archetype,
+            status=status,
+        )
+    except Exception:
+        build_score = {"score": 0, "label": "failed", "breakdown": []}
+
+    scoring = factsheet.setdefault("scoring", {})
+    scoring["build_confidence"] = build_score
+
+    combined_score = round((prompt_quality_score + build_score["score"]) / 2, 1)
+    if combined_score >= 85:
+        quality_tier = "high"
+    elif combined_score >= 60:
+        quality_tier = "good"
+    else:
+        quality_tier = "low"
+
+    readiness = factsheet.setdefault("readiness", {})
+    readiness["combined_score"] = combined_score
+    readiness["quality_tier"] = quality_tier
+
+    compliance = factsheet.setdefault("compliance", {})
+    compliance["human_review_required"] = (
+        (prompt_score.get("score") is not None and prompt_score.get("score", 0) < 70)
+        or build_score["score"] < 80
+    )
+
+    quality_indicators = [
+        qi for qi in factsheet.get("quality_indicators", [])
+        if str(qi.get("indicator", "")).lower() not in {"code generated", "design assets"}
+    ]
+    if files_generated > 0:
+        quality_indicators.insert(0, {"indicator": "Code generated", "status": "pass", "value": f"{files_generated} file(s)"})
+    if images_generated > 0:
+        quality_indicators.insert(1 if files_generated > 0 else 0, {"indicator": "Design assets", "status": "pass", "value": f"{images_generated} image(s)"})
+    factsheet["quality_indicators"] = quality_indicators
+    return factsheet
+
+
 def build_file_tree(root: Path, base: Path):
     nodes = []
-    excluded_dirs = {"node_modules", "dist", ".npm-cache", "__pycache__", ".pytest_cache"}
     try:
         items = sorted(root.iterdir(), key=lambda p: (p.is_file(), p.name.lower()))
         for item in items:
             if item.name.startswith("."):
                 continue
-            if item.is_dir() and item.name in excluded_dirs:
+            if item.is_dir() and item.name in CODE_BROWSER_EXCLUDED_DIRS:
                 continue
             rel = item.relative_to(base)
             if item.is_dir():
                 children = build_file_tree(item, base)
+                if not children:
+                    continue
                 nodes.append({
                     "name": item.name,
                     "type": "folder",
@@ -2716,6 +2868,8 @@ def build_file_tree(root: Path, base: Path):
                     "children": children,
                 })
             else:
+                if not is_code_browser_file(item, base):
+                    continue
                 nodes.append({
                     "name": item.name,
                     "type": "file",
@@ -3913,6 +4067,8 @@ def run_full_pipeline_async(
         if result.change_manifest:
             write_json_file(version_dir / "last_change_manifest.json", result.change_manifest.model_dump())
 
+        files_generated = count_code_browser_files(code_dir)
+
         execution_result = {
             "kind": "execution_result",
             "agent_role": "engineer",
@@ -3930,7 +4086,7 @@ def run_full_pipeline_async(
                 "summary": result.summary,
                 "self_review": result.self_review.model_dump() if result.self_review else None,
                 "change_manifest": result.change_manifest.model_dump() if result.change_manifest else None,
-                "files_generated": len(result.files),
+                "files_generated": files_generated,
                 "preview_build": preview_build,
                 "build_repair": build_repair,
                 "content_refinement": content_refinement,
@@ -3950,7 +4106,7 @@ def run_full_pipeline_async(
         }
         write_json_file(version_dir / "last_execution_result.json", execution_result)
 
-        print(f"Execution result saved: {len(writes)} files generated")
+        print(f"Execution result saved: {files_generated} code-browser files generated")
 
         if execution_id:
             execution = session.get(Execution, execution_id)
@@ -3994,9 +4150,8 @@ def run_full_pipeline_async(
             gov_agent = GovernanceAgent()
 
             result_data = read_json_file(version_dir / "last_execution_result.json") or {}
-            files_count = result_data.get("outputs", {}).get("files_generated", 0)
-            assets_data = read_json_file(version_dir / "last_design_assets.json") or {}
-            images_count = len(assets_data.get("assets", []))
+            files_count = result_data.get("outputs", {}).get("files_generated", 0) or count_code_browser_files(code_dir)
+            images_count = count_generated_images(version_dir)
 
             exec_for_gov = session.get(Execution, execution_id)
             prompt_text = task_description
@@ -4430,11 +4585,11 @@ def get_versions(project_id: int):
             if project_id and e.version:
                 result_path = get_version_dir(project_id, e.version) / "last_execution_result.json"
                 result_data = read_json_file(result_path)
-                if result_data:
-                    e_dict["files_generated"] = result_data.get("outputs", {}).get("files_generated", 0)
-                assets_path = get_version_dir(project_id, e.version) / "last_design_assets.json"
-                assets_data = read_json_file(assets_path)
-                e_dict["images_generated"] = len(assets_data.get("assets", [])) if assets_data else 0
+                files_generated = result_data.get("outputs", {}).get("files_generated", 0) if result_data else 0
+                if files_generated <= 0:
+                    files_generated = count_code_browser_files(get_version_dir(project_id, e.version) / "code")
+                e_dict["files_generated"] = files_generated
+                e_dict["images_generated"] = count_generated_images(get_version_dir(project_id, e.version))
             versions_list.append(e_dict)
         return jsonify({
             "project_id": project_id,
@@ -5216,6 +5371,13 @@ def get_version_files(project_id: int, version: int):
             return jsonify({"error": "Invalid path"}), 400
         if not target.exists() or not target.is_file():
             return jsonify({"error": "File not found"}), 404
+        if not is_code_browser_file(target, code_dir):
+            return jsonify({
+                "path": file_path,
+                "content": "Binary and generated asset files are hidden in the code browser.",
+                "language": "text",
+                "hidden": True,
+            }), 200
         try:
             content = target.read_text(encoding="utf-8", errors="replace")
             language = get_language_from_ext(target.name)
@@ -5423,7 +5585,7 @@ def get_factsheet(project_id: int, version: int):
     factsheet_path = get_version_dir(project_id, version) / "last_factsheet.json"
     data = read_json_file(factsheet_path)
     if data:
-        return jsonify(data), 200
+        return jsonify(normalize_factsheet_metrics(project_id, version, data)), 200
     session = get_session()
     try:
         execution = (
@@ -5432,7 +5594,9 @@ def get_factsheet(project_id: int, version: int):
             .first()
         )
         if execution and execution.governance_log:
-            return jsonify(json.loads(execution.governance_log)), 200
+            return jsonify(
+                normalize_factsheet_metrics(project_id, version, json.loads(execution.governance_log))
+            ), 200
         return jsonify({"error": "Factsheet not available for this version"}), 404
     finally:
         session.close()
@@ -5511,6 +5675,8 @@ def project_chat(project_id: int):
     if not data or not data.get("message"):
         return jsonify({"error": "message is required"}), 400
     user_id = get_optional_request_user_id()
+    project_context = None
+    nlu_result = None
     try:
         requested_archetype = detect_requested_archetype(data["message"])
         # Load PRD from active head version for context-aware replies
@@ -5607,14 +5773,18 @@ def project_chat(project_id: int):
         )
         project_context = (project_context or "") + nlu_context_str
 
-        from agents.pm_agent import PMAgent
+        from agents.pm_agent import PMAgent, fallback_classify_intent
         pm = PMAgent()
-        intent = pm.classify_intent(data["message"], project_context=project_context)
+        try:
+            intent = pm.classify_intent(data["message"], project_context=project_context)
+        except Exception as classify_error:
+            print(f"Chat classify error: {classify_error}")
+            intent = fallback_classify_intent(data["message"], project_context=project_context)
         if intent.get("type") == "chat":
             return jsonify({"response_type": "chat", "message": intent["message"]}), 200
         return jsonify({"response_type": "build", "nlu_result": nlu_result}), 200
     except Exception as e:
-        print(f"Chat classify error: {e}")
+        print(f"Project chat error: {e}")
         return jsonify({
             "response_type": "chat",
             "message": "I'm having trouble connecting right now. Could you rephrase that or try again?"
@@ -5696,6 +5866,27 @@ def generate_slug(project_name: str, version: int) -> str:
     return f"{safe}-v{version}-{suffix}"
 
 
+def _copytree_if_exists(src: Path, dst: Path) -> None:
+    if src.exists():
+        shutil.copytree(src, dst, dirs_exist_ok=True)
+
+
+def _rewrite_published_asset_references(root: Path, project_id: int, version: int, slug: str) -> None:
+    text_suffixes = {".html", ".css", ".js", ".mjs"}
+    asset_base = f"/published/{slug}/assets/"
+    api_prefix = re.compile(rf"/api/assets/{project_id}/{version}/([^\"')\s]+)")
+    for file_path in root.rglob("*"):
+        if not file_path.is_file() or file_path.suffix.lower() not in text_suffixes:
+            continue
+        try:
+            raw = file_path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        updated = api_prefix.sub(lambda m: f"{asset_base}{m.group(1)}", raw)
+        if updated != raw:
+            file_path.write_text(updated, encoding="utf-8")
+
+
 @app.route("/api/projects/<int:project_id>/versions/<int:version>/publish", methods=["POST"])
 def publish_version(project_id: int, version: int):
     session = get_session()
@@ -5713,26 +5904,33 @@ def publish_version(project_id: int, version: int):
         else:
             project = session.get(Project, project_id)
             slug = generate_slug(project.name if project else "app", version)
-
-            code_dir = get_version_dir(project_id, version) / "code"
-            if not code_dir.exists():
-                return jsonify({"error": "No code generated for this version"}), 404
-
-            published_dir = REPO_ROOT / "published" / slug
-            published_dir.mkdir(parents=True, exist_ok=True)
-            plan_data = get_plan_data_for_version(project_id, version)
-            if is_componentized_workspace(code_dir, plan_data=plan_data):
-                build_componentized_version(get_version_dir(project_id, version))
-                dist_dir = code_dir / "dist"
-                if dist_dir.exists():
-                    shutil.copytree(dist_dir, published_dir, dirs_exist_ok=True)
-                else:
-                    return jsonify({"error": "Componentized app build is not ready for publishing"}), 409
-            else:
-                shutil.copytree(code_dir, published_dir, dirs_exist_ok=True)
-
             execution.published_slug = slug
-            session.commit()
+
+        project = session.get(Project, project_id)
+        code_dir = get_version_dir(project_id, version) / "code"
+        if not code_dir.exists():
+            return jsonify({"error": "No code generated for this version"}), 404
+
+        published_dir = REPO_ROOT / "published" / slug
+        if published_dir.exists():
+            shutil.rmtree(published_dir, ignore_errors=True)
+        published_dir.mkdir(parents=True, exist_ok=True)
+
+        plan_data = get_plan_data_for_version(project_id, version)
+        if is_componentized_workspace(code_dir, plan_data=plan_data):
+            build_componentized_version(get_version_dir(project_id, version))
+            dist_dir = code_dir / "dist"
+            if dist_dir.exists():
+                shutil.copytree(dist_dir, published_dir, dirs_exist_ok=True)
+            else:
+                return jsonify({"error": "Componentized app build is not ready for publishing"}), 409
+            _copytree_if_exists(code_dir / "public" / "generated-assets", published_dir / "generated-assets")
+        else:
+            shutil.copytree(code_dir, published_dir, dirs_exist_ok=True)
+
+        _copytree_if_exists(get_version_dir(project_id, version) / "assets", published_dir / "assets")
+        _rewrite_published_asset_references(published_dir, project_id, version, slug)
+        session.commit()
 
         return jsonify({"url": f"/published/{slug}", "slug": slug}), 200
     except Exception as e:
@@ -5778,10 +5976,16 @@ def serve_published(slug: str):
                 html = html.replace(f'{script_tag}</script>', f"<script>{js}</script>")
             elif "</body>" in html:
                 html = html.replace("</body>", f"<script>{js}</script>\n</body>")
+    root_dir = relative_mount_root(published_dir, Path(html_file))
     html = rewrite_preview_file_references(
         html,
         mount_prefix=f"/published/{slug}",
-        root_dir=relative_mount_root(published_dir, Path(html_file)),
+        root_dir=root_dir,
+    )
+    html = inject_preview_base_href(
+        html,
+        mount_prefix=f"/published/{slug}",
+        root_dir=root_dir,
     )
     return Response(html, mimetype="text/html")
 
@@ -5878,7 +6082,9 @@ def download_version(project_id: int, version: int):
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         for file_path in code_dir.rglob("*"):
             if file_path.is_file():
-                if file_path.suffix.lower() in (".html", ".css"):
+                if _has_excluded_dir(file_path, code_dir, CODE_BROWSER_EXCLUDED_DIRS):
+                    continue
+                if file_path.suffix.lower() in (".html", ".css", ".js", ".jsx", ".ts", ".tsx", ".mjs"):
                     raw = file_path.read_text(encoding="utf-8", errors="replace")
                     fixed = _re.sub(
                         r"/api/assets/[0-9]+/[0-9]+/([^ \"\'>]+)",

@@ -48,6 +48,7 @@ function ViewportToggle({
 export function PreviewPanel({ projectId, version }: PreviewPanelProps) {
   const [viewport, setViewport] = useState<"desktop" | "mobile">("desktop")
   const [key, setKey] = useState(0)
+  const desktopPreviewHeight = "clamp(720px, 78vh, 1100px)"
 
   const previewUrl =
     projectId && version
@@ -143,18 +144,18 @@ export function PreviewPanel({ projectId, version }: PreviewPanelProps) {
             </div>
           </div>
         ) : (
-          <div className="w-full" style={{ height: "700px" }}>
+          <div className="w-full" style={{ height: desktopPreviewHeight }}>
             {previewUrl ? (
               <iframe
                 key={key}
                 src={previewUrl}
                 className="w-full border border-border rounded-lg bg-white"
-                style={{ height: "700px" }}
+                style={{ height: desktopPreviewHeight }}
                 title="Live preview (desktop)"
                 sandbox="allow-scripts allow-same-origin"
               />
             ) : (
-              <div className="border-2 border-dashed border-border rounded-lg flex items-center justify-center" style={{ height: "700px" }}>
+              <div className="border-2 border-dashed border-border rounded-lg flex items-center justify-center" style={{ height: desktopPreviewHeight }}>
                 <p className="text-sm text-muted-foreground">
                   Live preview will appear here when your build is complete
                 </p>
