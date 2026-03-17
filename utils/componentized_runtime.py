@@ -1089,11 +1089,7 @@ def _sync_componentized_generated_asset_references(code_dir: Path) -> list[str]:
     if not public_dir.exists():
         return []
 
-    existing_files = {
-        path.name.lower(): path
-        for path in public_dir.iterdir()
-        if path.is_file()
-    }
+    existing_files = _collect_componentized_generated_asset_index(code_dir)
 
     referenced: set[str] = set()
     for rel_path in collect_componentized_editable_files(code_dir):
@@ -1126,6 +1122,30 @@ def _sync_componentized_generated_asset_references(code_dir: Path) -> list[str]:
         existing_files[lowered] = dest
         created_aliases.append(f"public/generated-assets/{filename}")
     return created_aliases
+
+
+def _collect_componentized_generated_asset_index(code_dir: Path) -> dict[str, Path]:
+    public_dir = code_dir / "public" / "generated-assets"
+    if not public_dir.exists():
+        return {}
+    return {
+        path.name.lower(): path
+        for path in public_dir.iterdir()
+        if path.is_file()
+    }
+
+
+def _select_componentized_generated_asset_reference(code_dir: Path, filename: str) -> str | None:
+    existing_files = _collect_componentized_generated_asset_index(code_dir)
+    if not existing_files:
+        return None
+    lowered = filename.lower()
+    if lowered in existing_files:
+        return f"generated-assets/{existing_files[lowered].name}"
+    alias_source = _select_componentized_generated_asset_alias(filename, existing_files)
+    if not alias_source:
+        return None
+    return f"generated-assets/{alias_source.name}"
 
 
 def _select_componentized_generated_asset_alias(
@@ -1314,6 +1334,12 @@ def ensure_componentized_workspace_support(
     created_files: list[str] = []
     rewritten_files: list[str] = []
     extracted_css_chunks: list[str] = []
+    is_game_archetype = bool(ui_archetype and (ui_archetype == "game" or ui_archetype.startswith("game_")))
+    game_map_asset_reference = (
+        _select_componentized_generated_asset_reference(code_dir, "region_world_map.png")
+        if is_game_archetype
+        else None
+    )
 
     for rel_path, content in _componentized_support_files().items():
         target = code_dir / rel_path
@@ -1356,12 +1382,19 @@ def ensure_componentized_workspace_support(
         path = code_dir / rel_path
         original = path.read_text(encoding="utf-8", errors="replace")
         updated = _normalize_componentized_file(rel_path, original)
-        if ui_archetype and (ui_archetype == "game" or ui_archetype.startswith("game_")):
+        if is_game_archetype:
             updated = _normalize_componentized_game_remote_badge_images(updated)
             updated = _normalize_componentized_remote_image_urls(updated)
+            updated = _normalize_componentized_game_empty_image_fields(
+                updated,
+                fallback_asset_path=game_map_asset_reference,
+            )
             if rel_path.endswith((".tsx", ".jsx")):
                 updated = _normalize_componentized_game_detail_ctas(updated)
-                updated = _normalize_componentized_game_placeholder_maps(updated)
+                updated = _normalize_componentized_game_placeholder_maps(
+                    updated,
+                    fallback_asset_path=game_map_asset_reference,
+                )
         elif ui_archetype == "ecommerce":
             updated = _normalize_componentized_remote_image_urls(updated)
         if rel_path.endswith((".tsx", ".jsx")):
@@ -1655,26 +1688,61 @@ def _normalize_componentized_game_remote_badge_images(source: str) -> str:
     return REMOTE_BADGE_OBJECT_IMAGE_RE.sub(_replace, source)
 
 
-def _normalize_componentized_game_placeholder_maps(source: str) -> str:
+def _normalize_componentized_game_empty_image_fields(
+    source: str,
+    fallback_asset_path: str | None = None,
+) -> str:
+    if not fallback_asset_path or "image" not in source:
+        return source
+    empty_image_re = re.compile(
+        r"(?P<prefix>\bimage\s*:\s*)(?P<quote>[\"'])(?P<value>\s*)(?P=quote)",
+        re.IGNORECASE,
+    )
+    if not empty_image_re.search(source):
+        return source
+
+    def _replace(match: re.Match[str]) -> str:
+        return f"{match.group('prefix')}{match.group('quote')}{fallback_asset_path}{match.group('quote')}"
+
+    return empty_image_re.sub(_replace, source)
+
+
+def _normalize_componentized_game_placeholder_maps(
+    source: str,
+    fallback_asset_path: str | None = None,
+) -> str:
     placeholder_img_re = re.compile(
         r'<img(?P<attrs>[^>]*?)src=(?P<quote>["\'])data:image/svg\+xml,[^"\']*(?:Placeholder|PLACEHOLDER)[^"\']*(?P=quote)(?P<rest>[^>]*)/?>',
         re.IGNORECASE | re.DOTALL,
     )
-    if not placeholder_img_re.search(source):
-        return source
-    return placeholder_img_re.sub(
-        (
-            '<div className="runtime-world-map-fallback">'
-            '<div className="runtime-world-map-grid" aria-hidden="true"></div>'
-            '<div className="runtime-world-map-copy">'
-            '<span className="runtime-world-map-eyebrow">Strategic Atlas</span>'
-            '<strong className="runtime-world-map-title">World Survey Interface</strong>'
-            '<p className="runtime-world-map-text">Key regions remain explorable through the dossiers and sector cards below.</p>'
-            '</div>'
-            '</div>'
-        ),
-        source,
-    )
+    updated = source
+    if placeholder_img_re.search(updated):
+        updated = placeholder_img_re.sub(
+            (
+                '<div className="runtime-world-map-fallback">'
+                '<div className="runtime-world-map-grid" aria-hidden="true"></div>'
+                '<div className="runtime-world-map-copy">'
+                '<span className="runtime-world-map-eyebrow">Strategic Atlas</span>'
+                '<strong className="runtime-world-map-title">World Survey Interface</strong>'
+                '<p className="runtime-world-map-text">Key regions remain explorable through the dossiers and sector cards below.</p>'
+                '</div>'
+                '</div>'
+            ),
+            updated,
+        )
+    if fallback_asset_path and "Map Placeholder" in updated:
+        placeholder_card_re = re.compile(
+            r"<div(?P<attrs>[^>]*)>\s*Map Placeholder\s*</div>",
+            re.IGNORECASE | re.DOTALL,
+        )
+        replacement = (
+            f'<img className="location-image" src={{region.image || "{fallback_asset_path}"}} '
+            'alt={`${region.name} map illustration`} loading="lazy" />'
+            if "region.name" in updated or "region.image" in updated
+            else f'<img className="location-image" src="{fallback_asset_path}" alt="World map illustration" loading="lazy" />'
+        )
+        updated = placeholder_card_re.sub(replacement, updated)
+    return updated
 
 
 def _normalize_componentized_remote_image_urls(source: str) -> str:
@@ -1748,6 +1816,14 @@ def _normalize_componentized_game_detail_ctas(source: str) -> str:
         kicker_var = next((name for name in ("role", "type", "region", "owner") if name in params), None)
         title_var = "name" if "name" in params else ("title" if "title" in params else None)
         copy_var = next((name for name in ("description", "desc", "lore") if name in params), None)
+        detail_object_var = next(
+            (
+                name
+                for name in ("item", "entry", "region", "location", "character", "pokemon", "weapon", "artifact", "card", "profile")
+                if name in params
+            ),
+            None,
+        )
 
         if "stats" in params:
             stats_expr = (
@@ -1772,9 +1848,33 @@ def _normalize_componentized_game_detail_ctas(source: str) -> str:
                     )
             stats_expr = f'<div className="runtime-inline-detail-stats">{"".join(chip_nodes)}</div>' if chip_nodes else ""
 
-        kicker_expr = f"{{{kicker_var}}}" if kicker_var else "Archive Detail"
-        title_expr = f"{{{title_var}}}" if title_var else "Field Brief"
-        copy_expr = f"{{{copy_var}}}" if copy_var else "This dossier uses local mock archive data to keep the interaction alive."
+        kicker_expr = (
+            f"{{{kicker_var}}}"
+            if kicker_var and (kicker_var != detail_object_var or title_var or copy_var)
+            else (
+                f'{{{detail_object_var}.type || {detail_object_var}.region || {detail_object_var}.owner || "Archive Detail"}}'
+                if detail_object_var
+                else "Archive Detail"
+            )
+        )
+        title_expr = (
+            f"{{{title_var}}}"
+            if title_var
+            else (
+                f'{{{detail_object_var}.name || {detail_object_var}.title || "Field Brief"}}'
+                if detail_object_var
+                else "Field Brief"
+            )
+        )
+        copy_expr = (
+            f"{{{copy_var}}}"
+            if copy_var
+            else (
+                f'{{{detail_object_var}.description || {detail_object_var}.desc || {detail_object_var}.lore || "This dossier uses local mock archive data to keep the interaction alive."}}'
+                if detail_object_var
+                else "This dossier uses local mock archive data to keep the interaction alive."
+            )
+        )
         return (
             f'<details className="runtime-inline-detail">'
             f'<summary className="{class_name}"{summary_attr_text}>{summary_label}</summary>'
@@ -1848,6 +1948,11 @@ def _normalize_componentized_game_detail_ctas(source: str) -> str:
             "\n",
             updated_body,
             count=1,
+        )
+        updated_body = re.sub(
+            rf"\s+onClick=\{{{re.escape(handler)}\}}",
+            "",
+            updated_body,
         )
         updated_body = re.sub(
             r"\n\s*const \[showDetails,\s*setShowDetails\] = useState\(false\);\s*",

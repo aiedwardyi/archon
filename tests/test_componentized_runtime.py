@@ -71,6 +71,71 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertEqual(build_componentized_shell_family_guidance("game_ff9"), "")
         self.assertIn("design_family: data_dense", build_componentized_design_family_guidance("fintech"))
 
+    def test_game_workspace_support_backfills_empty_region_images_with_local_asset(self):
+        code_dir = _case_dir("componentized-runtime-game-region-images")
+        try:
+            asset_dir = code_dir / "public" / "generated-assets"
+            asset_dir.mkdir(parents=True, exist_ok=True)
+            (asset_dir / "hero_background.png").write_bytes(b"png")
+
+            data_dir = code_dir / "src" / "data"
+            data_dir.mkdir(parents=True, exist_ok=True)
+            data_path = data_dir / "pokemonData.ts"
+            data_path.write_text(
+                (
+                    "export const REGIONS_DATA = [\n"
+                    "  { id: 'kanto', image: '' },\n"
+                    '  { id: "johto", image: "" },\n'
+                    "];\n"
+                ),
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir, ui_archetype="game")
+
+            updated = data_path.read_text(encoding="utf-8")
+            self.assertNotIn("image: ''", updated)
+            self.assertNotIn('image: ""', updated)
+            self.assertIn("generated-assets/hero_background.png", updated)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_game_workspace_support_replaces_literal_map_placeholder_cards(self):
+        code_dir = _case_dir("componentized-runtime-game-map-placeholder")
+        try:
+            asset_dir = code_dir / "public" / "generated-assets"
+            asset_dir.mkdir(parents=True, exist_ok=True)
+            (asset_dir / "hero_background.png").write_bytes(b"png")
+
+            component_dir = code_dir / "src" / "components"
+            component_dir.mkdir(parents=True, exist_ok=True)
+            component_path = component_dir / "LocationCard.tsx"
+            component_path.write_text(
+                (
+                    "export default function LocationCard({ region }: { region: { name: string; image: string } }) {\n"
+                    "  return (\n"
+                    "    <div className=\"location-image-wrapper\">\n"
+                    "      <div\n"
+                    "        style={{ width: '100%', height: '200px' }}\n"
+                    "      >Map Placeholder</div>\n"
+                    "      <h3>{region.name}</h3>\n"
+                    "    </div>\n"
+                    "  );\n"
+                    "}\n"
+                ),
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir, ui_archetype="game")
+
+            updated = component_path.read_text(encoding="utf-8")
+            self.assertNotIn("Map Placeholder", updated)
+            self.assertIn('<img className="location-image"', updated)
+            self.assertIn('src={region.image || "generated-assets/hero_background.png"}', updated)
+            self.assertIn('alt={`${region.name} map illustration`}', updated)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_data_dense_family_guidance_requires_explicit_typography_roles(self):
         guidance = build_componentized_design_family_guidance("fintech")
 
@@ -1351,6 +1416,38 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertIn("<h4 className=\"runtime-inline-detail-title\">{name}</h4>", app_source)
             self.assertNotIn("alert(`Accessing logs", app_source)
             self.assertNotIn("const [showDetails, setShowDetails]", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_removes_dead_alert_handler_references_from_game_cards(self):
+        code_dir = _case_dir("componentized-runtime-game-alert-card-wrapper")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "import React from 'react';\n"
+                "interface LocationCardProps { region: { type: string; name: string; description: string; image: string }; }\n"
+                "const LocationCard: React.FC<LocationCardProps> = ({ region }) => {\n"
+                "  const handleExploreClick = () => {\n"
+                "    alert(`Exploring ${region.name}!`);\n"
+                "  };\n"
+                "  return (\n"
+                "    <div className=\"location-card\" onClick={handleExploreClick} role=\"button\">\n"
+                "      <button onClick={handleExploreClick} className=\"btn-primary\">Explore</button>\n"
+                "    </div>\n"
+                "  );\n"
+                "};\n"
+                "export default function App() { return <LocationCard region={{ type: 'Mainland', name: 'Kanto Region', description: 'Starter region.', image: '' }} />; }\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir, ui_archetype="game")
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertNotIn("handleExploreClick", app_source)
+            self.assertNotIn("onClick={handleExploreClick}", app_source)
+            self.assertIn('<div className="runtime-inline-detail-kicker">{region.type || region.region || region.owner || "Archive Detail"}</div>', app_source)
+            self.assertIn('<h4 className="runtime-inline-detail-title">{region.name || region.title || "Field Brief"}</h4>', app_source)
+            self.assertIn('<p className="runtime-inline-detail-copy">{region.description || region.desc || region.lore || "This dossier uses local mock archive data to keep the interaction alive."}</p>', app_source)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
