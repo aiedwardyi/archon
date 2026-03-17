@@ -956,12 +956,19 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertIn(".guard-news-lead", polish_guard)
             self.assertIn(".guard-accent-action", polish_guard)
             self.assertIn(".guard-fixed-sidebar-shell", polish_guard)
+            self.assertIn(".guard-direct-rail-shell", polish_guard)
+            self.assertIn(".guard-nested-rail-shell", polish_guard)
+            self.assertIn(".guard-main-rail-split", polish_guard)
+            self.assertIn(".guard-main-rail-secondary", polish_guard)
             self.assertIn(".watchlist-card", polish_guard)
             self.assertIn(".watchlist-feed-panel", polish_guard)
             self.assertIn(".news-feed-item", polish_guard)
             self.assertIn(".activity-item .activity-time", polish_guard)
             self.assertIn(".activity-feed .feed-header", polish_guard)
             self.assertIn(".data-table-wrapper", polish_guard)
+            self.assertIn(".asset-table td,\n.data-table td,\n.table-cell", polish_guard)
+            self.assertIn(".left-sidebar", polish_guard)
+            self.assertIn(".main-content-wrapper", polish_guard)
             self.assertIn(".kpi-card:nth-child(4n + 1)", polish_guard)
             self.assertIn(".activity-feed::after", polish_guard)
             self.assertIn("button:focus-visible", polish_guard)
@@ -976,8 +983,18 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertIn("applyNewsHierarchyGuard", polish_runtime)
             self.assertIn("applyActionGuard", polish_runtime)
             self.assertIn("applyShellLayoutGuard", polish_runtime)
+            self.assertIn("applyDirectRailGuard", polish_runtime)
+            self.assertIn("applyNestedRailGuard", polish_runtime)
+            self.assertIn("resetNestedRailGuard", polish_runtime)
+            self.assertIn("SHELL_RIGHT_RAIL_SELECTOR", polish_runtime)
+            self.assertIn('".app-shell"', polish_runtime)
+            self.assertIn(".main-content-wrapper", polish_runtime)
+            self.assertIn(".left-sidebar", polish_runtime)
             self.assertIn("schedulePolishGuard", polish_runtime)
+            self.assertIn("window.addEventListener('resize', schedulePolishGuard);", polish_runtime)
             self.assertIn("guard-fixed-sidebar-shell", polish_runtime)
+            self.assertIn("guard-direct-rail-shell", polish_runtime)
+            self.assertIn("guard-main-rail-secondary", polish_runtime)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
@@ -1035,6 +1052,36 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertNotIn('import "./polish-guard.css";', main_source)
             self.assertFalse((code_dir / "src" / "polish-guard.css").exists())
             self.assertFalse((code_dir / "src" / "polish-guard.ts").exists())
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_bare_react_fragment_closer(self):
+        code_dir = _case_dir("componentized-runtime-react-fragment-closer")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "import React from 'react';\n"
+                "export default function App() {\n"
+                "  return (\n"
+                "    <table>\n"
+                "      <tbody>\n"
+                "        {[1].map((item) => (\n"
+                "          <React.Fragment key={item}>\n"
+                "            <tr><td>{item}</td></tr>\n"
+                "          </React>\n"
+                "        ))}\n"
+                "      </tbody>\n"
+                "    </table>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir, ui_archetype="dashboard")
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("</React.Fragment>", app_source)
+            self.assertNotIn("</React>\n", app_source)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
