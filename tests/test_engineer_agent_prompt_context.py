@@ -1,4 +1,28 @@
-from agents.engineer_agent import _build_componentized_family_prompt_block
+from agents import engineer_agent
+from agents.engineer_agent import EngineerAgent, _build_componentized_family_prompt_block
+from schemas.engineering_schema import EngineeringResult, FileArtifact
+from schemas.plan_schema import Task
+
+
+def _componentized_task() -> Task:
+    return Task(
+        id="PLAN-ENGINEER-1",
+        description="Build a componentized test app",
+        outputs=["code"],
+        execution_hint="engineer",
+        task_type="scaffold",
+        scaffold_mode="componentized_app",
+        output_files=["src/App.tsx"],
+        ui_archetype="dashboard",
+    )
+
+
+def _dummy_engineering_result() -> EngineeringResult:
+    return EngineeringResult(
+        task_id="PLAN-ENGINEER-1",
+        summary="ok",
+        files=[FileArtifact(path="src/App.tsx", content="export default function App() { return null; }\n")],
+    )
 
 
 def test_componentized_family_prompt_block_defaults_editor_to_editorial_workspace():
@@ -57,3 +81,57 @@ def test_componentized_family_prompt_block_skips_iteration_mode():
     )
 
     assert block == ""
+
+
+def test_engineer_agent_skips_reference_images_when_internal_iteration_disables_them(tmp_path, monkeypatch):
+    image_path = tmp_path / "reference.png"
+    image_path.write_bytes(b"fake-image")
+    captured: dict[str, object] = {}
+
+    def _fake_run_gemini(_client, contents: str, ref_images=None):
+        captured["contents"] = contents
+        captured["ref_images"] = ref_images
+        return _dummy_engineering_result()
+
+    monkeypatch.setattr(engineer_agent, "_run_gemini", _fake_run_gemini)
+    monkeypatch.setenv("ENGINEER_MODEL", "gemini")
+
+    agent = EngineerAgent(client=object())
+    agent.run(
+        _componentized_task(),
+        user_prompt="Tighten the seeded content.",
+        existing_code="export default function App() { return null; }",
+        reference_images=[str(image_path)],
+        attach_reference_images=False,
+    )
+
+    assert captured["ref_images"] is None
+    assert "IMPORTANT: The user has provided visual reference images." not in str(captured["contents"])
+
+
+def test_engineer_agent_keeps_reference_images_when_iteration_explicitly_allows_them(tmp_path, monkeypatch):
+    image_path = tmp_path / "reference.png"
+    image_path.write_bytes(b"fake-image")
+    captured: dict[str, object] = {}
+
+    def _fake_run_gemini(_client, contents: str, ref_images=None):
+        captured["contents"] = contents
+        captured["ref_images"] = ref_images
+        return _dummy_engineering_result()
+
+    monkeypatch.setattr(engineer_agent, "_run_gemini", _fake_run_gemini)
+    monkeypatch.setenv("ENGINEER_MODEL", "gemini")
+
+    agent = EngineerAgent(client=object())
+    agent.run(
+        _componentized_task(),
+        user_prompt="Match the uploaded visual reference.",
+        existing_code="export default function App() { return null; }",
+        reference_images=[str(image_path)],
+        attach_reference_images=True,
+    )
+
+    ref_images = captured["ref_images"]
+    assert isinstance(ref_images, list)
+    assert ref_images[0][0] == "reference.png"
+    assert "IMPORTANT: The user has provided visual reference images." in str(captured["contents"])

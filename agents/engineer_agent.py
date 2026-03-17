@@ -590,6 +590,7 @@ class EngineerAgent:
         user_prompt: str = None,
         existing_code: str = None,
         reference_images: list[str] | None = None,
+        attach_reference_images: bool = True,
         reference_code: dict[str, Any] | None = None,
         iteration_visual_dna: dict[str, Any] | None = None,
         iteration_feature_inventory: dict[str, Any] | None = None,
@@ -781,8 +782,8 @@ class EngineerAgent:
             if ref_images:
                 print(f"EngineerAgent: loaded {len(ref_images)} archetype reference images for '{kit_archetype}'")
 
-        # Add user-uploaded reference images
-        if reference_images:
+        # Add user-uploaded reference images when this run should remain multimodal.
+        if reference_images and attach_reference_images:
             _MIME_MAP = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".gif": "image/gif"}
             for img_path in reference_images:
                 p = Path(img_path)

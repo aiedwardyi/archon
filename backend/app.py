@@ -3821,6 +3821,11 @@ def run_full_pipeline_async(
                         version_dir / "code",
                         weak_file_paths=weak_file_paths,
                     )
+                    if content_scope:
+                        add_log(
+                            f"Build Agent: Content-fix scope narrowed to {len(content_scope)} files.",
+                            project_id=project_id,
+                        )
                     content_existing_code = collect_selected_code_context(version_dir / "code", content_scope)
                     if content_existing_code and content_scope:
                         backup_dir = version_dir / ".content-refinement-backup"
@@ -3837,7 +3842,8 @@ def run_full_pipeline_async(
                                 multi_file_evaluation=multi_file_evaluation,
                             ),
                             existing_code=content_existing_code,
-                            reference_images=reference_images or None,
+                            reference_images=None,
+                            attach_reference_images=False,
                             reference_code=reference_code,
                             iteration_visual_dna=iteration_visual_dna,
                             iteration_feature_inventory=iteration_feature_inventory,
@@ -3934,6 +3940,11 @@ def run_full_pipeline_async(
                         refinement_issues,
                         weak_file_paths=weak_file_paths,
                     )
+                    if refinement_scope:
+                        add_log(
+                            f"Build Agent: Quality-refinement scope narrowed to {len(refinement_scope)} files.",
+                            project_id=project_id,
+                        )
                     refinement_existing_code = collect_selected_code_context(version_dir / "code", refinement_scope)
                     if refinement_existing_code and refinement_scope:
                         backup_dir = version_dir / ".quality-refinement-backup"
@@ -3955,7 +3966,8 @@ def run_full_pipeline_async(
                             refinement_task,
                             user_prompt=refinement_prompt,
                             existing_code=refinement_existing_code,
-                            reference_images=reference_images or None,
+                            reference_images=None,
+                            attach_reference_images=False,
                             reference_code=reference_code,
                             iteration_visual_dna=iteration_visual_dna,
                             iteration_feature_inventory=iteration_feature_inventory,
