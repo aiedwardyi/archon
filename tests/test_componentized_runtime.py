@@ -1133,6 +1133,34 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_adds_dashboard_specific_polish_guard_tuning(self):
+        code_dir = _case_dir("componentized-runtime-polish-guard-dashboard")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "main.tsx").write_text(
+                "import React from 'react';\n"
+                "import ReactDOM from 'react-dom/client';\n"
+                "import App from './App';\n"
+                "ReactDOM.createRoot(document.getElementById('root')!).render(<App />);\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return <div className=\"dashboard-layout\"><div className=\"kpi-card\" /><table className=\"data-table\"><thead><tr><th>Price</th></tr></thead></table><span className=\"cell-action\">View</span><div className=\"activity-item\"><span className=\"activity-time\">2 min ago</span></div></div>;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir, ui_archetype="dashboard")
+
+            polish_guard = (code_dir / "src" / "polish-guard.css").read_text(encoding="utf-8")
+            self.assertIn(".dashboard-layout .kpi-card", polish_guard)
+            self.assertIn(".dashboard-layout .data-table thead th", polish_guard)
+            self.assertIn(".dashboard-layout .cell-action", polish_guard)
+            self.assertIn(".dashboard-layout .activity-item .activity-time", polish_guard)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_ensure_componentized_workspace_support_skips_polish_guard_for_non_app_density_archetypes(self):
         code_dir = _case_dir("componentized-runtime-polish-guard-skip")
         try:
