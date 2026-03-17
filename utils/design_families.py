@@ -21,12 +21,23 @@ DESIGN_KIT_ALIASES = {
     "freelancer": "portfolio",
 }
 
+GLOBAL_FAMILY_LAYER_EXEMPT_CANONICAL_ARCHETYPES = {
+    "game",
+}
+
 
 def canonicalize_design_archetype(ui_archetype: str | None) -> str | None:
     normalized = (ui_archetype or "").strip().lower()
     if not normalized:
         return None
     return DESIGN_KIT_ALIASES.get(normalized, normalized)
+
+
+def should_apply_componentized_global_family_layer(ui_archetype: str | None) -> bool:
+    canonical = canonicalize_design_archetype(ui_archetype)
+    if not canonical:
+        return True
+    return canonical not in GLOBAL_FAMILY_LAYER_EXEMPT_CANONICAL_ARCHETYPES
 
 
 def resolve_componentized_design_family(ui_archetype: str | None) -> str:
@@ -56,6 +67,8 @@ def resolve_componentized_design_family(ui_archetype: str | None) -> str:
 
 def build_componentized_design_family_guidance(ui_archetype: str | None) -> str:
     canonical = canonicalize_design_archetype(ui_archetype) or "general"
+    if not should_apply_componentized_global_family_layer(canonical):
+        return ""
     family = resolve_componentized_design_family(canonical)
 
     lines = [
@@ -111,6 +124,8 @@ def build_componentized_design_family_guidance(ui_archetype: str | None) -> str:
 
 
 def build_componentized_shell_family_guidance(ui_archetype: str | None) -> str:
+    if not should_apply_componentized_global_family_layer(ui_archetype):
+        return ""
     family = resolve_componentized_design_family(ui_archetype)
     guidance = {
         "data_dense": (

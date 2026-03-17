@@ -22,6 +22,7 @@ from schemas.engineering_schema import EngineeringResult, FileArtifact
 from utils.design_families import (
     DESIGN_KIT_ALIASES,
     build_componentized_design_family_guidance,
+    should_apply_componentized_global_family_layer,
 )
 from utils.offline_engineer_scaffold import build_vite_react_ts_scaffold
 
@@ -480,7 +481,9 @@ class EngineerAgent:
 
         if scaffold_mode == "componentized_app":
             prompt = (PROMPTS_DIR / "engineer_componentized.txt").read_text(encoding="utf-8")
-            family_guidance = build_componentized_design_family_guidance(archetype)
+            family_guidance = ""
+            if should_apply_componentized_global_family_layer(archetype):
+                family_guidance = build_componentized_design_family_guidance(archetype)
             if family_guidance:
                 prompt += (
                     "\n\n--- DESIGN FAMILY FOUNDATION ---\n"

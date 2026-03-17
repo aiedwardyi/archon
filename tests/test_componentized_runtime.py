@@ -37,6 +37,8 @@ from utils.componentized_runtime import (
     stage_componentized_design_assets,
 )
 from utils.design_families import build_componentized_design_family_guidance
+from utils.design_families import build_componentized_shell_family_guidance
+from utils.design_families import should_apply_componentized_global_family_layer
 from utils.componentized_quality import (
     classify_componentized_content_file,
     collect_quality_issue_codes,
@@ -58,6 +60,17 @@ def _case_dir(name: str) -> Path:
 
 
 class ComponentizedRuntimeTests(unittest.TestCase):
+    def test_game_archetypes_bypass_componentized_global_family_layer(self):
+        self.assertFalse(should_apply_componentized_global_family_layer("game"))
+        self.assertFalse(should_apply_componentized_global_family_layer("game_ff7"))
+        self.assertFalse(should_apply_componentized_global_family_layer("fan_page"))
+        self.assertTrue(should_apply_componentized_global_family_layer("fintech"))
+
+    def test_game_archetypes_emit_no_global_family_guidance(self):
+        self.assertEqual(build_componentized_design_family_guidance("game_ff8"), "")
+        self.assertEqual(build_componentized_shell_family_guidance("game_ff9"), "")
+        self.assertIn("design_family: data_dense", build_componentized_design_family_guidance("fintech"))
+
     def test_data_dense_family_guidance_requires_explicit_typography_roles(self):
         guidance = build_componentized_design_family_guidance("fintech")
 
