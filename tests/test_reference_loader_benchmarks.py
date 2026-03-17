@@ -42,7 +42,8 @@ def test_editor_benchmark_entries_have_resolvable_source_paths():
 def test_reference_loader_uses_subprocess_when_asyncio_loop_is_running(monkeypatch, tmp_path):
     loader = ReferenceLoader()
     entry = get_sorted_reference_build_entries("editor")[0]
-    screenshot_path = loader._benchmark_cache_path(entry)
+    screenshot_path = tmp_path / "editor-benchmark.png"
+    monkeypatch.setattr(loader, "_benchmark_cache_path", lambda _entry: screenshot_path)
     source_paths = resolve_reference_build_source_paths(entry)
     assert source_paths is not None
 

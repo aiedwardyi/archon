@@ -1497,6 +1497,51 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_repairs_multiline_comment_code_bleed(self):
+        code_dir = _case_dir("componentized-runtime-multiline-comment-code-bleed")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  const handleCommentBubbleClick = () => { setCommentsVisible(true); /* Open inspector to comments console.log('Comment bubble clicked, opening comments panel.');\n"
+                "  };  // Simulate collaborator cursor movement for demonstration */\n"
+                "  useEffect(() => {}, []);\n"
+                "  return null;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("setCommentsVisible(true); /* Open inspector to comments */", app_source)
+            self.assertIn("console.log('Comment bubble clicked, opening comments panel.');", app_source)
+            self.assertIn("/* Simulate collaborator cursor movement for demonstration */", app_source)
+            self.assertNotIn("comments console.log", app_source)
+            self.assertNotIn("// Simulate collaborator cursor movement for demonstration */", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_generic_arrow_bleed(self):
+        code_dir = _case_dir("componentized-runtime-generic-arrow-bleed")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  const labels = ['workspaceName'].map((key) => key.split(/(?=[A-Z])/).join(' ').replace(/^./, str = /> str.toUpperCase()));\n"
+                "  return <div>{labels[0]}</div>;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("replace(/^./, str => str.toUpperCase())", app_source)
+            self.assertNotIn("str = />", app_source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_ensure_componentized_workspace_support_strips_main_entry_import_note_bleed(self):
         code_dir = _case_dir("componentized-runtime-main-entry-import-note-bleed")
         try:
@@ -1759,6 +1804,32 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_normalizes_browser_router_for_preview(self):
+        code_dir = _case_dir("componentized-runtime-browser-router-preview")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';\n"
+                "export default function App() {\n"
+                "  return (\n"
+                "    <Router>\n"
+                "      <Routes>\n"
+                "        <Route path=\"/\" element={<Navigate to=\"dashboard\" replace />} />\n"
+                "      </Routes>\n"
+                "    </Router>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("HashRouter as Router", source)
+            self.assertNotIn("BrowserRouter as Router", source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_ensure_componentized_workspace_support_removes_orphan_jsx_closing_brace_lines(self):
         code_dir = _case_dir("componentized-runtime-orphan-jsx-closing-brace")
         try:
@@ -1782,7 +1853,67 @@ class ComponentizedRuntimeTests(unittest.TestCase):
 
             source = (code_dir / "src" / "pages" / "HomePage.tsx").read_text(encoding="utf-8")
             self.assertNotIn("\n        }\n      </a>", source)
+            self.assertIn("</div>\n      </a>", source)
             self.assertIn('<a href="#" className="collection-card">', source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_removes_orphan_jsx_closing_brace_before_next_tag(self):
+        code_dir = _case_dir("componentized-runtime-orphan-jsx-closing-brace-next-tag")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return (\n"
+                "    <aside>\n"
+                "      <div className=\"summary-item\">\n"
+                "        <span className=\"value\">{formData.workspaceName || 'N/A'}</span>\n"
+                "      }\n"
+                "      <div className=\"summary-item\">\n"
+                "        <span className=\"label\">Integrations</span>\n"
+                "      </div>\n"
+                "    </aside>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertNotIn("\n      }\n      <div className=\"summary-item\">", source)
+            self.assertIn("</div>\n      <div className=\"summary-item\">", source)
+            self.assertIn("<span className=\"label\">Integrations</span>", source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_missing_sibling_closing_tags(self):
+        code_dir = _case_dir("componentized-runtime-missing-sibling-closing-tags")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return (\n"
+                "    <aside>\n"
+                "      <div className=\"summary-section\">\n"
+                "        <div className=\"summary-item\">\n"
+                "          <span className=\"value\">Workspace</span>\n"
+                "        <div className=\"summary-item\">\n"
+                "          <span className=\"label\">Integrations</span>\n"
+                "          <span className=\"value\">3 Connected</span>\n"
+                "        </div>\n"
+                "      </div>\n"
+                "    </aside>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("</div>\n        <div className=\"summary-item\">", source)
+            self.assertIn("</div>\n    </aside>", source)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 

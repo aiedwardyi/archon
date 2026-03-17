@@ -20,6 +20,7 @@ from pydantic import ValidationError
 from schemas.plan_schema import Task
 from schemas.engineering_schema import EngineeringResult, FileArtifact
 from utils.offline_engineer_scaffold import build_vite_react_ts_scaffold
+from utils.reference_build_registry import get_style_family_context
 
 PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
 
@@ -43,6 +44,50 @@ DESIGN_KIT_ALIASES = {
     "agency": "portfolio",
     "personal_site": "portfolio",
     "freelancer": "portfolio",
+}
+
+STYLE_FAMILY_CONTRACTS: dict[str, tuple[str, ...]] = {
+    "operator_console_workspace": (
+        "Use a dense operator-facing desktop shell with one dominant work surface and a support rail for alerts, queues, or active tasks.",
+        "Avoid symmetrical KPI-card grids as the main experience; the product should feel like a live console with decisions happening inside it.",
+        "Keep the layout serious, compact, and action-oriented rather than turning it into a polished but generic admin dashboard.",
+    ),
+    "editorial_workspace": (
+        "Keep a visible desktop workspace with a real topbar, a dominant center canvas, and both side rails populated.",
+        "Make collaboration and publishing states obvious through save state, comments, outline state, or inspector modules instead of KPI filler.",
+        "Do not collapse this family into a centered article, generic dashboard, or thin landing-page shell.",
+    ),
+    "product_builder_workspace": (
+        "Use a builder-grade workspace shell with a dominant primary work area and dense supporting control surfaces.",
+        "Blend setup, controls, and status into one cohesive product experience instead of separating them into disconnected cards.",
+        "Favor app-builder framing over brochure sections or generic admin chrome.",
+    ),
+    "guided_setup_wizard": (
+        "Keep the desktop layout split between progress/context and the active configuration flow.",
+        "Show grouped step content plus at least one visible validation, readiness, or result-preview surface in the same flow.",
+        "Avoid long flat form stacks, narrow floating cards, or disconnected success panels.",
+    ),
+    "market_terminal_workspace": (
+        "Lead with a chart-first or market-control-first shell and keep the support rail useful with watchlist, tape, or market context modules.",
+        "Use disciplined mono-friendly numeric treatment for prices, deltas, and tables so the workspace feels precise.",
+        "Do not soften this family into a generic analytics dashboard with oversized decorative cards.",
+    ),
+}
+
+DOMAIN_OVERLAY_CONTRACTS: dict[str, tuple[str, ...]] = {
+    "operations_control_tower": (
+        "Make the main surfaces about exceptions, dispatch, route health, or network state rather than revenue or generic business KPIs.",
+        "Show at least one active operational control surface such as a dispatch queue, route board, incident feed, or shipment exception panel.",
+    ),
+    "sales_deal_room": (
+        "Make next actions, deal risk, stage movement, and account context visible so the screen feels like active deal execution.",
+        "Use pipeline boards, account timelines, stakeholder notes, or forecast pressure modules instead of generic ops widgets.",
+    ),
+    "treasury_liquidity_terminal": (
+        "Anchor the composition around cash positions, funding windows, settlement pressure, and entity or bank exposure.",
+        "Avoid soft SaaS KPI decks or retail trading cues; the UI should read like treasury operations, not a generic dashboard.",
+        "Keep a real desktop terminal shell with a visible side rail beside the main treasury surfaces, not stacked underneath them.",
+    ),
 }
 
 
@@ -191,6 +236,75 @@ def _load_reference_images(kit_archetype: str) -> list[tuple[str, bytes, str]]:
             }[img_path.suffix.lower()]
             images.append((img_path.name, img_path.read_bytes(), mime))
     return images
+
+
+def _build_componentized_family_prompt_block(
+    archetype: str | None,
+    prompt_text: str | None,
+    *,
+    existing_code: str | None = None,
+) -> str:
+    if existing_code or not archetype:
+        return ""
+
+    family_context = get_style_family_context(archetype, prompt_text)
+    if not family_context:
+        return ""
+
+    style_family = str(family_context.get("style_family", "")).strip()
+    description = str(family_context.get("description", "")).strip()
+    guidance_lines = list(family_context.get("guidance_lines", []))
+    guidance_lines.extend(STYLE_FAMILY_CONTRACTS.get(style_family, ()))
+    domain_overlay = str(family_context.get("domain_overlay", "")).strip()
+    overlay_description = str(family_context.get("overlay_description", "")).strip()
+    overlay_guidance_lines = list(family_context.get("overlay_guidance_lines", []))
+    overlay_guidance_lines.extend(DOMAIN_OVERLAY_CONTRACTS.get(domain_overlay, ()))
+
+    deduped_lines: list[str] = []
+    seen: set[str] = set()
+    for line in guidance_lines:
+        normalized = str(line).strip()
+        if not normalized:
+            continue
+        lowered = normalized.lower()
+        if lowered in seen:
+            continue
+        seen.add(lowered)
+        deduped_lines.append(normalized)
+
+    deduped_overlay_lines: list[str] = []
+    seen_overlay: set[str] = set()
+    for line in overlay_guidance_lines:
+        normalized = str(line).strip()
+        if not normalized:
+            continue
+        lowered = normalized.lower()
+        if lowered in seen_overlay:
+            continue
+        seen_overlay.add(lowered)
+        deduped_overlay_lines.append(normalized)
+
+    body_lines = [
+        "--- GLOBAL QUALITY FAMILY ---",
+    ]
+    if style_family:
+        body_lines.append(f"style_family: {style_family}")
+    if description:
+        body_lines.append(f"family_purpose: {description}")
+    body_lines.append(
+        "Treat this as a reusable product-quality contract that should raise structure, density, and interaction clarity even when the prompt is underspecified."
+    )
+    body_lines.extend(f"- {line}" for line in deduped_lines)
+    if domain_overlay:
+        body_lines.append("")
+        body_lines.append("--- DOMAIN OVERLAY ---")
+        body_lines.append(f"domain_overlay: {domain_overlay}")
+        if overlay_description:
+            body_lines.append(f"overlay_purpose: {overlay_description}")
+        body_lines.extend(f"- {line}" for line in deduped_overlay_lines)
+        body_lines.append("--- END DOMAIN OVERLAY ---")
+    body_lines.append("--- END GLOBAL QUALITY FAMILY ---")
+    return "\n\n" + "\n".join(body_lines)
 
 
 def _run_claude(contents: str, ref_images: list[tuple[str, bytes, str]] | None = None) -> EngineeringResult:
@@ -498,6 +612,11 @@ class EngineerAgent:
 
         if scaffold_mode == "componentized_app":
             prompt = (PROMPTS_DIR / "engineer_componentized.txt").read_text(encoding="utf-8")
+            prompt += _build_componentized_family_prompt_block(
+                archetype,
+                user_prompt or task.description,
+                existing_code=existing_code,
+            )
             if archetype_txt and archetype_txt.exists():
                 prompt += (
                     "\n\n--- DESIGN KIT REFERENCE ---\n"

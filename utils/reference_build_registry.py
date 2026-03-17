@@ -102,7 +102,140 @@ BENCHMARK_VARIANT_RULES: dict[str, dict[str, Any]] = {
     },
 }
 
+DEFAULT_STYLE_FAMILY_BY_ARCHETYPE: dict[str, str] = {
+    "dashboard": "operator_console_workspace",
+    "editor": "editorial_workspace",
+    "fintech": "market_terminal_workspace",
+    "form": "guided_setup_wizard",
+    "crm": "operator_console_workspace",
+    "analytics": "operator_console_workspace",
+    "admin_panel": "operator_console_workspace",
+}
+
 STYLE_FAMILY_LIBRARY: dict[str, dict[str, Any]] = {
+    "operator_console_workspace": {
+        "archetypes": {"dashboard", "crm", "analytics", "admin_panel", "productivity_app", "ai_product"},
+        "keywords": [
+            "operations control center",
+            "command center",
+            "control tower",
+            "serious professional workspace",
+            "pipeline stages",
+            "deal room",
+            "revenue workspace",
+            "exception queue",
+            "dispatch alerts",
+            "desktop-first",
+            "high-density workspace",
+        ],
+        "description": (
+            "Use an operator-console shell: a serious desktop-first workspace with a dominant primary board/chart/table, "
+            "dense status modules, and a support rail for alerts, queues, or actions instead of a soft generic KPI dashboard."
+        ),
+        "guidance_lines": [
+            "Keep one dominant working surface in view, then support it with compact status, alert, and action modules rather than symmetrical card grids.",
+            "Make the shell feel operational and hands-on with visible queues, incidents, tasks, or transitions instead of static executive-summary filler.",
+            "Use disciplined density, compact labels, and an active support rail so the product reads like a live console rather than a brochure admin page.",
+        ],
+    },
+    "editorial_workspace": {
+        "archetypes": {"editor", "productivity_app"},
+        "keywords": [
+            "document editor",
+            "product brief",
+            "brief editor",
+            "inline comments",
+            "publish controls",
+            "document outline",
+            "editorial workspace",
+            "collaborative writing",
+            "knowledge base",
+        ],
+        "description": (
+            "Use an editorial workspace shell: a structurally integrated topbar, a visible three-panel layout, "
+            "a dominant document canvas, and inspector/comment states that feel like a premium collaborative tool."
+        ),
+        "guidance_lines": [
+            "Keep the desktop shell visibly multi-panel, with the center canvas dominant and both side rails populated.",
+            "Favor editorial title drama, clear publish/save state, and real collaboration cues over dashboard-style KPI filler.",
+            "Use layered chrome and restrained accent states so the workspace feels productized instead of like a beige print preview.",
+        ],
+    },
+    "product_builder_workspace": {
+        "archetypes": {"editor", "ai_product", "productivity_app", "dashboard"},
+        "keywords": [
+            "app builder",
+            "builder workspace",
+            "startup builder",
+            "design assistant",
+            "product builder",
+            "founder workspace",
+            "workspace builder",
+            "ai web design assistant",
+        ],
+        "description": (
+            "Use a product-builder workspace shell: dense multi-panel control surfaces, a strong central builder area, "
+            "integrated onboarding or setup cues, and status modules that make the app feel like a serious product tool."
+        ),
+        "guidance_lines": [
+            "Frame the experience like a premium builder workspace with visible control rails, not a flat landing page or generic dashboard.",
+            "Blend builder controls, setup progress, and status surfaces into one cohesive shell so the UI feels actively usable at first glance.",
+            "Keep the main work area dominant, but support it with dense inspector and summary modules rather than empty side chrome.",
+        ],
+    },
+    "guided_setup_wizard": {
+        "archetypes": {"form", "ai_product", "dev_tool", "productivity_app"},
+        "keywords": [
+            "onboarding wizard",
+            "setup wizard",
+            "launch wizard",
+            "plan selection",
+            "workspace details",
+            "integrations",
+            "validation",
+            "success state",
+            "configuration flow",
+        ],
+        "description": (
+            "Use a guided setup shell: a substantial split wizard layout, explicit progress states, grouped configuration panels, "
+            "and compact validation or success surfaces that make the flow feel alive."
+        ),
+        "guidance_lines": [
+            "Keep the desktop shell split and productized, with a substantial progress rail and a dominant active-step panel.",
+            "Use real progression cues like validation, readiness, or confirmation states instead of a stack of generic form rows.",
+            "Group the main step into clear sections and keep any result preview connected to the same flow rather than tacked on below.",
+        ],
+    },
+    "market_terminal_workspace": {
+        "archetypes": {"fintech", "dashboard", "crypto"},
+        "keywords": [
+            "trading terminal",
+            "market chart",
+            "watchlist",
+            "ticker",
+            "order actions",
+            "order book",
+            "portfolio breakdown",
+            "brokerage",
+            "market overview",
+            "recent trades",
+            "treasury operations terminal",
+            "cash positions",
+            "fx exposure",
+            "settlement queue",
+            "funding windows",
+            "liquidity",
+        ],
+        "description": (
+            "Use a market-terminal shell: dense navigation, chart-first composition, disciplined monospace numeric rhythm, "
+            "and clearly actionable trading or watchlist surfaces instead of a generic admin dashboard."
+        ),
+        "guidance_lines": [
+            "Lead with a chart-first shell, visible market controls, and compact data density rather than oversized decorative cards.",
+            "Make prices, deltas, and table numerics feel precise with a disciplined mono rhythm and clear positive/negative state treatment.",
+            "Use a support rail for watchlist, trades, or market context so the workspace feels like a live terminal, not a brochure dashboard.",
+        ],
+    },
     "cinematic_collector_fanpage": {
         "archetypes": {"game", "game_ff7", "game_ff8", "game_ff9"},
         "keywords": [
@@ -158,7 +291,94 @@ STYLE_FAMILY_LIBRARY: dict[str, dict[str, Any]] = {
     },
 }
 
+DOMAIN_OVERLAY_LIBRARY: dict[str, dict[str, Any]] = {
+    "operations_control_tower": {
+        "archetypes": {"dashboard", "analytics", "admin_panel", "productivity_app", "ai_product"},
+        "style_families": {"operator_console_workspace"},
+        "keywords": [
+            "logistics",
+            "fleet status",
+            "route delays",
+            "shipment exceptions",
+            "dispatch alerts",
+            "control tower",
+            "dispatch",
+            "warehouse",
+            "delivery",
+            "sla breach",
+            "incident feed",
+        ],
+        "description": (
+            "Shape the workspace like an operations control tower: route health, exception queues, dispatch decisions, and live network status "
+            "should be more prominent than generic business KPIs."
+        ),
+        "guidance_lines": [
+            "Use route health, shipment exceptions, depot or fleet state, and dispatch actions as first-class modules.",
+            "Favor incident urgency, SLA risk, and operational feeds over revenue or generic admin summaries.",
+            "Include at least one operational control surface such as a dispatch queue, route board, lane table, or exception panel.",
+        ],
+    },
+    "sales_deal_room": {
+        "archetypes": {"dashboard", "crm", "analytics", "productivity_app", "ai_product"},
+        "style_families": {"operator_console_workspace"},
+        "keywords": [
+            "sales workspace",
+            "deal room",
+            "account executive",
+            "pipeline stages",
+            "call notes",
+            "next actions",
+            "deal risks",
+            "revenue workspace",
+            "forecast",
+            "opportunity",
+            "renewal",
+        ],
+        "description": (
+            "Shape the workspace like a live deal room: stage movement, next steps, stakeholder notes, and risk/champion context "
+            "should feel central instead of buried under generic dashboard chrome."
+        ),
+        "guidance_lines": [
+            "Keep pipeline state, forecast pressure, and deal-level next actions visibly connected in one workspace.",
+            "Use call notes, stakeholder context, mutual action plans, or risk flags so the UI feels like active deal execution.",
+            "Favor stage boards, account timelines, and opportunity tables over generic operations or finance widgets.",
+        ],
+    },
+    "treasury_liquidity_terminal": {
+        "archetypes": {"dashboard", "fintech", "analytics", "crypto"},
+        "style_families": {"market_terminal_workspace"},
+        "keywords": [
+            "treasury",
+            "cash positions",
+            "fx exposure",
+            "settlement queues",
+            "settlement queue",
+            "funding windows",
+            "liquidity",
+            "bank balances",
+            "counterparty",
+            "wire queue",
+        ],
+        "description": (
+            "Shape the workspace like a treasury terminal: liquidity, settlement pressure, funding windows, and bank exposures "
+            "should drive the composition instead of a generic market or SaaS dashboard."
+        ),
+        "guidance_lines": [
+            "Lead with cash positions, funding readiness, settlement queues, and bank or counterparty exposure surfaces.",
+            "Use treasury artifacts like ladders, cut-off windows, entity balances, and exception queues rather than simple watchlists.",
+            "Keep the numeric treatment disciplined and finance-native, but tie it to treasury operations instead of retail trading cues.",
+            "On desktop, keep a true multi-zone terminal shell with navigation, a dominant treasury work area, and a visible support rail rather than stacking everything into one narrow column.",
+        ],
+    },
+}
+
 BENCHMARK_STYLE_FAMILIES: dict[str, tuple[str, ...]] = {
+    "legacy-briefai-product-brief-editor": ("editorial_workspace",),
+    "legacy-designai-startup-builder": ("product_builder_workspace",),
+    "legacy-ai-automation-onboarding-wizard": ("guided_setup_wizard",),
+    "legacy-pyrunner-python-configurator": ("guided_setup_wizard",),
+    "legacy-tradeflow-terminal-fintech": ("market_terminal_workspace",),
+    "legacy-stocktrack-live-terminal": ("market_terminal_workspace",),
     "branch-ff8-garden-archive-20260316": ("cinematic_collector_fanpage",),
     "legacy-pokemon-starters-fan-page": ("playful_character_showcase",),
     "legacy-digimon-agumon-fan-page": ("cinematic_collector_fanpage",),
@@ -172,6 +392,20 @@ BENCHMARK_STYLE_FAMILIES: dict[str, tuple[str, ...]] = {
 }
 
 STYLE_FAMILY_ENTRY_BOOSTS: dict[str, dict[str, int]] = {
+    "editorial_workspace": {
+        "legacy-briefai-product-brief-editor": 12,
+    },
+    "product_builder_workspace": {
+        "legacy-designai-startup-builder": 14,
+    },
+    "guided_setup_wizard": {
+        "legacy-ai-automation-onboarding-wizard": 12,
+        "legacy-pyrunner-python-configurator": 6,
+    },
+    "market_terminal_workspace": {
+        "legacy-tradeflow-terminal-fintech": 12,
+        "legacy-stocktrack-live-terminal": 6,
+    },
     "cinematic_collector_fanpage": {
         "branch-ff8-garden-archive-20260316": 14,
         "legacy-ff7-legends-of-midgar": 12,
@@ -306,9 +540,69 @@ def infer_style_family(archetype: str | None, prompt_text: str | None = None) ->
         scored.sort(key=lambda item: item[0], reverse=True)
         return scored[0][1]
 
+    default_family = DEFAULT_STYLE_FAMILY_BY_ARCHETYPE.get(normalized_archetype)
+    if default_family:
+        return default_family
+
     if normalized_archetype == "game" and prompt_lower:
         return "cinematic_collector_fanpage"
     return None
+
+
+def infer_domain_overlay(
+    archetype: str | None,
+    prompt_text: str | None = None,
+    *,
+    style_family: str | None = None,
+) -> str | None:
+    normalized_archetype = _normalize_archetype_name(archetype)
+    prompt_lower = str(prompt_text or "").strip().lower()
+    if not normalized_archetype or not prompt_lower:
+        return None
+
+    scored: list[tuple[int, str]] = []
+    for overlay, meta in DOMAIN_OVERLAY_LIBRARY.items():
+        allowed_archetypes = {str(item).strip().lower() for item in meta.get("archetypes", set())}
+        if allowed_archetypes and normalized_archetype not in allowed_archetypes:
+            continue
+        allowed_families = {str(item).strip().lower() for item in meta.get("style_families", set())}
+        if style_family and allowed_families and str(style_family).strip().lower() not in allowed_families:
+            continue
+        keywords = [str(token).strip().lower() for token in meta.get("keywords", [])]
+        score = sum(1 for token in keywords if token and token in prompt_lower)
+        if score > 0:
+            scored.append((score, overlay))
+
+    if not scored:
+        return None
+
+    scored.sort(key=lambda item: item[0], reverse=True)
+    return scored[0][1]
+
+
+def get_style_family_context(archetype: str | None, prompt_text: str | None = None) -> dict[str, Any] | None:
+    style_family = infer_style_family(archetype, prompt_text)
+    domain_overlay = infer_domain_overlay(archetype, prompt_text, style_family=style_family)
+    if not style_family and not domain_overlay:
+        return None
+    family_meta = STYLE_FAMILY_LIBRARY.get(style_family, {}) if style_family else {}
+    overlay_meta = DOMAIN_OVERLAY_LIBRARY.get(domain_overlay, {}) if domain_overlay else {}
+    return {
+        "style_family": style_family,
+        "description": str(family_meta.get("description", "")).strip(),
+        "guidance_lines": [
+            str(line).strip()
+            for line in family_meta.get("guidance_lines", [])
+            if str(line).strip()
+        ],
+        "domain_overlay": domain_overlay,
+        "overlay_description": str(overlay_meta.get("description", "")).strip(),
+        "overlay_guidance_lines": [
+            str(line).strip()
+            for line in overlay_meta.get("guidance_lines", [])
+            if str(line).strip()
+        ],
+    }
 
 
 def get_reference_build_registry() -> list[dict[str, Any]]:
@@ -481,6 +775,18 @@ def get_archetype_benchmark_guidance(
             if text:
                 family_lines.append(f"- {text}")
 
+    domain_overlay = infer_domain_overlay(archetype, prompt_text, style_family=style_family)
+    overlay_lines: list[str] = []
+    if domain_overlay:
+        overlay_meta = DOMAIN_OVERLAY_LIBRARY.get(domain_overlay, {})
+        description = str(overlay_meta.get("description", "")).strip()
+        if description:
+            overlay_lines.append(f"- DOMAIN OVERLAY ({domain_overlay}): {description}")
+        for line in overlay_meta.get("guidance_lines", [])[:3]:
+            text = str(line).strip()
+            if text:
+                overlay_lines.append(f"- {text}")
+
     style_entries = get_style_family_reference_build_entries(archetype, style_family) if style_family else []
     archetype_entries = get_reference_build_entries(archetype)
     preferred_entries = style_entries or archetype_entries
@@ -490,7 +796,7 @@ def get_archetype_benchmark_guidance(
         if bool(item.get("global_guidance"))
     ]
     global_lines = _get_guidance_lines(global_entries, global_limit)
-    lines = family_lines + archetype_lines + [line for line in global_lines if line not in archetype_lines]
+    lines = family_lines + overlay_lines + archetype_lines + [line for line in global_lines if line not in archetype_lines]
     return "\n".join(lines)
 
 
@@ -523,6 +829,9 @@ def suggest_reference_archetype(prompt_text: str) -> dict[str, Any] | None:
     style_family = infer_style_family(selected.get("archetype"), prompt_lower)
     if style_family:
         selected["style_family"] = style_family
+    domain_overlay = infer_domain_overlay(selected.get("archetype"), prompt_lower, style_family=style_family)
+    if domain_overlay:
+        selected["domain_overlay"] = domain_overlay
     return selected
 
 
@@ -583,10 +892,15 @@ def load_local_reference_build(archetype: str, prompt_text: str | None = None) -
         matches = get_sorted_reference_build_entries(archetype)
     if not matches:
         return None
-    build = load_reference_build_content(matches[0])
+    build = None
+    for entry in matches:
+        build = load_reference_build_content(entry)
+        if build is not None:
+            break
     if build:
         build["archetype"] = _normalize_archetype_name(archetype)
         build["style_family"] = style_family
+        build["domain_overlay"] = infer_domain_overlay(archetype, prompt_text, style_family=style_family)
         build["selection_reason"] = selection_reason
         build["benchmark_guidance"] = get_archetype_benchmark_guidance(archetype, prompt_text=prompt_text)
     return build
