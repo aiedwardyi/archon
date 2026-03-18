@@ -65,6 +65,17 @@ Use one section per experiment. Update this file before moving to the next arche
 - Key learning: Less is more for prompt engineering with Gemini. Content requirements work; structural mandates break.
 - Next hypothesis: Target typography (7) and interactivity_cues (7) as next weakest dimensions.
 
+### Cycle 021 - 2026-03-19 06:30
+- Archetype: fintech, portfolio, ecommerce (cross-archetype eval)
+- Fintech single run: 71.0 (baseline 83.5, delta -12.5)
+  - Built on first attempt! visual_hierarchy 8, data_completeness 9, typography 6, depth_polish 6
+- Portfolio: 0/5 builds succeeded (all preview builds failed)
+- Ecommerce: 0/5 builds succeeded (all preview builds failed)
+- Dashboard 3-run baseline: 81.5 from 1 successful build (2/3 runs failed to build)
+- Verdict: Build reliability is the #1 blocker. Dashboard and fintech can build; portfolio and ecommerce cannot.
+- Notes: Build success rate varies dramatically by archetype. The portfolio and ecommerce archetypes produce more complex layouts that are harder for Gemini to generate syntactically correct JSX for.
+- Next hypothesis: Focus build reliability improvements on the most common TSX error patterns across portfolio/ecommerce builds. Alternatively, try adjusting these archetype prompts to reduce JSX complexity.
+
 ### Cycle 002 - 2026-03-11 14:42
 - Archetype: saas_landing
 - Baseline average across 3 runs: 81.33
