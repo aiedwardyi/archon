@@ -1,8 +1,42 @@
 # Current Sprint
 
+## Branch Alignment — `eval/loops`
+
+### March 19, 2026 — Eval Loop Quality Improvements
+
+Active work on `eval/loops` branch targeting componentized build reliability and eval scoring quality.
+
+**Build reliability fixes:**
+- Added `_repair_orphan_block_comment_close` to strip stray `*/` outside block comments
+- Added tsconfig pseudo-comment key stripping (`/* Bundler mode */` → removed)
+- Added `_repair_jsx_return_unclosed_tags` for missing/misnested JSX closing tags in return blocks
+- Added JSX INTEGRITY prompt section to `engineer_componentized.txt`
+- All fixes pass 174 existing tests in `test_componentized_runtime.py`
+
+**Eval infrastructure:**
+- Created `eval/eval_loop.py` — simplified eval runner with retry-safe screenshots (temp file + move to avoid WinError 5), dist/ verification before scoring, 429 handling, and up to 5 build retries per scoring run
+- Created `eval/start_backend.py` — starts Flask without debug/watchdog to prevent mid-build restarts
+
+**Scoring results:**
+- Dashboard first successful score: **67.5/100** (baseline: 81.0, delta: -13.5)
+  - Strongest: data_completeness 9/10 (improved by new prompt rules)
+  - Weakest: layout_precision 6, depth_polish 6, interactivity_cues 6, overall_impression 6
+- Build success rate: ~40-50% per attempt (retries needed)
+- Component splitting prompt rules tested and reverted (caused 0% build success)
+
+**Key findings:**
+- Data completeness prompt additions (chart/table/KPI minimums) directly improved scores from 2→9
+- Overly prescriptive component splitting rules destabilize builds — the model produces more syntax errors when forced to split into many files
+- Build failures are primarily JSX closing tag mismatches and comment bleed — model-level quality issue with Gemini 2.5 Flash
+- Dashboard layout scoring improves when the model uses base.css grid classes without style.css overrides
+
+**Next steps:** 3-run baseline in progress. After baseline, target layout_precision and depth_polish via dashboard.txt prompt tweaks.
+
+---
+
 ## Branch Alignment — `feat/componentized-multi-run-experiments`
 
-Short status update for the active branch:
+Short status update for the previous active branch:
 - March 18, 2026 frontend artifact QA checkpoint: enterprise + studio artifact surfaces now send bearer auth on the paths that were still missing it, so version-report downloads, publish actions, governance PDF view/download actions, project/version fetches, and studio pipeline chat/iterate requests no longer fail with silent 401/404 regressions. Consumer-side chat persistence was also tightened so it waits for a real execution/version before saving message history, which removes the noisy early `chat-messages` 404 path on fresh builds. Local verification passed across all three frontends (`frontend`, `frontend-studio`, `frontend-consumer` production builds all green), and live smoke checks confirmed enterprise/studio code downloads, report downloads, published-site opens, and PDF view/download paths working again.
 - March 18, 2026 preview/governance follow-up: legacy single-page preview/published HTML now inlines `style.css` / `script.js` references even when generated pages omit the older `./` prefix, which fixes the consumer preview 404 family for older builds like project `711`. Focused backend regression coverage landed in `backend/tests/test_artifact_surface_hardening.py`. The governance insights copy was also tightened in `agents/insights_agent.py` so food-and-drink projects using the `restaurant` archetype no longer emit obviously wrong advice like “Include the restaurant name, cuisine type...” for bakery-style prompts; the new test lives in `tests/test_insights_agent.py`.
 - March 18, 2026 logistics-runtime follow-up: `utils/componentized_runtime.py` now repairs three more componentized comment-corruption families that were still escaping the workspace recovery layer: unterminated same-line block comments after real code, orphan `*/` splits inside dotted identifiers such as `item. */ type`, and inline comments that swallow a following helper call like `data.push(` plus its loop-closing brace. Focused regression coverage landed in `tests/test_componentized_runtime.py`, and a replay of the previously broken logistics workspace from project `691` now builds successfully after runtime repair instead of failing in `MainContent.tsx` / `RightRail.tsx`.
