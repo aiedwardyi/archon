@@ -49,6 +49,22 @@ Use one section per experiment. Update this file before moving to the next arche
 - Notes: Component splitting prompt rules caused 0% success rate and were reverted. Data completeness rules helped (9/10 score). Build success rate still ~40-50%.
 - Next hypothesis: Target dashboard depth_polish (6), interactivity_cues (6), layout_precision (6) via dashboard.txt tweaks.
 
+### Cycle 020 - 2026-03-19 04:00
+- Archetype: dashboard (prompt tuning experiments)
+- Baseline average across 3 runs: 67.5 (single successful run)
+- Weakest dimensions: layout_precision (6), depth_polish (6), interactivity_cues (6)
+- Exact changes made:
+  1. Added LAYOUT STRUCTURE section to dashboard.txt → REVERTED (0% build success)
+  2. Added COMPONENT SPLITTING to engineer_componentized.txt → REVERTED (0% build success)
+  3. Kept data completeness rules and JSX integrity rules
+- Files changed: prompts/archetypes/dashboard.txt, prompts/engineer_componentized.txt
+- Test average across 3 runs: 81.5 (1/3 runs scoreable due to build failures)
+- Delta: +0.5 vs baseline (81.0)
+- Verdict: committed (reverts + kept improvements)
+- Notes: Prescriptive code structure rules consistently degrade build success. Data completeness rules (charts/tables/KPI minimums) consistently improve scores without hurting builds. The 81.5 score had data_completeness 10/10, layout_precision 9/10.
+- Key learning: Less is more for prompt engineering with Gemini. Content requirements work; structural mandates break.
+- Next hypothesis: Target typography (7) and interactivity_cues (7) as next weakest dimensions.
+
 ### Cycle 002 - 2026-03-11 14:42
 - Archetype: saas_landing
 - Baseline average across 3 runs: 81.33
