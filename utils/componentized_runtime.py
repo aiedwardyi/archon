@@ -2238,6 +2238,8 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _remove_componentized_orphan_jsx_closing_brace_lines(updated)
         updated = _repair_componentized_missing_sibling_closing_tags(updated)
         updated = _remove_componentized_duplicate_closing_tag_lines(updated)
+        # Last-resort: strip orphan */ closers that survived all prior repairs
+        updated = _repair_orphan_block_comment_close(updated)
 
     return updated
 
@@ -2427,6 +2429,11 @@ def _normalize_componentized_tsconfig(source: str) -> str:
 
     compiler_options = data.setdefault("compilerOptions", {})
     if isinstance(compiler_options, dict):
+        # Strip comment-like keys the LLM sometimes emits as pseudo-comments
+        # e.g. "/* Bundler mode */": "", "/* Linting */": ""
+        comment_keys = [k for k in compiler_options if k.startswith("/*") or k.startswith("//")]
+        for k in comment_keys:
+            del compiler_options[k]
         compiler_options["noUnusedLocals"] = False
         compiler_options["noUnusedParameters"] = False
         compiler_options.setdefault("allowImportingTsExtensions", True)
@@ -5198,6 +5205,61 @@ def _repair_componentized_jsx_handler_comment_close_bleed(source: str) -> str:
         lambda match: f"{match.group('prefix')}\n",
         source,
     )
+
+
+def _repair_orphan_block_comment_close(source: str) -> str:
+    """Remove stray */ that appear outside any block comment on a line.
+
+    Common LLM output pattern:
+      if (x) { /* note */ } */    ← the trailing */ is orphaned
+      return value; */             ← stray */ after code
+    """
+    lines = source.splitlines()
+    updated = []
+    for line in lines:
+        # Walk the line tracking comment depth
+        i = 0
+        depth = 0
+        segments: list[str] = []
+        last = 0
+        while i < len(line):
+            if line[i:i+2] == "/*":
+                depth += 1
+                i += 2
+            elif line[i:i+2] == "*/":
+                if depth > 0:
+                    depth -= 1
+                    i += 2
+                else:
+                    # Orphan */ — strip it
+                    segments.append(line[last:i])
+                    last = i + 2
+                    i += 2
+            elif line[i] == '"' or line[i] == "'" or line[i] == '`':
+                # Skip string literals
+                quote = line[i]
+                i += 1
+                while i < len(line) and line[i] != quote:
+                    if line[i] == '\\':
+                        i += 1
+                    i += 1
+                if i < len(line):
+                    i += 1
+            elif line[i:i+2] == "//":
+                # Rest of line is a line comment — stop
+                break
+            else:
+                i += 1
+        if last > 0:
+            segments.append(line[last:])
+            cleaned = "".join(segments).rstrip()
+            updated.append(cleaned)
+        else:
+            updated.append(line)
+    result = "\n".join(updated)
+    if source.endswith("\n") and not result.endswith("\n"):
+        result += "\n"
+    return result
 
 
 def _normalize_componentized_preview_router(source: str) -> str:
