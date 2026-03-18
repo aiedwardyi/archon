@@ -2598,6 +2598,36 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_ensure_componentized_workspace_support_repairs_inline_mismatched_closing_tags(self):
+        code_dir = _case_dir("componentized-runtime-inline-closing-tag-mismatch")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            (code_dir / "src" / "components" / "Editor.tsx").write_text(
+                "export default function Editor() {\n"
+                "  return (\n"
+                "    <div className=\"editor-shell\">\n"
+                "      <aside className=\"sidebar\">\n"
+                "        <div className=\"toolbar\">Blocks</aside>\n"
+                "      <main className=\"canvas\">\n"
+                "        <section className=\"editor-frame\">\n"
+                "          <div className=\"surface\">Draft</section>\n"
+                "        </main>\n"
+                "      </div>\n"
+                "    </div>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            source = (code_dir / "src" / "components" / "Editor.tsx").read_text(encoding="utf-8")
+            self.assertIn('<div className="toolbar">Blocks</div></aside>', source)
+            self.assertIn('<div className="surface">Draft</div></section>', source)
+            self.assertIn("</main>", source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_ensure_componentized_workspace_support_merges_comment_filename_labels(self):
         code_dir = _case_dir("componentized-runtime-comment-filename-label")
         try:

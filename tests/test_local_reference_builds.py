@@ -82,11 +82,11 @@ def test_load_local_reference_build_returns_ff8_specific_benchmark_subset():
 
     assert reference is not None
     assert reference["archetype"] == "game_ff8"
-    assert reference["project_id"] == 440
-    assert reference["label"] == "branch-ff8-garden-archive-20260316"
-    assert reference["render_mode"] == "componentized"
+    assert reference["project_id"] == 171
+    assert reference["label"] == "legacy-ff8-seed-operatives-fan-page"
+    assert reference["render_mode"] == "legacy"
     assert "Squall Leonhart" in reference["html_code"]
-    assert ".hero-title" in reference["css_code"]
+    assert ".hero-title-name" in reference["css_code"]
     assert "branch-ff8-garden-archive-20260316" in reference["benchmark_guidance"]
     assert "legacy-ff8-seed-operatives-fan-page" in reference["benchmark_guidance"]
     assert "legacy-ff7-legends-of-midgar" not in reference["benchmark_guidance"]
@@ -101,8 +101,8 @@ def test_load_local_reference_build_uses_cinematic_family_for_digimon_prompt():
     assert reference is not None
     assert reference["style_family"] == "cinematic_collector_fanpage"
     assert reference["selection_reason"] == "style_family"
-    assert reference["project_id"] == 440
-    assert reference["label"] == "branch-ff8-garden-archive-20260316"
+    assert reference["project_id"] == 76
+    assert reference["label"] == "legacy-ff7-legends-of-midgar"
     assert "STYLE FAMILY (cinematic_collector_fanpage)" in reference["benchmark_guidance"]
     assert "branch-ff8-garden-archive-20260316" in reference["benchmark_guidance"]
     assert "legacy-ff7-legends-of-midgar" in reference["benchmark_guidance"]

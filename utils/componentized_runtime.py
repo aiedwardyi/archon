@@ -2140,6 +2140,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
             updated = BASE_CSS_IMPORT_LINE_RE.sub("", updated)
         updated = _repair_componentized_link_self_closing_children(updated)
         updated = _repair_componentized_bare_react_fragment_closers(updated)
+        updated = _repair_componentized_inline_mismatched_closing_tags(updated)
         updated = _remove_componentized_orphan_jsx_closing_brace_lines(updated)
         updated = _repair_componentized_missing_sibling_closing_tags(updated)
 
@@ -4778,6 +4779,86 @@ def _repair_componentized_missing_sibling_closing_tags(source: str) -> str:
             stack.append((current_tag, current_indent))
 
     return "\n".join(repaired_lines) + ("\n" if source.endswith("\n") else "")
+
+
+def _repair_componentized_inline_mismatched_closing_tags(source: str) -> str:
+    void_tags = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
+
+    def _repair_body(body: str) -> str:
+        tokens = list(JSX_TAG_TOKEN_RE.finditer(body))
+        if not tokens:
+            return body
+
+        rebuilt: list[str] = []
+        stack: list[str] = []
+        last_index = 0
+        changed = False
+
+        for match in tokens:
+            start, end = match.span()
+            token = match.group(0)
+            tag = match.group("tag")
+            lower_tag = tag.lower()
+            is_close = token.startswith("</")
+            is_self_closing = token.endswith("/>")
+            line_start = body.rfind("\n", 0, start) + 1
+            has_inline_prefix = bool(body[line_start:start].strip())
+
+            rebuilt.append(body[last_index:start])
+
+            if not is_close:
+                rebuilt.append(token)
+                if not is_self_closing and lower_tag not in void_tags:
+                    stack.append(tag)
+                last_index = end
+                continue
+
+            if stack and stack[-1] == tag:
+                stack.pop()
+                rebuilt.append(token)
+                last_index = end
+                continue
+
+            if not has_inline_prefix:
+                rebuilt.append(token)
+                last_index = end
+                continue
+
+            if stack and tag in stack:
+                while stack and stack[-1] != tag:
+                    rebuilt.append(f"</{stack.pop()}>")
+                    changed = True
+                if stack and stack[-1] == tag:
+                    stack.pop()
+                rebuilt.append(token)
+                last_index = end
+                continue
+
+            if stack:
+                corrected_tag = stack.pop()
+                rebuilt.append(f"</{corrected_tag}>")
+                changed = True
+                last_index = end
+                continue
+
+            rebuilt.append(token)
+            last_index = end
+
+        rebuilt.append(body[last_index:])
+        repaired = "".join(rebuilt)
+        return repaired if changed else body
+
+    def _repair_return(match: re.Match[str]) -> str:
+        body = match.group("body")
+        repaired = _repair_body(body)
+        if repaired == body:
+            return match.group(0)
+        return match.group(0).replace(body, repaired, 1)
+
+    return COMPONENTIZED_JSX_RETURN_RE.sub(
+        _repair_return,
+        source,
+    )
 
 
 def _repair_componentized_jsx_block_comment_bleed(source: str) -> str:
