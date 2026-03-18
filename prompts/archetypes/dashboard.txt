@@ -125,6 +125,19 @@ DATA & CONTENT RULES
 - Tablet/mobile layout must stay composed. Below `1024px` and `768px`, rails must not overlap or clip, sidebars must not create awkward empty gutters, and control clusters should wrap intentionally instead of drifting out of alignment.
 
 ═══════════════════════════════════════
+LAYOUT STRUCTURE (CRITICAL)
+═══════════════════════════════════════
+
+The dashboard MUST fill the full 1440px viewport. Do not let content collapse into a narrow column.
+- .dashboard-layout: display flex, sidebar + main-content side by side
+- .main-content: margin-left 220px (sidebar width), fills remaining width
+- .kpi-grid: 4 columns at desktop (repeat(4, 1fr)) — NEVER collapse to 1 column above 1200px
+- .grid-2col: 2fr 1fr at desktop (chart/table takes 2/3, right rail takes 1/3)
+- The right rail must sit BESIDE the chart/table, not stacked below
+- Do NOT add responsive overrides in style.css that collapse the grid at desktop widths
+- If using base.css classes, do NOT redefine their grid-template-columns in style.css
+
+═══════════════════════════════════════
 SELF-CHECK BEFORE OUTPUT
 ═══════════════════════════════════════
 
@@ -144,3 +157,5 @@ SELF-CHECK BEFORE OUTPUT
 □ The right rail carries two visually distinct subsections or one split module with real weight
 □ Page titles, support-rail labels, and row actions feel domain-specific rather than template-like
 □ style.css is ONLY overrides (≤80 lines)
+□ KPI grid is 4 columns at 1440px — not collapsed to 1 or 2 columns
+□ Chart and activity feed sit side by side via .grid-2col, not stacked vertically

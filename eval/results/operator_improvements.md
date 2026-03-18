@@ -30,6 +30,25 @@ Use one section per experiment. Update this file before moving to the next arche
 - Notes: Log created to standardize manual eval-loop experiments.
 - Next hypothesis: Start with the weakest current archetype after reading `overnight_summary.md` and `checkpoint.md`.
 
+### Cycle 019 - 2026-03-19 02:00
+- Archetype: dashboard (build pipeline fixes)
+- Baseline average across 3 runs: N/A (builds were failing)
+- Weakest dimensions: Build failures — 60% of componentized builds failed
+- Exact changes made:
+  1. Added _repair_orphan_block_comment_close to strip stray */
+  2. Added tsconfig pseudo-comment key stripping
+  3. Added _repair_jsx_return_unclosed_tags for missing/misnested JSX closers
+  4. Added JSX INTEGRITY section to engineer_componentized.txt
+  5. Added data completeness rules to engineer_componentized.txt
+  6. Created eval/eval_loop.py with retry-safe screenshots and dist/ verification
+  7. Created eval/start_backend.py to run without watchdog reloader
+- Files changed: utils/componentized_runtime.py, prompts/engineer_componentized.txt, eval/eval_loop.py, eval/start_backend.py
+- Test average across 3 runs: 67.5 (single run — 3-run baseline pending)
+- Delta: N/A (first scorable run on this branch)
+- Verdict: committed (all changes)
+- Notes: Component splitting prompt rules caused 0% success rate and were reverted. Data completeness rules helped (9/10 score). Build success rate still ~40-50%.
+- Next hypothesis: Target dashboard depth_polish (6), interactivity_cues (6), layout_precision (6) via dashboard.txt tweaks.
+
 ### Cycle 002 - 2026-03-11 14:42
 - Archetype: saas_landing
 - Baseline average across 3 runs: 81.33
