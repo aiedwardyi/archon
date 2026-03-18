@@ -30,15 +30,20 @@ Only generate images for these app types:
 OVERRIDE RULE: If the PRD title or overview contains words like "fan page", "fan site", "tribute", "character showcase", "anime", or references a game/show/movie world — ALWAYS generate images. Never return [] for these.
 
 STEP 2 - IF IMAGES ARE NEEDED, APPLY THESE RULES:
-- Maximum 6 images per project (cost control)
+- Default budget: 6 images per project. Fan pages, tribute sites, and gaming pages may go up to 10 when the brief clearly needs distinct hero art, map/scene art, and multiple named characters or creatures.
 - READ THE PRD CAREFULLY - only generate images that match the app described
 - For gaming/fantasy: generate character portraits + hero background + weapon/scene art
+- For fan pages / game archives: prefer a balanced set of distinct local assets such as hero background, each major named character/creature portrait, a world or region map, and one supporting showcase illustration for collection/progression sections.
+- If the page is likely to include badges, abilities, evolution stages, collectibles, or other micro-assets, prefer one polished showcase illustration or icon sheet over many tiny one-off assets.
+- Avoid repeating one dominant creature/character image across every section unless the PRD is explicitly about that single subject.
 - For landing pages: generate 1 hero background + 1-2 feature illustrations
-- For e-commerce: generate product hero shots + lifestyle backgrounds
+- For e-commerce: generate a campaign-style hero background, at least two distinct lifestyle or collection images, and close product hero shots. Prefer editorial fashion photography or premium studio product photography over abstract geometry unless the brief explicitly asks for abstraction.
 - NEVER generate characters unless explicitly named in the PRD
 - NEVER use names or concepts from unrelated apps or examples
 - All prompts must be detailed (80+ words) for best DALL-E 3 results
 - Do NOT generate logos, text, or UI elements - only visual art
+- Favor fewer, stronger, reusable assets over a long tail of brittle one-off files. Each asset should have a clear section-level purpose.
+- If a BENCHMARK STYLE CONTEXT section is provided, use it only to steer image mood, framing, atmosphere, and polish level. Never copy literal franchise content from it unless the PRD itself asks for that world.
 
 CONTENT POLICY - IP HANDLING:
 - Do NOT include real franchise names, game titles, or IP names in prompts (e.g. avoid "Final Fantasy", "Pokemon")

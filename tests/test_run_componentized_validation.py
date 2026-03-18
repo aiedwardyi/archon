@@ -1,0 +1,417 @@
+from __future__ import annotations
+
+import asyncio
+import contextlib
+import json
+import unittest
+from pathlib import Path
+from unittest import mock
+from uuid import uuid4
+
+import requests
+
+from eval.api_client import BuildError
+from eval import run_componentized_validation as runner
+
+LOCAL_TMP_ROOT = runner.ROOT / ".tmp-runner-tests"
+
+
+def _make_scratch_dir(name: str) -> Path:
+    path = LOCAL_TMP_ROOT / f"{name}-{uuid4().hex}"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+class RunComponentizedValidationTests(unittest.TestCase):
+    def test_create_and_build_sync_forwards_enqueue_flag(self):
+        builder = mock.Mock()
+        builder.create_and_build.return_value = {"project_id": 1, "version": 1, "execution_id": 1}
+
+        with mock.patch.object(runner, "BuilderAPI", return_value=builder) as builder_cls:
+            result = runner._create_and_build_sync(
+                base_url="http://127.0.0.1:5000",
+                name="componentized_dashboard_test",
+                description="Build a dashboard",
+                timeout=30,
+                enqueue_on_limit=True,
+                queue_timeout=120,
+            )
+
+        builder_cls.assert_called_once_with(base_url="http://127.0.0.1:5000")
+        builder.create_and_build.assert_called_once_with(
+            name="componentized_dashboard_test",
+            description="Build a dashboard",
+            timeout=30,
+            enqueue_on_limit=True,
+            queue_timeout=120,
+        )
+        self.assertEqual(result["project_id"], 1)
+
+    def test_load_preview_build_uses_fallback_file(self):
+        version_dir = _make_scratch_dir("preview-fallback") / "generated" / "101" / "v1"
+        version_dir.mkdir(parents=True, exist_ok=True)
+        fallback = {
+            "status": "success",
+            "dist_index": str(version_dir / "code" / "dist" / "index.html"),
+        }
+        (version_dir / "last_preview_build.json").write_text(
+            json.dumps(fallback),
+            encoding="utf-8",
+        )
+
+        self.assertEqual(runner._load_preview_build(version_dir), fallback)
+
+    def test_ensure_backend_available_accepts_401(self):
+        response = mock.Mock(status_code=401)
+
+        with mock.patch("eval.run_componentized_validation.requests.get", return_value=response) as get_mock:
+            runner._ensure_backend_available("http://127.0.0.1:5000")
+
+        get_mock.assert_called_once_with("http://127.0.0.1:5000/api/health", timeout=5)
+
+    def test_managed_backend_includes_log_tails_on_startup_failure(self):
+        results_dir = _make_scratch_dir("managed-backend-failure")
+        process = mock.Mock()
+        process.poll.return_value = 1
+
+        def fake_popen(*args, **kwargs):
+            Path(kwargs["stdout"].name).write_text("backend stdout line\n", encoding="utf-8")
+            Path(kwargs["stderr"].name).write_text("backend stderr line\n", encoding="utf-8")
+            return process
+
+        with (
+            mock.patch("eval.run_componentized_validation.subprocess.Popen", side_effect=fake_popen),
+            mock.patch(
+                "eval.run_componentized_validation.requests.get",
+                side_effect=requests.RequestException("connection refused"),
+            ),
+            mock.patch("eval.run_componentized_validation.time.sleep"),
+        ):
+            with self.assertRaises(SystemExit) as ctx:
+                with runner._managed_backend(
+                    base_url="http://127.0.0.1:5000",
+                    results_dir=results_dir,
+                    startup_timeout=1,
+                    env_overrides={},
+                ):
+                    self.fail("managed backend context should not yield on startup failure")
+
+        self.assertIn("Backend stdout tail:", str(ctx.exception))
+        self.assertIn("backend stdout line", str(ctx.exception))
+        self.assertIn("Backend stderr tail:", str(ctx.exception))
+        self.assertIn("backend stderr line", str(ctx.exception))
+
+    def test_classify_preview_failure_detects_npm_cache_eperm(self):
+        preview_failure = runner._classify_preview_failure(
+            {
+                "status": "error",
+                "reason": "npm.cmd install failed",
+                "logs": [
+                    {
+                        "stderr": "npm error code EPERM\n"
+                        "npm error path C:\\Users\\mredw\\AppData\\Local\\npm-cache\\_cacache\\tmp\\abc123\n"
+                    }
+                ],
+            }
+        )
+
+        self.assertEqual(preview_failure["category"], "npm_cache_eperm")
+        self.assertEqual(preview_failure["reason"], "npm.cmd install failed")
+        self.assertEqual(preview_failure["stderr_excerpt"], "npm error code EPERM")
+
+    def test_run_archetype_writes_result_file_on_build_error(self):
+        results_dir = _make_scratch_dir("build-error")
+
+        def fake_create_and_build_sync(*, base_url, name, description, timeout, enqueue_on_limit, queue_timeout):
+            raise BuildError(
+                "simulated failure",
+                telemetry={"queue_observed": True, "queue_wait_seconds": 8.5, "max_queue_position": 3},
+            )
+
+        with mock.patch.object(runner, "_create_and_build_sync", side_effect=fake_create_and_build_sync):
+            result = asyncio.run(
+                runner._run_archetype(
+                    archetype="dashboard",
+                    prompt=runner.PROMPTS["dashboard"],
+                    results_dir=results_dir,
+                    base_url="http://127.0.0.1:5000",
+                    build_timeout=30,
+                    enqueue_on_limit=False,
+                    queue_timeout=120,
+                    wait_seconds=0,
+                    scorer_model="gemini-2.5-flash",
+                    build_only=False,
+                    semaphore=asyncio.Semaphore(1),
+                )
+            )
+
+        self.assertEqual(result["score_error"], "build_failed")
+        self.assertEqual(result["build_error"], "simulated failure")
+        self.assertGreaterEqual(result["duration_seconds"], 0)
+
+        result_path = results_dir / "dashboard" / "result.json"
+        self.assertTrue(result_path.exists())
+        written = json.loads(result_path.read_text(encoding="utf-8"))
+        self.assertEqual(written["score_error"], "build_failed")
+        self.assertEqual(written["build_error"], "simulated failure")
+        self.assertEqual(written["queue_telemetry"]["queue_wait_seconds"], 8.5)
+        self.assertEqual(written["queue_telemetry"]["max_queue_position"], 3)
+
+    def test_run_archetype_build_only_skips_screenshots_and_scoring(self):
+        temp_root = _make_scratch_dir("build-only")
+        results_dir = temp_root / "results"
+        version_dir = temp_root / "generated" / "201" / "v1"
+        version_dir.mkdir(parents=True, exist_ok=True)
+        (version_dir / "last_preview_build.json").write_text(
+            json.dumps(
+                {
+                    "status": "success",
+                    "dist_index": str(version_dir / "code" / "dist" / "index.html"),
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        def fake_create_and_build_sync(*, base_url, name, description, timeout, enqueue_on_limit, queue_timeout):
+            return {
+                "project_id": 201,
+                "version": 1,
+                "preview_url": "http://127.0.0.1:5000/api/preview/201/1",
+                "queue_telemetry": {"queue_observed": True, "queue_wait_seconds": 4.0, "max_queue_position": 2},
+            }
+
+        with (
+            mock.patch.object(runner, "ROOT", temp_root),
+            mock.patch.object(runner, "_create_and_build_sync", side_effect=fake_create_and_build_sync),
+            mock.patch.object(runner, "infer_scaffold_mode", return_value="componentized"),
+            mock.patch.object(runner, "Screenshotter") as screenshotter_cls,
+            mock.patch.object(runner, "_score_sync") as score_sync,
+        ):
+            result = asyncio.run(
+                runner._run_archetype(
+                    archetype="dashboard",
+                    prompt=runner.PROMPTS["dashboard"],
+                    results_dir=results_dir,
+                    base_url="http://127.0.0.1:5000",
+                    build_timeout=30,
+                    enqueue_on_limit=True,
+                    queue_timeout=120,
+                    wait_seconds=0,
+                    scorer_model="gemini-2.5-flash",
+                    build_only=True,
+                    semaphore=asyncio.Semaphore(1),
+                )
+            )
+
+        screenshotter_cls.assert_not_called()
+        score_sync.assert_not_called()
+        self.assertTrue(result["score_skipped"])
+        self.assertEqual(result["preview_build"]["status"], "success")
+        self.assertIsNone(result["delta_vs_previous_best"])
+        self.assertTrue(result["build_only"])
+
+        written = json.loads((results_dir / "dashboard" / "result.json").read_text(encoding="utf-8"))
+        self.assertTrue(written["build_only"])
+        self.assertTrue(written["score_skipped"])
+        self.assertEqual(written["queue_telemetry"]["queue_wait_seconds"], 4.0)
+
+    def test_run_archetype_records_preview_failure_details(self):
+        temp_root = _make_scratch_dir("preview-failure")
+        results_dir = temp_root / "results"
+        version_dir = temp_root / "generated" / "301" / "v1"
+        version_dir.mkdir(parents=True, exist_ok=True)
+        (version_dir / "last_preview_build.json").write_text(
+            json.dumps(
+                {
+                    "status": "error",
+                    "reason": "npm.cmd install failed",
+                    "logs": [
+                        {
+                            "stderr": "npm error code EPERM\n"
+                            "npm error path C:\\Users\\mredw\\AppData\\Local\\npm-cache\\_cacache\\tmp\\abc123\n"
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        def fake_create_and_build_sync(*, base_url, name, description, timeout, enqueue_on_limit, queue_timeout):
+            return {
+                "project_id": 301,
+                "version": 1,
+                "preview_url": "http://127.0.0.1:5000/api/preview/301/1",
+                "queue_telemetry": {"queue_observed": False, "queue_wait_seconds": 0.0, "max_queue_position": None},
+            }
+
+        with (
+            mock.patch.object(runner, "ROOT", temp_root),
+            mock.patch.object(runner, "_create_and_build_sync", side_effect=fake_create_and_build_sync),
+            mock.patch.object(runner, "infer_scaffold_mode", return_value="componentized"),
+        ):
+            result = asyncio.run(
+                runner._run_archetype(
+                    archetype="dashboard",
+                    prompt=runner.PROMPTS["dashboard"],
+                    results_dir=results_dir,
+                    base_url="http://127.0.0.1:5000",
+                    build_timeout=30,
+                    enqueue_on_limit=True,
+                    queue_timeout=120,
+                    wait_seconds=0,
+                    scorer_model="gemini-2.5-flash",
+                    build_only=True,
+                    semaphore=asyncio.Semaphore(1),
+                )
+            )
+
+        self.assertEqual(result["score_error"], "preview_unavailable")
+        self.assertEqual(result["preview_failure"]["category"], "npm_cache_eperm")
+        self.assertEqual(result["preview_failure"]["stderr_excerpt"], "npm error code EPERM")
+
+        written = json.loads((results_dir / "dashboard" / "result.json").read_text(encoding="utf-8"))
+        self.assertEqual(written["preview_failure"]["category"], "npm_cache_eperm")
+
+    def test_make_queue_summary_and_summary_include_aggregate_queue_metrics(self):
+        results = [
+            {
+                "archetype": "dashboard",
+                "project_id": 101,
+                "version": 1,
+                "scaffold_mode": "componentized",
+                "preview_build": {"status": "success"},
+                "preview_path": "/tmp/dashboard/index.html",
+                "previous_site_path": "/tmp/baseline/index.html",
+                "score": {"weighted_total": 82.0},
+                "previous_best_score": 81.0,
+                "previous_best_score_source": "baseline",
+                "delta_vs_previous_best": 1.0,
+                "queue_telemetry": {"queue_observed": True, "queue_wait_seconds": 12.5, "max_queue_position": 4},
+            },
+            {
+                "archetype": "portfolio",
+                "project_id": 102,
+                "version": 1,
+                "scaffold_mode": "componentized",
+                "preview_build": {"status": "success"},
+                "preview_path": "/tmp/portfolio/index.html",
+                "previous_site_path": "/tmp/baseline-portfolio/index.html",
+                "score": {"weighted_total": 80.0},
+                "previous_best_score": 83.5,
+                "previous_best_score_source": "baseline",
+                "delta_vs_previous_best": -3.5,
+                "queue_telemetry": {"queue_observed": False, "queue_wait_seconds": 0.0, "max_queue_position": None},
+            },
+        ]
+
+        queue_summary = runner._make_queue_summary(results)
+        summary_text = runner._make_summary(results)
+
+        self.assertEqual(queue_summary["total_runs"], 2)
+        self.assertEqual(queue_summary["observed_runs"], 1)
+        self.assertEqual(queue_summary["average_queue_wait_seconds"], 12.5)
+        self.assertEqual(queue_summary["max_queue_wait_seconds"], 12.5)
+        self.assertEqual(queue_summary["worst_queue_position"], 4)
+        self.assertIn("## Queue Overview", summary_text)
+        self.assertIn("Runs with queue observed: 1/2", summary_text)
+        self.assertIn("Worst queue position: 4", summary_text)
+
+    def test_make_summary_marks_build_only_results_as_skipped(self):
+        summary_text = runner._make_summary(
+            [
+                {
+                    "archetype": "dashboard",
+                    "project_id": 101,
+                    "version": 1,
+                    "build_only": True,
+                    "scaffold_mode": "componentized",
+                    "preview_build": {"status": "success"},
+                    "preview_path": "/tmp/dashboard/index.html",
+                    "previous_site_path": "/tmp/baseline/index.html",
+                    "score_skipped": True,
+                    "previous_best_score": 81.0,
+                    "previous_best_score_source": "baseline",
+                    "delta_vs_previous_best": None,
+                    "queue_telemetry": {"queue_observed": True, "queue_wait_seconds": 7.0, "max_queue_position": 2},
+                }
+            ]
+        )
+
+        self.assertIn("Mode: build-only", summary_text)
+        self.assertIn("New score: skipped (build-only mode)", summary_text)
+
+    def test_make_summary_includes_preview_failure_details(self):
+        summary_text = runner._make_summary(
+            [
+                {
+                    "archetype": "dashboard",
+                    "project_id": 101,
+                    "version": 1,
+                    "build_only": True,
+                    "scaffold_mode": "componentized",
+                    "preview_build": {"status": "error"},
+                    "preview_failure": {
+                        "category": "npm_cache_eperm",
+                        "detail": "npm cache EPERM while installing dependencies.",
+                    },
+                    "preview_path": None,
+                    "previous_site_path": "/tmp/baseline/index.html",
+                    "score_error": "preview_unavailable",
+                    "previous_best_score": 81.0,
+                    "previous_best_score_source": "baseline",
+                    "delta_vs_previous_best": None,
+                    "queue_telemetry": {"queue_observed": True, "queue_wait_seconds": 7.0, "max_queue_position": 2},
+                }
+            ]
+        )
+
+        self.assertIn("Preview failure: npm_cache_eperm (npm cache EPERM while installing dependencies.)", summary_text)
+
+    def test_run_launch_backend_creates_results_dir_before_startup_check(self):
+        temp_root = _make_scratch_dir("launch-backend-run")
+        backend_events: list[tuple[str, object]] = []
+
+        @contextlib.contextmanager
+        def fake_managed_backend(*, base_url, results_dir, startup_timeout, env_overrides):
+            backend_events.append(("managed_backend", results_dir.exists()))
+            yield
+
+        async def fake_run_archetype(**kwargs):
+            return {
+                "archetype": kwargs["archetype"],
+                "project_id": 101,
+                "version": 1,
+                "build_only": True,
+                "scaffold_mode": "componentized",
+                "preview_build": {"status": "success"},
+                "preview_path": "/tmp/dashboard/index.html",
+                "previous_site_path": "/tmp/baseline/index.html",
+                "score_skipped": True,
+                "previous_best_score": 81.0,
+                "previous_best_score_source": "baseline",
+                "delta_vs_previous_best": None,
+                "queue_telemetry": {"queue_observed": False, "queue_wait_seconds": 0.0, "max_queue_position": None},
+            }
+
+        def fake_ensure_backend_available(base_url: str) -> None:
+            backend_events.append(("ensure", base_url))
+
+        with (
+            mock.patch.object(runner, "ROOT", temp_root),
+            mock.patch.object(runner, "DEFAULT_RESULTS_DIR", temp_root / "eval" / "results" / "default"),
+            mock.patch.object(runner, "PROMPTS", {"dashboard": "Build a dashboard"}),
+            mock.patch("sys.argv", ["run_componentized_validation.py", "--launch-backend", "--build-only", "--archetypes", "dashboard", "--label", "launch-backend-test"]),
+            mock.patch.object(runner, "_managed_backend", side_effect=fake_managed_backend),
+            mock.patch.object(runner, "_ensure_backend_available", side_effect=fake_ensure_backend_available),
+            mock.patch.object(runner, "_run_archetype", side_effect=fake_run_archetype),
+        ):
+            asyncio.run(runner.run())
+
+        self.assertEqual(backend_events[0], ("managed_backend", True))
+        self.assertEqual(backend_events[1], ("ensure", "http://127.0.0.1:5000"))
+        self.assertEqual(len([event for event in backend_events if event[0] == "ensure"]), 1)
+        self.assertTrue((temp_root / "eval" / "results" / "launch-backend-test" / "results.json").exists())
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -21,6 +21,26 @@
       "discovery_ingest": true
     },
     {
+      "project_id": 440,
+      "version": 1,
+      "archetype": "game",
+      "priority": 99,
+      "label": "branch-ff8-garden-archive-20260316",
+      "prompt_summary": "Build a Final Fantasy VIII fan page with character profiles for Squall, Rinoa, and Zell, weapons gallery, and world map",
+      "prompt_hints": [
+        "final fantasy viii fan page",
+        "final fantasy 8 fan page",
+        "squall",
+        "rinoa",
+        "zell",
+        "balamb garden",
+        "gunblade"
+      ],
+      "notes": "Current top FF8 branch benchmark. Key traits: premium cinematic hero composition, strong FF8-specific atmosphere, polished character dossier cards, clear active navigation state, and high-end collector-edition presentation without broken assets or layout collapse.",
+      "eval_score": 88.0,
+      "discovery_ingest": false
+    },
+    {
       "project_id": 147,
       "version": 1,
       "archetype": "portfolio",

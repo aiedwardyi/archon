@@ -1,11 +1,14 @@
 ﻿from __future__ import annotations
 
 import json
-import tempfile
+import shutil
 import unittest
 from pathlib import Path
 
 from scripts.consume_execution_request import consume
+
+TMP_ROOT = Path(__file__).resolve().parent.parent / ".tmp-tests"
+TMP_ROOT.mkdir(parents=True, exist_ok=True)
 
 
 def _write_json(p: Path, obj) -> None:
@@ -28,8 +31,11 @@ class ExecutorWritesTests(unittest.TestCase):
             "_meta": {"source_ip": "127.0.0.1", "received_at": "2099-01-01T00:00:00+00:00"},
         }
 
-        with tempfile.TemporaryDirectory() as td:
-            public_dir = Path(td) / "public"
+        case_dir = TMP_ROOT / "executor-writes"
+        shutil.rmtree(case_dir, ignore_errors=True)
+        case_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            public_dir = case_dir / "public"
             _write_json(public_dir / "last_execution_request.json", req)
 
             r1 = consume(public_dir)
@@ -48,6 +54,8 @@ class ExecutorWritesTests(unittest.TestCase):
 
             # content stable
             self.assertEqual(note_path.read_text(encoding="utf-8"), "hello deterministic world\n")
+        finally:
+            shutil.rmtree(case_dir, ignore_errors=True)
 
     def test_iteration_scope_enforced(self):
         from scripts.safe_write import enforce_iteration_scope

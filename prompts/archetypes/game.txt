@@ -114,6 +114,8 @@ SECTION 3 — WEAPONS ("Legendary Weapons" / "Arsenal")
     * Owner name in accent color
     * 1-2 sentence description
     * ATK and MAG stat numbers (large, bold, accent-colored)
+    * A WORKING click interaction on each card CTA such as expand/collapse, inline dossier,
+      drawer, or modal populated with local mock/lore data. Never ship dead buttons.
 
 SECTION 4 — WORLD MAP ("Explore the Planet" / "World Map")
   - Eyebrow text + section title
@@ -122,6 +124,8 @@ SECTION 4 — WORLD MAP ("Explore the Planet" / "World Map")
     * Location type badge (e.g. "CAPITAL", "ACADEMY", "RUINS")
     * Location name in large text
     * 1-2 sentence description
+    * If there is a CTA such as "Access Logs" or "Explore", it must open local detail content
+      and cannot be inert
 
 ═══════════════════════════════════════
 REQUIRED 4 SECTIONS (in this order)
@@ -151,6 +155,7 @@ REQUIRED 4 SECTIONS (in this order)
    - Below: .grid-weapons with 3 .weapon-card, each with .weapon-type (badge), .weapon-name, owner in accent, .weapon-desc, .weapon-stats with ATK + MAG .weapon-stat-value numbers
    - Use REAL weapon names from the game
    - ATK/MAG values: realistic numbers (e.g. ATK: 96, MAG: 24) — never "0"
+   - Every weapon card CTA must be wired to a meaningful reveal state with local data; no decorative-only button shells
    - NEVER leave weapons banner empty; if image fails, render a CSS fallback panel with weapon silhouettes and labels
 
 5. WORLD MAP — eyebrow "EXPLORATION" or similar + section title. Must include:
@@ -159,6 +164,7 @@ REQUIRED 4 SECTIONS (in this order)
    - Below: .grid-locations with 3-4 .location-card, each with .location-region (badge), .location-name, .location-desc
    - Use REAL location names from the game
    - Map must include 3-4 labeled location chips overlaid on the image to avoid placeholder appearance
+   - Never render literal strings like "Image Placeholder" or "Map Placeholder" in the final UI; if the image is unavailable, render a polished local fallback panel instead
 
 ALSO INCLUDE:
 - Noise overlay: <div class="noise-overlay"></div> immediately after <body> — MANDATORY
@@ -178,12 +184,22 @@ Use these for:
 - Weapons banner: the combined weapons panorama
 - World map: the aerial/isometric map illustration
 
+CRITICAL ASSET RULE:
+- Only reference exact asset filenames that appear in the DESIGN ASSETS list.
+- Do NOT invent extra generated-assets names for badges, evolution stages, ability icons, or gallery thumbnails unless those filenames are explicitly listed.
+- If the layout needs more supporting visuals than the supplied assets cover, reuse an existing provided asset intentionally or render those smaller slots as CSS/inline-SVG treatments instead of broken image tags.
+- Never fetch franchise art, sprites, badge PNGs, map icons, or UI ornaments from remote URLs. Stay local: use the provided generated assets, gradients, CSS, or inline SVG.
+- If the task includes a badge / crest / emblem collection and the DESIGN ASSETS list only provides one combined collection image, show that combined collection art once and render the individual badge entries as styled text chips, counters, or inline-SVG tokens. Do NOT hand-type separate external badge image URLs.
+- If the task includes evolution lines and the DESIGN ASSETS list only provides one evolution showcase image, treat that image as the primary visual and keep per-stage mini markers text-first or inline-SVG. Do NOT fetch franchise sprite sheets from external sites.
+
 For EVERY <img> tag, add an onerror fallback:
   onerror="this.style.background='linear-gradient(135deg,var(--surface-1),var(--surface-2))';this.style.minHeight='200px'"
 
 If an image cannot load, do NOT leave blank space; include fallback text labels (e.g. "Balamb Garden", "Gunblade Arsenal") inside the same container.
 
 If no design agent images are available, use solid gradient backgrounds as fallback — NEVER leave broken image icons visible.
+
+- Never use inline SVG or text that literally says "placeholder" in the shipped interface.
 
 ═══════════════════════════════════════
 MANDATORY JAVASCRIPT (bottom of <body>)
@@ -205,8 +221,11 @@ CONTENT RULES
 - All stat bar widths must be varied (never all same %)
 - Character cards must include franchise-colored glow or aura treatment and a visible active/open state
 - Include at least one click-triggered reveal interaction on the page; hover alone is not enough
+- Any visible CTA on cards must do something meaningful when clicked; dead buttons are a failure
 - Use premium SVG-style icons only; never use emoji as UI icons
 - Include at least one animated quantitative UI detail such as count-up numbers, filling stat bars, or glowing meter states
+- Typography consistency matters: hero title, nav links, eyebrow labels, character names, badge/location names, and the scroll-indicator label must all use the display font instead of drifting back to a plain body font.
+- The scroll indicator must sit centered beneath the hero content, with its own clear stacking order. It must never look tucked behind CTA buttons or float off-axis.
 - Character descriptions: 2-3 sentences of actual character lore
 - Weapon descriptions: 1-2 sentences about the weapon's lore and capabilities
 - Location descriptions: 1-2 sentences about the place

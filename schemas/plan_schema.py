@@ -47,6 +47,7 @@ class QualityTarget(BaseModel):
     visual_style: str = Field(..., description="Specific visual direction: colors, typography, imagery, mood")
     key_sections: List[str] = Field(..., description="Sections that must appear, in priority order")
     must_have_content: List[str] = Field(..., description="Concrete content items that must be present")
+    interactivity: List[str] = Field(default_factory=list, description="Concrete interactions that must work")
     avoid: List[str] = Field(default_factory=list, description="Anti-patterns to avoid for this specific build")
 
 
@@ -58,6 +59,7 @@ class Task(BaseModel):
 
     execution_hint: Literal["engineer", "defer"] = Field(default="defer")
     task_type: Optional[Literal["scaffold", "single_file", "doc"]] = Field(default=None)
+    scaffold_mode: Optional[Literal["legacy_single_page", "componentized_app"]] = Field(default=None)
     output_files: Optional[List[str]] = Field(default=None)
     ui_archetype: Optional[Literal[
         "dashboard", "landing", "ecommerce", "kanban", "chat", "editor",
@@ -69,6 +71,7 @@ class Task(BaseModel):
     ]] = Field(default=None)
     archetype_rules: Optional[ArchetypeRules] = Field(default=None)
     quality_target: Optional[QualityTarget] = Field(default=None)
+    render_path: Optional[Literal["A", "B", "C"]] = Field(default=None)
 
     def model_post_init(self, __context) -> None:
         if self.execution_hint == "engineer" and self.task_type is None:

@@ -258,7 +258,11 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, ini
                 if (!projectId || !resolvedVersion) return;
                 setPublishState("loading");
                 try {
-                  const res = await fetch(`http://localhost:5000/api/projects/${projectId}/versions/${resolvedVersion}/publish`, { method: "POST" });
+                  const token = localStorage.getItem("archon_token");
+                  const res = await fetch(`http://localhost:5000/api/projects/${projectId}/versions/${resolvedVersion}/publish`, {
+                    method: "POST",
+                    headers: token ? { Authorization: `Bearer ${token}` } : {},
+                  });
                   const data = await res.json();
                   if (data.url) {
                     setPublishedUrl(`http://localhost:5000${data.url}`);
@@ -499,6 +503,10 @@ const LogsTab = ({ logs, version }: { logs: LogEntry[]; version: number | null }
 
 const PreviewTab = ({ device, onDeviceChange, projectId, version }: { device: "desktop" | "mobile"; onDeviceChange: (d: "desktop" | "mobile") => void; projectId: number | null; version: number | null }) => (
   <div>
+    {(() => {
+      const desktopPreviewHeight = "clamp(720px, 78vh, 1100px)";
+      return (
+        <>
     <div className="flex items-center justify-center gap-2 mb-4">
       <button
         onClick={() => onDeviceChange("desktop")}
@@ -518,9 +526,9 @@ const PreviewTab = ({ device, onDeviceChange, projectId, version }: { device: "d
       </button>
     </div>
 
-    <div className="flex items-start justify-center min-h-[500px]">
+    <div className="flex items-start justify-center" style={{ minHeight: desktopPreviewHeight }}>
       {device === "desktop" ? (
-        <div className="w-full border border-border rounded-lg overflow-hidden bg-background shadow-sm flex flex-col" style={{ height: 500 }}>
+        <div className="w-full border border-border rounded-lg overflow-hidden bg-background shadow-sm flex flex-col" style={{ height: desktopPreviewHeight }}>
           {/* Fake browser chrome */}
           <div className="h-8 bg-secondary/60 border-b border-border flex items-center gap-1.5 px-3 flex-shrink-0">
             <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />
@@ -547,6 +555,9 @@ const PreviewTab = ({ device, onDeviceChange, projectId, version }: { device: "d
         </div>
       )}
     </div>
+        </>
+      );
+    })()}
   </div>
 );
 
@@ -643,7 +654,7 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const downloadPdf = async (type: "client" | "internal") => {
+  const handlePdf = async (type: "client" | "internal", action: "download" | "view") => {
     if (!projectId || !version) return;
     const token = localStorage.getItem("archon_token");
     const res = await fetch(
@@ -653,11 +664,21 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
     if (!res.ok) { alert(t("govPdfFailed")); return; }
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
+    if (action === "view") {
+      const opened = window.open(url, "_blank", "noopener,noreferrer");
+      if (!opened) {
+        window.location.href = url;
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      return;
+    }
     const a = document.createElement("a");
     a.href = url;
     a.download = `archon-v${version}-${type}.pdf`;
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   };
 
   useEffect(() => {
@@ -667,7 +688,10 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
     setError(null);
     (async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/projects/${projectId}/versions/${version}/factsheet`);
+        const token = localStorage.getItem("archon_token");
+        const res = await fetch(`http://localhost:5000/api/projects/${projectId}/versions/${version}/factsheet`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
         if (!res.ok) throw new Error("not found");
         const data = await res.json();
         if (!cancelled) setFactsheet(data);
@@ -820,15 +844,27 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
       </div>
 
       {/* PDF Download Buttons */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <button
-          onClick={() => downloadPdf("client")}
+          onClick={() => handlePdf("client", "view")}
+          className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5 cursor-pointer"
+        >
+          <Eye className="h-3.5 w-3.5" /> View Client PDF
+        </button>
+        <button
+          onClick={() => handlePdf("client", "download")}
           className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5 cursor-pointer"
         >
           <FileText className="h-3.5 w-3.5" /> {t("govDownloadClientPdf")}
         </button>
         <button
-          onClick={() => downloadPdf("internal")}
+          onClick={() => handlePdf("internal", "view")}
+          className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5 cursor-pointer"
+        >
+          <Eye className="h-3.5 w-3.5" /> View Internal PDF
+        </button>
+        <button
+          onClick={() => handlePdf("internal", "download")}
           className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5 cursor-pointer"
         >
           <FileText className="h-3.5 w-3.5" /> {t("govDownloadInternalPdf")}

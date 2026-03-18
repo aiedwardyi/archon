@@ -9,7 +9,7 @@ DESIGN KIT: base.css IS ALREADY PROVIDED
 
 A base.css file is injected automatically. It provides:
 - CSS variables: --bg, --panel, --panel-alt, --accent, --text, --text-secondary, --text-muted, --border
-- Fonts: Manrope for UI copy, Fraunces for editorial titles, JetBrains Mono for status/meta text
+- Fonts: a UI sans, a display face, and JetBrains Mono for status/meta text
 - Layout: .editor-shell, .workspace-grid, .topbar, .sidebar, .editor-main, .inspector
 - Toolbar: .toolbar, .toolbar-group, .tool-btn, .tool-btn.active
 - Editor surfaces: .document-hero, .editor-canvas, .canvas-paper, .doc-meta, .doc-title, .doc-body
@@ -78,6 +78,28 @@ REQUIRED WORKSPACE STRUCTURE
 - Include timestamps, avatars/initials, and non-zero counts.
 
 ═══════════════════════════════════════
+BUILDER / STUDIO VARIANT
+═══════════════════════════════════════
+
+Apply this variant when the prompt mentions builder, studio, prompt layers, live preview, preview rail, variant runs, launch blockers, QA notes, startup builder, or design assistant.
+
+- Treat the shell as a product builder workspace, not a document editor with the labels swapped.
+- The default mood for this variant should be a darker premium tool shell with deeper charcoal surfaces, tighter chrome, and restrained teal/amber accents, not warm beige editorial paper.
+- Left rail should carry things like pages, components, layers, prompt stacks, or setup context.
+- Center stage should show the actual artifact in progress: page composition, selected section, generated landing page, or browser-style preview frame.
+- Do not turn the center stage into a paper-like brief or document with byline/timestamp copy. It should feel like an active builder canvas or preview workspace.
+- Right rail should carry properties, preview state, launch blockers, QA notes, or run status. It should not collapse into generic comments/settings filler.
+- If the prompt includes onboarding or setup, keep it integrated as a compact setup strip, first-run panel, or progress card inside the workspace.
+- Do not lead with a KPI grid. Analytics can exist, but the builder artifact or preview must remain the main focal point.
+- If prompt layers are shown, prefer chips, cards, step rows, or dense layer modules over three identical raw textareas.
+- Do not make one big prompt textarea or rich-text editor slab the center of the experience. Use smaller layer cards, compact fields, status chips, run actions, and a preview-first layout.
+- If the prompt mentions variant runs, QA notes, or launch blockers, keep at least two of those work surfaces visible above the fold.
+- If live preview is mentioned, the preview must look like a real browser/device/application surface, not plain paragraph text in a card.
+- A code block, quoted output, or plain text card does not count as the live preview. Show a rendered page/application surface with visible browser or device framing.
+- Avoid generic document-editor copy and controls like outline, brief, publish notes, slash-command bars, editorial comments, or rich-text formatting toolbars unless the prompt explicitly asks for that workflow.
+- Avoid serif editorial-title treatment, warm beige backgrounds, and print-preview styling in this variant. The builder should feel closer to a premium desktop design tool than a brief editor.
+
+═══════════════════════════════════════
 INTERACTION & POLISH RULES
 ═══════════════════════════════════════
 
@@ -85,7 +107,7 @@ INTERACTION & POLISH RULES
 - Include multiple distinct and prominent editor-specific interaction cues, such as:
   a selected formatting state, a threaded comment highlight, a visible slash-menu trigger, a publish confirmation, an autosave chip, or a drag-handle for block reordering.
 - Use layered panels, subtle shadows, and contrast between chrome and canvas. Leverage the provided CSS variables (--bg, --panel, --panel-alt, --border) and layout classes to establish clear visual hierarchy and depth. Specifically, use `--panel-alt` for elements that appear 'above' `--panel` (e.g., modals, active cards), and `--border` for subtle separators or outlines. Ensure consistent padding, margins, and alignment throughout the UI for a polished feel.
-- Apply the provided font families consistently: Manrope for general UI text, Fraunces for prominent titles (e.g., document title), and JetBrains Mono for metadata or code-like elements. Ensure Fraunces titles are significantly larger and potentially bolder than surrounding text, and JetBrains Mono is used at a smaller size with potentially muted color for technical details. These distinct font choices must actively contribute to visual hierarchy and content differentiation, making editorial titles feel grand and technical text precise.
+- Apply the provided font families consistently. Use the UI sans for controls/body copy, the display face for major titles, and JetBrains Mono for metadata or code-like elements. In builder/studio variants, prefer cleaner product-display typography over overtly editorial serif treatment.
 - Avoid generic dashboard KPI rows unless they support the editing workflow.
 - The editor should feel like a real collaborative writing/product brief tool, not a dashboard disguised as a document page.
 - Favor warm editorial neutrals or a strong productized dark workspace. Avoid bland mid-tone UI that feels like default enterprise software.

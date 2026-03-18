@@ -47,10 +47,30 @@ Every app is generated from a single prompt — no templates, no manual coding. 
 
 ![Crypto Dashboard](docs/screenshots/dashboard-crypto.jpg)
 
-### Final Fantasy VIII Fan Page
+### Halo Fan Page — Concurrent Runtime Demo
+> Prompt: *"Build a premium Halo fan page centered on Master Chief, Cortana, and the Arbiter. Include a cinematic hero, polished character dossiers, a legendary weapon showcase, and an explorable ringworld atlas."*
+
+[![Halo Fan Page 2026](docs/screenshots/game-halo-20260316-thumb.jpg)](docs/screenshots/game-halo-20260316-full.jpg)
+
+### Final Fantasy VIII Fan Page — Branch Benchmark
 > Prompt: *"Build a Final Fantasy VIII fan page with character profiles, weapons gallery, and world map"*
 
-[![FF8 Fan Page](docs/screenshots/game-ff8-thumb.jpg)](docs/screenshots/game-ff8-full.jpg)
+[![FF8 Fan Page 2026](docs/screenshots/game-ff8-20260316-thumb.jpg)](docs/screenshots/game-ff8-20260316-full.jpg)
+
+### Metroid Fan Page
+> Prompt: *"Build a premium Metroid fan page centered on Samus Aran. Include a cinematic hero, a polished dossier, a power suit showcase, and an explorable Zebes world map."*
+
+[![Metroid Fan Page 2026](docs/screenshots/game-metroid-20260316-thumb.jpg)](docs/screenshots/game-metroid-20260316-full.jpg)
+
+### Pokemon Kanto Starters Fan Page
+> Prompt: *"Build a premium Pokemon fan page centered on Charizard, Blastoise, and Venusaur. Include a cinematic hero, polished character dossiers, a full evolution showcase, a Kanto region map, and a gym badge collection."*
+
+[![Pokemon Fan Page 2026](docs/screenshots/game-pokemon-20260316-thumb.jpg)](docs/screenshots/game-pokemon-20260316-full.jpg)
+
+### Legend of Zelda Fan Page
+> Prompt: *"Build a premium Legend of Zelda fan page centered on Link, Princess Zelda, and Ganondorf. Include a cinematic hero, polished character dossiers, a legendary gear showcase, and an explorable Hyrule world map."*
+
+[![Zelda Fan Page 2026](docs/screenshots/game-zelda-20260316-thumb.jpg)](docs/screenshots/game-zelda-20260316-full.jpg)
 
 ### SaaS Landing Page
 > Prompt: *"Build a landing page for an AI-powered writing assistant with features, pricing, and testimonials"*

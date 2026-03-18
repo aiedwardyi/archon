@@ -36,6 +36,7 @@ interface VersionsViewProps {
 
 export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onArtifactNavigate }: VersionsViewProps) => {
   const selected = selectedVersion;
+  const desktopPreviewHeight = "clamp(720px, 78vh, 1100px)";
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "mobile">("desktop");
   const [collapsed, setCollapsed] = useState(false);
   const [versions, setVersions] = useState<Version[]>([]);
@@ -160,6 +161,28 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
   const latestVersionId = versions.length > 0 ? versions[0].id : null; // versions sorted descending
   const isBuildingSelected = isProjectBuilding && selected === latestVersionId;
 
+  const handleDownloadReport = async () => {
+    if (!projectId || !version) return;
+    try {
+      const token = localStorage.getItem("archon_token");
+      const res = await fetch(`http://localhost:5000/api/projects/${projectId}/versions/${version.id}/factsheet/pdf?type=client`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error("Failed to download report");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `archon-v${version.id}-client.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch {
+      alert("Report download failed");
+    }
+  };
+
   if (!projectId) {
     return (
       <div className="border border-border rounded-md bg-card flex items-center justify-center py-20">
@@ -277,7 +300,10 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
             <span className="text-xs text-muted-foreground">{t("yesterday")} at {version.time}</span>
           </div>
           <div className="flex items-center gap-2">
-            <button className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5">
+            <button
+              onClick={handleDownloadReport}
+              className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5"
+            >
               <Download className="h-3.5 w-3.5" /> {t("downloadReport")}
             </button>
             {version && latestVersionId !== null && version.id !== latestVersionId && (
@@ -359,7 +385,7 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
               </div>
             </div>
 
-            <div className="bg-secondary/20" style={{ height: 500 }}>
+            <div className="bg-secondary/20" style={{ height: desktopPreviewHeight }}>
               {previewDevice === "desktop" ? (
                 <div className="w-full h-full bg-background border border-border rounded-lg overflow-hidden shadow-sm flex flex-col">
                   <div className="h-8 bg-secondary/60 border-b border-border flex items-center gap-1.5 px-3 flex-shrink-0">

@@ -95,6 +95,7 @@ class DesignAgent:
         save_dir: Path | None = None,
         reference_images: list[str] | None = None,
         nlu_context: dict | None = None,
+        benchmark_style_context: str | None = None,
     ) -> list[dict[str, Any]]:
         prompt_template = (PROMPTS_DIR / "design_agent.txt").read_text(encoding="utf-8")
         prd_summary = json.dumps(prd_dict, indent=2)[:3000]
@@ -117,7 +118,15 @@ class DesignAgent:
                 f"- entities: {', '.join(entity_terms) if entity_terms else '(none)'}\n"
                 "- Use relevant terms from these signals when crafting image prompts."
             )
-        text_content = f"{prompt_template}\n\nPRD:\n{prd_summary}{nlu_hint}"
+        benchmark_block = ""
+        if benchmark_style_context and benchmark_style_context.strip():
+            benchmark_block = (
+                "\n\nBENCHMARK STYLE CONTEXT:\n"
+                f"{benchmark_style_context.strip()}\n"
+                "Use this only for shell quality, atmosphere, motion, and image mood. "
+                "Do not copy franchise-specific content from it.\n"
+            )
+        text_content = f"{prompt_template}\n\nPRD:\n{prd_summary}{nlu_hint}{benchmark_block}"
 
         # Build multimodal content if reference images provided
         if reference_images:
@@ -164,3 +173,88 @@ class DesignAgent:
 
         print(f"DesignAgent: {len(results)}/{len(image_requests)} images generated.")
         return results
+
+    def generate_visual_direction(
+        self,
+        prd_dict: dict,
+        *,
+        plan_dict: dict | None = None,
+        existing_visual_direction: str | None = None,
+        reference_images: list[str] | None = None,
+        nlu_context: dict | None = None,
+        benchmark_style_context: str | None = None,
+    ) -> str:
+        prompt_template = (PROMPTS_DIR / "design_direction.txt").read_text(encoding="utf-8")
+        prd_summary = json.dumps(prd_dict, indent=2)[:5000]
+        plan_summary = json.dumps(plan_dict or {}, indent=2)[:4000]
+
+        existing_direction_block = ""
+        if existing_visual_direction and existing_visual_direction.strip():
+            existing_direction_block = (
+                "\n\nEXISTING VISUAL DIRECTION TO PRESERVE UNLESS THE NEW BRIEF ASKS FOR A REDESIGN:\n"
+                f"{existing_visual_direction.strip()[:4000]}\n"
+            )
+
+        nlu_hint = ""
+        if nlu_context:
+            keywords = nlu_context.get("keywords", []) or []
+            concepts = nlu_context.get("concepts", []) or []
+            entities = nlu_context.get("entities", []) or []
+            entity_terms = [
+                f"{e.get('text', '')} ({e.get('type', 'Unknown')})"
+                for e in entities
+                if e.get("text")
+            ]
+            nlu_hint = (
+                "\n\nNLU CONTEXT:\n"
+                f"- domain: {nlu_context.get('domain', 'general')}\n"
+                f"- prompt_richness: {nlu_context.get('prompt_richness', 'sparse')}\n"
+                f"- keywords: {', '.join(keywords) if keywords else '(none)'}\n"
+                f"- concepts: {', '.join(concepts) if concepts else '(none)'}\n"
+                f"- entities: {', '.join(entity_terms) if entity_terms else '(none)'}\n"
+            )
+
+        text_content = (
+            f"{prompt_template}\n\n"
+            f"PRODUCT BRIEF:\n{prd_summary}\n\n"
+            f"IMPLEMENTATION PLAN:\n{plan_summary}"
+            f"{existing_direction_block}"
+            f"{nlu_hint}"
+        )
+        if benchmark_style_context and benchmark_style_context.strip():
+            text_content += (
+                "\n\nBENCHMARK STYLE CONTEXT:\n"
+                f"{benchmark_style_context.strip()}\n"
+                "Treat this as reusable visual grammar and quality bar only. "
+                "Do not copy franchise-specific content or literal IP cues.\n"
+            )
+
+        contents: str | list[types.Part] = text_content
+        if reference_images:
+            parts: list[types.Part] = [types.Part.from_text(text=text_content)]
+            parts.append(types.Part.from_text(text="\n\nREFERENCE IMAGES (use them for palette, density, and mood only):"))
+            mime_map = {
+                ".png": "image/png",
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+                ".webp": "image/webp",
+                ".gif": "image/gif",
+            }
+            for img_path in reference_images:
+                path = Path(img_path)
+                if path.exists() and path.suffix.lower() in mime_map:
+                    parts.append(types.Part.from_bytes(data=path.read_bytes(), mime_type=mime_map[path.suffix.lower()]))
+                    parts.append(types.Part.from_text(text=f"[Reference: {path.name}]"))
+            contents = parts
+
+        def _call():
+            return self.client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=contents,
+                config={
+                    "temperature": 0.5,
+                },
+            )
+
+        response = call_with_retry(_call, max_retries=2)
+        return (response.text or "").strip()

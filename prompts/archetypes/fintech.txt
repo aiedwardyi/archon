@@ -39,6 +39,7 @@ STRUCTURAL REQUIREMENTS
 - Numbers MUST use JetBrains Mono explicitly, with precise alignment and consistent spacing to enhance readability and a professional, data-driven feel.
 - Apply a dedicated numeric class or explicit selector to every price, KPI value, delta, chart axis label, and table number. Do not rely on passive inheritance for fintech numerics.
 - Typography must be crisp and legible. Use Inter for all UI text, varying weights (400, 500, 600) to establish clear hierarchy without excessive font size changes. Ensure generous line-height for readability and a professional, data-driven feel.
+- Use Space Grotesk for the brand, page title, and major panel headings. The shell should clearly show a display/UI/mono hierarchy instead of collapsing into one generic font stack.
 - Implement a consistent, layered depth system. Use `box-shadow` for panels and cards to create a sense of elevation, `border-radius` for soft corners, and subtle linear gradients on backgrounds or interactive elements to add dimension. Avoid flat designs; every major element should have a perceived Z-index.
 - This archetype should feel more like a market terminal, brokerage, or trading workspace than a generic admin dashboard. Lean into market data density, execution cues, and price-action context.
 
@@ -73,6 +74,7 @@ STRUCTURAL REQUIREMENTS
 - Watchlist or order-book style side panel.
 - News/activity feed with 4+ timestamped items and source tags.
 - Include at least one unmistakably fintech-specific micro-surface below the fold: order book ladder, recent trades tape, analyst sentiment strip, or watchlist with sparklines.
+- The desktop right rail must feel intentional: stack at least two support modules, or split a single support surface into clearly separated watchlist/news/activity sections. Do not leave one lonely card next to the main chart.
 
 ═══════════════════════════════════════
 CONTENT RULES
@@ -86,6 +88,7 @@ CONTENT RULES
 - Include at least one explicit click target per major surface: range pills, trade button, watch action, filter chip.
 - Avoid generic dashboard filler like lorem ipsum or vague metrics.
 - Do not let this archetype collapse into a generic analytics dashboard with only finance labels swapped in. The composition should clearly communicate trading, investing, or market monitoring.
+- Use styled initials, local assets, or inline SVG for any avatars or profile markers. Do not use remote placeholder avatar/image services.
 - If you animate or refresh numbers with JavaScript, ONLY target elements that have valid numeric `data-count` or `data-price` attributes. Never include label-only KPI cards, win-rate text, or non-price values in a generic price-update loop.
 - Never reset a numeric element to `$0` or `0` before deriving its formatting rules unless the animation code already captured the original formatting. Guard every numeric update with `Number.isFinite(...)` and leave the existing text untouched if parsing fails.
 

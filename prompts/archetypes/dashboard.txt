@@ -7,7 +7,7 @@ DESIGN KIT: base.css IS ALREADY PROVIDED
 
 A base.css file is injected automatically. It provides:
 - CSS variables: --bg (#0d1117), --sidebar-bg, --card-bg, --card-elevated, --accent (#10b981 emerald), --danger, --warning, --text, --text-secondary, --text-muted, --border
-- Font: Inter (400, 500, 600, 700) — font-variant-numeric: tabular-nums on body
+- Fonts: Inter for UI copy, Space Grotesk for brand/display headings, JetBrains Mono for numeric surfaces
 - Layout: .dashboard-layout (flex), .sidebar (220px fixed), .main-content (margin-left:220px), .content-area, .header-bar
 - Sidebar: .sidebar-logo, .sidebar-nav, .sidebar-group, .sidebar-group-label, .sidebar-item, .sidebar-item.active, .sidebar-user
 - Header: .header-bar, .page-title, .header-actions, .header-search, .header-icon-btn, .header-avatar
@@ -29,7 +29,7 @@ In <head>:
   <link rel="stylesheet" href="./base.css">
   <link rel="stylesheet" href="./style.css">
 
-DO NOT add Google Fonts @import — base.css already imports Inter.
+DO NOT add font imports in style.css — base.css already imports the UI, display, and mono families for this kit.
 
 ═══════════════════════════════════════
 STRUCTURAL REQUIREMENTS (NON-NEGOTIABLE)
@@ -46,9 +46,11 @@ STRUCTURAL REQUIREMENTS (NON-NEGOTIABLE)
    - .sidebar-user at bottom (avatar + name + email)
 
 3. HEADER BAR — .header-bar (60px, sticky top). Contains:
-   - .page-title (e.g. "Portfolio Overview")
+   - .page-title (e.g. "Revenue Pulse", "Dispatch Command Center", or another domain-specific title that fits the chosen product)
    - .header-actions: .header-search (search icon + placeholder text), .header-icon-btn (bell icon for notifications), .header-avatar
 - The page title and labels should read like analytics, platform health, customer success, operations, or portfolio management, not like a brokerage trading screen.
+- Avoid generic dense-shell titles like `Dashboard Overview`, `Analytics Dashboard`, or `Portfolio Overview` unless the user explicitly asked for that exact wording.
+- Use the provided display font for the brand, page title, and section titles. Use the mono family for KPI values, deltas, table numerics, timestamps, and chart labels.
 
 4. MAIN CONTENT — .main-content > .content-area
 
@@ -76,6 +78,7 @@ REQUIRED SECTIONS (inside .content-area)
    - Implement a simple, non-intrusive tooltip on hover over data points, displaying the exact value and date/month.
    - NEVER leave chart empty — must have real SVG path data
    - Add at least 2 contextual action chips (e.g. "Rebalance", "Export CSV") using `.interactive-chip` with visible hover states
+   - At least 1 chart action chip must do something visible on click: toggle a comparison series, reveal a compact insight panel, open an export drawer, or switch a summary state. Dead chips are a failure.
 
 3. HOLDINGS TABLE — .data-table-wrapper > .data-table:
    - thead: 6 columns (Name, Price, 24h Change, Holdings, Value, Action)
@@ -83,9 +86,11 @@ REQUIRED SECTIONS (inside .content-area)
    - tbody: 8+ rows with realistic data
    - .cell-primary for asset names
    - .cell-positive / .cell-negative for price changes (include + or - prefix)
-   - Action column: use context-appropriate actions like "Open", "Review", "Assign", "View", or "Inspect". Do not default to "Trade" unless the user's prompt is explicitly financial trading.
+   - Action column: use context-appropriate actions like "Review SLA", "Inspect Route", "Escalate", "Approve", or "Open Case". Do not default to "Trade" unless the user's prompt is explicitly financial trading.
+   - Avoid repeating the same generic `View` / `Details` verb across the whole table. Row actions should reflect the actual workflow.
    - font-variant-numeric: tabular-nums on all numbers
    - NEVER use double currency symbols ($$)
+   - At least 1 visible action in the table must open a meaningful inline detail state, drawer, or modal with local mock data. Do not ship inert row actions.
 
 4. ACTIVITY FEED — .activity-feed with .feed-header + 5-6 .activity-item entries:
    - Each: .activity-icon (colored circle with icon), .activity-text (with <strong> for emphasis), .activity-time
@@ -94,6 +99,9 @@ REQUIRED SECTIONS (inside .content-area)
 
 Use .grid-2col to arrange chart + activity feed side by side, or table + activity feed.
 - Prefer one non-market secondary module such as alerts, team activity, customer health, operational incidents, or project delivery status to keep the dashboard distinct from fintech.
+- The desktop right rail should not feel empty. Stack at least two subsections or give the feed an internal split (for example alerts + activity, customers at risk + deployments, or incidents + approvals) so the secondary column carries real visual weight.
+- The right rail must carry visible interaction, not just passive text. Include at least one compact approval row, alert card, or incident item with an actionable control that changes state when clicked.
+- Do not leave the support rail labeled only as plain `Watchlist`, `Activity Feed`, or `Recent Updates` unless the product is explicitly market/trading and the modules still carry product-specific context.
 
 ═══════════════════════════════════════
 DATA & CONTENT RULES
@@ -110,6 +118,11 @@ DATA & CONTENT RULES
 - KPI cards hover state: subtle lift + accent border glow (already in base.css)
 - Chart period buttons: one must have active/selected state
 - Depth polish target: include 1 elevated card treatment using layered shadows (shadow + subtle inner highlight), not flat surfaces only
+- Use styled initials, local assets, or inline SVG avatars. Do not use remote placeholder avatar/image services.
+- The shell should feel operationally alive: include at least one obvious active/open state, one hover state, and one click-triggered state beyond nav/search.
+- Avoid generic “search bar + cards + table + feed” sameness. Vary panel accents, support-module tone, and secondary-rail structure so the dashboard reads as intentionally designed rather than scaffolded.
+- Titles, support-rail labels, and row actions should sound authored for the chosen product, not like reusable template filler.
+- Tablet/mobile layout must stay composed. Below `1024px` and `768px`, rails must not overlap or clip, sidebars must not create awkward empty gutters, and control clusters should wrap intentionally instead of drifting out of alignment.
 
 ═══════════════════════════════════════
 SELF-CHECK BEFORE OUTPUT
@@ -125,6 +138,9 @@ SELF-CHECK BEFORE OUTPUT
 □ Data table with 8+ rows, sticky header
 □ Activity feed with 5+ timestamped entries
 □ No "0" values, no "$$", no empty sections
-□ Font is Inter throughout, numbers use tabular-nums
+□ Brand/page titles use the display font, UI text uses the UI sans, and numbers use the mono family
 □ The page reads like a broad dashboard, not a trading terminal
+□ At least one chart/table/right-rail control has a meaningful click interaction
+□ The right rail carries two visually distinct subsections or one split module with real weight
+□ Page titles, support-rail labels, and row actions feel domain-specific rather than template-like
 □ style.css is ONLY overrides (≤80 lines)

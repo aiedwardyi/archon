@@ -87,6 +87,9 @@ class Execution(Base):
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     status = Column(String(50), nullable=False, default="pending")
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    scheduler_worker_id = Column(String(100), nullable=True)
+    scheduler_claimed_at = Column(DateTime, nullable=True)
+    scheduler_heartbeat_at = Column(DateTime, nullable=True)
 
     # Version tracking (Phase 7A)
     version = Column(Integer, nullable=False, default=1)
@@ -164,6 +167,17 @@ class Execution(Base):
         }
 
 
+class PipelineSlotLease(Base):
+    __tablename__ = "pipeline_slot_leases"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    slot_index = Column(Integer, nullable=False, unique=True, index=True)
+    execution_id = Column(Integer, ForeignKey("executions.id"), nullable=False, unique=True, index=True)
+    worker_id = Column(String(100), nullable=False)
+    claimed_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    heartbeat_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+
 class ImageAsset(Base):
     __tablename__ = "image_assets"
 
@@ -224,6 +238,9 @@ def init_db():
                 ("governance_log", "TEXT"),
                 ("readiness_score", "REAL"),
                 ("quality_tier", "VARCHAR(10)"),
+                ("scheduler_worker_id", "VARCHAR(100)"),
+                ("scheduler_claimed_at", "DATETIME"),
+                ("scheduler_heartbeat_at", "DATETIME"),
             ]:
                 if col_name not in cols:
                     conn.execute(text(f"ALTER TABLE executions ADD COLUMN {col_name} {col_type}"))
@@ -301,18 +318,6 @@ def init_db():
                 conn.commit()
     except Exception as e:
         print(f"Warning: could not ensure image_assets table: {e}")
-    # Mark any stuck RUNNING executions as FAILED (handles Flask crash mid-build)
-    try:
-        with engine.connect() as conn:
-            conn.execute(text("UPDATE executions SET status = 'failed' WHERE status = 'running'"))
-            conn.execute(text(
-                "UPDATE projects SET status = 'failed' "
-                "WHERE status IN ('running', 'in_progress') "
-                "AND id IN (SELECT DISTINCT project_id FROM executions WHERE status = 'failed')"
-            ))
-            conn.commit()
-    except Exception as e:
-        print(f"Warning: could not clean up stuck executions: {e}")
     print(f"Database initialized at: {DB_PATH}")
 
 

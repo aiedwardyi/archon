@@ -10,6 +10,12 @@ class PRD(BaseModel):
     """
     document_title: str = Field(..., description="Project name")
     version: str = Field(default="0.1", description="Document version")
+    detected_intent: str = Field(default="", description="Short summary of the core product intent")
+    archetype_hint: str = Field(default="", description="Most likely UI archetype inferred from the request")
+    primary_user_action: str = Field(default="", description="The main action users take in the product")
+    visual_direction: str = Field(default="", description="Specific design direction for this build")
+    tone_keywords: List[str] = Field(default_factory=list, description="Concise tone/style keywords")
+    prompt_quality_score: int = Field(default=0, description="How specific and actionable the request is, 0-100")
     overview: str = Field(..., description="High-level description")
     goals: List[str] = Field(..., description="Success criteria")
     non_goals: List[str] = Field(..., description="Explicit exclusions")
