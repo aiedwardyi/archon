@@ -90,6 +90,23 @@ If charts or data visualization are needed, prefer inline SVG/CSS or libraries w
 Do NOT inline giant CSS blocks inside React components or use <style> tags in TSX.
 Write normal readable source files with line breaks and indentation. Never minify or collapse a whole file onto one line.
 
+COMPONENT SPLITTING (NON-NEGOTIABLE)
+
+App.tsx MUST be a thin shell that imports and composes child components — NOT a monolith.
+Split into at least 4-6 component files under src/components/ for any non-trivial app.
+Example for a dashboard: Sidebar.tsx, HeaderBar.tsx, KpiCards.tsx, Chart.tsx, DataTable.tsx, ActivityFeed.tsx.
+Each component should be under 100 lines. If a component exceeds 150 lines, split it further.
+App.tsx should import these components and compose the layout — it should be under 50 lines.
+
+LAYOUT PRECISION (CRITICAL FOR SCORING)
+
+The app must use the full viewport width at 1440px desktop resolution.
+Do NOT override base.css grid layouts (like .kpi-grid, .grid-2col) in style.css at desktop widths.
+style.css should ONLY contain page-specific overrides, NOT rewrites of the base grid system.
+The style.css file should be ≤80 lines for simple apps.
+If base.css defines .kpi-grid as repeat(4, 1fr), your style.css must NOT reset it to 1fr at desktop.
+Responsive overrides in style.css must use the SAME breakpoints as base.css (1200px, 768px).
+
 DESIGN KIT REFERENCE
 
 If a DESIGN KIT REFERENCE section is provided:
@@ -162,11 +179,16 @@ Section flow and polish:
   - Product and portfolio surfaces should avoid repeating the same centered block over and over; introduce at least one asymmetry, split layout, or editorial break in the lower half of the page.
   - Tool-like shells need composition too: one clear hero data surface, one dense KPI band, and a desktop support rail with at least two stacked secondary modules or one split module plus an activity/watch surface. Do not leave one lonely side card floating next to a giant chart.
 
-Content authenticity:
+Content authenticity and data completeness:
   - Real seeded content is mandatory. Product names, metrics, people, dates, prices, categories, and microcopy must fit the domain.
   - Domain labels must be specific, not generic placeholders.
   - For dashboard and fintech shells, reject template copy such as `Dashboard Overview`, `Portfolio Overview`, repeated `View` / `Details` row actions, and thin generic `Watchlist` / `Activity Feed` / `Recent Updates` rails unless the prompt explicitly asks for a market-terminal pattern.
   - Interface density must fit the archetype: dashboards need real data density, commerce needs shoppable cards, portfolios need authored identity, and games need atmosphere.
+  - Charts MUST have visible SVG path data with real coordinates — NEVER an empty SVG or a chart with no lines/bars.
+  - Tables MUST have at least 8 rows of realistic, varied data. NEVER render a table with 0-2 rows.
+  - KPI cards MUST show non-zero, formatted values. NEVER "$0" or "0%".
+  - Activity feeds MUST have 5+ entries with realistic timestamps ("2 min ago", "1 hour ago").
+  - All data should feel alive and varied — different names, different values, mixed positive/negative deltas.
 
 JSX INTEGRITY (BUILD-BREAKING IF VIOLATED)
 
