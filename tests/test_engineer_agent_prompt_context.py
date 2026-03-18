@@ -35,6 +35,7 @@ def test_componentized_family_prompt_block_defaults_editor_to_editorial_workspac
     assert "style_family: editorial_workspace" in block
     assert "visible desktop workspace" in block
     assert "dominant center canvas" in block
+    assert "generic lane titles like `Workspace`, `Notes`, or `Inspector`" in block
 
 
 def test_componentized_family_prompt_block_routes_trading_dashboard_to_market_terminal_workspace():

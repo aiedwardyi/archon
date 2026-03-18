@@ -172,6 +172,7 @@ def test_load_local_reference_build_defaults_editor_to_editorial_workspace_famil
     assert reference["selection_reason"] == "style_family"
     assert "STYLE FAMILY (editorial_workspace)" in reference["benchmark_guidance"]
     assert "legacy-briefai-product-brief-editor" in reference["benchmark_guidance"]
+    assert "save, publish, review, or collaborator state" in reference["benchmark_guidance"]
 
 
 def test_load_local_reference_build_routes_ai_product_builder_prompt_to_editor_workspace_family():
@@ -185,6 +186,7 @@ def test_load_local_reference_build_routes_ai_product_builder_prompt_to_editor_w
     assert reference["style_family"] == "product_builder_workspace"
     assert reference["selection_reason"] == "style_family"
     assert "STYLE FAMILY (product_builder_workspace)" in reference["benchmark_guidance"]
+    assert "layers, prompts, runs, launch blockers, or QA notes" in reference["benchmark_guidance"]
     assert "legacy-designai-startup-builder" in reference["benchmark_guidance"]
 
 

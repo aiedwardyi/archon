@@ -1940,8 +1940,69 @@ def detect_componentized_quality_issues(code_dir: Path, *, ui_archetype: str | N
             )
             if token in normalized
         )
-        if workspace_signal_count < 4:
+        workspace_topbar_state_present = any(
+            token in normalized
+            for token in (
+                "save",
+                "saved",
+                "publish",
+                "review",
+                "approval",
+                "approved",
+                "collaborator",
+                "collaborators",
+                "presence",
+                "draft",
+                "run",
+                "launch",
+                "history",
+            )
+        )
+        workspace_authored_context_count = sum(
+            1
+            for token in (
+                "outline",
+                "comment",
+                "comments",
+                "review",
+                "publish",
+                "settings",
+                "history",
+                "version",
+                "versions",
+                "task",
+                "tasks",
+                "checklist",
+                "qa",
+                "prompt",
+                "prompts",
+                "layer",
+                "layers",
+                "run",
+                "runs",
+                "launch",
+                "blocker",
+                "blockers",
+                "thread",
+                "threads",
+                "assignee",
+                "assignees",
+            )
+            if token in normalized
+        )
+        generic_workspace_label_count = len(
+            re.findall(
+                r">\s*(?:workspace|editor|notes|inspector|canvas)\s*<|[\"'`](?:workspace|editor|notes|inspector|canvas)[\"'`]",
+                normalized,
+            )
+        )
+        if workspace_signal_count < 4 or not workspace_topbar_state_present or workspace_authored_context_count < 2:
             issues.append("workspace_shell_balance")
+        if generic_workspace_label_count >= 3 and workspace_authored_context_count < 3:
+            if "content_authenticity" not in issues:
+                issues.append("content_authenticity")
+            if "text_density" not in issues:
+                issues.append("text_density")
 
     if design_family == "guided_flow":
         progression_signal_count = sum(
@@ -2093,7 +2154,9 @@ def build_componentized_shell_polish_guidance(ui_archetype: str | None) -> str:
             "APP-SHELL POLISH TARGET FOR WORKSPACES:\n"
             f"{family_block}"
             "- Use the display font for brand, document titles, panel titles, and short section headers. Keep the UI sans for control surfaces and preserve a restrained mono treatment anywhere the workspace shows structured metadata.\n"
+            "- Anchor the shell with a real topbar or command bar that exposes live product state such as save, review, publish, run, or collaborator context.\n"
             "- The primary work surface should dominate the desktop canvas. Toolbars, sidebars, outlines, chat rails, and inspectors must read as supporting lanes rather than equal-width generic cards.\n"
+            "- Keep both side rails visibly populated with useful modules instead of decorative chrome, and avoid lazy labels like `Workspace`, `Notes`, or `Inspector` unless the lane content feels specific and authored.\n"
             "- Toolbar buttons, tabs, mentions, pills, thread items, drag handles, and inline actions need visible hover, focus, and selected states.\n"
         )
     if resolve_componentized_design_family(ui_archetype) == "guided_flow":

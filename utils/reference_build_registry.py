@@ -157,7 +157,9 @@ STYLE_FAMILY_LIBRARY: dict[str, dict[str, Any]] = {
         ),
         "guidance_lines": [
             "Keep the desktop shell visibly multi-panel, with the center canvas dominant and both side rails populated.",
+            "Anchor the shell with a real topbar that exposes save, publish, review, or collaborator state instead of a floating generic toolbar.",
             "Favor editorial title drama, clear publish/save state, and real collaboration cues over dashboard-style KPI filler.",
+            "Use specific outline rows, comment subjects, and inspector cards instead of plain `Workspace`, `Notes`, or `Inspector` filler.",
             "Use layered chrome and restrained accent states so the workspace feels productized instead of like a beige print preview.",
         ],
     },
@@ -178,9 +180,10 @@ STYLE_FAMILY_LIBRARY: dict[str, dict[str, Any]] = {
             "integrated onboarding or setup cues, and status modules that make the app feel like a serious product tool."
         ),
         "guidance_lines": [
-            "Frame the experience like a premium builder workspace with visible control rails, not a flat landing page or generic dashboard.",
-            "Blend builder controls, setup progress, and status surfaces into one cohesive shell so the UI feels actively usable at first glance.",
+            "Frame the experience like a premium builder workspace with a real top toolbar and visible control rails, not a flat landing page or generic dashboard.",
+            "Blend builder controls, setup progress, status, and preview/review context into one cohesive shell so the UI feels actively usable at first glance.",
             "Keep the main work area dominant, but support it with dense inspector and summary modules rather than empty side chrome.",
+            "Populate the side rails with specific layers, prompts, runs, launch blockers, or QA notes instead of generic `Workspace` / `Notes` filler.",
         ],
     },
     "guided_setup_wizard": {
@@ -777,7 +780,7 @@ def get_archetype_benchmark_guidance(
         description = str(family_meta.get("description", "")).strip()
         if description:
             family_lines.append(f"- STYLE FAMILY ({style_family}): {description}")
-        for line in family_meta.get("guidance_lines", [])[:3]:
+        for line in family_meta.get("guidance_lines", [])[:4]:
             text = str(line).strip()
             if text:
                 family_lines.append(f"- {text}")

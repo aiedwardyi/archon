@@ -169,11 +169,25 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertIn("one dominant active step plus one compact review/result preview", guidance)
         self.assertIn("ready to launch", guidance)
 
+    def test_workspace_family_guidance_requires_authored_topbar_and_lane_labels(self):
+        guidance = build_componentized_design_family_guidance("editor")
+
+        self.assertIn("real topbar or command strip", guidance)
+        self.assertIn("useful outline rows, comments, settings, tasks, or status modules", guidance)
+        self.assertIn("`Workspace`, `Notes`, or `Inspector`", guidance)
+
     def test_guided_flow_shell_polish_guidance_requires_compact_review_states(self):
         guidance = build_componentized_shell_polish_guidance("form")
 
         self.assertIn("review, blocker, or readiness card", guidance)
         self.assertIn("equal-height stacked panels", guidance)
+
+    def test_workspace_shell_polish_guidance_rejects_generic_lane_labels(self):
+        guidance = build_componentized_shell_polish_guidance("editor")
+
+        self.assertIn("real topbar or command bar", guidance)
+        self.assertIn("`Workspace`, `Notes`, or `Inspector`", guidance)
+        self.assertIn("both side rails visibly populated", guidance)
 
     def test_validate_componentized_contract_outputs_flags_missing_and_stubbed_files(self):
         files = [
@@ -3686,6 +3700,38 @@ class ComponentizedRuntimeTests(unittest.TestCase):
 
             self.assertIn("workspace_shell_balance", issues)
             self.assertIn("typography_hierarchy", issues)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_detect_componentized_quality_issues_flags_generic_workspace_lane_labels(self):
+        code_dir = _case_dir("componentized-quality-workspace-generic-labels")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "base.css").write_text(
+                "body { font-family: Inter, sans-serif; }\n"
+                ".workspace-shell { box-shadow: 0 12px 32px rgba(0,0,0,0.18); }\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return (\n"
+                "    <div className=\"workspace-shell\">\n"
+                "      <header className=\"toolbar\"><span>Workspace</span><button>Open</button></header>\n"
+                "      <main className=\"workspace-grid\">\n"
+                "        <aside className=\"sidebar\">Notes</aside>\n"
+                "        <section className=\"editor-panel\">Editor</section>\n"
+                "        <aside className=\"inspector\">Inspector</aside>\n"
+                "      </main>\n"
+                "    </div>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            issues = detect_componentized_quality_issues(code_dir, ui_archetype="editor")
+
+            self.assertIn("content_authenticity", issues)
+            self.assertIn("workspace_shell_balance", issues)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 

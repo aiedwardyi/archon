@@ -38,11 +38,13 @@ STYLE_FAMILY_CONTRACTS: dict[str, tuple[str, ...]] = {
     "editorial_workspace": (
         "Keep a visible desktop workspace with a real topbar, a dominant center canvas, and both side rails populated.",
         "Make collaboration and publishing states obvious through save state, comments, outline state, or inspector modules instead of KPI filler.",
+        "Keep side rails useful with specific outline items, comments, review notes, or publish settings instead of generic lane titles like `Workspace`, `Notes`, or `Inspector`.",
         "Do not collapse this family into a centered article, generic dashboard, or thin landing-page shell.",
     ),
     "product_builder_workspace": (
-        "Use a builder-grade workspace shell with a dominant primary work area and dense supporting control surfaces.",
-        "Blend setup, controls, and status into one cohesive product experience instead of separating them into disconnected cards.",
+        "Use a builder-grade workspace shell with a real top toolbar, a dominant primary work area, and dense supporting control surfaces.",
+        "Blend setup, controls, status, and preview or review context into one cohesive product experience instead of separating them into disconnected cards.",
+        "Keep builder rails populated with specific layers, prompts, runs, launch blockers, or QA notes instead of empty generic side chrome.",
         "Favor app-builder framing over brochure sections or generic admin chrome.",
     ),
     "guided_setup_wizard": (

@@ -96,7 +96,10 @@ def build_componentized_design_family_guidance(ui_archetype: str | None) -> str:
         ],
         "workspace": [
             "- Default to a three-zone shell: navigation/context rail, primary work surface, and support rail or inspector.",
+            "- Anchor the workspace with a real topbar or command strip that exposes active product state such as save, review, publish, run, or collaboration context.",
             "- Toolbars, tabs, composer controls, and side panels should feel like one authored workspace rather than generic stacked cards.",
+            "- Keep both side lanes visibly populated with useful outline rows, comments, settings, tasks, or status modules instead of empty chrome.",
+            "- Avoid lazy workspace labels such as `Workspace`, `Notes`, or `Inspector` unless surrounding module titles and entries make each lane feel product-specific.",
             "- Keep panel hierarchy legible through depth, tint, border, and typography differences so the workspace does not collapse into one flat canvas.",
         ],
         "guided_flow": [
@@ -143,8 +146,11 @@ def build_componentized_shell_family_guidance(ui_archetype: str | None) -> str:
         ),
         "workspace": (
             "- Keep the desktop shell legible as a workspace: left context rail, primary working surface, and one support rail or inspector.\n"
+            "- Anchor the shell with a real topbar or command strip plus visible save, publish, review, run, or collaboration state.\n"
             "- Differentiate toolbars, sidebars, canvases, and inspectors with meaningful surface depth instead of one flat panel color.\n"
             "- The main work surface should visually dominate while support panels still feel intentional and populated.\n"
+            "- Keep both side lanes populated with useful outline rows, comments, settings, queues, or status modules instead of empty decorative chrome.\n"
+            "- Avoid lazy lane labels such as `Workspace`, `Editor`, `Notes`, or `Inspector` unless the surrounding copy makes those modules feel authored for the product.\n"
         ),
         "guided_flow": (
             "- Keep the flow visibly step-based with clear progression, current-step emphasis, and believable back/continue/review controls.\n"
