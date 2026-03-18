@@ -90,22 +90,6 @@ If charts or data visualization are needed, prefer inline SVG/CSS or libraries w
 Do NOT inline giant CSS blocks inside React components or use <style> tags in TSX.
 Write normal readable source files with line breaks and indentation. Never minify or collapse a whole file onto one line.
 
-COMPONENT SPLITTING (NON-NEGOTIABLE)
-
-App.tsx MUST be a thin shell that imports and composes child components — NOT a monolith.
-Split into at least 4-6 component files under src/components/ for any non-trivial app.
-Example for a dashboard: Sidebar.tsx, HeaderBar.tsx, KpiCards.tsx, Chart.tsx, DataTable.tsx, ActivityFeed.tsx.
-Each component should be under 100 lines. If a component exceeds 150 lines, split it further.
-App.tsx should import these components and compose the layout — it should be under 50 lines.
-
-LAYOUT PRECISION (CRITICAL FOR SCORING)
-
-The app must use the full viewport width at 1440px desktop resolution.
-Do NOT override base.css grid layouts (like .kpi-grid, .grid-2col) in style.css at desktop widths.
-style.css should ONLY contain page-specific overrides, NOT rewrites of the base grid system.
-The style.css file should be ≤80 lines for simple apps.
-If base.css defines .kpi-grid as repeat(4, 1fr), your style.css must NOT reset it to 1fr at desktop.
-Responsive overrides in style.css must use the SAME breakpoints as base.css (1200px, 768px).
 
 DESIGN KIT REFERENCE
 
