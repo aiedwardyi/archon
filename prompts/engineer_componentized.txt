@@ -168,6 +168,14 @@ Content authenticity:
   - For dashboard and fintech shells, reject template copy such as `Dashboard Overview`, `Portfolio Overview`, repeated `View` / `Details` row actions, and thin generic `Watchlist` / `Activity Feed` / `Recent Updates` rails unless the prompt explicitly asks for a market-terminal pattern.
   - Interface density must fit the archetype: dashboards need real data density, commerce needs shoppable cards, portfolios need authored identity, and games need atmosphere.
 
+JSX INTEGRITY (BUILD-BREAKING IF VIOLATED)
+
+  - Every opened JSX element MUST have a matching closing tag. Count your `<div>`, `<section>`, `<aside>`, `<nav>`, `<main>`, `<header>`, `<footer>`, `<ul>`, `<ol>`, `<table>` openings and verify each has a corresponding `</div>`, `</section>`, etc. before the `);` that ends the return.
+  - Before finalizing each component file, mentally walk the JSX tree: open tag → children → close tag. If a `return (` block has 5 `<div>` opens, it needs 5 `</div>` closes.
+  - Self-closing elements like `<img />`, `<input />`, `<br />`, `<hr />`, `<svg>` children (`<circle />`, `<line />`, `<path />`, `<rect />`) do NOT need separate closing tags.
+  - Never truncate a component's JSX — every file must be syntactically complete and buildable by `tsc --noEmit`.
+  - Block comments (`/* ... */`) must be properly paired. Never emit a stray `*/` outside a comment.
+
 ANTI-SLOP RULES
 
   - No generic placeholder sections

@@ -2240,6 +2240,8 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _remove_componentized_duplicate_closing_tag_lines(updated)
         # Last-resort: strip orphan */ closers that survived all prior repairs
         updated = _repair_orphan_block_comment_close(updated)
+        # Last-resort: close unclosed JSX tags before ); at end of return blocks
+        updated = _repair_jsx_return_unclosed_tags(updated)
 
     return updated
 
@@ -5257,6 +5259,97 @@ def _repair_orphan_block_comment_close(source: str) -> str:
         else:
             updated.append(line)
     result = "\n".join(updated)
+    if source.endswith("\n") and not result.endswith("\n"):
+        result += "\n"
+    return result
+
+
+def _repair_jsx_return_unclosed_tags(source: str) -> str:
+    """Close unclosed JSX tags before ); at end of return blocks.
+
+    Handles the common LLM pattern where a component's return has
+    opening tags like <div><div><div> but jumps to ); without closing them.
+    """
+    VOID_TAGS = frozenset({
+        "area", "base", "br", "col", "embed", "hr", "img", "input",
+        "link", "meta", "param", "source", "track", "wbr",
+        "circle", "line", "path", "rect", "ellipse", "polygon", "polyline", "stop", "use",
+    })
+
+    JSX_OPEN_RE = re.compile(
+        r"<(?P<tag>[A-Za-z][A-Za-z0-9.]*)(?:\s|>|$)"
+    )
+    JSX_CLOSE_RE = re.compile(
+        r"</(?P<tag>[A-Za-z][A-Za-z0-9.]*)>"
+    )
+    JSX_SELF_CLOSE_RE = re.compile(
+        r"<[A-Za-z][A-Za-z0-9.]*(?:\s[^>]*)?\s*/>"
+    )
+
+    lines = source.splitlines()
+    result_lines: list[str] = []
+    in_return = False
+    return_tag_stack: list[str] = []
+    return_indent = ""
+
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+
+        # Detect start of return (
+        if re.match(r"^\s*return\s*\(", stripped):
+            in_return = True
+            return_tag_stack = []
+            return_indent = re.match(r"(\s*)", line).group(1)
+            result_lines.append(line)
+            continue
+
+        # Detect end of return block: line is just ); or  );
+        if in_return and re.match(r"^\s*\);?\s*$", stripped):
+            # Insert missing closing tags before );
+            if return_tag_stack:
+                # Determine indentation: use indent of the ); line + some offset
+                close_indent = re.match(r"(\s*)", line).group(1)
+                # Close tags in reverse order
+                for tag in reversed(return_tag_stack):
+                    result_lines.append(f"{close_indent}  </{tag}>")
+                return_tag_stack = []
+            in_return = False
+            result_lines.append(line)
+            continue
+
+        if in_return:
+            # Track open and close tags in LEFT-TO-RIGHT order
+            clean_line = JSX_SELF_CLOSE_RE.sub(lambda m: " " * len(m.group()), stripped)
+            clean_line = re.sub(r"['\"`][^'\"`]*['\"`]", lambda m: " " * len(m.group()), clean_line)
+
+            # Collect all open and close events with their positions
+            events: list[tuple[int, str, str]] = []  # (pos, "open"|"close", tag)
+            for m in JSX_OPEN_RE.finditer(clean_line):
+                tag = m.group("tag")
+                if tag.lower() not in VOID_TAGS:
+                    # Check self-closing on this line
+                    tag_region = clean_line[m.start():]
+                    if re.search(rf"<{re.escape(tag)}[^>]*/\s*>", tag_region):
+                        continue
+                    events.append((m.start(), "open", tag))
+            for m in JSX_CLOSE_RE.finditer(clean_line):
+                events.append((m.start(), "close", m.group("tag")))
+
+            # Process left to right
+            events.sort(key=lambda e: e[0])
+            for _, event_type, tag in events:
+                if event_type == "open":
+                    return_tag_stack.append(tag)
+                else:
+                    # Pop matching open tag from stack (search from top)
+                    for j in range(len(return_tag_stack) - 1, -1, -1):
+                        if return_tag_stack[j] == tag:
+                            del return_tag_stack[j]
+                            break
+
+        result_lines.append(line)
+
+    result = "\n".join(result_lines)
     if source.endswith("\n") and not result.endswith("\n"):
         result += "\n"
     return result
