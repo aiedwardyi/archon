@@ -2206,6 +2206,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _strip_componentized_inline_script_tags(updated)
         updated = _strip_componentized_alpine_jsx_directives(updated)
         updated = _normalize_componentized_void_jsx_elements(updated)
+        updated = _wrap_sibling_svg_elements_in_fragments(updated)
         updated = _normalize_componentized_declaration_boundaries(updated)
         updated = _hoist_componentized_chart_helper_declarations(updated)
         updated = _repair_componentized_comment_note_continuations(updated)
@@ -5179,6 +5180,28 @@ def _normalize_componentized_void_jsx_elements(source: str) -> str:
     )
 
 
+def _wrap_sibling_svg_elements_in_fragments(source: str) -> str:
+    """Wrap bare sibling SVG child elements in React fragments.
+
+    Fixes the common LLM pattern where icon objects have:
+      name: ( <path .../><circle .../> )
+    which needs to be:
+      name: ( <><path .../><circle .../></> )
+    """
+    SVG_CHILDREN = frozenset({"path", "circle", "rect", "line", "polyline", "polygon", "ellipse", "g", "text", "use"})
+    SIBLING_SVG_RE = re.compile(
+        r"(?P<prefix>\(\s*\n?\s*)"
+        r"(?P<first><(?:" + "|".join(SVG_CHILDREN) + r")\b[^>]*/>)"
+        r"(?P<siblings>(?:\s*<(?:" + "|".join(SVG_CHILDREN) + r")\b[^>]*/>)+)"
+        r"(?P<suffix>\s*\))",
+    )
+
+    def _repl(match: re.Match[str]) -> str:
+        return f"{match.group('prefix')}<>{match.group('first')}{match.group('siblings')}</>{match.group('suffix')}"
+
+    return SIBLING_SVG_RE.sub(_repl, source)
+
+
 def _repair_componentized_css_data_uri_quote_bleed(source: str) -> str:
     return CSS_DATA_URI_ESCAPED_QUOTE_BLEED_RE.sub(r"\\'", source)
 
@@ -5326,7 +5349,11 @@ def _repair_jsx_return_unclosed_tags(source: str) -> str:
             events: list[tuple[int, str, str]] = []  # (pos, "open"|"close", tag)
             for m in JSX_OPEN_RE.finditer(clean_line):
                 tag = m.group("tag")
-                if tag.lower() not in VOID_TAGS:
+                # Only treat lowercase HTML tags as void — capitalized React
+                # components like <Link> are never void even if the lowercase
+                # HTML equivalent (<link>) is.
+                is_html_void = tag[0].islower() and tag.lower() in VOID_TAGS
+                if not is_html_void:
                     # Check self-closing on this line
                     tag_region = clean_line[m.start():]
                     if re.search(rf"<{re.escape(tag)}[^>]*/\s*>", tag_region):
@@ -5357,6 +5384,16 @@ def _repair_jsx_return_unclosed_tags(source: str) -> str:
                             insert_before.append(f"{indent}</{return_tag_stack[k]}>")
                         del return_tag_stack[found_idx + 1:]
 
+                    if found_idx == -1:
+                        # Extra closer with no matching opener — mark for removal
+                        line = re.sub(
+                            rf"</{re.escape(tag)}>",
+                            "",
+                            line,
+                            count=1,
+                        )
+                        continue
+
                     # Pop matching open tag from stack (search from top)
                     for j in range(len(return_tag_stack) - 1, -1, -1):
                         if return_tag_stack[j] == tag:
@@ -5367,6 +5404,11 @@ def _repair_jsx_return_unclosed_tags(source: str) -> str:
             if insert_before:
                 result_lines.extend(insert_before)
 
+        # Remove lines that became empty after stripping extra closers
+        stripped_line = line.strip()
+        if in_return and not stripped_line:
+            # Skip blank lines created by removing extra closers only if they're truly empty
+            pass  # still append — blank lines are fine
         result_lines.append(line)
 
     result = "\n".join(result_lines)
