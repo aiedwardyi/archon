@@ -76,6 +76,19 @@ Use one section per experiment. Update this file before moving to the next arche
 - Notes: Build success rate varies dramatically by archetype. The portfolio and ecommerce archetypes produce more complex layouts that are harder for Gemini to generate syntactically correct JSX for.
 - Next hypothesis: Focus build reliability improvements on the most common TSX error patterns across portfolio/ecommerce builds. Alternatively, try adjusting these archetype prompts to reduce JSX complexity.
 
+### Cycle 022 - 2026-03-19 08:00
+- Archetype: portfolio, ecommerce (build reliability + eval with new fixes)
+- Build reliability fixes applied:
+  1. Wrap sibling SVG child elements in React fragments
+  2. Remove extra closing tags with no matching opener
+  3. Distinguish HTML void tags (lowercase) from React components (capitalized)
+- Portfolio: 83.0 (baseline 83.5, delta -0.5) — built on 3rd attempt
+  - visual_hierarchy 9, typography 9, overall_impression 9, data_completeness 7
+- Ecommerce: 0/5 builds succeeded — still failing consistently
+- Verdict: committed fixes
+- Notes: SVG fragment wrapping and void tag distinction fixed portfolio builds. Ecommerce builds have different failure patterns — likely needs ecommerce-specific investigation.
+- Next hypothesis: Investigate ecommerce-specific build failure patterns (CartDrawer, HashRouter issues).
+
 ### Cycle 002 - 2026-03-11 14:42
 - Archetype: saas_landing
 - Baseline average across 3 runs: 81.33
