@@ -157,7 +157,7 @@ def score_screenshot(scorer, screenshot_path: Path, archetype: str, refs_loader)
     return result.to_dict()
 
 
-async def run_single(api, archetype: str, prompt: str, build_timeout: int = 600, max_build_attempts: int = 3) -> dict:
+async def run_single(api, archetype: str, prompt: str, build_timeout: int = 600, max_build_attempts: int = 5) -> dict:
     """Build one project, screenshot, return result. Retries if preview build fails."""
     repo_root = Path(__file__).resolve().parent.parent
 
@@ -181,6 +181,16 @@ async def run_single(api, archetype: str, prompt: str, build_timeout: int = 600,
             if attempt == max_build_attempts - 1:
                 return {"archetype": archetype, "status": "build_failed", "error": str(e)}
             continue
+        except Exception as e:
+            error_str = str(e)
+            if "429" in error_str or "TOO MANY" in error_str:
+                logger.warning("429 Too Many Requests — waiting 60s before retry...")
+                await asyncio.sleep(60)
+            else:
+                logger.error(f"Unexpected error: {e}")
+            if attempt == max_build_attempts - 1:
+                return {"archetype": archetype, "status": "error", "error": error_str}
+            continue
 
         project_id = build_result["project_id"]
         version = build_result.get("version", 1)
@@ -189,15 +199,23 @@ async def run_single(api, archetype: str, prompt: str, build_timeout: int = 600,
         # Check if the componentized build produced dist/
         dist_dir = repo_root / "generated" / str(project_id) / f"v{version}" / "code" / "dist"
         if not dist_dir.exists():
-            logger.warning(f"Build {project_id} has no dist/ — preview build failed, retrying...")
-            if attempt == max_build_attempts - 1:
-                return {
-                    "archetype": archetype,
-                    "project_id": project_id,
-                    "status": "preview_build_failed",
-                    "error": "No dist/ directory after build — componentized preview failed",
-                }
-            continue
+            # Try triggering preview endpoint which may rebuild
+            logger.info(f"Build {project_id} has no dist/ — triggering preview rebuild...")
+            try:
+                import requests as req
+                req.get(preview_url, timeout=120)
+            except Exception:
+                pass
+            if not dist_dir.exists():
+                logger.warning(f"Build {project_id} still has no dist/ after rebuild attempt, retrying...")
+                if attempt == max_build_attempts - 1:
+                    return {
+                        "archetype": archetype,
+                        "project_id": project_id,
+                        "status": "preview_build_failed",
+                        "error": "No dist/ directory after build — componentized preview failed",
+                    }
+                continue
 
         logger.info(f"Build complete: project {project_id}, preview: {preview_url}")
         break
@@ -319,7 +337,7 @@ async def main():
                         help="Archetype(s) to eval")
     parser.add_argument("--runs", "-r", type=int, default=3,
                         help="Number of scoring runs per archetype")
-    parser.add_argument("--timeout", "-t", type=int, default=600,
+    parser.add_argument("--timeout", "-t", type=int, default=900,
                         help="Build timeout in seconds")
     args = parser.parse_args()
 
