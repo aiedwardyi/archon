@@ -217,6 +217,10 @@ JSX_PRE_TEXT_TAG_RE = re.compile(
     r"(?P<open><pre\b[^>]*>)(?P<body>(?:(?!<code\b)[\s\S]){0,12000}?)(?P<close></pre>)",
     re.IGNORECASE,
 )
+INLINE_COMPONENT_SCRIPT_TAG_RE = re.compile(
+    r"<script\b[^>]*>[\s\S]{0,20000}?</script>",
+    re.IGNORECASE,
+)
 VOID_JSX_ELEMENT_RE = re.compile(
     r"(?<![A-Za-z0-9_\"'])<(?P<tag>area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)\b(?P<attrs>[^<>]*?)(?<!/)>",
     re.IGNORECASE,
@@ -226,6 +230,9 @@ JSX_LINE_OPEN_TAG_RE = re.compile(r"^(?P<indent>[ \t]*)<(?P<tag>[A-Za-z][A-Za-z0
 JSX_LINE_CLOSE_TAG_RE = re.compile(r"^(?P<indent>[ \t]*)</(?P<tag>[A-Za-z][A-Za-z0-9.-]*)>\s*$")
 JSX_EVENT_HANDLER_ARROW_BLEED_RE = re.compile(
     r"(?P<prefix>\bon[A-Z][A-Za-z0-9_]*=\{\s*)(?P<param>\(?\s*[A-Za-z_$][\w$]*\s*\)?)\s*=\s*/>"
+)
+JSX_TYPED_EVENT_HANDLER_ARROW_BLEED_RE = re.compile(
+    r"(?P<prefix>\bon[A-Z][A-Za-z0-9_]*=\{\s*\([^)]*\))\s*=\s*/>(?P<suffix>\s*\{)"
 )
 GENERIC_ARROW_BLEED_RE = re.compile(
     r"(?P<prefix>(?:\(|,)\s*)(?P<param>\(?\s*[A-Za-z_$][\w$]*\s*\)?)\s*=\s*/>(?=\s*[A-Za-z_$({])"
@@ -238,6 +245,10 @@ JSX_ATTR_COMMENT_BLEED_RE = re.compile(
 )
 JSX_ATTR_LINE_COMMENT_BLEED_RE = re.compile(
     r"(?P<attr>\b[A-Za-z_:][-A-Za-z0-9_:.]*=\{[^}\n]+\}|\b[A-Za-z_:][-A-Za-z0-9_:.]*=(?:\"[^\n\"]*\"|'[^\n']*'))\s*//\s*(?P<comment>[^\n]{1,160})"
+)
+JSX_TEXT_LINE_COMMENT_CLOSE_BLEED_RE = re.compile(
+    r"(?P<prefix></[A-Za-z][A-Za-z0-9.-]*>\s*)(?P<head>[^<>{}\n]{0,120}?)\s*\*/\s*(?:\r?\n\s*)?(?P<tail>[A-Za-z][^<>{}\n]{0,120})(?P<suffix>\s*</[A-Za-z])",
+    re.MULTILINE,
 )
 DECLARATION_BOUNDARY_RE = re.compile(
     r"(?<=})(?=(?:interface\b|type\b|const\b|let\b|var\b|function\b|export\b|class\b|return\b))"
@@ -805,6 +816,48 @@ def build_componentized_preview(
                     )
                     if retry.returncode == 0:
                         continue
+                missing_safe_dependency = None
+                if command[:3] == [npm_cmd, "run", "build"]:
+                    missing_safe_dependency = _extract_missing_safe_dependency(completed)
+                if missing_safe_dependency:
+                    reinstall_command = [npm_cmd, "install"]
+                    reinstall = subprocess.run(
+                        reinstall_command,
+                        cwd=code_dir,
+                        capture_output=True,
+                        text=True,
+                        timeout=timeout_seconds,
+                        env=env,
+                        check=False,
+                    )
+                    logs.append(
+                        {
+                            "command": reinstall_command,
+                            "returncode": reinstall.returncode,
+                            "stdout": reinstall.stdout[-12_000:],
+                            "stderr": reinstall.stderr[-12_000:],
+                        }
+                    )
+                    if reinstall.returncode == 0:
+                        retry = subprocess.run(
+                            command,
+                            cwd=code_dir,
+                            capture_output=True,
+                            text=True,
+                            timeout=timeout_seconds,
+                            env=env,
+                            check=False,
+                        )
+                        logs.append(
+                            {
+                                "command": command,
+                                "returncode": retry.returncode,
+                                "stdout": retry.stdout[-12_000:],
+                                "stderr": retry.stderr[-12_000:],
+                            }
+                        )
+                        if retry.returncode == 0:
+                            continue
                 if command[:3] == [npm_cmd, "run", "build"] and _should_retry_with_vite_build(completed, code_dir):
                     retry_command = [npm_cmd, "exec", "vite", "build"]
                     retry = subprocess.run(
@@ -867,6 +920,21 @@ def _should_retry_with_vite_build(completed: subprocess.CompletedProcess[str], c
     if (code_dir / "tsconfig.json").exists():
         return False
     return True
+
+
+def _extract_missing_safe_dependency(completed: subprocess.CompletedProcess[str]) -> str | None:
+    combined = f"{completed.stdout or ''}\n{completed.stderr or ''}"
+    match = re.search(
+        r'failed to resolve import ["\'](?P<package>[^"\']+)["\']|Could not resolve ["\'](?P<package_alt>[^"\']+)["\']',
+        combined,
+        re.IGNORECASE,
+    )
+    if not match:
+        return None
+    package_name = (match.group("package") or match.group("package_alt") or "").strip()
+    if package_name in SAFE_COMPONENTIZED_DEPENDENCIES:
+        return package_name
+    return None
 
 
 def collect_componentized_editable_files(code_dir: Path) -> list[str]:
@@ -1511,15 +1579,23 @@ def rewrite_preview_file_references(
 
     html = re.sub(r'((?:src|href)=["\'])([^"\']+)(["\'])', _src_href_repl, html, flags=re.IGNORECASE)
 
+    def _css_url_repl(match: re.Match[str]) -> str:
+        prefix, raw_path, suffix = match.groups()
+        value = raw_path.strip()
+        lower = value.lower()
+        if lower.startswith(("http://", "https://", "data:", "mailto:", "tel:", "#", "/api/", "/published/")):
+            return match.group(0)
+        return f"{prefix}{mount_prefix}/{_normalize_asset_path(value, root_dir)}{suffix}"
+
     html = re.sub(
         r'(url\(["\']?)(/assets/[^)"\']+)(["\']?\))',
-        lambda m: f"{m.group(1)}{mount_prefix}/{_normalize_asset_path(m.group(2), root_dir)}{m.group(3)}",
+        _css_url_repl,
         html,
         flags=re.IGNORECASE,
     )
     html = re.sub(
         r'(url\(["\']?)(?:\./|\.\./)?([^)"\']+\.(?:png|jpg|jpeg|gif|webp|svg|ico|css|js|mjs))(["\']?\))',
-        lambda m: f"{m.group(1)}{mount_prefix}/{_normalize_asset_path(m.group(2), root_dir)}{m.group(3)}",
+        _css_url_repl,
         html,
         flags=re.IGNORECASE,
     )
@@ -2119,12 +2195,15 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_componentized_jsx_block_comment_bleed(updated)
         updated = _repair_componentized_jsx_text_comment_bleed(updated)
         updated = _repair_componentized_jsx_attribute_comment_bleed(updated)
+        updated = _repair_componentized_jsx_tag_comment_lines(updated)
+        updated = _repair_componentized_jsx_text_comment_line_bleed(updated)
         updated = _repair_componentized_jsx_handler_comment_close_bleed(updated)
         updated = _repair_componentized_jsx_expression_comment_split_identifiers(updated)
         updated = _repair_componentized_orphan_comment_split_identifiers(updated)
         updated = _repair_componentized_orphan_comment_split_dotted_identifiers(updated)
         updated = _repair_componentized_orphan_comment_split_string_literals(updated)
         updated = _repair_componentized_orphan_comment_close_in_string_literals(updated)
+        updated = _strip_componentized_inline_script_tags(updated)
         updated = _strip_componentized_alpine_jsx_directives(updated)
         updated = _normalize_componentized_void_jsx_elements(updated)
         updated = _normalize_componentized_declaration_boundaries(updated)
@@ -2158,6 +2237,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_componentized_inline_mismatched_closing_tags(updated)
         updated = _remove_componentized_orphan_jsx_closing_brace_lines(updated)
         updated = _repair_componentized_missing_sibling_closing_tags(updated)
+        updated = _remove_componentized_duplicate_closing_tag_lines(updated)
 
     return updated
 
@@ -4342,8 +4422,6 @@ def _normalize_run_on_natural_language_notes(source: str) -> str:
             stripped = candidate.strip()
             if not stripped:
                 break
-            if not candidate.startswith(indent):
-                break
             if stripped.startswith(("/*", "//", "*", "*/", "{", "}", ")", "]", "</", "<")):
                 break
             if re.match(
@@ -4701,6 +4779,20 @@ def _strip_componentized_alpine_jsx_directives(source: str) -> str:
     return updated
 
 
+def _strip_componentized_inline_script_tags(source: str) -> str:
+    if "<script" not in source.lower():
+        return source
+
+    def _replace(match: re.Match[str]) -> str:
+        block = match.group(0)
+        lowered = block.lower()
+        if 'type="module"' in lowered or "src=" in lowered:
+            return block
+        return "{/* Removed broken inline script from generated component */}"
+
+    return INLINE_COMPONENT_SCRIPT_TAG_RE.sub(_replace, source)
+
+
 def _repair_componentized_link_self_closing_children(source: str) -> str:
     return LINK_SELF_CLOSING_WITH_CHILDREN_RE.sub(
         lambda match: f"<Link{match.group('attrs')}>{match.group('inner')}</Link>",
@@ -4853,6 +4945,30 @@ def _repair_componentized_missing_sibling_closing_tags(source: str) -> str:
     return "\n".join(repaired_lines) + ("\n" if source.endswith("\n") else "")
 
 
+def _remove_componentized_duplicate_closing_tag_lines(source: str) -> str:
+    lines = source.splitlines()
+    if not lines:
+        return source
+
+    repaired_lines: list[str] = []
+    changed = False
+
+    for line in lines:
+        close_match = re.fullmatch(r"[ \t]*</(?P<tag>[A-Za-z][A-Za-z0-9.-]*)>\s*", line)
+        if close_match:
+            tag = close_match.group("tag")
+            previous_non_empty = next((existing for existing in reversed(repaired_lines) if existing.strip()), "")
+            if previous_non_empty and f"</{tag}>" in previous_non_empty:
+                changed = True
+                continue
+
+        repaired_lines.append(line)
+
+    if not changed:
+        return source
+    return "\n".join(repaired_lines) + ("\n" if source.endswith("\n") else "")
+
+
 def _repair_componentized_inline_mismatched_closing_tags(source: str) -> str:
     void_tags = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
 
@@ -4969,6 +5085,58 @@ def _repair_componentized_jsx_attribute_comment_bleed(source: str) -> str:
     )
 
 
+def _repair_componentized_jsx_tag_comment_lines(source: str) -> str:
+    lines = source.splitlines()
+    if not lines:
+        return source
+
+    updated_lines: list[str] = []
+    inside_open_tag = False
+    changed = False
+
+    for line in lines:
+        stripped = line.strip()
+
+        if inside_open_tag and re.fullmatch(r"\{?/\*[\s\S]{0,200}?\*/\}?", stripped):
+            changed = True
+            if ">" in stripped:
+                inside_open_tag = False
+            continue
+
+        if inside_open_tag:
+            repaired = re.sub(r"\s*\{/\*[\s\S]{0,200}?\*/\}", "", line)
+            repaired = re.sub(r"\s*/\*[\s\S]{0,200}?\*/", "", repaired)
+            if repaired != line:
+                changed = True
+            line = repaired
+
+        updated_lines.append(line)
+
+        line_without_strings = re.sub(r"(['\"]).*?\1", "", line)
+        if not inside_open_tag:
+            stripped_without_strings = line_without_strings.lstrip()
+            inside_open_tag = (
+                stripped_without_strings.startswith("<")
+                and not stripped_without_strings.startswith(("</", "<!", "<?", "<>"))
+                and ">" not in stripped_without_strings
+            )
+        elif ">" in line_without_strings:
+            inside_open_tag = False
+
+    if not changed:
+        return source
+    return "\n".join(updated_lines) + ("\n" if source.endswith("\n") else "")
+
+
+def _repair_componentized_jsx_text_comment_line_bleed(source: str) -> str:
+    def _replace(match: re.Match[str]) -> str:
+        parts = [match.group("head").strip(), match.group("tail").strip()]
+        merged = " ".join(part for part in parts if part)
+        return f"{match.group('prefix')}{merged}{match.group('suffix')}"
+
+    return JSX_TEXT_LINE_COMMENT_CLOSE_BLEED_RE.sub(_replace, source)
+
+
 def _repair_componentized_jsx_code_block_literals(source: str) -> str:
     def _escape_braces(body: str) -> str:
         if "{" not in body and "}" not in body and "<" not in body and ">" not in body:
@@ -5007,9 +5175,13 @@ def _repair_componentized_css_data_uri_quote_bleed(source: str) -> str:
 
 
 def _repair_componentized_jsx_event_handler_arrow_bleed(source: str) -> str:
-    return JSX_EVENT_HANDLER_ARROW_BLEED_RE.sub(
+    updated = JSX_EVENT_HANDLER_ARROW_BLEED_RE.sub(
         lambda match: f"{match.group('prefix')}{match.group('param').strip()} =>",
         source,
+    )
+    return JSX_TYPED_EVENT_HANDLER_ARROW_BLEED_RE.sub(
+        lambda match: f"{match.group('prefix')} =>{match.group('suffix')}",
+        updated,
     )
 
 

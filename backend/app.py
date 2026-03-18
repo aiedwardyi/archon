@@ -1328,6 +1328,33 @@ def inject_preview_base_href(html: str, *, mount_prefix: str, root_dir: str) -> 
     return base_tag + html
 
 
+def inline_legacy_single_page_assets(html: str, src_dir: Path) -> str:
+    if not src_dir.exists():
+        return html
+
+    for css_path in sorted(src_dir.glob("*.css")):
+        css = css_path.read_text(encoding="utf-8", errors="replace")
+        link_pattern = re.compile(
+            rf'<link(?=[^>]*rel=["\']stylesheet["\'])(?=[^>]*href=["\'](?:\./)?{re.escape(css_path.name)}["\'])[^>]*>',
+            flags=re.IGNORECASE,
+        )
+        html, count = link_pattern.subn(f"<style>{css}</style>", html)
+        if count == 0 and "</head>" in html:
+            html = html.replace("</head>", f"<style>{css}</style>\n</head>", 1)
+
+    for js_path in sorted(src_dir.glob("*.js")):
+        js = js_path.read_text(encoding="utf-8", errors="replace")
+        script_pattern = re.compile(
+            rf'<script(?=[^>]*src=["\'](?:\./)?{re.escape(js_path.name)}["\'])[^>]*>\s*</script>',
+            flags=re.IGNORECASE,
+        )
+        html, count = script_pattern.subn(f"<script>{js}</script>", html)
+        if count == 0 and "</body>" in html:
+            html = html.replace("</body>", f"<script>{js}</script>\n</body>", 1)
+
+    return html
+
+
 def resolve_version_file(project_id: int, version: int, asset_path: str) -> Path | None:
     code_dir = (get_version_dir(project_id, version) / "code").resolve()
     target = (code_dir / asset_path).resolve()
@@ -5942,21 +5969,7 @@ def get_preview(project_id: int, version: int):
         html = target.read_text(encoding="utf-8", errors="replace")
         if scaffold_mode == "legacy_single_page":
             src_dir = target.parent
-            if src_dir.exists():
-                for css_path in sorted(src_dir.glob("*.css")):
-                    css = css_path.read_text(encoding="utf-8", errors="replace")
-                    link_tag = f'<link rel="stylesheet" href="./{css_path.name}">'
-                    if link_tag in html:
-                        html = html.replace(link_tag, f"<style>{css}</style>")
-                    elif "</head>" in html:
-                        html = html.replace("</head>", f"<style>{css}</style>\n</head>")
-                for js_path in sorted(src_dir.glob("*.js")):
-                    js = js_path.read_text(encoding="utf-8", errors="replace")
-                    script_tag = f'<script src="./{js_path.name}">'
-                    if script_tag in html:
-                        html = html.replace(f'{script_tag}</script>', f"<script>{js}</script>")
-                    elif "</body>" in html:
-                        html = html.replace("</body>", f"<script>{js}</script>\n</body>")
+            html = inline_legacy_single_page_assets(html, src_dir)
         else:
             mount_prefix = f"/api/preview-files/{project_id}/{version}"
             html = rewrite_preview_file_references(
@@ -6469,20 +6482,7 @@ def serve_published(slug: str):
     html = Path(html_file).read_text(encoding="utf-8", errors="replace")
     src_dir = Path(html_file).parent
     if src_dir.name == "src":
-        for css_path in sorted(src_dir.glob("*.css")):
-            css = css_path.read_text(encoding="utf-8", errors="replace")
-            link_tag = f'<link rel="stylesheet" href="./{css_path.name}">'
-            if link_tag in html:
-                html = html.replace(link_tag, f"<style>{css}</style>")
-            elif "</head>" in html:
-                html = html.replace("</head>", f"<style>{css}</style>\n</head>")
-        for js_path in sorted(src_dir.glob("*.js")):
-            js = js_path.read_text(encoding="utf-8", errors="replace")
-            script_tag = f'<script src="./{js_path.name}">'
-            if script_tag in html:
-                html = html.replace(f'{script_tag}</script>', f"<script>{js}</script>")
-            elif "</body>" in html:
-                html = html.replace("</body>", f"<script>{js}</script>\n</body>")
+        html = inline_legacy_single_page_assets(html, src_dir)
     root_dir = relative_mount_root(published_dir, Path(html_file))
     html = rewrite_preview_file_references(
         html,

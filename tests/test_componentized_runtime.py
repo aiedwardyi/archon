@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import shutil
+import subprocess
 import sys
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
@@ -430,6 +432,22 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertIn('/published/demo-app/assets/index-abc.js', published_html)
         self.assertIn('/published/demo-app/generated-assets/hero.png', published_html)
 
+    def test_rewrite_preview_file_references_keeps_existing_published_css_urls(self):
+        html = (
+            "<style>"
+            "body { background-image: url('/published/demo-app/assets/hero_background.png'); }"
+            "</style>"
+        )
+
+        published_html = rewrite_preview_file_references(
+            html,
+            mount_prefix="/published/demo-app",
+            root_dir="src",
+        )
+
+        self.assertIn("/published/demo-app/assets/hero_background.png", published_html)
+        self.assertNotIn("/published/demo-app/src/published/demo-app/assets/hero_background.png", published_html)
+
     def test_rewrite_preview_runtime_asset_references_rewrites_bundle_literals(self):
         bundle = (
             'const hero="generated-assets/hero.png";'
@@ -452,6 +470,59 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             result = build_componentized_preview(code_dir)
             self.assertEqual(result["status"], "skipped")
             self.assertIsNone(result["dist_index"])
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_build_componentized_preview_reinstalls_missing_safe_dependency_after_build_failure(self):
+        code_dir = _case_dir("componentized-runtime-missing-safe-dependency")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "node_modules").mkdir(parents=True)
+            (code_dir / "dist").mkdir(parents=True)
+            (code_dir / "package.json").write_text(
+                '{\n  "name": "demo-app",\n  "dependencies": {\n    "react": "^18.2.0",\n    "react-feather": "^2.0.10"\n  }\n}\n',
+                encoding="utf-8",
+            )
+            (code_dir / "dist" / "index.html").write_text("<!doctype html>\n", encoding="utf-8")
+
+            calls: list[list[str]] = []
+            responses = [
+                subprocess.CompletedProcess(
+                    args=["npm.cmd", "run", "build"],
+                    returncode=1,
+                    stdout="",
+                    stderr='[vite]: Rollup failed to resolve import "react-feather" from "src/components/Sidebar.tsx".',
+                ),
+                subprocess.CompletedProcess(
+                    args=["npm.cmd", "install"],
+                    returncode=0,
+                    stdout="installed",
+                    stderr="",
+                ),
+                subprocess.CompletedProcess(
+                    args=["npm.cmd", "run", "build"],
+                    returncode=0,
+                    stdout="built",
+                    stderr="",
+                ),
+            ]
+
+            def _fake_run(command, **kwargs):
+                calls.append(command)
+                return responses[len(calls) - 1]
+
+            with patch("utils.componentized_runtime.subprocess.run", side_effect=_fake_run):
+                result = build_componentized_preview(code_dir, timeout_seconds=30)
+
+            self.assertEqual(result["status"], "success")
+            self.assertEqual(
+                calls,
+                [
+                    ["npm.cmd", "run", "build"],
+                    ["npm.cmd", "install"],
+                    ["npm.cmd", "run", "build"],
+                ],
+            )
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
@@ -4531,6 +4602,30 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertNotIn("\n  Alpine.js is initialized and available on the window\n", normalized)
         self.assertNotIn("\n  class/visibility.\n", normalized)
 
+    def test_normalize_run_on_natural_language_notes_merges_unindented_prose_after_comment(self):
+        source = (
+            "if (drawerRef.current) {\n"
+            "  /* This assumes */\n"
+            "Alpine.js is initialized and available on the window\n"
+            "  // and that the x-data scope on this element can be accessed.\n"
+            "  /* A more robust way would be to use */\n"
+            "Alpine.data() if the component was Alpine-only.\n"
+            "}\n"
+        )
+
+        normalized = _normalize_run_on_natural_language_notes(source)
+
+        self.assertIn(
+            "  /* This assumes Alpine.js is initialized and available on the window */\n",
+            normalized,
+        )
+        self.assertIn(
+            "  /* A more robust way would be to use Alpine.data() if the component was Alpine-only. */\n",
+            normalized,
+        )
+        self.assertNotIn("\nAlpine.js is initialized and available on the window\n", normalized)
+        self.assertNotIn("\nAlpine.data() if the component was Alpine-only.\n", normalized)
+
     def test_ensure_componentized_workspace_support_repairs_unterminated_inline_comment_and_dotted_orphan_close(self):
         code_dir = _case_dir("componentized-runtime-right-rail-comment-split")
         try:
@@ -4600,6 +4695,115 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertIn("/* +/- 100 */", source)
             self.assertIn("data.push(Math.max(500, currentValue));", source)
             self.assertNotIn("data.push( */", source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_strips_inline_script_tags_from_components(self):
+        code_dir = _case_dir("componentized-runtime-inline-script-tag")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            (code_dir / "src" / "components" / "Layout.tsx").write_text(
+                "import React from 'react';\n"
+                "export default function Layout() {\n"
+                "  return (\n"
+                "    <div>\n"
+                "      <main>Content</main>\n"
+                "      <script>\n"
+                "        document.querySelectorAll('a').forEach((node) => {\n"
+                "          node.addEventListener('click', () => console.log(node));\n"
+                "        });\n"
+                "      </script>\n"
+                "    </div>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            source = (code_dir / "src" / "components" / "Layout.tsx").read_text(encoding="utf-8")
+            self.assertNotIn("<script>", source)
+            self.assertIn("{/* Removed broken inline script from generated component */}", source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_jsx_tag_comment_lines_and_typed_handlers(self):
+        code_dir = _case_dir("componentized-runtime-jsx-tag-comment-lines")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            (code_dir / "src" / "components" / "Gallery.tsx").write_text(
+                "import React from 'react';\n"
+                "export default function Gallery() {\n"
+                "  return (\n"
+                "    <img\n"
+                "      src=\"hero.png\" /* reuse hero image */\n"
+                "/* constraint */\n"
+                "      alt=\"Hero\"\n"
+                "      onError={(e: any) = /> {\n"
+                "        e.target.alt = 'Fallback';\n"
+                "      }}\n"
+                "    />\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            source = (code_dir / "src" / "components" / "Gallery.tsx").read_text(encoding="utf-8")
+            self.assertNotIn("/* constraint */", source)
+            self.assertNotIn("reuse hero image", source)
+            self.assertIn("onError={(e: any) => {", source)
+            self.assertNotIn("= />", source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_jsx_text_comment_close_bleed(self):
+        code_dir = _case_dir("componentized-runtime-jsx-text-comment-close-bleed")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "import React from 'react';\n"
+                "export default function App() {\n"
+                "  return (\n"
+                "    <button>\n"
+                "      <svg viewBox=\"0 0 24 24\"></svg> Export */\n"
+                "      CSV\n"
+                "    </button>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("</svg>Export CSV</button>", source.replace("\n", ""))
+            self.assertNotIn("*/", source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_removes_duplicate_closing_tag_lines(self):
+        code_dir = _case_dir("componentized-runtime-duplicate-closing-tag-lines")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "import React from 'react';\n"
+                "export default function App() {\n"
+                "  return (\n"
+                "    <div>\n"
+                "      <button><svg viewBox=\"0 0 24 24\"></svg>Export CSV</button>\n"
+                "      </button>\n"
+                "    </div>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertEqual(source.count("</button>"), 1)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 

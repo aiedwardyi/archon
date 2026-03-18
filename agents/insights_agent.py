@@ -105,7 +105,7 @@ class InsightsAgent:
                 "portfolio": "Include the person's name, role, skills, and types of projects to showcase.",
                 "saas_landing": "Mention the product name, key features, pricing tiers, and target audience.",
                 "game": "Describe the game title, genre, characters, and what fans should see on the page.",
-                "restaurant": "Include the restaurant name, cuisine type, menu items, and atmosphere.",
+                "restaurant": "Include the business name, food or drink specialty, standout items, and atmosphere.",
                 "blog": "Specify the blog's topic, target audience, and what kind of posts to feature.",
                 "fitness": "Include gym name, workout types, trainer info, and membership options.",
             }

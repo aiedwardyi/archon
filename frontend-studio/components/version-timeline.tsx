@@ -17,8 +17,14 @@ import {
 } from "lucide-react"
 import { PreviewPanel } from "@/components/preview-panel"
 import { useLanguage } from "@/contexts/LanguageContext"
+import { authService } from "@/lib/auth"
 
 const API_BASE = "http://localhost:5000"
+
+function authHeaders(base: HeadersInit = {}): HeadersInit {
+  const token = authService.getToken()
+  return token ? { ...base, Authorization: `Bearer ${token}` } : base
+}
 
 type Version = {
   id: number
@@ -125,7 +131,7 @@ export function VersionTimeline() {
     if (showLoading) setLoading(true)
     try {
       const statusRes = await fetch(`${API_BASE}/api/execution-status?project_id=${projectId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('archon_token')}` }
+        headers: authHeaders(),
       })
       const statusData = await statusRes.json()
       setIsProjectBuilding(statusData.status === 'RUNNING')
@@ -133,7 +139,9 @@ export function VersionTimeline() {
       setIsProjectBuilding(false)
     }
     try {
-      const res = await fetch(`${API_BASE}/api/projects/${projectId}/versions`)
+      const res = await fetch(`${API_BASE}/api/projects/${projectId}/versions`, {
+        headers: authHeaders(),
+      })
       const data = await res.json()
       const parsed = parseVersions(data.versions || []).sort((left, right) => right.version - left.version)
       setVersions(parsed)
@@ -160,7 +168,10 @@ export function VersionTimeline() {
   const handleRestore = async (executionId: number) => {
     setRestoring(true)
     try {
-      await fetch(`${API_BASE}/api/executions/${executionId}/restore`, { method: "POST" })
+      await fetch(`${API_BASE}/api/executions/${executionId}/restore`, {
+        method: "POST",
+        headers: authHeaders(),
+      })
       setRestoreConfirmedExecutionId(executionId)
       if (restoreConfirmationTimeoutRef.current) {
         clearTimeout(restoreConfirmationTimeoutRef.current)
@@ -180,6 +191,27 @@ export function VersionTimeline() {
       }
     }
   }, [])
+
+  const handleDownloadReport = async (version: number) => {
+    if (!projectId) return
+    try {
+      const res = await fetch(`${API_BASE}/api/projects/${projectId}/versions/${version}/factsheet/pdf?type=client`, {
+        headers: authHeaders(),
+      })
+      if (!res.ok) throw new Error("Failed to download report")
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `archon-v${version}-client.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 60000)
+    } catch {
+      alert("Report download failed")
+    }
+  }
 
   const selected = versions.find((v) => v.id === selectedVersionId)
   const headVersion = versions.find((v) => v.isActiveHead) || versions[0]
@@ -292,7 +324,10 @@ export function VersionTimeline() {
                 <span className="text-muted-foreground">{selected.date} at {selected.timestamp}</span>
               </div>
               <div className="flex items-center gap-2">
-                <button className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                <button
+                  onClick={() => handleDownloadReport(selected.version)}
+                  className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
                   <Download className="h-3 w-3" />
                   {t("downloadReport")}
                 </button>

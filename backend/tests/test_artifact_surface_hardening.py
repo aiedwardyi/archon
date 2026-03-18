@@ -103,3 +103,51 @@ def test_download_endpoint_skips_runtime_and_install_directories(client, monkeyp
     assert not any(name.startswith("node_modules/") for name in names)
     assert not any(name.startswith("dist/") for name in names)
     assert not any(name.startswith(".npm-cache/") for name in names)
+
+
+def test_preview_inlines_legacy_assets_without_dot_prefix(client, monkeypatch, tmp_path):
+    monkeypatch.setattr(backend_app, "PUBLIC_DIR", tmp_path)
+
+    code_dir = backend_app.get_version_dir(91, 1) / "code" / "src"
+    _write(
+        code_dir / "index.html",
+        (
+            "<html><head><link rel=\"stylesheet\" href=\"style.css\"></head>"
+            "<body><h1>Demo</h1><script src=\"script.js\"></script></body></html>"
+        ),
+    )
+    _write(code_dir / "style.css", "body{color:red;}")
+    _write(code_dir / "script.js", "window.previewReady = true;")
+
+    response = client.get("/api/preview/91/1")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "<style>body{color:red;}</style>" in html
+    assert "<script>window.previewReady = true;</script>" in html
+    assert 'href="style.css"' not in html
+    assert 'src="script.js"' not in html
+
+
+def test_published_route_inlines_legacy_assets_without_dot_prefix(client, monkeypatch, tmp_path):
+    monkeypatch.setattr(backend_app, "REPO_ROOT", tmp_path)
+
+    published_dir = tmp_path / "published" / "demo-legacy" / "src"
+    _write(
+        published_dir / "index.html",
+        (
+            "<html><head><link rel=\"stylesheet\" href=\"style.css\"></head>"
+            "<body><h1>Demo</h1><script src=\"script.js\"></script></body></html>"
+        ),
+    )
+    _write(published_dir / "style.css", "body{background:black;}")
+    _write(published_dir / "script.js", "window.publishedReady = true;")
+
+    response = client.get("/published/demo-legacy")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "<style>body{background:black;}</style>" in html
+    assert "<script>window.publishedReady = true;</script>" in html
+    assert 'href="style.css"' not in html
+    assert 'src="script.js"' not in html

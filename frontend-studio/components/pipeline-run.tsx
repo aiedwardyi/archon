@@ -25,9 +25,16 @@ import {
   Paperclip,
 } from "lucide-react"
 import { useLanguage } from "@/contexts/LanguageContext"
+import { authService } from "@/lib/auth"
 
 const API_BASE = "http://localhost:5000"
 const POLL_INTERVAL_MS = 1500
+
+function authHeaders(base: HeadersInit = {}): HeadersInit {
+  const token = authService.getToken()
+  return token ? { ...base, Authorization: `Bearer ${token}` } : base
+}
+
 type AgentStatus = "pending" | "running" | "complete" | "failed"
 
 type LogEntry = {
@@ -112,12 +119,15 @@ export function PipelineRun() {
       const pid = sessionStorage.getItem("archon_current_project_id")
       if (pid) {
         sessionStorage.setItem(`archon_messages_${pid}`, JSON.stringify(messages))
-        // Always persist to DB — including mid-build so Enterprise/Studio stay in sync
-        fetch(`${API_BASE}/api/projects/${pid}/chat-messages`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages }),
-        }).catch(() => {}) // non-fatal
+        const hasSavedExecution = !!(versionRef.current || executionIdRef.current)
+        if (hasSavedExecution) {
+          // Skip the DB write until a version/execution exists; brand-new projects would 404 here.
+          fetch(`${API_BASE}/api/projects/${pid}/chat-messages`, {
+            method: "POST",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({ messages }),
+          }).catch(() => {}) // non-fatal
+        }
       }
     }
   }, [messages])
@@ -134,7 +144,9 @@ export function PipelineRun() {
       sessionStorage.setItem("archon_current_project_id", urlPid)
       setProjectId(Number(urlPid))
       // Fetch the real project name from API instead of trusting stale sessionStorage
-      fetch(`http://localhost:5000/api/projects/${urlPid}`)
+      fetch(`http://localhost:5000/api/projects/${urlPid}`, {
+        headers: authHeaders(),
+      })
         .then(r => r.json())
         .then(data => {
           const name = data.name || data.project?.name || "my-project"
@@ -164,7 +176,9 @@ export function PipelineRun() {
       } else {
         setMessages([])
       }
-      fetch(`${API_BASE}/api/projects/${urlPid}/chat-history`)
+      fetch(`${API_BASE}/api/projects/${urlPid}/chat-history`, {
+        headers: authHeaders(),
+      })
         .then(r => r.json())
         .then((data: any) => {
           if (!Array.isArray(data) || data.length === 0) return
@@ -173,13 +187,16 @@ export function PipelineRun() {
             role: m.role === "assistant" ? "archon" : m.role,
             content: m.content,
             timestamp: m.timestamp || Date.now(),
+            imageUrls: Array.isArray(m.imageUrls) ? m.imageUrls : undefined,
           }))
           setMessages(normalized)
           sessionStorage.setItem(`archon_messages_${urlPid}`, JSON.stringify(normalized))
         })
         .catch(() => {})
       // Also restore pipeline status for the new project
-      fetch(`${API_BASE}/api/projects/${urlPid}`)
+      fetch(`${API_BASE}/api/projects/${urlPid}`, {
+        headers: authHeaders(),
+      })
         .then(r => r.json())
         .then(data => {
           const execs: any[] = data.executions || []
@@ -248,7 +265,9 @@ export function PipelineRun() {
 
     // Always load from DB — source of truth shared with Enterprise
     setMessages([])
-    fetch(`${API_BASE}/api/projects/${pidNum}/chat-history`)
+    fetch(`${API_BASE}/api/projects/${pidNum}/chat-history`, {
+      headers: authHeaders(),
+    })
       .then(r => r.json())
       .then((data: any) => {
         if (!Array.isArray(data) || data.length === 0) return
@@ -257,6 +276,7 @@ export function PipelineRun() {
           role: m.role === "assistant" ? "archon" : m.role,
           content: m.content,
           timestamp: m.timestamp || Date.now(),
+          imageUrls: Array.isArray(m.imageUrls) ? m.imageUrls : undefined,
         }))
         setMessages(normalized)
         sessionStorage.setItem(`archon_messages_${pidNum}`, JSON.stringify(normalized))
@@ -264,7 +284,9 @@ export function PipelineRun() {
       .catch(() => {})
 
     // Always restore from DB — DB is source of truth, don't trust stale sessionStorage status
-    fetch(`${API_BASE}/api/projects/${pidNum}`)
+    fetch(`${API_BASE}/api/projects/${pidNum}`, {
+      headers: authHeaders(),
+    })
         .then(r => r.json())
         .then(data => {
           const execs: any[] = data.executions || []
@@ -417,7 +439,7 @@ export function PipelineRun() {
           setMessages(prev => {
             fetch(`${API_BASE}/api/projects/${savePid}/chat-messages`, {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: authHeaders({ "Content-Type": "application/json" }),
               body: JSON.stringify({ messages: prev }),
             }).catch(() => {})
             return prev
@@ -507,9 +529,13 @@ export function PipelineRun() {
       // Hit /chat first — fast classify, never touches DB or versions
       const chatRes = await fetch(`${API_BASE}/api/projects/${projectId}/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ message: prompt }),
       })
+      if (!chatRes.ok) {
+        const errorData = await chatRes.json().catch(() => ({}))
+        throw new Error(errorData.error || "Failed to classify request")
+      }
       const chatData = await chatRes.json()
       const nluResult = chatData?.nlu_result
 
@@ -574,16 +600,20 @@ export function PipelineRun() {
         }
         res = await fetch(`${API_BASE}/api/projects/${projectId}/iterate`, {
           method: "POST",
+          headers: authHeaders(),
           body: formData,
         })
       } else {
         res = await fetch(`${API_BASE}/api/projects/${projectId}/iterate`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({ prompt, prompt_history: newHistory, nlu_result: nluResult }),
         })
       }
       const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to start build")
+      }
 
       if (data.version) {
         setVersion(data.version)

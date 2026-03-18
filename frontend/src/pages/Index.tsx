@@ -231,11 +231,12 @@ const Index = () => {
 
   // Save chat messages to sessionStorage whenever they change
   useEffect(() => {
-    if (selectedProjectId && chatMessages.length > 0 && activeProjectRef.current === selectedProjectId && !sending) {
+    const hasSavedExecution = selectedVersion != null || pipeline.executionId != null;
+    if (selectedProjectId && chatMessages.length > 0 && activeProjectRef.current === selectedProjectId && !sending && hasSavedExecution) {
       sessionStorage.setItem(`archon_messages_${selectedProjectId}`, JSON.stringify(chatMessages));
       saveChatMessages(selectedProjectId, chatMessages);
     }
-  }, [chatMessages, selectedProjectId, sending]);
+  }, [chatMessages, pipeline.executionId, selectedProjectId, selectedVersion, sending]);
 
   // Load chat history when project changes — sessionStorage first, then DB fallback
   useEffect(() => {
@@ -391,20 +392,25 @@ const Index = () => {
 
       setSending(true);
       sendingRef.current = true;
-      await iterateProject(
+      const iterateResult = await iterateProject(
         selectedProjectId,
         prompt,
         promptHistory as ChatMessage[],
         filesToSend.length > 0 ? filesToSend : undefined,
         chatResult.nlu_result,
       );
+      if (iterateResult?.version != null) {
+        setSelectedVersion(iterateResult.version);
+      }
       // Force-start polling immediately — don't wait for next render cycle
       pipeline.startPolling();
       // New execution is now active head — safe to save
       const msgsSnapshot = [...chatMessages, userMsg, assistantMsg];
-      setTimeout(() => {
-        saveChatMessages(selectedProjectId, msgsSnapshot);
-      }, 300);
+      if (iterateResult?.version != null || iterateResult?.execution_id != null) {
+        setTimeout(() => {
+          saveChatMessages(selectedProjectId, msgsSnapshot);
+        }, 300);
+      }
       // Polling starts automatically via usePipelineStatus (sending=true triggers enabled)
     } catch (err: any) {
       sendingRef.current = false;

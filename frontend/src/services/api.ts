@@ -66,9 +66,6 @@ export async function fetchProjects(): Promise<Project[]> {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
   const list: any[] = Array.isArray(data) ? data : data.projects || [];
-  if (list.length > 0) {
-    console.log("[fetchProjects] raw project sample:", list[0]);
-  }
   return list.map((p) => ({
     id: p.id,
     name: p.name || "Untitled",
@@ -302,7 +299,7 @@ export async function fetchBuildDetails(projectId: number, version: number): Pro
 }
 
 export async function fetchVersions(projectId: number): Promise<Version[]> {
-  const res = await fetch(`${API}/api/projects/${projectId}/versions`);
+  const res = await fetch(`${API}/api/projects/${projectId}/versions`, { headers: getAuthHeaders() });
   if (!res.ok) return [];
   const data = await res.json();
   return Array.isArray(data) ? data : (data.versions || []);
@@ -310,7 +307,7 @@ export async function fetchVersions(projectId: number): Promise<Version[]> {
 
 export async function fetchProjectHead(projectId: number): Promise<number | null> {
   try {
-    const res = await fetch(`${API}/api/projects/${projectId}/head`);
+    const res = await fetch(`${API}/api/projects/${projectId}/head`, { headers: getAuthHeaders() });
     if (!res.ok) return null;
     const data = await res.json();
     return data?.version ?? data?.version_number ?? null;
@@ -319,7 +316,7 @@ export async function fetchProjectHead(projectId: number): Promise<number | null
 
 export async function fetchLogs(projectId: number, version: number): Promise<string[]> {
   try {
-    const res = await fetch(`${API}/api/projects/${projectId}/versions/${version}/logs`);
+    const res = await fetch(`${API}/api/projects/${projectId}/versions/${version}/logs`, { headers: getAuthHeaders() });
     if (!res.ok) return [];
     const data = await res.json();
     return Array.isArray(data) ? data.map((l: any) => `${l.timestamp ? new Date(l.timestamp).toLocaleTimeString([], {hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'}) : ''} ${l.message || l}`) : [];
@@ -328,7 +325,7 @@ export async function fetchLogs(projectId: number, version: number): Promise<str
 
 export async function fetchPrd(projectId: number, version: number): Promise<any> {
   try {
-    const res = await fetch(`${API}/api/prd?project_id=${projectId}&version=${version}`);
+    const res = await fetch(`${API}/api/prd?project_id=${projectId}&version=${version}`, { headers: getAuthHeaders() });
     if (!res.ok) return null;
     return await res.json();
   } catch { return null; }
@@ -336,7 +333,7 @@ export async function fetchPrd(projectId: number, version: number): Promise<any>
 
 export async function fetchPlan(projectId: number, version: number): Promise<any> {
   try {
-    const res = await fetch(`${API}/api/plan?project_id=${projectId}&version=${version}`);
+    const res = await fetch(`${API}/api/plan?project_id=${projectId}&version=${version}`, { headers: getAuthHeaders() });
     if (!res.ok) return null;
     return await res.json();
   } catch { return null; }
@@ -345,7 +342,7 @@ export async function fetchPlan(projectId: number, version: number): Promise<any
 export async function fetchCodeFiles(projectId: number, version: number): Promise<Array<{filename: string; content: string; language: string}>> {
   try {
     const base = `${API}/api/projects/${projectId}/versions/${version}/files`;
-    const res = await fetch(base);
+    const res = await fetch(base, { headers: getAuthHeaders() });
     if (!res.ok) return [];
     const data = await res.json();
     const tree = data.tree || [];
@@ -353,7 +350,7 @@ export async function fetchCodeFiles(projectId: number, version: number): Promis
     const paths = flatten(tree);
     const files = await Promise.all(paths.map(async path => {
       try {
-        const r = await fetch(`${base}?path=${encodeURIComponent(path)}`);
+        const r = await fetch(`${base}?path=${encodeURIComponent(path)}`, { headers: getAuthHeaders() });
         if (!r.ok) return null;
         const f = await r.json();
         return { filename: path, content: f.content || '', language: f.language || 'text' };
@@ -459,7 +456,7 @@ export async function fetchExecutionStatus(projectId?: number | null): Promise<E
 /** GET /api/projects/:id/chat-history — load persisted chat messages */
 export async function fetchChatHistory(projectId: number): Promise<ChatMessage[]> {
   try {
-    const res = await fetch(`${API}/api/projects/${projectId}/chat-history`);
+    const res = await fetch(`${API}/api/projects/${projectId}/chat-history`, { headers: getAuthHeaders() });
     if (!res.ok) return [];
     const data = await res.json();
     return Array.isArray(data) ? data : [];
@@ -471,7 +468,7 @@ export async function saveChatMessages(projectId: number, messages: ChatMessage[
   try {
     await fetch(`${API}/api/projects/${projectId}/chat-messages`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ messages }),
     });
   } catch { /* non-fatal */ }

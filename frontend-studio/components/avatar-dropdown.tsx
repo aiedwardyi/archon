@@ -178,10 +178,8 @@ export function AvatarDropdown() {
               <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
                 <button
                   onClick={() => {
-                    console.log('[studio] raw pathname:', pathname);
                     const pathToTab: Record<string, string> = { '/': 'projects', '/pipeline': 'pipeline', '/versions': 'versions', '/artifacts': 'artifacts' };
                     const tab = pathToTab[pathname] || 'projects';
-                    console.log('[studio] switching to enterprise, pathname:', pathname, 'mapped tab:', tab);
                     const storedPid = sessionStorage.getItem("archon_current_project_id");
                     const params = new URLSearchParams();
                     params.set("tab", tab);
