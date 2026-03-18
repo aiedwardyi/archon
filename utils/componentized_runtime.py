@@ -5337,15 +5337,35 @@ def _repair_jsx_return_unclosed_tags(source: str) -> str:
 
             # Process left to right
             events.sort(key=lambda e: e[0])
+            insert_before: list[str] = []
             for _, event_type, tag in events:
                 if event_type == "open":
                     return_tag_stack.append(tag)
                 else:
+                    # If closing tag doesn't match stack top, close intermediates first
+                    # (handles misnested tags like <div><header>...</header></div>
+                    #  becoming </header> before </div>)
+                    found_idx = -1
+                    for j in range(len(return_tag_stack) - 1, -1, -1):
+                        if return_tag_stack[j] == tag:
+                            found_idx = j
+                            break
+                    if found_idx >= 0 and found_idx < len(return_tag_stack) - 1:
+                        # Close everything above the matching tag
+                        indent = re.match(r"(\s*)", line).group(1)
+                        for k in range(len(return_tag_stack) - 1, found_idx, -1):
+                            insert_before.append(f"{indent}</{return_tag_stack[k]}>")
+                        del return_tag_stack[found_idx + 1:]
+
                     # Pop matching open tag from stack (search from top)
                     for j in range(len(return_tag_stack) - 1, -1, -1):
                         if return_tag_stack[j] == tag:
                             del return_tag_stack[j]
                             break
+
+            # Insert any misnest-repair closing tags before the current line
+            if insert_before:
+                result_lines.extend(insert_before)
 
         result_lines.append(line)
 

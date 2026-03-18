@@ -157,26 +157,50 @@ def score_screenshot(scorer, screenshot_path: Path, archetype: str, refs_loader)
     return result.to_dict()
 
 
-async def run_single(api, archetype: str, prompt: str, build_timeout: int = 600) -> dict:
-    """Build one project, screenshot, return result."""
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    project_name = f"eval_{archetype}_{timestamp}"
+async def run_single(api, archetype: str, prompt: str, build_timeout: int = 600, max_build_attempts: int = 3) -> dict:
+    """Build one project, screenshot, return result. Retries if preview build fails."""
+    repo_root = Path(__file__).resolve().parent.parent
 
-    logger.info(f"Building: {project_name}")
-    try:
-        build_result = api.create_and_build(
-            name=project_name,
-            description=prompt,
-            timeout=build_timeout,
-        )
-    except BuildError as e:
-        logger.error(f"Build failed: {e}")
-        return {"archetype": archetype, "status": "build_failed", "error": str(e)}
+    for attempt in range(max_build_attempts):
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        project_name = f"eval_{archetype}_{timestamp}"
+        if attempt > 0:
+            project_name += f"_retry{attempt}"
+            logger.info(f"Retry {attempt + 1}/{max_build_attempts} after 30s cooldown...")
+            await asyncio.sleep(30)
 
-    preview_url = build_result["preview_url"]
-    project_id = build_result["project_id"]
-    version = build_result.get("version", 1)
-    logger.info(f"Build complete: project {project_id}, preview: {preview_url}")
+        logger.info(f"Building: {project_name}")
+        try:
+            build_result = api.create_and_build(
+                name=project_name,
+                description=prompt,
+                timeout=build_timeout,
+            )
+        except BuildError as e:
+            logger.error(f"Build failed: {e}")
+            if attempt == max_build_attempts - 1:
+                return {"archetype": archetype, "status": "build_failed", "error": str(e)}
+            continue
+
+        project_id = build_result["project_id"]
+        version = build_result.get("version", 1)
+        preview_url = build_result["preview_url"]
+
+        # Check if the componentized build produced dist/
+        dist_dir = repo_root / "generated" / str(project_id) / f"v{version}" / "code" / "dist"
+        if not dist_dir.exists():
+            logger.warning(f"Build {project_id} has no dist/ — preview build failed, retrying...")
+            if attempt == max_build_attempts - 1:
+                return {
+                    "archetype": archetype,
+                    "project_id": project_id,
+                    "status": "preview_build_failed",
+                    "error": "No dist/ directory after build — componentized preview failed",
+                }
+            continue
+
+        logger.info(f"Build complete: project {project_id}, preview: {preview_url}")
+        break
 
     # Screenshot
     output_dir = RESULTS_DIR / f"eval_loop_{timestamp}" / archetype
