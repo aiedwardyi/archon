@@ -4531,6 +4531,78 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertNotIn("\n  Alpine.js is initialized and available on the window\n", normalized)
         self.assertNotIn("\n  class/visibility.\n", normalized)
 
+    def test_ensure_componentized_workspace_support_repairs_unterminated_inline_comment_and_dotted_orphan_close(self):
+        code_dir = _case_dir("componentized-runtime-right-rail-comment-split")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            (code_dir / "src" / "components" / "RightRail.tsx").write_text(
+                "import React, { useState } from 'react';\n"
+                "export default function RightRail() {\n"
+                "  const [activeTab, setActiveTab] = useState('alerts');\n"
+                "  const handleResolveAlert = (id: number) => { alert(`Resolving alert ${id}`); /* In a real app, this would update state to remove the alert\n"
+                "  };\n"
+                "  return (\n"
+                "    <aside>\n"
+                "      <button onClick={() => setActiveTab('activity')}>Activity</button>\n"
+                "      <div>\n"
+                "        {activeTab === 'activity' && (\n"
+                "          <div>\n"
+                "            {['event'].map((kind) => (\n"
+                "              <div key={kind}>\n"
+                "                {kind === 'update' && <span>Update</span>}\n"
+                "                {kind. */\n"
+                "type === 'event' && <span>Event</span>}\n"
+                "              </div>\n"
+                "            ))}\n"
+                "          </div>\n"
+                "        )}\n"
+                "      </div>\n"
+                "    </aside>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            source = (code_dir / "src" / "components" / "RightRail.tsx").read_text(encoding="utf-8")
+            self.assertIn(
+                "/* In a real app, this would update state to remove the alert */",
+                source,
+            )
+            self.assertIn("kind.type === 'event'", source)
+            self.assertNotIn("kind. */", source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_swallowed_push_call_after_inline_comment(self):
+        code_dir = _case_dir("componentized-runtime-swallowed-push-call")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            (code_dir / "src" / "components" / "MainContent.tsx").write_text(
+                "export default function MainContent() {\n"
+                "  const generateChartData = () => {\n"
+                "    const data = [];\n"
+                "    let currentValue = 1000;\n"
+                "    for (let i = 0; i < 12; i++) { currentValue += Math.round(Math.random() * 200 - 100); /* +/- 100      data.push( */\n"
+                "    Math.max(500, currentValue)); /* Ensure value doesn't go too low */\n"
+                "    }\n"
+                "    return data;\n"
+                "  };\n"
+                "  return <div>{generateChartData().length}</div>;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            source = (code_dir / "src" / "components" / "MainContent.tsx").read_text(encoding="utf-8")
+            self.assertIn("/* +/- 100 */", source)
+            self.assertIn("data.push(Math.max(500, currentValue));", source)
+            self.assertNotIn("data.push( */", source)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
 
 if __name__ == "__main__":
     unittest.main()

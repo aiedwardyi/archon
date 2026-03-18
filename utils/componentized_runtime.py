@@ -85,6 +85,11 @@ INLINE_BLOCK_COMMENT_CONTINUATION_RE = re.compile(
     r"(?m)^(?P<prefix>[^\n]*?)/\*\s*(?P<comment>[^*\n]{2,240}?)\s{2,}(?P<code>(?:[)}\]],?\s*[^\n]*|[A-Za-z_:][-A-Za-z0-9_:.]*=\s*[^\n]*|[A-Za-z_$][\w$]*\s*:\s*[^\n]*|(?:const|let|var|return|if|for|while|switch)\b[^\n]*|set[A-Z]\w*\s*\([^\n]*))(?:\s*//\s*(?P<label>[^*\n]{2,200}?))?\s*(?:\*/)?\s*$",
     re.MULTILINE,
 )
+INLINE_BLOCK_COMMENT_SWALLOWED_CALL_RE = re.compile(
+    r"(?m)^(?P<indent>[ \t]*)(?P<stmt>[^\n]*?;)\s*/\*\s*(?P<comment1>[^*\n]{1,200}?)\s+"
+    r"(?P<callee>[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\()\s*\*/\s*$\n"
+    r"(?P=indent)(?P<argline>[^*\n]+?\)\s*;?)\s*/\*\s*(?P<comment2>[^*\n]{1,200}?)\s*\*/\s*$"
+)
 MULTILINE_BLOCK_COMMENT_CODE_START_RE = re.compile(
     r"(?:console\.[A-Za-z_$][\w$]*\s*\(|return\b|const\b|let\b|var\b|if\s*\(|for\s*\(|while\s*\(|switch\s*\(|set[A-Z]\w*\s*\(|[A-Za-z_$][\w$]*\s*=|[A-Za-z_$][\w$]*\s*\()"
 )
@@ -117,6 +122,9 @@ INLINE_BLOCK_COMMENT_NOTE_CODE_BLEED_RE = re.compile(
     r"(?m)^(?P<prefix>[^\n]*?)/\*\s*(?P<comment>[^*\n]{1,80})\s*\*/\s*$\n"
     r"(?P<indent>[ \t]*)(?P<tail>[A-Za-z][A-Za-z0-9_./&,\- '()]{4,160}?)\s{2,}"
     r"(?P<code>(?:if\s*\(|for\s*\(|while\s*\(|const\b|let\b|var\b|return\b|set[A-Z]\w*\(|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\s*\()[^\n]*)"
+)
+UNTERMINATED_INLINE_BLOCK_COMMENT_RE = re.compile(
+    r"(?m)^(?P<prefix>[^\n]*?(?:;|\)|\}|\]|\>))\s*/\*\s*(?P<comment>[^*\n]{2,240})$"
 )
 JSX_COMMENT_SWALLOWED_TAG_BOUNDARY_RE = re.compile(
     r"/\*\s*[\s\S]{0,320}?(?P<boundary>(?:/?>)\s*</[A-Za-z][A-Za-z0-9-]*>\s*<[A-Za-z][A-Za-z0-9-]*)\s*\*/",
@@ -152,6 +160,10 @@ COMMENT_TAIL_SPLIT_IDENTIFIER_RE = re.compile(
 )
 ORPHAN_COMMENT_SPLIT_IDENTIFIER_RE = re.compile(
     r"(?<![A-Za-z0-9_$])(?P<prefix>[a-z][A-Za-z0-9_$]{1,32})\s*\*/\s*\n(?P<indent>[ \t]*)(?P<suffix>[A-Z][A-Za-z0-9_$]{1,64})(?P<rest>[^\n]*)",
+    re.MULTILINE,
+)
+ORPHAN_COMMENT_SPLIT_DOTTED_IDENTIFIER_RE = re.compile(
+    r"(?P<prefix>(?:[A-Za-z_$][\w$]*\.){1,6})\s*\*/\s*(?:\r?\n\s*)?(?P<suffix>[A-Za-z_$][\w$]{0,63})(?P<rest>[^\n]*)",
     re.MULTILINE,
 )
 ORPHAN_COMMENT_SPLIT_STRING_LITERAL_RE = re.compile(
@@ -2098,6 +2110,8 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_multiline_block_comment_line_notes(updated)
         updated = _repair_inline_block_comment_continuations(updated)
         updated = _repair_inline_block_comment_note_code_bleed(updated)
+        updated = _repair_inline_block_comment_swallowed_calls(updated)
+        updated = _repair_unterminated_inline_block_comments(updated)
         updated = _normalize_run_on_inline_comments(updated)
         updated = _repair_componentized_comment_split_identifiers(updated)
         updated = _repair_componentized_comment_tail_split_identifiers(updated)
@@ -2108,6 +2122,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_componentized_jsx_handler_comment_close_bleed(updated)
         updated = _repair_componentized_jsx_expression_comment_split_identifiers(updated)
         updated = _repair_componentized_orphan_comment_split_identifiers(updated)
+        updated = _repair_componentized_orphan_comment_split_dotted_identifiers(updated)
         updated = _repair_componentized_orphan_comment_split_string_literals(updated)
         updated = _repair_componentized_orphan_comment_close_in_string_literals(updated)
         updated = _strip_componentized_alpine_jsx_directives(updated)
@@ -4412,6 +4427,42 @@ def _repair_inline_block_comment_note_code_bleed(source: str) -> str:
     return INLINE_BLOCK_COMMENT_NOTE_CODE_BLEED_RE.sub(_repl, source)
 
 
+def _repair_inline_block_comment_swallowed_calls(source: str) -> str:
+    def _repl(match: re.Match[str]) -> str:
+        comment1 = " ".join(match.group("comment1").split()).strip()
+        comment2 = " ".join(match.group("comment2").split()).strip()
+        line = match.group("stmt").rstrip()
+        if comment1:
+            line = f"{line} /* {comment1} */"
+        call_line = f"{match.group('indent')}{match.group('callee')}{match.group('argline').lstrip()}"
+        trailing_closers = ""
+        if comment2:
+            closer_match = re.search(r"(?P<body>.*?)(?P<closers>[}\])]+)$", comment2)
+            if closer_match:
+                comment2 = closer_match.group("body").rstrip()
+                trailing_closers = closer_match.group("closers")
+        if comment2:
+            call_line = f"{call_line} /* {comment2} */"
+        if trailing_closers:
+            return f"{line}\n{call_line}\n{match.group('indent')}{trailing_closers}"
+        return f"{line}\n{call_line}"
+
+    return INLINE_BLOCK_COMMENT_SWALLOWED_CALL_RE.sub(_repl, source)
+
+
+def _repair_unterminated_inline_block_comments(source: str) -> str:
+    def _repl(match: re.Match[str]) -> str:
+        line = match.group(0)
+        if "*/" in line:
+            return line
+        comment = " ".join(match.group("comment").split()).strip()
+        if not comment:
+            return line
+        return f"{match.group('prefix').rstrip()} /* {comment} */"
+
+    return UNTERMINATED_INLINE_BLOCK_COMMENT_RE.sub(_repl, source)
+
+
 def _repair_componentized_comment_url_bleed(source: str) -> str:
     updated = URL_PROTOCOL_COMMENT_BLEED_RE.sub(
         lambda match: f"{match.group('scheme')}://",
@@ -4568,6 +4619,27 @@ def _repair_componentized_orphan_comment_split_identifiers(source: str) -> str:
             return f"{prefix}{suffix}{rest}"
 
         repaired = ORPHAN_COMMENT_SPLIT_IDENTIFIER_RE.sub(_repl, updated)
+        if repaired == updated:
+            break
+        updated = repaired
+
+    return updated
+
+
+def _repair_componentized_orphan_comment_split_dotted_identifiers(source: str) -> str:
+    updated = source
+
+    for _ in range(8):
+        def _repl(match: re.Match[str]) -> str:
+            line_start = updated.rfind("\n", 0, match.start()) + 1
+            if "/*" in updated[line_start:match.start()]:
+                return match.group(0)
+            prefix = match.group("prefix").strip()
+            suffix = match.group("suffix").strip()
+            rest = match.group("rest") or ""
+            return f"{prefix}{suffix}{rest}"
+
+        repaired = ORPHAN_COMMENT_SPLIT_DOTTED_IDENTIFIER_RE.sub(_repl, updated)
         if repaired == updated:
             break
         updated = repaired
