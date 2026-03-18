@@ -186,7 +186,9 @@ def test_load_local_reference_build_routes_ai_product_builder_prompt_to_editor_w
     assert reference["style_family"] == "product_builder_workspace"
     assert reference["selection_reason"] == "style_family"
     assert "STYLE FAMILY (product_builder_workspace)" in reference["benchmark_guidance"]
-    assert "layers, prompts, runs, launch blockers, or QA notes" in reference["benchmark_guidance"]
+    assert "paper-like brief or document canvas" in reference["benchmark_guidance"]
+    assert "darker premium tool shell" in reference["benchmark_guidance"]
+    assert "Do not lead with KPI cards or a stack of plain textareas" in reference["benchmark_guidance"]
     assert "legacy-designai-startup-builder" in reference["benchmark_guidance"]
 
 
@@ -261,3 +263,5 @@ def test_load_local_reference_build_defaults_form_to_guided_setup_wizard_family(
     assert reference["selection_reason"] == "style_family"
     assert "STYLE FAMILY (guided_setup_wizard)" in reference["benchmark_guidance"]
     assert "legacy-ai-automation-onboarding-wizard" in reference["benchmark_guidance"]
+    assert "visible snapshot or status lane" in reference["benchmark_guidance"]
+    assert "pending counts and approval state visible" in reference["benchmark_guidance"]

@@ -243,6 +243,27 @@ The app structure must look native to the domain, not like a generic marketing p
   Use a workspace shell. Multi-panel layouts are preferred on desktop.
   The central work area must dominate the viewport. Side panels and toolbars should feel like part of one cohesive product shell.
 
+- `ai_product`, `productivity_app`, and `dev_tool`:
+  Default to a serious product workspace, not a landing page in app clothing.
+  If the prompt is builder/studio-oriented, use a strong topbar, a dominant center canvas, and a visible preview, inspector, or run-status rail on desktop.
+  Builder/studio prompts should not open on a KPI deck or a stack of plain textareas. The first viewport should look like an active builder with a real artifact in progress.
+  Do not turn the main workspace into a paper-like product brief or document with byline/timestamp copy. The center should feel like a builder board, live preview surface, or staged composition area.
+  Builder/studio prompts should default to a darker premium tool shell with deeper charcoal surfaces and restrained teal/amber accents, not warm beige editorial chrome.
+  If the prompt mentions prompt layers, show them as structured modules with role labels and controls, not identical raw textareas.
+  Do not make one large prompt textarea or rich-text editor slab the main interaction. Use compact layer cards, small controls, status chips, and run actions tied to the preview.
+  If the prompt mentions variant runs, QA notes, or launch blockers, keep at least two of those work surfaces visible above the fold.
+  If the prompt mentions live preview, render a real preview/browser/device frame rather than plain paragraph text.
+  A code block or quoted string does not count as the live preview. The preview should look like a rendered artifact with browser/device chrome or visible UI composition.
+  Avoid slash-command bars, highlight/bold formatting toolbars, serif editorial title treatment, and other document-editor controls unless the prompt explicitly asks for text editing.
+  If the prompt is setup/onboarding-oriented, use a split enterprise wizard shell with a visible progress rail plus a compact review, blocker, or snapshot lane that stays in view.
+  Avoid generic hero sections, isolated floating cards, or brochure grids unless the prompt explicitly asks for a publishable marketing surface.
+
+- `form`:
+  Use a split enterprise wizard shell with a strong top bar, visible step rail, dominant active-step panel, and a compact summary, snapshot, blocker, or readiness lane.
+  The review/snapshot state must stay visibly connected to the active step instead of appearing as a distant final section.
+  If the brief implies approvals, compliance docs, or submission gating, keep pending counts, blockers, and approval state visible in the desktop snapshot lane from the first screen.
+  Avoid narrow centered forms, giant empty gutters, or a plain stack of identical cards.
+
 - `game`:
   Build a cinematic companion site, not a SaaS dashboard and not a generic fan blog.
   Use a dramatic hero, character/weapon/location modules, strong atmosphere, and at least one richer reveal state for cards or lore panels.

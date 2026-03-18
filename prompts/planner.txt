@@ -114,17 +114,17 @@ UI archetype rules (CRITICAL):
 - Before writing the scaffold task description, classify the app type from the PRD title and overview
 - Set ui_archetype to exactly one value from the full list below. Pick the MOST SPECIFIC match — never default to "landing" when a more specific archetype fits.
   ARCHETYPE SELECTION GUIDE:
-    dashboard    -> admin panels, CRMs, analytics, monitoring, SaaS back-office
+    dashboard    -> admin panels, CRMs, analytics, monitoring, SaaS back-office; not wizards and not editor/builder studios
     landing      -> generic marketing pages with no specific domain
     ecommerce    -> online stores, product catalogs, retail
     kanban       -> task managers, project boards, sprint tools
     chat         -> messaging, support, inbox, DMs
-    editor       -> document editors, note apps, CMS builders
+    editor       -> document editors, note apps, CMS builders, prompt-layer studios, and multi-panel builder workspaces with a dominant canvas or preview surface
     feed         -> news feeds, article lists, video discovery
-    form         -> surveys, wizards, onboarding, booking flows
+    form         -> surveys, wizards, onboarding, booking flows, application/review/approval flows with visible progress and summary state
     game         -> game fan pages, JRPG wikis, game tributes, character showcases, game companion sites, interactive game experiences
     portfolio    -> personal portfolios, CVs, showcase sites
-    saas_landing -> SaaS/tech product marketing, AI tools, dev tools (Tailwind + Alpine)
+    saas_landing -> SaaS/tech product marketing, AI product homepages, pricing pages, docs-led marketing (Tailwind + Alpine)
     restaurant   -> restaurants, cafes, bakeries, food brands (Tailwind + Alpine)
     medical      -> clinics, hospitals, telehealth, dental (Tailwind + Alpine)
     wedding      -> wedding sites, event invitations, celebrations (Tailwind + Alpine)
@@ -136,7 +136,7 @@ UI archetype rules (CRITICAL):
     legal        -> law firms, consulting, professional services (Tailwind + Alpine)
     nonprofit    -> charities, NGOs, foundations, fundraising (Tailwind + Alpine)
     crypto       -> DeFi, NFT, Web3 startups, DAOs (Tailwind + Alpine)
-    ai_product   -> AI/ML product pages, LLM tools, generative AI (Tailwind + Alpine)
+    ai_product   -> AI/ML product apps, LLM workspaces, copilots, model ops tools, and multi-panel AI tools where the main surface is chat, runs, or model controls rather than a builder canvas (Tailwind + Alpine)
     agency       -> creative agencies, branding firms, studios (Tailwind + Alpine)
     job_board    -> job listings, career pages, recruitment (Tailwind + Alpine)
     food_delivery -> delivery platforms, restaurant ordering apps (Tailwind + Alpine)
@@ -150,6 +150,10 @@ UI archetype rules (CRITICAL):
     If the PRD mentions a PERSON (name, career, skills, experience, CV, resume, personal brand, "my work", "about me") -> portfolio, NOT dashboard
     If the PRD is about SHOWING someone's work/projects/achievements to visitors -> portfolio
     If the PRD is about MANAGING/MONITORING data with filters, tables, and admin controls -> dashboard
+    If the PRD mentions onboarding, wizard, application flow, approvals, blocker summary, requirements summary, review sidebar, or compliance steps -> form, NOT dashboard
+    If the PRD mentions builder, studio, prompt layers, live preview rail, inspector, canvas, variant runs, or launch blockers -> editor, NOT dashboard
+    If the PRD is an AI tool/product with a multi-panel workspace and the main surface is chat, runs, or model controls rather than a builder canvas -> ai_product, NOT saas_landing
+    If the PRD is an AI company homepage with pricing, docs CTA, feature marketing, or waitlist messaging -> saas_landing, NOT ai_product
     If the PRD mentions "landing page" or "marketing" with a specific domain (restaurant, law firm, gym) -> use the domain-specific archetype, NOT generic landing
     If the PRD mentions a SaaS/tech product with pricing -> saas_landing, NOT landing
     If the PRD mentions food ordering/delivery -> food_delivery, NOT restaurant (restaurant is for the restaurant's own site)
@@ -162,9 +166,9 @@ UI archetype rules (CRITICAL):
     ecommerce -> required_blocks: ["product_grid", "cart", "filter_bar"], required_interactions: ["add_to_cart", "filter"], avoid: ["hero_marketing", "testimonials"]
     kanban    -> required_blocks: ["columns", "cards", "add_task_button"], required_interactions: ["drag_feel", "open_detail"], avoid: ["hero_marketing", "pricing_section"]
     chat      -> required_blocks: ["contact_list", "message_thread", "input_bar"], required_interactions: ["send_message"], avoid: ["hero_marketing", "data_table"]
-    editor    -> required_blocks: ["toolbar", "edit_area", "status_bar"], required_interactions: ["save", "export"], avoid: ["hero_marketing"]
+    editor    -> required_blocks: ["topbar", "toolbar", "edit_area", "inspector_or_preview_rail"], required_interactions: ["save", "switch_panel", "open_detail"], avoid: ["hero_marketing", "pricing_section", "generic_kpi_dashboard"]
     feed      -> required_blocks: ["featured_card", "card_grid", "filter_tabs"], required_interactions: ["search", "filter"], avoid: ["sidebar_nav", "kpis"]
-    form      -> required_blocks: ["step_indicator", "inputs", "submit_button"], required_interactions: ["validate", "submit"], avoid: ["hero_marketing", "sidebar"]
+    form      -> required_blocks: ["step_indicator", "active_step_panel", "review_sidebar", "submit_or_continue_bar"], required_interactions: ["validate", "submit", "step_continue"], avoid: ["hero_marketing", "full_width_form_slab", "pricing_section"]
     game      -> required_blocks: ["hero_cinematic", "character_cards", "weapons_showcase", "world_map"], required_interactions: ["smooth_scroll", "hover_cards"], avoid: ["game_canvas", "hud", "start_screen", "pricing_section"]
     portfolio -> required_blocks: [“hero_band”, “projects_grid”, “skills”], required_interactions: [“view_project”], avoid: [“sidebar_nav”, “kpis”]
     saas_landing -> required_blocks: [“hero”,”feature_grid”,”social_proof”,”pricing”,”cta_band”,”footer”], required_interactions: [“cta_click”,”pricing_toggle”,”faq_accordion”], avoid: [“sidebar”,”data_table”,”kanban_columns”]
@@ -179,7 +183,7 @@ UI archetype rules (CRITICAL):
     legal        -> required_blocks: [“hero_consultation”,”practice_areas”,”attorney_profiles”,”case_results”,”contact_form”], required_interactions: [“consultation_cta”,”faq_accordion”], avoid: [“sidebar”,”kanban_columns”,”pricing_toggle”]
     nonprofit    -> required_blocks: [“hero_mission”,”impact_counters”,”donation_tiers”,”progress_bar”,”stories”], required_interactions: [“donate_cta”,”countup_animation”], avoid: [“sidebar”,”data_table”,”pricing_toggle”]
     crypto       -> required_blocks: [“hero”,”token_stats”,”nft_grid”,”wallet_connect”,”roadmap”,”team”], required_interactions: [“wallet_connect_click”,”roadmap_reveal”], avoid: [“sidebar”,”data_table”,”reservation_form”]
-    ai_product   -> required_blocks: [“hero”,”live_demo”,”capabilities_grid”,”benchmarks”,”pricing”,”docs_cta”], required_interactions: [“demo_interact”,”pricing_toggle”], avoid: [“sidebar”,”reservation_form”,”kanban_columns”]
+    ai_product   -> required_blocks: [“topbar”,”live_demo_or_workspace”,”capabilities_grid”,”benchmarks_or_run_history”,”docs_cta”], required_interactions: [“demo_interact”,”panel_switch”,”state_change”], avoid: [“reservation_form”,”generic_marketing_hero_only”,”testimonials_only_shell”]
     agency       -> required_blocks: [“hero”,”case_studies”,”services”,”process”,”client_logos”,”stats”], required_interactions: [“case_study_open”,”process_reveal”], avoid: [“sidebar”,”data_table”,”reservation_form”]
     job_board    -> required_blocks: [“search_hero”,”filter_sidebar”,”job_listings”,”featured_companies”,”post_job_cta”], required_interactions: [“search_filter”,”apply_cta”,”category_filter”], avoid: [“kanban_columns”,”pricing_toggle”,”hero_marketing”]
     food_delivery -> required_blocks: [“search_hero”,”cuisine_pills”,”restaurant_grid”,”promo_banner”,”how_it_works”], required_interactions: [“search_filter”,”cuisine_filter”,”add_to_cart”], avoid: [“sidebar”,”kanban_columns”,”pricing_section”]
@@ -266,16 +270,16 @@ Examples (study these carefully — notice how specific the avoid lists are to e
     content_contract: kpi_labels=[], table_columns=[], seed_rows=5, required_states=[loading,empty,unread_badge]
 
   editor:
-    layout_contract: regions=[toolbar,edit_area,status_bar], sidebar=null, topbar=[file_name,format_actions,save_export], main_grid=[{row:1,component:toolbar},{row:2,component:edit_area,aspect_ratio:"full"},{row:3,component:status_bar}], density=comfortable
-    content_contract: kpi_labels=[], table_columns=[], seed_rows=0, required_states=[loading,saved,unsaved]
+    layout_contract: regions=[topbar,context_sidebar,edit_area,inspector_or_preview_rail], sidebar={width_px:240,nav_groups:2,icons_required:false}, topbar=[file_name,format_actions,save_export], main_grid=[{col:1,component:context_sidebar},{col:2,component:edit_area,aspect_ratio:"full"},{col:3,component:inspector_or_preview_rail}], density=comfortable
+    content_contract: kpi_labels=[], table_columns=[], seed_rows=0, required_states=[loading,saved,unsaved,panel_selected]
 
   feed:
     layout_contract: regions=[topbar,featured,card_grid], sidebar=null, topbar=[search,filter_tabs], main_grid=[{row:1,component:featured_card,aspect_ratio:"16:5"},{row:2,component:card_grid,count:6}], density=comfortable
     content_contract: kpi_labels=[], table_columns=[title,author,date,tags], seed_rows=6, required_states=[loading,empty,search_results]
 
   form:
-    layout_contract: regions=[step_indicator,form_body,actions], sidebar=null, topbar=[logo,step_indicator], main_grid=[{row:1,component:inputs},{row:2,component:submit_button}], density=comfortable
-    content_contract: kpi_labels=[], table_columns=[], seed_rows=0, required_states=[idle,validating,error,success]
+    layout_contract: regions=[topbar,progress_rail,active_step_panel,review_sidebar,actions], sidebar={width_px:260,nav_groups:1,icons_required:false}, topbar=[logo,project_meta,step_indicator], main_grid=[{col:1,component:progress_rail},{col:2,component:active_step_panel},{col:3,component:review_sidebar}], density=comfortable
+    content_contract: kpi_labels=[], table_columns=[], seed_rows=0, required_states=[idle,validating,error,success,review_ready]
 
   game:
     layout_contract: regions=[hero_cinematic,characters,weapons,world_map,footer], sidebar=null, topbar=[logo,nav_links], main_grid=[{row:1,component:hero_cinematic,aspect_ratio:"16:9"},{row:2,component:character_cards,count:3},{row:3,component:weapons_showcase},{row:4,component:world_map}], density=comfortable
@@ -334,8 +338,8 @@ Examples (study these carefully — notice how specific the avoid lists are to e
     content_contract: kpi_labels=[token_price,market_cap,holders,volume_24h], table_columns=[token,price,change_24h,volume,market_cap], seed_rows=6, required_states=[hover,wallet_connected,roadmap_revealed]
 
   ai_product:
-    layout_contract: regions=[header,hero,demo,capabilities,benchmarks,pricing,docs_cta,footer], sidebar=null, topbar=[logo,nav,try_free_cta], main_grid=[{row:1,component:hero,aspect_ratio:"16:6"},{row:2,component:demo_playground},{row:3,component:capabilities_grid,count:6},{row:4,component:benchmarks_table},{row:5,component:pricing,count:3}], density=comfortable
-    content_contract: kpi_labels=[], table_columns=[model,accuracy,speed,cost,context_window], seed_rows=4, required_states=[hover,demo_active,pricing_toggle]
+    layout_contract: regions=[topbar,workspace_or_demo,control_rail,preview_or_status_rail,capabilities,benchmarks,docs_cta], sidebar={width_px:240,nav_groups:2,icons_required:false}, topbar=[logo,workspace_switcher,primary_cta], main_grid=[{col:1,component:control_rail},{col:2,component:workspace_or_demo,aspect_ratio:"16:10"},{col:3,component:preview_or_status_rail}], density=comfortable
+    content_contract: kpi_labels=[], table_columns=[model,accuracy,speed,cost,context_window], seed_rows=4, required_states=[hover,demo_active,panel_selected,run_complete]
 
   agency:
     layout_contract: regions=[header,hero,case_studies,services,process,clients,stats,team,contact,footer], sidebar=null, topbar=[logo,nav,contact_cta], main_grid=[{row:1,component:hero,aspect_ratio:"16:6"},{row:2,component:case_studies,count:3},{row:3,component:services_grid,count:4},{row:4,component:process_steps,count:4},{row:5,component:client_logos}], density=comfortable

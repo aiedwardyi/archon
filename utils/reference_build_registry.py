@@ -181,8 +181,15 @@ STYLE_FAMILY_LIBRARY: dict[str, dict[str, Any]] = {
         ),
         "guidance_lines": [
             "Frame the experience like a premium builder workspace with a real top toolbar and visible control rails, not a flat landing page or generic dashboard.",
+            "Default to a darker premium tool shell with charcoal chrome, deliberate contrast, and restrained teal or warm-action accents instead of warm editorial beige.",
+            "Builder-style prompts should usually land as a three-part desktop shell: context rail, dominant center canvas, and a visible preview, QA, or launch-status rail.",
             "Blend builder controls, setup progress, status, and preview/review context into one cohesive shell so the UI feels actively usable at first glance.",
-            "Keep the main work area dominant, but support it with dense inspector and summary modules rather than empty side chrome.",
+            "Make the builder artifact or preview surface the first focal point. Do not lead with KPI cards or a stack of plain textareas when the brief is clearly about building.",
+            "Do not let builder prompts collapse into a paper-like brief or document canvas with bylines or `last edited` metadata. The center should feel like an active builder board or live preview workspace.",
+            "Do not let a single giant prompt textarea or document-style editing slab dominate the center. Builder prompts should use compact layer cards, smaller controls, status chips, and run actions tied to the preview.",
+            "Use cleaner product-display typography and mono metadata instead of serif editorial-title treatment or print-preview cues.",
+            "When prompt layers, variant runs, launch blockers, or QA notes are part of the brief, keep at least two of those work surfaces visible above the fold.",
+            "Treat the live preview as a rendered artifact, not as a code block or quoted text sample. Browser chrome, device framing, or visible UI composition should make the preview feel real.",
             "Populate the side rails with specific layers, prompts, runs, launch blockers, or QA notes instead of generic `Workspace` / `Notes` filler.",
         ],
     },
@@ -208,6 +215,8 @@ STYLE_FAMILY_LIBRARY: dict[str, dict[str, Any]] = {
             "Use real progression cues like validation, readiness, blocker, or confirmation states instead of a stack of generic form rows.",
             "Group the main step into clear sections and keep any review or result preview connected to the same flow rather than tacked on below.",
             "Keep one compact blocker/readiness/review card visible so the setup state is legible before submission.",
+            "Enterprise onboarding or compliance flows should keep a strong top bar and a visible snapshot or status lane instead of a full-width generic form slab.",
+            "When approvals, documents, or submission gating are part of the brief, keep pending counts and approval state visible in that status lane at first paint.",
         ],
     },
     "market_terminal_workspace": {
@@ -780,7 +789,7 @@ def get_archetype_benchmark_guidance(
         description = str(family_meta.get("description", "")).strip()
         if description:
             family_lines.append(f"- STYLE FAMILY ({style_family}): {description}")
-        for line in family_meta.get("guidance_lines", [])[:4]:
+        for line in family_meta.get("guidance_lines", [])[:6]:
             text = str(line).strip()
             if text:
                 family_lines.append(f"- {text}")
@@ -792,7 +801,7 @@ def get_archetype_benchmark_guidance(
         description = str(overlay_meta.get("description", "")).strip()
         if description:
             overlay_lines.append(f"- DOMAIN OVERLAY ({domain_overlay}): {description}")
-        for line in overlay_meta.get("guidance_lines", [])[:5]:
+        for line in overlay_meta.get("guidance_lines", [])[:6]:
             text = str(line).strip()
             if text:
                 overlay_lines.append(f"- {text}")

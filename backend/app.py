@@ -33,6 +33,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from agents.nlu_agent import NLUAgent
 from utils.reference_build_registry import (
     get_archetype_benchmark_guidance,
+    infer_style_family,
     load_local_reference_build,
     suggest_reference_archetype,
 )
@@ -1339,14 +1340,20 @@ def resolve_version_file(project_id: int, version: int, asset_path: str) -> Path
     return target
 
 
-def load_componentized_base_css(ui_archetype: str | None) -> str | None:
+def load_componentized_base_css(ui_archetype: str | None, prompt_text: str | None = None) -> str | None:
     if not ui_archetype:
         return None
     kit_archetype = DESIGN_KIT_ALIASES.get(ui_archetype, ui_archetype)
-    css_path = REPO_ROOT / "prompts" / "archetypes" / f"{kit_archetype}.css"
-    if not css_path.exists():
-        return None
-    return css_path.read_text(encoding="utf-8")
+    css_candidates: list[Path] = []
+    style_family = infer_style_family(ui_archetype, prompt_text)
+    if style_family == "product_builder_workspace":
+        css_candidates.append(REPO_ROOT / "prompts" / "archetypes" / "product_builder.css")
+    css_candidates.append(REPO_ROOT / "prompts" / "archetypes" / f"{kit_archetype}.css")
+
+    for css_path in css_candidates:
+        if css_path.exists():
+            return css_path.read_text(encoding="utf-8")
+    return None
 
 
 def build_design_context(
@@ -1776,6 +1783,118 @@ def enforce_componentized_internal_scope(allowed_files: list[str], outputs: list
     enforce_iteration_scope(allowed_files, outputs)
 
 
+_STRUCTURAL_LAYOUT_CLASS_KEYWORDS = (
+    "grid",
+    "layout",
+    "rail",
+    "sidebar",
+    "panel",
+    "wrapper",
+    "shell",
+    "toolbar",
+    "topbar",
+    "preview",
+    "canvas",
+    "workspace",
+    "wizard",
+    "review",
+    "step",
+)
+_STRUCTURAL_LAYOUT_CLASS_EXACT_ALLOWLIST = {
+    "panel",
+    "card",
+    "badge",
+    "button",
+    "label",
+    "step",
+}
+_STRUCTURAL_LAYOUT_CLASS_PREFIX_ALLOWLIST = (
+    "text-",
+    "bg-",
+    "border-",
+    "rounded-",
+    "shadow-",
+    "font-",
+    "gap-",
+    "p-",
+    "px-",
+    "py-",
+    "pt-",
+    "pr-",
+    "pb-",
+    "pl-",
+    "m-",
+    "mt-",
+    "mr-",
+    "mb-",
+    "ml-",
+    "w-",
+    "h-",
+    "min-",
+    "max-",
+    "flex-",
+    "items-",
+    "justify-",
+    "col-",
+    "row-",
+)
+
+
+def _extract_componentized_class_tokens(content: str) -> set[str]:
+    class_tokens: set[str] = set()
+    patterns = (
+        r'className\s*=\s*["\']([^"\']+)["\']',
+        r'class\s*=\s*["\']([^"\']+)["\']',
+        r'className\s*=\s*\{\s*`([^`]+)`\s*\}',
+    )
+    for pattern in patterns:
+        for raw_value in re.findall(pattern, content, re.IGNORECASE):
+            for raw_token in re.split(r"\s+", raw_value):
+                token = re.sub(r"[^a-z0-9_-]", "", raw_token.lower())
+                if token and not token.startswith("$"):
+                    class_tokens.add(token)
+    return class_tokens
+
+
+def _looks_like_structural_layout_class(token: str) -> bool:
+    if not token or token in _STRUCTURAL_LAYOUT_CLASS_EXACT_ALLOWLIST:
+        return False
+    if token.startswith(_STRUCTURAL_LAYOUT_CLASS_PREFIX_ALLOWLIST):
+        return False
+    return any(keyword in token for keyword in _STRUCTURAL_LAYOUT_CLASS_KEYWORDS)
+
+
+def _collect_componentized_css_selectors(code_dir: Path) -> set[str]:
+    selectors: set[str] = set()
+    for css_path in code_dir.rglob("*.css"):
+        try:
+            content = css_path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        selectors.update(re.findall(r"\.([a-zA-Z][a-zA-Z0-9_-]*)", content.lower()))
+    return selectors
+
+
+def _detect_componentized_missing_layout_selectors(code_dir: Path) -> list[str]:
+    referenced: set[str] = set()
+    for source_path in code_dir.rglob("*"):
+        if source_path.suffix.lower() not in {".tsx", ".jsx", ".html"}:
+            continue
+        try:
+            content = source_path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        for token in _extract_componentized_class_tokens(content):
+            if _looks_like_structural_layout_class(token):
+                referenced.add(token)
+
+    if not referenced:
+        return []
+
+    defined_selectors = _collect_componentized_css_selectors(code_dir)
+    return sorted(token for token in referenced if token not in defined_selectors)
+
+
 def detect_componentized_quality_issues(code_dir: Path, *, ui_archetype: str | None) -> list[str]:
     context = collect_existing_code_context(
         code_dir,
@@ -1825,6 +1944,19 @@ def detect_componentized_quality_issues(code_dir: Path, *, ui_archetype: str | N
         )
     ):
         issues.append("external_placeholder_assets")
+
+    has_material_icon_markup = "material-symbols-outlined" in normalized or "material-icons" in normalized
+    has_material_icon_support = any(
+        marker in normalized
+        for marker in (
+            "family=material+symbols",
+            "family=material+icons",
+            "material symbols outlined",
+            "material icons",
+        )
+    )
+    if has_material_icon_markup and not has_material_icon_support:
+        issues.append("icon_font_support")
 
     hover_count = normalized.count(":hover")
     font_family_count = normalized.count("font-family")
@@ -2003,6 +2135,58 @@ def detect_componentized_quality_issues(code_dir: Path, *, ui_archetype: str | N
                 issues.append("content_authenticity")
             if "text_density" not in issues:
                 issues.append("text_density")
+        if "prompt layer" in normalized and "textarea" in normalized:
+            issues.append("workspace_control_density")
+        builder_surface_context = any(
+            token in normalized
+            for token in (
+                "prompt layer",
+                "live preview",
+                "variant run",
+                "launch blocker",
+                "launch blockers",
+                "qa note",
+                "qa notes",
+            )
+        )
+        builder_document_drift_present = builder_surface_context and any(
+            token in normalized
+            for token in (
+                "product brief",
+                "document-hero",
+                "doc-title",
+                "doc-meta",
+                "canvas-paper",
+                "last edited",
+                "outline-list",
+            )
+        )
+        builder_editorial_tone_present = builder_surface_context and any(
+            token in normalized
+            for token in (
+                "fraunces",
+                "#f2ede3",
+                "#f6f0e7",
+                "#ece5d8",
+                "#b45309",
+                "rgba(255, 253, 249",
+            )
+        )
+        preview_frame_present = any(
+            token in normalized
+            for token in (
+                "browser-frame",
+                "preview-frame",
+                "device-frame",
+                "iframe",
+                "viewport-shell",
+                "site-preview",
+            )
+        )
+        if builder_surface_context and ("code-block" in normalized or "<pre" in normalized) and not preview_frame_present:
+            issues.append("workspace_preview_emphasis")
+        if builder_document_drift_present or builder_editorial_tone_present:
+            issues.append("builder_workspace_drift")
 
     if design_family == "guided_flow":
         progression_signal_count = sum(
@@ -2021,6 +2205,70 @@ def detect_componentized_quality_issues(code_dir: Path, *, ui_archetype: str | N
         )
         if progression_signal_count < 4:
             issues.append("guided_flow_progression")
+        enterprise_flow_context = any(
+            token in normalized
+            for token in (
+                "vendor",
+                "onboarding",
+                "compliance",
+                "documents",
+                "approval",
+                "approvals",
+                "application snapshot",
+                "review sidebar",
+                "review & submit",
+            )
+        )
+        snapshot_status_token_count = sum(
+            1
+            for token in (
+                "snapshot",
+                "status",
+                "progress",
+                "blocker",
+                "blockers",
+                "document",
+                "documents",
+                "pending",
+                "approval",
+                "approved",
+                "requirements",
+                "ready",
+                "review",
+                "verified",
+                "remaining",
+            )
+            if token in normalized
+        )
+        dense_snapshot_rows_present = any(
+            token in normalized
+            for token in (
+                "approval",
+                "approved",
+                "verified",
+                "remaining",
+                "requirements",
+            )
+        )
+        if not dense_snapshot_rows_present:
+            dense_snapshot_rows_present = (
+                "pending" in normalized
+                and any(
+                    token in normalized
+                    for token in (
+                        "approval",
+                        "approvals",
+                        "requirements",
+                        "remaining",
+                        "verified",
+                    )
+                )
+            )
+        if enterprise_flow_context and (snapshot_status_token_count < 8 or not dense_snapshot_rows_present):
+            issues.append("guided_flow_snapshot_density")
+
+    if _detect_componentized_missing_layout_selectors(code_dir):
+        issues.append("layout_selector_coverage")
 
     return issues
 
@@ -2194,13 +2442,19 @@ CONTENT_REFINEMENT_ISSUES = {
 SHELL_REFINEMENT_ISSUES = {
     "first_paint_visibility",
     "external_placeholder_assets",
+    "icon_font_support",
+    "layout_selector_coverage",
     "spacing_rhythm",
     "typography_hierarchy",
     "weak_surface_depth",
     "polish_flow",
     "numeric_data_typography",
     "workspace_shell_balance",
+    "workspace_control_density",
+    "workspace_preview_emphasis",
+    "builder_workspace_drift",
     "guided_flow_progression",
+    "guided_flow_snapshot_density",
 }
 
 CONTENT_FIX_ISSUES = {
@@ -2273,6 +2527,12 @@ def build_componentized_refinement_prompt(
         "external_placeholder_assets": (
             "- External placeholder assets: remove avatar/image placeholder services, remote stock stand-ins, or brittle third-party image hosts when local generated assets are available. Replace them with staged local assets, styled initials, gradients, or inline SVG treatments."
         ),
+        "icon_font_support": (
+            "- Icon rendering: never let icon token names appear as plain text. If the app uses Material icon classes, load the matching font correctly or replace those tokens with inline SVG or icon components."
+        ),
+        "layout_selector_coverage": (
+            "- Layout selector coverage: every structural shell class used in JSX must have matching CSS. Define the missing grid, rail, panel, wrapper, and sidebar selectors so the layout does not collapse or leave blank space."
+        ),
         "dense_shell_interactivity": (
             "- Dense-shell interactivity: dashboards and finance shells need working range selectors, filters, sortable data, tab switches, watchlist state, or equivalent real controls."
         ),
@@ -2342,6 +2602,18 @@ def build_componentized_refinement_prompt(
         ),
         "content_authenticity": (
             "- Content authenticity: replace generic labels or filler with domain-specific names, metrics, microcopy, and section language that fit the product type. Dense shells should read like a real operations or market product, not a template with vague panel names and repeated generic actions."
+        ),
+        "workspace_control_density": (
+            "- Workspace control density: when the workspace edits prompt layers or structured product settings, do not make one large raw textarea or document-style editing slab the main interaction. Use modular cards, smaller controls, version or status chips, segmented editing, and a preview-first composition. Avoid slash-command bars or rich-text formatting controls unless the product is actually a document editor."
+        ),
+        "workspace_preview_emphasis": (
+            "- Workspace preview emphasis: builder and studio shells need a real preview surface above the fold. Use a browser-style or device-style preview frame tied to the current run instead of a plain code block or raw JSON dump."
+        ),
+        "builder_workspace_drift": (
+            "- Builder workspace drift: do not let a builder or studio brief fall back to a paper-like product brief, article, or document editor shell. Replace bylines, `last edited` meta strips, document-paper canvases, warm beige editorial chrome, and serif document-title treatment with modular builder surfaces such as prompt stacks, run matrices, launch rails, and a dominant preview-first composition."
+        ),
+        "guided_flow_snapshot_density": (
+            "- Guided-flow snapshot density: enterprise onboarding and compliance wizards need a richer snapshot lane with concrete pending counts, approvals, document state, blockers, and readiness signals. Do not reduce the sidebar to a thin status card."
         ),
         "polish_flow": (
             "- Polish and flow: add high-signal finish details such as section rhythm, overlap transitions, sticky sub-bars, badge treatments, selection styling, scrollbar styling, decorative dividers, quote treatments, or richer hover states where appropriate."
@@ -2500,6 +2772,8 @@ def select_componentized_refinement_scope(
     issue_patterns = {
         "first_paint_visibility": ("intersectionobserver", "hidden-section", "opacity: 0", "visibility: hidden", "fade-in"),
         "external_placeholder_assets": tuple(domain.lower() for domain in (*QUALITY_PLACEHOLDER_DOMAINS, *QUALITY_REMOTE_IMAGE_DOMAINS)),
+        "icon_font_support": ("material-symbols-outlined", "material-icons", "family=material+symbols", "family=material+icons"),
+        "layout_selector_coverage": ("classname", "grid", "layout", "rail", "sidebar", "panel", "wrapper", "shell", "review-sidebar"),
         "dense_shell_interactivity": ("onclick", "onchange", "onsubmit", "usestate", "setinterval", "settimeout"),
         "spacing_rhythm": ("padding", "gap", "max-width", "grid-template", "section", "content-area"),
         "typography_hierarchy": ("font-family", "font-size", "letter-spacing", "line-height", "@import", "label", "eyebrow", "space grotesk", "jetbrains mono", "outfit"),
@@ -2507,7 +2781,11 @@ def select_componentized_refinement_scope(
         "content_authenticity": ("title", "subtitle", "description", "headline", "label", "copy", "caption"),
         "polish_flow": ("::selection", "scrollbar", "badge", "divider", "separator", "quote", "border-radius", "box-shadow", "focus-visible", ":hover"),
         "workspace_shell_balance": ("toolbar", "workspace", "sidebar", "inspector", "editor", "composer", "thread", "column", "panel"),
+        "workspace_control_density": ("prompt layer", "textarea", "version", "badge", "layer content"),
+        "workspace_preview_emphasis": ("preview", "code-block", "<pre", "browser-frame", "device-frame", "iframe"),
+        "builder_workspace_drift": ("product brief", "document-hero", "doc-title", "doc-meta", "canvas-paper", "last edited", "outline-list", "fraunces", "prompt layer", "live preview"),
         "guided_flow_progression": ("step", "wizard", "progress", "continue", "review", "success", "validation", "summary"),
+        "guided_flow_snapshot_density": ("snapshot", "status", "progress", "blocker", "approval", "pending", "requirements", "review sidebar"),
         "kpi_sparse": ("portfolio value", "revenue", "kpi", "metric", "delta", "sparkline"),
         "chart_missing": ("chart", "recharts", "sparkline", "polyline", "candlestick"),
         "chart_underdeveloped": ("chart", "tooltip", "range", "axis", "grid"),
@@ -2571,6 +2849,23 @@ def select_componentized_refinement_scope(
             include_common_targets=False,
         )
     return extend_componentized_scope(code_dir, scoped[:12])
+
+
+def expand_componentized_iteration_scaffold_scope(
+    code_dir: Path,
+    planned_files: list[str] | None,
+) -> list[str]:
+    editable_files = collect_componentized_editable_files(code_dir)
+    normalized_planned = [path.replace("\\", "/").strip("/") for path in (planned_files or []) if path]
+    if not editable_files:
+        return sorted(set(normalized_planned or get_componentized_required_contract_paths()))
+
+    return extend_componentized_scope(
+        code_dir,
+        editable_files,
+        include_style_targets=True,
+        include_direct_support=True,
+    )
 
 
 def select_componentized_build_repair_scope(
@@ -3653,7 +3948,24 @@ def run_full_pipeline_async(
         from agents.engineer_agent import EngineerAgent
         engineer = EngineerAgent(genai_client)
         componentized_mode = (engineer_task.scaffold_mode or "legacy_single_page") == "componentized_app"
-        base_css_content = load_componentized_base_css(engineer_task.ui_archetype) if componentized_mode else None
+        if (
+            componentized_mode
+            and is_iteration
+            and engineer_task.task_type == "scaffold"
+            and engineer_task.output_files
+        ):
+            scope_source_dir = ancestor_version_dir / "code" if ancestor_version_dir and (ancestor_version_dir / "code").exists() else version_dir / "code"
+            expanded_iteration_scope = expand_componentized_iteration_scaffold_scope(
+                scope_source_dir,
+                engineer_task.output_files,
+            )
+            if expanded_iteration_scope:
+                engineer_task = engineer_task.model_copy(update={"output_files": expanded_iteration_scope})
+                add_log(
+                    f"Build Agent: Expanded componentized iteration scope to {len(expanded_iteration_scope)} workspace files.",
+                    project_id=project_id,
+                )
+        base_css_content = load_componentized_base_css(engineer_task.ui_archetype, task_description) if componentized_mode else None
         design_context = build_design_context(
             version_dir=version_dir,
             design_assets=design_assets,

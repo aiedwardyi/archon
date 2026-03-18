@@ -15,7 +15,9 @@ from backend.app import (
     build_design_context,
     build_componentized_refinement_prompt,
     detect_componentized_quality_issues,
+    expand_componentized_iteration_scaffold_scope,
     extend_componentized_scope,
+    load_componentized_base_css,
     select_componentized_build_repair_scope,
     select_componentized_content_fix_scope,
     select_componentized_refinement_scope,
@@ -70,6 +72,24 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertEqual(build_componentized_design_family_guidance("game_ff8"), "")
         self.assertEqual(build_componentized_shell_family_guidance("game_ff9"), "")
         self.assertIn("design_family: data_dense", build_componentized_design_family_guidance("fintech"))
+
+    def test_ai_product_builder_prompts_route_design_family_to_workspace(self):
+        guidance = build_componentized_design_family_guidance(
+            "ai_product",
+            "Build an AI product builder workspace with prompt layers, variant runs, launch blockers, and a live preview rail.",
+        )
+
+        self.assertIn("design_family: workspace", guidance)
+        self.assertIn("center canvas plus a visible preview", guidance)
+
+    def test_ai_product_setup_prompts_route_design_family_to_guided_flow(self):
+        guidance = build_componentized_design_family_guidance(
+            "ai_product",
+            "Build an onboarding wizard with integrations, compliance review sidebar, blocker summary, and approval routing.",
+        )
+
+        self.assertIn("design_family: guided_flow", guidance)
+        self.assertIn("top product bar, visible step rail, and a compact summary or snapshot lane", guidance)
 
     def test_game_workspace_support_backfills_empty_region_images_with_local_asset(self):
         code_dir = _case_dir("componentized-runtime-game-region-images")
@@ -168,6 +188,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertIn("review, blocker, or readiness card", guidance)
         self.assertIn("one dominant active step plus one compact review/result preview", guidance)
         self.assertIn("ready to launch", guidance)
+        self.assertIn("top product bar, visible step rail, and a compact summary or snapshot lane", guidance)
 
     def test_workspace_family_guidance_requires_authored_topbar_and_lane_labels(self):
         guidance = build_componentized_design_family_guidance("editor")
@@ -175,12 +196,14 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertIn("real topbar or command strip", guidance)
         self.assertIn("useful outline rows, comments, settings, tasks, or status modules", guidance)
         self.assertIn("`Workspace`, `Notes`, or `Inspector`", guidance)
+        self.assertIn("darker premium tool shell", guidance)
 
     def test_guided_flow_shell_polish_guidance_requires_compact_review_states(self):
         guidance = build_componentized_shell_polish_guidance("form")
 
         self.assertIn("review, blocker, or readiness card", guidance)
         self.assertIn("equal-height stacked panels", guidance)
+        self.assertIn("top product bar plus a compact summary or snapshot lane", guidance)
 
     def test_workspace_shell_polish_guidance_rejects_generic_lane_labels(self):
         guidance = build_componentized_shell_polish_guidance("editor")
@@ -188,6 +211,26 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertIn("real topbar or command bar", guidance)
         self.assertIn("`Workspace`, `Notes`, or `Inspector`", guidance)
         self.assertIn("both side rails visibly populated", guidance)
+
+    def test_load_componentized_base_css_uses_builder_kit_for_builder_prompt(self):
+        css = load_componentized_base_css(
+            "editor",
+            "Build an AI startup builder workspace with prompt layers, live preview, variant runs, launch blockers, and QA notes",
+        )
+
+        assert css is not None
+        self.assertIn("IBM Plex Sans", css)
+        self.assertIn("#00c896", css.lower())
+        self.assertNotIn("Fraunces", css)
+
+    def test_load_componentized_base_css_keeps_editorial_kit_for_regular_editor_prompt(self):
+        css = load_componentized_base_css(
+            "editor",
+            "Build a collaborative product brief editor with comments, outline, and publish controls",
+        )
+
+        assert css is not None
+        self.assertIn("Fraunces", css)
 
     def test_validate_componentized_contract_outputs_flags_missing_and_stubbed_files(self):
         files = [
@@ -3758,6 +3801,292 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_detect_componentized_quality_issues_flags_missing_material_icon_support(self):
+        code_dir = _case_dir("componentized-quality-icon-font-support")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return (\n"
+                "    <header className=\"workspace-shell\">\n"
+                "      <span className=\"material-symbols-outlined\">rocket_launch</span>\n"
+                "      <span>Studio</span>\n"
+                "    </header>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "base.css").write_text(
+                "@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=JetBrains+Mono:wght@500&display=swap');\n"
+                ".workspace-shell { box-shadow: 0 12px 24px rgba(15, 23, 42, 0.18); }\n"
+                ".workspace-shell:hover { transform: translateY(-2px); }\n"
+                "button:focus-visible { outline: 2px solid #38bdf8; }\n",
+                encoding="utf-8",
+            )
+
+            issues = detect_componentized_quality_issues(code_dir, ui_archetype="editor")
+
+            self.assertIn("icon_font_support", issues)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_detect_componentized_quality_issues_flags_missing_layout_selector_coverage(self):
+        code_dir = _case_dir("componentized-quality-layout-selector-coverage")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return (\n"
+                "    <div className=\"app-shell\">\n"
+                "      <div className=\"main-content-grid\">\n"
+                "        <aside className=\"progress-rail\">Steps</aside>\n"
+                "        <section className=\"review-sidebar\">Summary</section>\n"
+                "      </div>\n"
+                "    </div>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "base.css").write_text(
+                "@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=JetBrains+Mono:wght@500&display=swap');\n"
+                ".app-shell { box-shadow: 0 12px 24px rgba(15, 23, 42, 0.18); }\n"
+                ".progress-rail { padding: 24px; }\n"
+                ".review-sidebar { padding: 24px; }\n"
+                ".review-sidebar:hover { transform: translateY(-2px); }\n"
+                "button:focus-visible { outline: 2px solid #38bdf8; }\n",
+                encoding="utf-8",
+            )
+
+            issues = detect_componentized_quality_issues(code_dir, ui_archetype="form")
+
+            self.assertIn("layout_selector_coverage", issues)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_detect_componentized_quality_issues_flags_workspace_textarea_heavy_builder_controls(self):
+        code_dir = _case_dir("componentized-quality-workspace-control-density")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return (\n"
+                "    <div className=\"workspace-shell\">\n"
+                "      <header className=\"toolbar\">Prompt Layer Studio</header>\n"
+                "      <main className=\"workspace-grid\">\n"
+                "        <section className=\"editor-panel\">\n"
+                "          <h1>Prompt Layer Editor</h1>\n"
+                "          <label>Layer Content</label>\n"
+                "          <textarea rows={8} defaultValue=\"You are a helpful assistant\" />\n"
+                "        </section>\n"
+                "        <aside className=\"preview-panel\">Preview</aside>\n"
+                "      </main>\n"
+                "    </div>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "base.css").write_text(
+                "@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=JetBrains+Mono:wght@500&display=swap');\n"
+                ".workspace-shell { box-shadow: 0 12px 24px rgba(15, 23, 42, 0.18); }\n"
+                ".toolbar { display: flex; }\n"
+                ".workspace-grid { display: grid; grid-template-columns: 1.4fr 0.8fr; gap: 24px; }\n"
+                ".editor-panel { padding: 24px; }\n"
+                ".preview-panel { padding: 24px; }\n"
+                ".workspace-shell:hover { transform: translateY(-2px); }\n"
+                "button:focus-visible, textarea:focus-visible { outline: 2px solid #38bdf8; }\n",
+                encoding="utf-8",
+            )
+
+            issues = detect_componentized_quality_issues(code_dir, ui_archetype="editor")
+
+            self.assertIn("workspace_control_density", issues)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_detect_componentized_quality_issues_flags_workspace_preview_emphasis_gap(self):
+        code_dir = _case_dir("componentized-quality-workspace-preview-emphasis")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return (\n"
+                "    <div className=\"workspace-shell\">\n"
+                "      <header className=\"toolbar\">AI Builder Studio</header>\n"
+                "      <main className=\"workspace-grid\">\n"
+                "        <section className=\"editor-panel\">\n"
+                "          <h1>Prompt Layer Editor</h1>\n"
+                "          <textarea rows={8} defaultValue=\"You are a helpful assistant\" />\n"
+                "        </section>\n"
+                "        <aside className=\"preview-panel\">\n"
+                "          <h2>Live Preview</h2>\n"
+                "          <pre className=\"code-block\">{\\\"idea_name\\\":\\\"EcoCycle AI\\\"}</pre>\n"
+                "        </aside>\n"
+                "      </main>\n"
+                "    </div>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "base.css").write_text(
+                "@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=JetBrains+Mono:wght@500&display=swap');\n"
+                ".workspace-shell { box-shadow: 0 12px 24px rgba(15, 23, 42, 0.18); }\n"
+                ".toolbar { display: flex; }\n"
+                ".workspace-grid { display: grid; grid-template-columns: 1.4fr 0.8fr; gap: 24px; }\n"
+                ".editor-panel, .preview-panel { padding: 24px; }\n"
+                ".workspace-shell:hover { transform: translateY(-2px); }\n"
+                "button:focus-visible, textarea:focus-visible { outline: 2px solid #38bdf8; }\n",
+                encoding="utf-8",
+            )
+
+            issues = detect_componentized_quality_issues(code_dir, ui_archetype="editor")
+
+            self.assertIn("workspace_preview_emphasis", issues)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_detect_componentized_quality_issues_flags_builder_workspace_drift_from_document_shell(self):
+        code_dir = _case_dir("componentized-quality-builder-workspace-drift")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return (\n"
+                "    <div className=\"workspace-shell\">\n"
+                "      <header className=\"toolbar\">Builder Studio</header>\n"
+                "      <main className=\"workspace-grid\">\n"
+                "        <section className=\"canvas-paper\">\n"
+                "          <div className=\"document-hero\">\n"
+                "            <h1 className=\"doc-title\">AI Product Brief</h1>\n"
+                "            <p className=\"doc-meta\">Last edited by Jordan, 15:30 Aug 23, 2024</p>\n"
+                "          </div>\n"
+                "          <div className=\"prompt-layer-card\">Prompt Layer 1</div>\n"
+                "          <div className=\"preview-frame\">Live Preview</div>\n"
+                "        </section>\n"
+                "        <aside className=\"inspector-panel\">\n"
+                "          <h2>Launch Blockers</h2>\n"
+                "          <p>QA Notes</p>\n"
+                "          <p>Variant Runs</p>\n"
+                "        </aside>\n"
+                "      </main>\n"
+                "    </div>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "base.css").write_text(
+                "@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=JetBrains+Mono:wght@500&display=swap');\n"
+                ".workspace-shell { box-shadow: 0 12px 24px rgba(15, 23, 42, 0.18); }\n"
+                ".toolbar { display: flex; }\n"
+                ".workspace-grid { display: grid; grid-template-columns: 1.4fr 0.8fr; gap: 24px; }\n"
+                ".canvas-paper, .inspector-panel { padding: 24px; }\n"
+                ".preview-frame { min-height: 240px; }\n"
+                "button:focus-visible, textarea:focus-visible { outline: 2px solid #38bdf8; }\n",
+                encoding="utf-8",
+            )
+
+            issues = detect_componentized_quality_issues(code_dir, ui_archetype="editor")
+
+            self.assertIn("builder_workspace_drift", issues)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_detect_componentized_quality_issues_flags_builder_workspace_drift_from_warm_editorial_tone(self):
+        code_dir = _case_dir("componentized-quality-builder-workspace-tone")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return (\n"
+                "    <div className=\"workspace-shell\">\n"
+                "      <header className=\"toolbar\">Builder Studio</header>\n"
+                "      <main className=\"workspace-grid\">\n"
+                "        <section className=\"builder-panel\">\n"
+                "          <h1>Prompt Layer Stack</h1>\n"
+                "          <div className=\"live-preview\">Live Preview</div>\n"
+                "          <div className=\"variant-run\">Variant Runs</div>\n"
+                "        </section>\n"
+                "        <aside className=\"launch-blockers\">Launch Blockers</aside>\n"
+                "      </main>\n"
+                "    </div>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "base.css").write_text(
+                "@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700&family=JetBrains+Mono:wght@500&display=swap');\n"
+                ":root { --bg: #f2ede3; --accent: #b45309; }\n"
+                "body { background: linear-gradient(180deg, #f6f0e7, #ece5d8); font-family: 'Fraunces', serif; }\n"
+                ".workspace-grid { display: grid; grid-template-columns: 1.4fr 0.8fr; gap: 24px; }\n"
+                ".builder-panel, .launch-blockers { padding: 24px; border: 1px solid rgba(32, 21, 13, 0.09); }\n",
+                encoding="utf-8",
+            )
+
+            issues = detect_componentized_quality_issues(code_dir, ui_archetype="editor")
+
+            self.assertIn("builder_workspace_drift", issues)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_detect_componentized_quality_issues_flags_thin_enterprise_snapshot_lane(self):
+        code_dir = _case_dir("componentized-quality-guided-flow-snapshot-density")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "export default function App() {\n"
+                "  return (\n"
+                "    <div className=\"wizard-shell\">\n"
+                "      <aside className=\"review-sidebar\">\n"
+                "        <h2>Application Snapshot</h2>\n"
+                "        <p>Status: Blocked</p>\n"
+                "        <p>Progress: 1/4 complete</p>\n"
+                "        <p>Vendor onboarding for Acme Industrial</p>\n"
+                "        <p>Compliance documents will be reviewed later.</p>\n"
+                "      </aside>\n"
+                "      <main className=\"active-step-panel\">Review & Submit</main>\n"
+                "    </div>\n"
+                "  );\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            (code_dir / "src" / "base.css").write_text(
+                "@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=JetBrains+Mono:wght@500&display=swap');\n"
+                ".wizard-shell { display: grid; grid-template-columns: 320px 1fr; gap: 24px; }\n"
+                ".review-sidebar, .active-step-panel { padding: 24px; box-shadow: 0 12px 24px rgba(15, 23, 42, 0.18); }\n"
+                ".review-sidebar:hover { transform: translateY(-2px); }\n"
+                "button:focus-visible, input:focus-visible { outline: 2px solid #38bdf8; }\n",
+                encoding="utf-8",
+            )
+
+            issues = detect_componentized_quality_issues(code_dir, ui_archetype="form")
+
+            self.assertIn("guided_flow_snapshot_density", issues)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_expand_componentized_iteration_scaffold_scope_uses_existing_workspace_files(self):
+        code_dir = _case_dir("componentized-iteration-scaffold-scope")
+        try:
+            (code_dir / "src" / "components").mkdir(parents=True)
+            (code_dir / "src" / "pages").mkdir(parents=True)
+            (code_dir / "src" / "base.css").write_text(":root { --accent: #10b981; }\n", encoding="utf-8")
+            (code_dir / "src" / "index.css").write_text(".app-shell { min-height: 100vh; }\n", encoding="utf-8")
+            (code_dir / "src" / "App.tsx").write_text("export default function App() { return <div className=\"app-shell\" />; }\n", encoding="utf-8")
+            (code_dir / "src" / "main.tsx").write_text("import './base.css';\nimport './index.css';\n", encoding="utf-8")
+            (code_dir / "src" / "components" / "TopBar.tsx").write_text("export default function TopBar() { return <header />; }\n", encoding="utf-8")
+            (code_dir / "src" / "pages" / "Dashboard.tsx").write_text("export default function Dashboard() { return <main />; }\n", encoding="utf-8")
+
+            scope = expand_componentized_iteration_scaffold_scope(
+                code_dir,
+                ["package.json", "index.html", "src/main.tsx", "src/App.tsx"],
+            )
+
+            self.assertIn("src/components/TopBar.tsx", scope)
+            self.assertIn("src/pages/Dashboard.tsx", scope)
+            self.assertIn("src/base.css", scope)
+            self.assertIn("src/index.css", scope)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
     def test_select_componentized_refinement_scope_includes_base_css_for_visual_polish(self):
         code_dir = _case_dir("componentized-quality-refinement-scope")
         try:
@@ -4119,6 +4448,29 @@ class ComponentizedRuntimeTests(unittest.TestCase):
 
             package_json = (code_dir / "package.json").read_text(encoding="utf-8")
             self.assertIn('"react-feather": "^2.0.10"', package_json)
+        finally:
+            shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_invalid_react_icons_feather_exports(self):
+        code_dir = _case_dir("componentized-react-icons-feather-export-fix")
+        try:
+            (code_dir / "src").mkdir(parents=True)
+            (code_dir / "src" / "App.tsx").write_text(
+                "import React from 'react';\n"
+                "import { FiUndo, FiRedo, FiSave } from 'react-icons/fi';\n"
+                "export default function App() {\n"
+                "  return <div><FiUndo /><FiRedo /><FiSave /></div>;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            ensure_componentized_workspace_support(code_dir)
+
+            app_source = (code_dir / "src" / "App.tsx").read_text(encoding="utf-8")
+            self.assertIn("FiRotateCcw", app_source)
+            self.assertIn("FiRotateCw", app_source)
+            self.assertNotIn("FiUndo", app_source)
+            self.assertNotIn("FiRedo", app_source)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 

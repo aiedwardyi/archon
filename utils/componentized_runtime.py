@@ -315,6 +315,10 @@ COMPONENTIZED_JSX_RETURN_RE = re.compile(
     r"return\s*\(\s*(?P<body><[\s\S]{1,12000}?)\s*\);",
     re.MULTILINE,
 )
+REACT_ICONS_FEATHER_IMPORT_RE = re.compile(
+    r"import\s*\{(?P<names>[\s\S]*?)\}\s*from\s*(?P<quote>['\"])react-icons/fi(?P=quote)\s*;?",
+    re.MULTILINE,
+)
 
 SAFE_COMPONENTIZED_DEPENDENCIES = {
     "@heroicons/react": "^2.2.0",
@@ -416,6 +420,10 @@ SAFE_COMPONENTIZED_RESPONSIVE_TAIL = """/* Responsive Adjustments */
 """
 
 COMPONENTIZED_MODULE_EXTENSIONS = (".tsx", ".ts", ".jsx", ".js")
+COMPONENTIZED_REACT_ICON_EXPORT_ALIASES: dict[str, str] = {
+    "FiUndo": "FiRotateCcw",
+    "FiRedo": "FiRotateCw",
+}
 COMPONENTIZED_IMPORT_ALIAS_CANDIDATES: dict[str, tuple[str, ...]] = {
     "CharacterCards": ("CharacterSection",),
     "Characters": ("CharacterSection",),
@@ -2078,6 +2086,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_componentized_css_data_uri_quote_bleed(updated)
     elif rel_path.endswith((".ts", ".tsx", ".js", ".jsx")):
         updated = LOCAL_CODE_IMPORT_RE.sub(r"\1\2\4", updated)
+        updated = _normalize_componentized_react_icons_imports(updated)
         updated = _normalize_componentized_field_aliases(updated)
         updated = _repair_componentized_lightweight_chart_corruption(updated)
         updated = _repair_componentized_tradingview_scaffold_corruption(updated)
@@ -2134,6 +2143,45 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _remove_componentized_orphan_jsx_closing_brace_lines(updated)
         updated = _repair_componentized_missing_sibling_closing_tags(updated)
 
+    return updated
+
+
+def _normalize_componentized_react_icons_imports(source: str) -> str:
+    if "react-icons/fi" not in source:
+        return source
+
+    replacements: dict[str, str] = {}
+
+    def _replace_import(match: re.Match[str]) -> str:
+        raw_names = match.group("names")
+        quote = match.group("quote")
+        parts = [part.strip() for part in raw_names.replace("\n", " ").split(",") if part.strip()]
+        normalized_parts: list[str] = []
+        seen: set[str] = set()
+
+        for part in parts:
+            alias_split = re.split(r"\s+as\s+", part, maxsplit=1)
+            imported_name = alias_split[0].strip()
+            replacement_name = COMPONENTIZED_REACT_ICON_EXPORT_ALIASES.get(imported_name, imported_name)
+            if replacement_name != imported_name:
+                replacements[imported_name] = replacement_name
+
+            exported_token = replacement_name
+            local_token = alias_split[1].strip() if len(alias_split) == 2 else replacement_name
+            dedupe_key = f"{exported_token}::{local_token}"
+            if dedupe_key in seen:
+                continue
+            seen.add(dedupe_key)
+            if len(alias_split) == 2:
+                normalized_parts.append(f"{exported_token} as {local_token}")
+            else:
+                normalized_parts.append(exported_token)
+
+        return f"import {{ {', '.join(normalized_parts)} }} from {quote}react-icons/fi{quote};"
+
+    updated = REACT_ICONS_FEATHER_IMPORT_RE.sub(_replace_import, source)
+    for old_name, new_name in replacements.items():
+        updated = re.sub(rf"\b{re.escape(old_name)}\b", new_name, updated)
     return updated
 
 

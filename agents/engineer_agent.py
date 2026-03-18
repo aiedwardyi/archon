@@ -43,14 +43,22 @@ STYLE_FAMILY_CONTRACTS: dict[str, tuple[str, ...]] = {
     ),
     "product_builder_workspace": (
         "Use a builder-grade workspace shell with a real top toolbar, a dominant primary work area, and dense supporting control surfaces.",
+        "Builder-style prompts should usually read as a three-part desktop shell: context/navigation, dominant canvas, and a visible preview, QA, or launch-status rail.",
         "Blend setup, controls, status, and preview or review context into one cohesive product experience instead of separating them into disconnected cards.",
         "Keep builder rails populated with specific layers, prompts, runs, launch blockers, or QA notes instead of empty generic side chrome.",
+        "Make the builder artifact or preview surface the main focal point. Do not lead with a KPI deck when the product is supposed to feel like an active studio or startup builder.",
+        "If prompt layers are part of the brief, render them as structured rows, chips, cards, or modules with clear purpose labels instead of three bare textareas.",
+        "If the brief mentions live preview, show a real browser, device, or page-preview surface rather than a monospaced text dump.",
+        "A code block, quote, or plain paragraph does not count as the live preview. The preview should look like a rendered artifact with browser chrome, device framing, or visible UI composition.",
         "Favor app-builder framing over brochure sections or generic admin chrome.",
     ),
     "guided_setup_wizard": (
         "Keep the desktop layout split between progress/context and the active configuration flow.",
         "Show grouped step content plus at least one visible validation, readiness, or result-preview surface in the same flow.",
         "Keep a compact review, blocker, or readiness card visible beside the active step so the flow feels like a product sequence, not a plain form stack.",
+        "Enterprise onboarding or compliance flows should keep a strong top bar and a visible snapshot or status lane instead of turning into a full-width form slab.",
+        "When the brief mentions approvals, documents, blockers, or submission gating, keep those counts and statuses visible at first paint rather than burying them in helper text.",
+        "Avoid generic startup onboarding language when the flow is really about requirements, approvals, or compliance checks.",
         "Use concrete setup states like validating, blocked, pending approval, ready to launch, or confirmed instead of generic helper copy.",
         "Avoid long flat form stacks, narrow floating cards, or disconnected success panels.",
     ),
@@ -228,6 +236,122 @@ def _load_reference_images(kit_archetype: str) -> list[tuple[str, bytes, str]]:
             }[img_path.suffix.lower()]
             images.append((img_path.name, img_path.read_bytes(), mime))
     return images
+
+
+def _prompt_mentions_any(prompt_text: str | None, tokens: tuple[str, ...]) -> bool:
+    normalized = (prompt_text or "").strip().lower()
+    if not normalized:
+        return False
+    return any(token in normalized for token in tokens)
+
+
+def _looks_like_builder_studio_prompt(prompt_text: str | None) -> bool:
+    return _prompt_mentions_any(
+        prompt_text,
+        (
+            "builder",
+            "studio",
+            "canvas",
+            "live preview",
+            "preview rail",
+            "prompt layers",
+            "variant runs",
+            "launch blockers",
+            "qa notes",
+            "design assistant",
+            "founder workspace",
+            "web design assistant",
+        ),
+    )
+
+
+def _looks_like_compliance_wizard_prompt(prompt_text: str | None) -> bool:
+    return _prompt_mentions_any(
+        prompt_text,
+        (
+            "wizard",
+            "onboarding",
+            "approval",
+            "approver",
+            "compliance",
+            "documents",
+            "blocker",
+            "snapshot",
+            "review sidebar",
+            "review & submit",
+            "requirements summary",
+            "application snapshot",
+            "vendor",
+        ),
+    )
+
+
+def _build_componentized_specialized_contract_block(
+    archetype: str | None,
+    prompt_text: str | None,
+    *,
+    existing_code: str | None = None,
+    reference_code: dict[str, Any] | None = None,
+) -> str:
+    if existing_code:
+        return ""
+
+    normalized_archetype = str(archetype or "").strip().lower()
+    reference_label = str((reference_code or {}).get("label", "")).strip().lower()
+    blocks: list[str] = []
+
+    if (
+        normalized_archetype in {"editor", "ai_product", "productivity_app", "dev_tool"}
+        and _looks_like_builder_studio_prompt(prompt_text)
+    ) or reference_label == "legacy-designai-startup-builder":
+        blocks.append(
+            "\n".join(
+                [
+                    "--- SPECIALIZED BUILDER / STUDIO CONTRACT ---",
+                    "- Treat this as a startup-builder or AI design studio, not a document editor and not a generic KPI dashboard.",
+                    "- The default desktop frame should read as one working product shell: top toolbar, persistent left context rail, dominant center builder canvas, and right preview/properties/launch rail.",
+                    "- The center stage must show an artifact in progress such as a page composition, selected block, generated homepage, variant output, or browser-style preview. Do not use a KPI row as the main focal point.",
+                    "- Do not center the workspace on a paper-like brief, article, or document with a byline or `last edited` meta strip. The middle of the screen should feel like a builder board, staged composition, or live preview workspace.",
+                    "- Match the visual tone of `legacy-designai-startup-builder`: darker charcoal product chrome, restrained teal-led accents, and cleaner product-display typography rather than warm beige editorial paper.",
+                    "- If onboarding or setup is part of the brief, keep it integrated as a compact first-run strip, progress card, or setup panel inside the workspace instead of splitting into a separate marketing page.",
+                    "- If the brief mentions live preview, render a real preview frame, browser shell, or device-like module rather than plain paragraph text.",
+                    "- A code snippet, quoted sentence, or generic paragraph card does not count as the live preview. The preview must look like a rendered product surface with visible browser or device chrome.",
+                    "- If the brief mentions prompt layers, show them as structured chips, cards, or ordered rows with role labels, status, and controls. Do not solve them with three identical raw textareas.",
+                    "- Do not make one large central textarea or rich-text editor slab the primary interaction. Prompt layers should read like compact builder modules with short fields, toggles, chips, run actions, and visible state.",
+                    "- If the brief mentions variant runs, keep a dense runs surface with status, score, latency, or selection state that feeds the main preview or builder canvas.",
+                    "- If the brief mentions launch blockers or QA notes, keep them in a dedicated status rail with severity, owner, or next action so the workspace feels like a launch tool.",
+                    "- When prompt layers, variant runs, launch blockers, or QA notes are part of the brief, keep at least two of those work surfaces visible above the fold.",
+                    "- Analytics or performance modules can appear, but they must be subordinate to the builder surface instead of replacing it.",
+                    "- Avoid document-editor defaults like outline, comments, slash-command bars, rich-text formatting controls, publish settings, and serif editorial title treatment unless the prompt explicitly asks for them.",
+                    "- Match the shell logic of `legacy-designai-startup-builder`: hybrid builder workspace, setup cues, previewable output, and dense control surfaces in one cohesive product frame.",
+                    "--- END SPECIALIZED BUILDER / STUDIO CONTRACT ---",
+                ]
+            )
+        )
+
+    if (
+        normalized_archetype in {"form", "ai_product", "productivity_app", "dev_tool"}
+        and _looks_like_compliance_wizard_prompt(prompt_text)
+    ) or reference_label == "legacy-ai-automation-onboarding-wizard":
+        blocks.append(
+            "\n".join(
+                [
+                    "--- SPECIALIZED ENTERPRISE WIZARD CONTRACT ---",
+                    "- Treat this as an enterprise onboarding or compliance workflow, not a generic signup form.",
+                    "- Keep a strong top product bar plus a desktop split shell: visible step rail, dominant active-step panel, and a compact snapshot or status lane that stays useful at first paint.",
+                    "- The snapshot lane should surface concrete application context such as company details, requirements progress, blockers, pending approvals, document counts, or readiness state.",
+                    "- Use domain step names tied to the brief, such as company details, compliance documents, approver routing, review and submit. Avoid generic `Step 1` labels when the flow is clearly procedural.",
+                    "- Show unresolved blockers, pending documents, or pending approvals by default when the brief implies submission gating.",
+                    "- Keep review and blocker state visually connected to the active step instead of hiding it as a distant final section.",
+                    "- For document or approval flows, use badges, counts, pending labels, approved labels, and status rows instead of plain helper paragraphs.",
+                    "- Avoid floating single-card forms, giant empty gutters, and generic startup onboarding language that ignores the review or compliance context.",
+                    "- Match the shell logic of `legacy-ai-automation-onboarding-wizard`: stronger enterprise structure, grouped steps, and visible snapshot or blocker surfaces throughout the flow.",
+                    "--- END SPECIALIZED ENTERPRISE WIZARD CONTRACT ---",
+                ]
+            )
+        )
+
+    return "\n\n".join(blocks)
 
 
 def _build_componentized_family_prompt_block(
@@ -607,7 +731,10 @@ class EngineerAgent:
             prompt = (PROMPTS_DIR / "engineer_componentized.txt").read_text(encoding="utf-8")
             family_guidance = ""
             if should_apply_componentized_global_family_layer(archetype):
-                family_guidance = build_componentized_design_family_guidance(archetype)
+                family_guidance = build_componentized_design_family_guidance(
+                    archetype,
+                    user_prompt or task.description,
+                )
             if family_guidance:
                 prompt += (
                     "\n\n--- DESIGN FAMILY FOUNDATION ---\n"
@@ -640,6 +767,14 @@ class EngineerAgent:
                     f"{archetype_css.read_text(encoding='utf-8')}\n"
                     "--- END BASE CSS REFERENCE ---"
                 )
+            specialized_contract = _build_componentized_specialized_contract_block(
+                archetype,
+                user_prompt or task.description,
+                existing_code=existing_code,
+                reference_code=reference_code,
+            )
+            if specialized_contract:
+                prompt += f"\n\n{specialized_contract}"
         elif archetype_txt and archetype_txt.exists():
             prompt = (PROMPTS_DIR / "engineer_core.txt").read_text(encoding="utf-8")
             prompt += "\n\n" + archetype_txt.read_text(encoding="utf-8")

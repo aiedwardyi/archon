@@ -40,7 +40,59 @@ def should_apply_componentized_global_family_layer(ui_archetype: str | None) -> 
     return canonical not in GLOBAL_FAMILY_LAYER_EXEMPT_CANONICAL_ARCHETYPES
 
 
-def resolve_componentized_design_family(ui_archetype: str | None) -> str:
+def _looks_like_guided_flow_prompt(prompt_text: str | None) -> bool:
+    normalized = (prompt_text or "").strip().lower()
+    if not normalized:
+        return False
+    return any(
+        token in normalized
+        for token in (
+            "wizard",
+            "onboarding",
+            "setup",
+            "launch flow",
+            "launch checklist",
+            "approval",
+            "approver",
+            "compliance",
+            "review sidebar",
+            "application snapshot",
+            "step",
+            "integrations",
+            "validation",
+            "blocked",
+            "ready state",
+        )
+    )
+
+
+def _looks_like_workspace_prompt(prompt_text: str | None) -> bool:
+    normalized = (prompt_text or "").strip().lower()
+    if not normalized:
+        return False
+    return any(
+        token in normalized
+        for token in (
+            "workspace",
+            "builder",
+            "studio",
+            "canvas",
+            "editor",
+            "preview rail",
+            "live preview",
+            "prompt layers",
+            "variant runs",
+            "qa notes",
+            "launch blockers",
+            "inspector",
+            "sidebar",
+            "control surface",
+        )
+    )
+
+
+def resolve_componentized_design_family(ui_archetype: str | None, prompt_text: str | None = None) -> str:
+    original = (ui_archetype or "").strip().lower()
     canonical = canonicalize_design_archetype(ui_archetype)
     if canonical in {"dashboard", "fintech"}:
         return "data_dense"
@@ -48,6 +100,12 @@ def resolve_componentized_design_family(ui_archetype: str | None) -> str:
         return "workspace"
     if canonical == "form":
         return "guided_flow"
+    if original in {"ai_product", "productivity_app", "dev_tool"}:
+        if _looks_like_guided_flow_prompt(prompt_text):
+            return "guided_flow"
+        if _looks_like_workspace_prompt(prompt_text):
+            return "workspace"
+        return "workspace"
     if canonical == "ecommerce":
         return "commerce"
     if canonical in {
@@ -65,15 +123,17 @@ def resolve_componentized_design_family(ui_archetype: str | None) -> str:
     return "marketing"
 
 
-def build_componentized_design_family_guidance(ui_archetype: str | None) -> str:
+def build_componentized_design_family_guidance(ui_archetype: str | None, prompt_text: str | None = None) -> str:
+    original = (ui_archetype or "").strip().lower()
     canonical = canonicalize_design_archetype(ui_archetype) or "general"
+    archetype_label = original if original in {"ai_product", "productivity_app", "dev_tool"} else canonical
     if not should_apply_componentized_global_family_layer(canonical):
         return ""
-    family = resolve_componentized_design_family(canonical)
+    family = resolve_componentized_design_family(ui_archetype, prompt_text)
 
     lines = [
         f"design_family: {family}",
-        f"canonical_archetype: {canonical}",
+        f"canonical_archetype: {archetype_label}",
         "UNIVERSAL COMPONENTIZED APP CONTRACT:",
         "- Ship a real React app shell with a clear header/nav/main hierarchy, responsive breakpoints, and no dead empty columns.",
         "- Use a small, repeatable surface system. Prefer 3-4 deliberate panel/card treatments over many unrelated wrappers.",
@@ -99,6 +159,9 @@ def build_componentized_design_family_guidance(ui_archetype: str | None) -> str:
             "- Anchor the workspace with a real topbar or command strip that exposes active product state such as save, review, publish, run, or collaboration context.",
             "- Toolbars, tabs, composer controls, and side panels should feel like one authored workspace rather than generic stacked cards.",
             "- Keep both side lanes visibly populated with useful outline rows, comments, settings, tasks, or status modules instead of empty chrome.",
+            "- Builder-style workspaces should usually show one dominant center canvas plus a visible preview, inspector, or run-status lane instead of a generic dashboard grid.",
+            "- Builder-style prompts should make the builder artifact or preview surface the first focal point. Do not open on a KPI deck or a stack of plain textareas when the product is clearly a studio.",
+            "- Builder-style prompts should prefer a darker premium tool shell and cleaner product typography over warm editorial beige or print-preview styling.",
             "- Avoid lazy workspace labels such as `Workspace`, `Notes`, or `Inspector` unless surrounding module titles and entries make each lane feel product-specific.",
             "- Keep panel hierarchy legible through depth, tint, border, and typography differences so the workspace does not collapse into one flat canvas.",
         ],
@@ -107,6 +170,8 @@ def build_componentized_design_family_guidance(ui_archetype: str | None) -> str:
             "- Keep the active step visually dominant while secondary guidance, summaries, or trust signals live in a side panel or footer band.",
             "- Inputs, toggles, summaries, and validation messages must feel connected to the current step, not scattered across unrelated cards.",
             "- Keep a visible review, blocker, or readiness card in the flow so setup state is legible before submission.",
+            "- Enterprise setup flows should keep a strong shell: top product bar, visible step rail, and a compact summary or snapshot lane that stays in view while the active step changes.",
+            "- When approvals, documents, or blockers are part of the brief, keep pending counts and approval state visible in that snapshot lane instead of burying them in helper copy.",
             "- Do not fully expand every setup phase at once; one dominant active step plus one compact review/result preview is usually enough.",
             "- Use concrete state language like validating, blocked, pending approval, ready to launch, or confirmed instead of generic helper filler.",
         ],
@@ -132,10 +197,10 @@ def build_componentized_design_family_guidance(ui_archetype: str | None) -> str:
     return "\n".join(lines)
 
 
-def build_componentized_shell_family_guidance(ui_archetype: str | None) -> str:
+def build_componentized_shell_family_guidance(ui_archetype: str | None, prompt_text: str | None = None) -> str:
     if not should_apply_componentized_global_family_layer(ui_archetype):
         return ""
-    family = resolve_componentized_design_family(ui_archetype)
+    family = resolve_componentized_design_family(ui_archetype, prompt_text)
     guidance = {
         "data_dense": (
             "- Structure the shell around one dominant insight zone plus clearly subordinate support modules.\n"
@@ -150,6 +215,9 @@ def build_componentized_shell_family_guidance(ui_archetype: str | None) -> str:
             "- Differentiate toolbars, sidebars, canvases, and inspectors with meaningful surface depth instead of one flat panel color.\n"
             "- The main work surface should visually dominate while support panels still feel intentional and populated.\n"
             "- Keep both side lanes populated with useful outline rows, comments, settings, queues, or status modules instead of empty decorative chrome.\n"
+            "- Builder-like workspaces should show one clear center canvas plus a real preview, inspector, or run-status lane instead of flattening into generic card rows.\n"
+            "- Builder-like prompts should make that canvas or preview the first focal point instead of leading with KPI cards or generic text input stacks.\n"
+            "- Builder-like prompts should default to a darker product-tool mood rather than warm editorial paper or print-preview shells.\n"
             "- Avoid lazy lane labels such as `Workspace`, `Editor`, `Notes`, or `Inspector` unless the surrounding copy makes those modules feel authored for the product.\n"
         ),
         "guided_flow": (
@@ -157,6 +225,8 @@ def build_componentized_shell_family_guidance(ui_archetype: str | None) -> str:
             "- Pair the active form area with contextual guidance, summary, trust, or validation feedback so the page does not read like a plain form stack.\n"
             "- Inputs, option cards, and status messaging need one cohesive hierarchy with strong focus and error states.\n"
             "- Keep a compact review, blocker, or readiness card visible in the same flow, not hidden as a distant final section.\n"
+            "- Enterprise onboarding/configuration flows should keep a clear top product bar plus a compact summary or snapshot lane that stays visible beside the active step.\n"
+            "- When the brief implies approvals, documents, or submission gating, keep pending counts and blocker state readable in that snapshot lane from the first screen.\n"
             "- Avoid turning validation, review, success, and failure into equal-height stacked panels; keep later states compact and connected to the active step.\n"
         ),
         "commerce": (

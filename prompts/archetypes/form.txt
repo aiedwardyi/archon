@@ -34,12 +34,14 @@ REQUIRED FLOW STRUCTURE
 - Left rail for progress and reassurance.
 - Right main panel for the active step and form content.
 - The UI should feel like a premium onboarding or setup flow, not a plain contact form.
+- For enterprise onboarding, approval, or compliance flows, the right side should usually behave like a 2-part work area: dominant active-step pane plus a compact summary/snapshot/status lane that stays visible on desktop.
 - The right main panel must be the dominant focal area and occupy roughly 65-75% of the visible width on desktop.
 - NEVER center one narrow floating card in a sea of empty dark space.
 - Reuse the provided split-layout classes directly: `.wizard-shell`, `.wizard-frame`, `.wizard-side`, `.wizard-main`.
 - Do not set `max-width` on `.wizard-shell`, `.wizard-frame`, `.wizard-main`, `.main-wrapper`, or equivalent top-level containers below about `1180px` on desktop.
 - Do not replace the split shell with a single-column wrapper unless the viewport is mobile.
 - Do not shrink or trivialize the top bar. The desktop screenshot should show a substantial product header with readable branding and an obvious compact progress treatment.
+- Favor an enterprise product shell with a compact top bar, project/application meta, and persistent desktop structure over a startup-marketing hero.
 
 2. STEP PROGRESSION
 - Show 4-5 steps with one active, prior steps complete, later steps pending.
@@ -66,6 +68,7 @@ REQUIRED FLOW STRUCTURE
 - Add a summary or signal card showing the current configuration in non-zero terms.
 - Include one premium state treatment such as validation log lines, success notice, or readiness score.
 - Keep one compact review, blocker, readiness, or next-step card visible before the final submit state so the current setup status is obvious at a glance.
+- For onboarding, approvals, or compliance flows, include a visible application snapshot, blocker summary, or requirements/status rail on desktop instead of hiding all context below the fold.
 - Side rail content must be visually substantial: progress rail, current plan, readiness summary, and reassurance copy. Avoid empty dark columns.
 
 5. SUCCESS / RESULT VISIBILITY
@@ -73,6 +76,20 @@ REQUIRED FLOW STRUCTURE
   confirmation card, launch summary, next-step panel, or generated workspace snapshot.
 - The success/result preview must feel integrated into the same product flow, not pasted underneath as a disconnected card.
 - Do not render validating, success, and failure as three separate full-height sections stacked one after another. Show them as compact preview/status cards inside the same flow.
+
+═══════════════════════════════════════
+COMPLIANCE / APPROVAL VARIANT
+═══════════════════════════════════════
+
+Apply this variant when the prompt mentions vendor onboarding, compliance documents, approval routing, blocker summary, application snapshot, requirements summary, or review-and-submit gating.
+
+- Keep a compact top product bar with application or workflow identity visible on desktop.
+- Use domain-specific step names such as company details, compliance documents, contacts and approvals, review and submit.
+- Keep a persistent desktop snapshot or status lane that shows meaningful rows like company flags, document counts, pending requirements, approvals, blockers, or readiness state.
+- If the prompt mentions documents or approvals, surface pending counts and approval state with badges, counts, and status rows, not just helper paragraphs.
+- Keep unresolved blockers visible by default. The user should be able to see why submission is blocked without navigating to a separate screen.
+- The active step should still dominate, but the status lane must stay visually substantial enough to read at a glance in a full-page screenshot.
+- Avoid startup-marketing onboarding language when the flow is really about requirements, approvals, and gated submission.
 
 ═══════════════════════════════════════
 INTERACTION RULES
@@ -97,6 +114,7 @@ INTERACTION RULES
 - Avoid giant empty vertical gaps inside the main panel. If a section is short, the next relevant section should follow with deliberate spacing instead of leaving large dark voids.
 - Keep the active step, review block, and result preview visually connected in one cohesive column. Do not separate them with screen-sized whitespace.
 - Do not expand validation, review, success, and failure into four equally tall panels. Later-state surfaces should stay compact and subordinate to the active step.
+- Prefer a product-like review sidebar or snapshot panel over a generic “summary card” if the prompt implies approvals, documents, blockers, or submission gating.
 
 ═══════════════════════════════════════
 CONTENT RULES
@@ -130,6 +148,7 @@ SELF-CHECK BEFORE OUTPUT
 □ Main panel visually dominates the page on desktop
 □ No narrow floating-card composition
 □ The main pane does not turn into one giant stacked document
+□ Desktop enterprise flows keep a visible review/snapshot/status lane near the active step
 □ Top-level shell is not constrained to a narrow 700-900px desktop width
 □ Headings and key labels are large enough to read clearly from a full-page screenshot
 □ Top bar and final state cards are substantial enough to read at a glance

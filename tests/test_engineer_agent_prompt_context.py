@@ -1,5 +1,9 @@
 from agents import engineer_agent
-from agents.engineer_agent import EngineerAgent, _build_componentized_family_prompt_block
+from agents.engineer_agent import (
+    EngineerAgent,
+    _build_componentized_family_prompt_block,
+    _build_componentized_specialized_contract_block,
+)
 from schemas.engineering_schema import EngineeringResult, FileArtifact
 from schemas.plan_schema import Task
 
@@ -96,6 +100,36 @@ def test_componentized_family_prompt_block_skips_iteration_mode():
     )
 
     assert block == ""
+
+
+def test_componentized_specialized_contract_block_for_builder_prompt():
+    block = _build_componentized_specialized_contract_block(
+        "editor",
+        "Build an AI startup builder workspace with prompt layers, live preview, variant runs, launch blockers, and QA notes",
+        reference_code={"label": "legacy-designai-startup-builder"},
+    )
+
+    assert "SPECIALIZED BUILDER / STUDIO CONTRACT" in block
+    assert "startup-builder or AI design studio" in block
+    assert "Do not use a KPI row as the main focal point" in block
+    assert "paper-like brief" in block
+    assert "darker charcoal product chrome" in block
+    assert "three identical raw textareas" in block
+    assert "legacy-designai-startup-builder" in block
+
+
+def test_componentized_specialized_contract_block_for_compliance_wizard_prompt():
+    block = _build_componentized_specialized_contract_block(
+        "form",
+        "Build a vendor onboarding wizard with compliance documents, approval routing, blocker summary, and an application snapshot sidebar",
+        reference_code={"label": "legacy-ai-automation-onboarding-wizard"},
+    )
+
+    assert "SPECIALIZED ENTERPRISE WIZARD CONTRACT" in block
+    assert "enterprise onboarding or compliance workflow" in block
+    assert "snapshot or status lane" in block
+    assert "pending approvals" in block
+    assert "legacy-ai-automation-onboarding-wizard" in block
 
 
 def test_engineer_agent_skips_reference_images_when_internal_iteration_disables_them(tmp_path, monkeypatch):
