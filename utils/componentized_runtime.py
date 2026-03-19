@@ -2224,6 +2224,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_componentized_comment_url_bleed(updated)
         updated = _repair_componentized_missing_protocol_slashes(updated)
         updated = _repair_componentized_svg_namespace_protocol(updated)
+        updated = _repair_componentized_orphaned_parent_family_children(updated)
         updated = _repair_componentized_jsx_root_returns(updated)
         updated = _normalize_run_on_imports(updated)
         updated = _normalize_componentized_currency_formatting(updated)
@@ -4611,6 +4612,258 @@ def _repair_componentized_missing_protocol_slashes(source: str) -> str:
         ),
         updated,
     )
+
+
+def _repair_componentized_orphaned_parent_family_children(source: str) -> str:
+    parent_tags = {"aside", "nav", "section"}
+    family_keywords = frozenset({"drawer", "menu", "nav", "panel", "rail", "sidebar", "sidenav"})
+    void_tags = frozenset({
+        "area", "base", "br", "col", "embed", "hr", "img", "input",
+        "link", "meta", "param", "source", "track", "wbr",
+        "circle", "ellipse", "line", "path", "polygon", "polyline", "rect", "stop", "use",
+    })
+
+    def _is_multiline_open(line: str) -> re.Match[str] | None:
+        match = JSX_LINE_OPEN_TAG_RE.match(line)
+        if not match:
+            return None
+        token = match.group(0)
+        tag = match.group("tag")
+        rest = match.group("rest")
+        if token.rstrip().endswith("/>") or f"</{tag}>" in rest:
+            return None
+        return match
+
+    def _extract_family_tokens(line: str, tag: str) -> set[str]:
+        families: set[str] = set()
+
+        for match in re.finditer(
+            r'className\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|\{`([^`]*)`\})',
+            line,
+        ):
+            raw_value = next((group for group in match.groups() if group is not None), "")
+            cleaned = re.sub(r"\$\{[^}]*\}", " ", raw_value).lower()
+            for class_name in cleaned.split():
+                normalized = re.sub(r"[^a-z0-9_-]", "", class_name)
+                if not normalized:
+                    continue
+                parts = [part for part in re.split(r"[-_]", normalized) if part]
+                if normalized in family_keywords:
+                    families.add(normalized)
+                if len(parts) >= 2 and parts[0] in family_keywords:
+                    families.add(parts[0])
+                for part in parts:
+                    if part in family_keywords:
+                        families.add(part)
+
+        if tag.lower() == "aside":
+            families.add("sidebar")
+        elif tag.lower() == "nav":
+            families.add("nav")
+
+        return families
+
+    def _extract_group_family(line: str) -> tuple[str, str] | None:
+        open_match = _is_multiline_open(line)
+        if not open_match:
+            return None
+        tag = open_match.group("tag")
+
+        for match in re.finditer(
+            r'className\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|\{`([^`]*)`\})',
+            line,
+        ):
+            raw_value = next((group for group in match.groups() if group is not None), "")
+            cleaned = re.sub(r"\$\{[^}]*\}", " ", raw_value).lower()
+            for class_name in cleaned.split():
+                normalized = re.sub(r"[^a-z0-9_-]", "", class_name)
+                parts = [part for part in re.split(r"[-_]", normalized) if part]
+                if len(parts) >= 2 and parts[0] in family_keywords and parts[1] == "group":
+                    return parts[0], tag
+
+        return None
+
+    def _find_parent_boundary(lines: list[str], start_index: int, opener_indent: int, families: set[str]) -> int | None:
+        for scan_index in range(start_index + 1, len(lines)):
+            stripped = lines[scan_index].strip()
+            if not stripped:
+                continue
+
+            open_match = _is_multiline_open(lines[scan_index])
+            if not open_match:
+                continue
+
+            boundary_indent = len(open_match.group("indent"))
+            boundary_families = _extract_family_tokens(lines[scan_index], open_match.group("tag"))
+            if boundary_indent <= opener_indent and families.isdisjoint(boundary_families):
+                return scan_index
+
+        return None
+
+    def _collect_unclosed_block_tags(block_lines: list[str]) -> list[str]:
+        block = "\n".join(block_lines)
+        stack: list[str] = []
+
+        for match in JSX_TAG_TOKEN_RE.finditer(block):
+            token = match.group(0)
+            tag = match.group("tag")
+            lower_tag = tag.lower()
+
+            if token.startswith("</"):
+                if stack and stack[-1] == tag:
+                    stack.pop()
+                    continue
+                for reverse_index in range(len(stack) - 1, -1, -1):
+                    if stack[reverse_index] == tag:
+                        del stack[reverse_index:]
+                        break
+                continue
+
+            is_html_void = tag[0].islower() and lower_tag in void_tags
+            if token.endswith("/>") or is_html_void:
+                continue
+            stack.append(tag)
+
+        return stack
+
+    lines = source.splitlines()
+    changed = False
+
+    repaired_lines: list[str] = []
+    pending_extra_group_close = 0
+    group_stack: list[tuple[str, str, int]] = []
+
+    for line in lines:
+        open_match = _is_multiline_open(line)
+        if open_match:
+            group_family = _extract_group_family(line)
+            if group_family:
+                family, tag = group_family
+                indent = len(open_match.group("indent"))
+                while group_stack and group_stack[-1] == (family, tag, indent):
+                    repaired_lines.append(f"{open_match.group('indent')}</{tag}>")
+                    group_stack.pop()
+                    pending_extra_group_close += 1
+                    changed = True
+                group_stack.append((family, tag, indent))
+            repaired_lines.append(line)
+            continue
+
+        close_match = JSX_LINE_CLOSE_TAG_RE.match(line)
+        if close_match:
+            tag = close_match.group("tag")
+            if tag == "div" and group_stack and group_stack[-1][1] == "div":
+                group_stack.pop()
+                repaired_lines.append(line)
+                continue
+
+            if tag in parent_tags and pending_extra_group_close > 0:
+                previous_index = len(repaired_lines) - 1
+                while previous_index >= 0 and not repaired_lines[previous_index].strip():
+                    previous_index -= 1
+                if previous_index >= 0 and repaired_lines[previous_index].strip() == "</div>":
+                    del repaired_lines[previous_index]
+                    pending_extra_group_close -= 1
+                    changed = True
+
+            repaired_lines.append(line)
+            continue
+
+        repaired_lines.append(line)
+
+    updated_lines = repaired_lines
+
+    for _ in range(4):
+        pass_changed = False
+
+        for index, line in enumerate(updated_lines):
+            open_match = _is_multiline_open(line)
+            if not open_match:
+                continue
+
+            opener_indent = len(open_match.group("indent"))
+            opener_families = _extract_family_tokens(line, open_match.group("tag"))
+            if not opener_families:
+                continue
+
+            boundary_index = _find_parent_boundary(updated_lines, index, opener_indent, opener_families)
+            if boundary_index is None:
+                continue
+
+            previous_index = index - 1
+            while previous_index >= 0 and not updated_lines[previous_index].strip():
+                previous_index -= 1
+            if previous_index < 0 or not JSX_LINE_CLOSE_TAG_RE.match(updated_lines[previous_index]):
+                continue
+
+            block_start = previous_index
+            while block_start > 0:
+                candidate = updated_lines[block_start - 1]
+                if not candidate.strip() or JSX_LINE_CLOSE_TAG_RE.match(candidate):
+                    block_start -= 1
+                    continue
+                break
+
+            parent_tag = ""
+            parent_indent = ""
+            for search_index in range(block_start - 1, -1, -1):
+                parent_open_match = _is_multiline_open(updated_lines[search_index])
+                if not parent_open_match:
+                    continue
+                if parent_open_match.group("tag") not in parent_tags:
+                    continue
+                if len(parent_open_match.group("indent")) > opener_indent:
+                    continue
+                parent_families = _extract_family_tokens(
+                    updated_lines[search_index],
+                    parent_open_match.group("tag"),
+                )
+                if opener_families.isdisjoint(parent_families):
+                    continue
+                parent_tag = parent_open_match.group("tag")
+                parent_indent = parent_open_match.group("indent")
+                break
+
+            if not parent_tag:
+                continue
+
+            remove_from = None
+            for close_index in range(block_start, index):
+                close_match = JSX_LINE_CLOSE_TAG_RE.match(updated_lines[close_index])
+                if close_match and close_match.group("tag") == parent_tag:
+                    remove_from = close_index
+                    break
+
+            if remove_from is None:
+                continue
+
+            orphan_block_lines = updated_lines[index:boundary_index]
+            if not orphan_block_lines:
+                continue
+
+            insertion_lines = [
+                f"{open_match.group('indent')}</{tag}>"
+                for tag in reversed(_collect_unclosed_block_tags(orphan_block_lines))
+            ]
+            insertion_lines.append(f"{parent_indent}</{parent_tag}>")
+
+            pruned_lines = updated_lines[:remove_from] + updated_lines[index:]
+            adjusted_boundary = boundary_index - (index - remove_from)
+            updated_lines = (
+                pruned_lines[:adjusted_boundary]
+                + insertion_lines
+                + pruned_lines[adjusted_boundary:]
+            )
+            changed = True
+            pass_changed = True
+            break
+
+        if not pass_changed:
+            break
+
+    if not changed:
+        return source
+    return "\n".join(updated_lines) + ("\n" if source.endswith("\n") else "")
 
 
 def _repair_componentized_jsx_root_returns(source: str) -> str:

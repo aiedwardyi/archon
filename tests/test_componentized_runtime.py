@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 import sys
@@ -30,6 +31,7 @@ from utils.componentized_runtime import (
     collect_componentized_editable_files,
     collect_componentized_reverse_dependents,
     ensure_componentized_workspace_support,
+    _repair_componentized_orphaned_parent_family_children,
     _normalize_run_on_natural_language_notes,
     collect_existing_code_context,
     extract_feature_inventory,
@@ -64,6 +66,41 @@ def _case_dir(name: str) -> Path:
 
 
 class ComponentizedRuntimeTests(unittest.TestCase):
+    def _assert_jsx_return_would_parse(self, source: str) -> None:
+        match = re.search(r"return\s*\((?P<body>[\s\S]*?)\);\s*", source)
+        self.assertIsNotNone(match, "expected a JSX return block")
+        body = match.group("body")
+        self.assertNotIn("<>", body)
+        self.assertNotIn("</>", body)
+
+        token_re = re.compile(r"</?(?P<tag>[A-Za-z][A-Za-z0-9.-]*)\b[^>]*?/?>")
+        void_tags = {
+            "area", "base", "br", "col", "embed", "hr", "img", "input",
+            "link", "meta", "param", "source", "track", "wbr",
+            "circle", "ellipse", "line", "path", "polygon", "polyline", "rect", "stop", "use",
+        }
+
+        stack: list[str] = []
+        top_level_roots = 0
+        for token_match in token_re.finditer(body):
+            token = token_match.group(0)
+            tag = token_match.group("tag")
+
+            if token.startswith("</"):
+                self.assertTrue(stack, f"unexpected closing tag </{tag}>")
+                self.assertEqual(stack[-1], tag, f"misnested closing tag </{tag}>")
+                stack.pop()
+                continue
+
+            is_void = token.endswith("/>") or (tag[0].islower() and tag.lower() in void_tags)
+            if not stack:
+                top_level_roots += 1
+            if not is_void:
+                stack.append(tag)
+
+        self.assertFalse(stack, f"unclosed JSX tags: {stack}")
+        self.assertEqual(top_level_roots, 1, "expected a single top-level JSX root")
+
     def test_game_archetypes_bypass_componentized_global_family_layer(self):
         self.assertFalse(should_apply_componentized_global_family_layer("game"))
         self.assertFalse(should_apply_componentized_global_family_layer("game_ff7"))
@@ -2668,6 +2705,70 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertIn("</div>\n    </aside>", source)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_ensure_componentized_workspace_support_repairs_orphaned_dashboard_sidebar_children(self):
+        source = (
+            "export default function Layout() {\n"
+            "  return (\n"
+            "    <div className=\"dashboard-layout\">\n"
+            "      <aside className=\"sidebar\">\n"
+            "        <nav className=\"sidebar-nav\">\n"
+            "          <div className=\"sidebar-group\">\n"
+            "            <span>Overview</span>\n"
+            "          </div>\n"
+            "        </nav>\n"
+            "      </aside>\n"
+            "\n"
+            "      <div className=\"sidebar-user\">\n"
+            "        <div className=\"user-avatar\">JD</div>\n"
+            "      <div className=\"main-content\">\n"
+            "        <span>Main</span>\n"
+            "      </div>\n"
+            "    </div>\n"
+            "  );\n"
+            "}\n"
+        )
+
+        repaired = _repair_componentized_orphaned_parent_family_children(source)
+
+        self.assertIn("</nav>\n      <div className=\"sidebar-user\">", repaired)
+        self.assertIn("</div>\n      </aside>\n      <div className=\"main-content\">", repaired)
+        self.assertNotIn("</aside>\n\n      <div className=\"sidebar-user\">", repaired)
+        self._assert_jsx_return_would_parse(repaired)
+
+    def test_ensure_componentized_workspace_support_repairs_orphaned_panel_children_after_section_close(self):
+        source = (
+            "export default function App() {\n"
+            "  return (\n"
+            "    <div className=\"workspace-shell\">\n"
+            "      <section className=\"panel-shell\">\n"
+            "        <nav className=\"panel-nav\">\n"
+            "          <div className=\"panel-group\">\n"
+            "            <div className=\"panel-link\">Home</div>\n"
+            "          </div>\n"
+            "          <div className=\"panel-group\">\n"
+            "            <div className=\"panel-link\">Reports</div>\n"
+            "          </div>\n"
+            "        </nav>\n"
+            "      </section>\n"
+            "\n"
+            "      <div className=\"panel-footer\">\n"
+            "        <span>Support</span>\n"
+            "\n"
+            "      <main className=\"workspace-content\">\n"
+            "        <h1>Overview</h1>\n"
+            "      </main>\n"
+            "    </div>\n"
+            "  );\n"
+            "}\n"
+        )
+
+        repaired = _repair_componentized_orphaned_parent_family_children(source)
+
+        self.assertIn("</nav>\n      <div className=\"panel-footer\">", repaired)
+        self.assertIn("</div>\n      </section>\n      <main className=\"workspace-content\">", repaired)
+        self.assertNotIn("</section>\n\n      <div className=\"panel-footer\">", repaired)
+        self._assert_jsx_return_would_parse(repaired)
 
     def test_ensure_componentized_workspace_support_repairs_inline_mismatched_closing_tags(self):
         code_dir = _case_dir("componentized-runtime-inline-closing-tag-mismatch")
