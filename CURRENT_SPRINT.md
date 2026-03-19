@@ -20,11 +20,11 @@ Average bias: +17.6 pts. 3/5 exceeded ±15 threshold. Ollama inflates scores acr
 
 **Fixes applied:** Ollama image resize 1920→1280px (fixed OOM 500s), retry logic with backoff, new `provider-ab` subcommand in `eval/run_ab_comparison.py`.
 
-### Dashboard Blank Preview — Root Cause Found
+### Dashboard Blank Preview — Fixed
 
-Project 610: `DashboardLayout.tsx` has orphaned sidebar-user div outside `<aside>` — missing `</div>` on first sidebar-group. Vite build fails → no `dist/index.html` → preview returns placeholder → scorer gives 10/100.
+Project 610: `DashboardLayout.tsx` had orphaned sidebar-user div outside `<aside>` — missing `</div>` on first sidebar-group. Vite build failed → no `dist/index.html` → preview returned placeholder → scorer gave 10/100.
 
-**Next:** Add runtime recovery rule to `componentized_runtime.py` for this JSX corruption pattern (Codex task).
+**Fix:** Codex added `_repair_componentized_orphaned_parent_family_children` to `utils/componentized_runtime.py`. Commit 9323d74 on `fix/dashboard-jsx-orphan-recovery`. 176 tests passing.
 
 ### Skip Image Gen — Implemented
 
