@@ -47,6 +47,33 @@ Work on `eval/loops` branch — 17 commits pushed. Focused on componentized buil
 
 ---
 
+## Branch — `feat/local-eval-models` (✅ Merged Mar 19, 2026)
+
+Local Ollama model support for eval scorer and improver. Enables 24/7 eval loops at zero API cost for scoring/improving.
+
+**What was done:**
+- `utils/model_provider.py` — NEW — `OllamaProvider` class + `create_scorer_provider()` + `create_improver_provider()` factory functions
+- `eval/eval_scorer.py` — UPDATED — `DesignScorer` accepts `provider` param, routes to `_score_via_ollama()` when type is ollama
+- `eval/eval_improver.py` — UPDATED — `PromptImprover` accepts `provider` param, routes to `_improve_via_ollama()` when type is ollama
+- `eval/operator_loop.py` — PATCHED — import + scorer/improver provider wiring
+- `eval/eval_config.json` — UPDATED — added scorer_provider, improver_provider, local model config fields
+- `.gitignore` — added patterns for temp log/pid files at repo root
+- Image resize (max 1920px) added to `OllamaProvider._resize_for_ollama()` to prevent vision model timeouts
+- Timeout bumped to 600s for Ollama vision requests
+
+**Config:** Set `EVAL_SCORER_PROVIDER=ollama` in `backend/.env` to use local models. Default `gemini` preserves backward compatibility.
+
+**Models:** qwen2.5vl:7b (scorer/vision), gemma3:12b (improver/text) on Home PC RTX 3080
+
+**Verified:** Ollama routing confirmed in logs. Build + screenshot + Ollama scoring completed successfully.
+
+**Still needed:**
+- A/B calibration: score 5 screenshots with both Gemini and Ollama, compare (within ±15 pts = good)
+- Dashboard blank preview investigation (scoring 10/100 — build completes but renders blank, NOT Ollama-related)
+- Skip image generation in eval mode (Option A from planning — zero cost, use asset filler only)
+
+---
+
 ## Branch Alignment — `feat/componentized-multi-run-experiments`
 
 Short status update for the previous active branch:

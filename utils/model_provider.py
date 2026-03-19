@@ -21,7 +21,7 @@ class OllamaProvider:
         self.model = model
         self.base_url = base_url.rstrip("/")
 
-    def _resize_for_ollama(self, image_path: Path, max_dimension: int = 1920) -> bytes:
+    def _resize_for_ollama(self, image_path: Path, max_dimension: int = 1280) -> bytes:
         """Resize image to fit Ollama's practical limits and return JPEG bytes."""
         from PIL import Image
         import io
@@ -42,8 +42,10 @@ class OllamaProvider:
         img.save(buf, format="JPEG", quality=80)
         return buf.getvalue()
 
-    def generate_with_image(self, prompt: str, image_path: Path, temperature: float = 0.3) -> str:
-        """Send a vision request to Ollama (for scoring)."""
+    def generate_with_image(self, prompt: str, image_path: Path, temperature: float = 0.3, max_retries: int = 2) -> str:
+        """Send a vision request to Ollama (for scoring). Retries on 500 errors."""
+        import time as _time
+
         image_bytes = self._resize_for_ollama(image_path)
         image_data = base64.b64encode(image_bytes).decode("utf-8")
         payload = {
@@ -56,10 +58,22 @@ class OllamaProvider:
                 "num_predict": 4096,
             },
         }
-        logger.info(f"Ollama vision request: model={self.model}, image={image_path.name}")
-        resp = requests.post(f"{self.base_url}/api/generate", json=payload, timeout=600)
-        resp.raise_for_status()
-        return resp.json().get("response", "")
+        last_error = None
+        for attempt in range(max_retries + 1):
+            logger.info(f"Ollama vision request: model={self.model}, image={image_path.name}" + (f" (retry {attempt})" if attempt > 0 else ""))
+            try:
+                resp = requests.post(f"{self.base_url}/api/generate", json=payload, timeout=600)
+                resp.raise_for_status()
+                return resp.json().get("response", "")
+            except requests.exceptions.HTTPError as e:
+                last_error = e
+                if resp.status_code == 500 and attempt < max_retries:
+                    wait = 10 * (attempt + 1)
+                    logger.warning(f"Ollama 500 error, retrying in {wait}s (attempt {attempt + 1}/{max_retries + 1})")
+                    _time.sleep(wait)
+                    continue
+                raise
+        raise last_error
 
     def generate_text(self, prompt: str, system: str = "", temperature: float = 0.4) -> str:
         """Send a text-only request to Ollama (for improving)."""

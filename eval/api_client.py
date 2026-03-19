@@ -105,7 +105,7 @@ class BuilderAPI:
         )
         resp.raise_for_status()
 
-    def trigger_build(self, project_id: int, enqueue_on_limit: bool = False) -> dict:
+    def trigger_build(self, project_id: int, enqueue_on_limit: bool = False, skip_image_gen: bool = False) -> dict:
         """Trigger a build via POST /api/execute-task.
 
         Returns dict with keys: execution_id, version, project_id.
@@ -113,6 +113,8 @@ class BuilderAPI:
         payload = {"project_id": project_id}
         if enqueue_on_limit:
             payload["enqueue_on_limit"] = True
+        if skip_image_gen:
+            payload["skip_image_gen"] = True
         resp = self.session.post(self._url("/api/execute-task"), json=payload, timeout=30)
         resp.raise_for_status()
         data = resp.json()
@@ -293,13 +295,14 @@ class BuilderAPI:
         timeout: int = 300,
         enqueue_on_limit: bool = False,
         queue_timeout: int | None = None,
+        skip_image_gen: bool = False,
     ) -> dict:
         """Convenience: create project, set description, trigger build, poll to completion.
 
         Returns dict with: project_id, version, execution_id, preview_url.
         """
         project_id = self.create_project(name, description)
-        build_info = self.trigger_build(project_id, enqueue_on_limit=enqueue_on_limit)
+        build_info = self.trigger_build(project_id, enqueue_on_limit=enqueue_on_limit, skip_image_gen=skip_image_gen)
         try:
             result = self.poll_until_done(
                 project_id=project_id,

@@ -157,7 +157,7 @@ def score_screenshot(scorer, screenshot_path: Path, archetype: str, refs_loader)
     return result.to_dict()
 
 
-async def run_single(api, archetype: str, prompt: str, build_timeout: int = 600, max_build_attempts: int = 5) -> dict:
+async def run_single(api, archetype: str, prompt: str, build_timeout: int = 600, max_build_attempts: int = 5, skip_image_gen: bool = False) -> dict:
     """Build one project, screenshot, return result. Retries if preview build fails."""
     repo_root = Path(__file__).resolve().parent.parent
 
@@ -175,6 +175,7 @@ async def run_single(api, archetype: str, prompt: str, build_timeout: int = 600,
                 name=project_name,
                 description=prompt,
                 timeout=build_timeout,
+                skip_image_gen=skip_image_gen,
             )
         except BuildError as e:
             logger.error(f"Build failed: {e}")
@@ -246,7 +247,7 @@ async def run_single(api, archetype: str, prompt: str, build_timeout: int = 600,
     }
 
 
-async def eval_archetype(archetype: str, runs: int = 3, build_timeout: int = 600) -> dict:
+async def eval_archetype(archetype: str, runs: int = 3, build_timeout: int = 600, skip_image_gen: bool = False) -> dict:
     """Run N builds of an archetype, score each, return averaged results."""
     prompt = PROMPTS.get(archetype)
     if not prompt:
@@ -270,7 +271,7 @@ async def eval_archetype(archetype: str, runs: int = 3, build_timeout: int = 600
         logger.info(f"{archetype} — Run {run_idx + 1}/{runs}")
         logger.info(f"{'='*40}")
 
-        result = await run_single(api, archetype, prompt, build_timeout)
+        result = await run_single(api, archetype, prompt, build_timeout, skip_image_gen=skip_image_gen)
         if result["status"] != "success":
             logger.warning(f"Run {run_idx + 1} failed: {result.get('error')}")
             all_results.append(result)
@@ -339,11 +340,13 @@ async def main():
                         help="Number of scoring runs per archetype")
     parser.add_argument("--timeout", "-t", type=int, default=900,
                         help="Build timeout in seconds")
+    parser.add_argument("--skip-image-gen", action="store_true",
+                        help="Skip Design Agent image generation (saves ~$0.05 + ~30s per build)")
     args = parser.parse_args()
 
     all_summaries = {}
     for arch in args.archetype:
-        summary = await eval_archetype(arch, runs=args.runs, build_timeout=args.timeout)
+        summary = await eval_archetype(arch, runs=args.runs, build_timeout=args.timeout, skip_image_gen=args.skip_image_gen)
         all_summaries[arch] = summary
 
     # Print final table

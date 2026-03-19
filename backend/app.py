@@ -711,6 +711,7 @@ def start_pipeline_job(job: dict[str, Any], *, from_queue: bool = False) -> bool
             job.get("nlu_result"),
             True,
         ),
+        kwargs={"skip_image_gen": job.get("skip_image_gen", False)},
         daemon=True,
     )
     thread.start()
@@ -3594,6 +3595,7 @@ def run_full_pipeline_async(
     reference_images: list = None,
     nlu_context: dict | None = None,
     execution_preclaimed: bool = False,
+    skip_image_gen: bool = False,
 ):
     state = get_project_state(project_id)
 
@@ -3786,8 +3788,12 @@ def run_full_pipeline_async(
         )
 
         design_assets = []
+        if skip_image_gen:
+            add_log("Design Agent: Skipped (skip_image_gen=True, eval mode).", project_id=project_id)
+            print("Design Agent: skipped (eval mode)")
+
         previous_visual_direction = ""
-        if ancestor_version_dir:
+        if not skip_image_gen and ancestor_version_dir:
             previous_visual_direction_path = ancestor_version_dir / "last_visual_direction.txt"
             if previous_visual_direction_path.exists():
                 try:
@@ -3795,75 +3801,76 @@ def run_full_pipeline_async(
                 except OSError:
                     previous_visual_direction = ""
 
-        try:
-            from agents.design_agent import DesignAgent
-
-            prd_data = read_json_file(version_dir / "last_prd.json") or {}
-            design_agent = DesignAgent()
-            visual_direction = design_agent.generate_visual_direction(
-                prd_data,
-                plan_dict=flat_plan,
-                existing_visual_direction=previous_visual_direction if is_iteration else None,
-                reference_images=reference_images or None,
-                nlu_context=nlu_context,
-                benchmark_style_context=design_benchmark_style_context or None,
-            )
-            if visual_direction:
-                (version_dir / "last_visual_direction.txt").write_text(
-                    visual_direction.strip() + "\n",
-                    encoding="utf-8",
-                )
-                add_log("Design Agent: Visual direction ready.", project_id=project_id)
-        except Exception as design_direction_err:
-            print(f"DesignAgent visual direction failed (non-fatal): {design_direction_err}")
-            add_log("Design Agent: Visual direction skipped, continuing...", project_id=project_id)
-
-        if is_iteration and ancestor_version_dir:
-            ancestor_assets_file = ancestor_version_dir / "last_design_assets.json"
-            if ancestor_assets_file.exists():
-                try:
-                    ancestor_assets_data = read_json_file(ancestor_assets_file) or {}
-                    design_assets = ancestor_assets_data.get("assets", [])
-                    write_json_file(version_dir / "last_design_assets.json", {"assets": design_assets})
-                    add_log(f"Design Agent: Reusing {len(design_assets)} images from previous version.", project_id=project_id)
-                except Exception as e:
-                    print(f"Failed to load ancestor design assets (non-fatal): {e}")
-                    add_log("Design Agent: Could not load previous images, continuing...", project_id=project_id)
-            else:
-                add_log("Design Agent: No previous images found, skipping.", project_id=project_id)
-        else:
-            add_log("Design Agent: Generating visuals...", project_id=project_id)
+        if not skip_image_gen:
             try:
+                from agents.design_agent import DesignAgent
+
                 prd_data = read_json_file(version_dir / "last_prd.json") or {}
                 design_agent = DesignAgent()
-                assets_dir = version_dir / "assets"
-                design_assets = design_agent.run(
+                visual_direction = design_agent.generate_visual_direction(
                     prd_data,
-                    max_images=smart_max_images,
-                    save_dir=assets_dir,
+                    plan_dict=flat_plan,
+                    existing_visual_direction=previous_visual_direction if is_iteration else None,
                     reference_images=reference_images or None,
                     nlu_context=nlu_context,
                     benchmark_style_context=design_benchmark_style_context or None,
                 )
-                if design_assets:
-                    write_json_file(version_dir / "last_design_assets.json", {"assets": design_assets})
-                    add_log(f"Design Agent: {len(design_assets)} images ready.", project_id=project_id)
+                if visual_direction:
+                    (version_dir / "last_visual_direction.txt").write_text(
+                        visual_direction.strip() + "\n",
+                        encoding="utf-8",
+                    )
+                    add_log("Design Agent: Visual direction ready.", project_id=project_id)
+            except Exception as design_direction_err:
+                print(f"DesignAgent visual direction failed (non-fatal): {design_direction_err}")
+                add_log("Design Agent: Visual direction skipped, continuing...", project_id=project_id)
+
+            if is_iteration and ancestor_version_dir:
+                ancestor_assets_file = ancestor_version_dir / "last_design_assets.json"
+                if ancestor_assets_file.exists():
                     try:
-                        cataloged_count = catalog_design_assets(
-                            project_id=project_id,
-                            version=version,
-                            design_assets=design_assets,
-                            archetype=effective_archetype,
-                        )
-                        if cataloged_count:
-                            print(f"Image Catalog: Cataloged {cataloged_count} new images.")
-                    except Exception as catalog_err:
-                        print(f"Image catalog hook failed (non-fatal): {catalog_err}")
+                        ancestor_assets_data = read_json_file(ancestor_assets_file) or {}
+                        design_assets = ancestor_assets_data.get("assets", [])
+                        write_json_file(version_dir / "last_design_assets.json", {"assets": design_assets})
+                        add_log(f"Design Agent: Reusing {len(design_assets)} images from previous version.", project_id=project_id)
+                    except Exception as e:
+                        print(f"Failed to load ancestor design assets (non-fatal): {e}")
+                        add_log("Design Agent: Could not load previous images, continuing...", project_id=project_id)
                 else:
-                    add_log("Design Agent: No images generated, continuing...", project_id=project_id)
-            except Exception as design_err:
-                print(f"DesignAgent failed (non-fatal): {design_err}")
-                add_log("Design Agent: Skipped, continuing with build...", project_id=project_id)
+                    add_log("Design Agent: No previous images found, skipping.", project_id=project_id)
+            else:
+                add_log("Design Agent: Generating visuals...", project_id=project_id)
+                try:
+                    prd_data = read_json_file(version_dir / "last_prd.json") or {}
+                    design_agent = DesignAgent()
+                    assets_dir = version_dir / "assets"
+                    design_assets = design_agent.run(
+                        prd_data,
+                        max_images=smart_max_images,
+                        save_dir=assets_dir,
+                        reference_images=reference_images or None,
+                        nlu_context=nlu_context,
+                        benchmark_style_context=design_benchmark_style_context or None,
+                    )
+                    if design_assets:
+                        write_json_file(version_dir / "last_design_assets.json", {"assets": design_assets})
+                        add_log(f"Design Agent: {len(design_assets)} images ready.", project_id=project_id)
+                        try:
+                            cataloged_count = catalog_design_assets(
+                                project_id=project_id,
+                                version=version,
+                                design_assets=design_assets,
+                                archetype=effective_archetype,
+                            )
+                            if cataloged_count:
+                                print(f"Image Catalog: Cataloged {cataloged_count} new images.")
+                        except Exception as catalog_err:
+                            print(f"Image catalog hook failed (non-fatal): {catalog_err}")
+                    else:
+                        add_log("Design Agent: No images generated, continuing...", project_id=project_id)
+                except Exception as design_err:
+                    print(f"DesignAgent failed (non-fatal): {design_err}")
+                    add_log("Design Agent: Skipped, continuing with build...", project_id=project_id)
 
         engineer_task = None
         fallback_task = None
@@ -5531,6 +5538,8 @@ def execute_task():
         nlu_result = nlu_agent.analyze(task_description)
         print(f"[NLU] Full analysis: {nlu_result}")
 
+        skip_image_gen = coerce_bool(req_data.get("skip_image_gen"))
+
         job = {
             "project_id": project_id,
             "execution_id": execution.id,
@@ -5540,6 +5549,7 @@ def execute_task():
             "reference_images": None,
             "nlu_result": nlu_result,
             "created_at": execution.created_at,
+            "skip_image_gen": skip_image_gen,
         }
 
         if queued_submission:
