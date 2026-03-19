@@ -108,5 +108,3 @@ SELF-CHECK BEFORE OUTPUT
 □ The page feels like a trading or market-monitoring product, not a general dashboard
 □ style.css only contains overrides, not a duplicate system
 □ No KPI, ticker, or table value can ever render as NaN, undefined, or blank during animation/update logic
-□ Every price, KPI value, delta, percentage, and table number uses font-family: 'JetBrains Mono' explicitly
-□ At least 2 panels have visible layered box-shadow (not flat borders only)
