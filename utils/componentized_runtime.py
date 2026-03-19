@@ -357,6 +357,18 @@ JSX_ATTRIBUTE_TOKEN_RE = re.compile(
     r"(?P<leading>\s+)(?P<name>[A-Za-z_:][-A-Za-z0-9_:.]*)(?P<value>\s*=\s*(?:\{[^{}\n]*\}|\"[^\n\"]*\"|'[^\n']*'))",
     re.MULTILINE,
 )
+COMPONENT_SELF_CLOSING_WITH_CHILDREN_RE = re.compile(
+    r"<(?P<tag>[A-Z][A-Za-z0-9.]*)\b(?P<attrs>[\s\S]{0,800}?)\s*/>(?P<inner>[\s\S]{1,5000}?)</(?P=tag)>",
+    re.MULTILINE,
+)
+LOGICAL_SVG_SIBLING_CONDITION_RE = re.compile(
+    r"\{(?P<expr>[^{}\n]{1,240}?&&)\s*(?P<first><(?:path|circle|rect|line|polyline|polygon|ellipse|g|text|use)\b[^>]*/>)(?P<siblings>(?:\s*<(?:path|circle|rect|line|polyline|polygon|ellipse|g|text|use)\b[^>]*/>)+)\s*\}",
+    re.MULTILINE,
+)
+BARE_JSX_ARRAY_MAP_EXPRESSION_RE = re.compile(
+    r"(?P<prefix>\{/\*[^*\n]{1,200}\*/\})(?P<expr>\[[^\n]{1,240}?\]\.map\([\s\S]{1,1600}?\)\))(?P<suffix>\})",
+    re.MULTILINE,
+)
 COMPONENTIZED_JSX_RETURN_RE = re.compile(
     r"return\s*\(\s*(?P<body><[\s\S]{1,12000}?)\s*\);",
     re.MULTILINE,
@@ -2233,6 +2245,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _normalize_componentized_void_jsx_elements(updated)
         updated = _strip_void_svg_closing_tags(updated)
         updated = _wrap_sibling_svg_elements_in_fragments(updated)
+        updated = _repair_componentized_logical_svg_sibling_conditions(updated)
         updated = _normalize_componentized_declaration_boundaries(updated)
         updated = _hoist_componentized_chart_helper_declarations(updated)
         updated = _repair_componentized_comment_note_continuations(updated)
@@ -2251,6 +2264,8 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_componentized_missing_protocol_slashes(updated)
         updated = _repair_componentized_svg_namespace_protocol(updated)
         updated = _repair_componentized_split_svg_value_attributes(updated)
+        updated = _repair_componentized_bare_jsx_array_map_expressions(updated)
+        updated = _repair_componentized_self_closing_component_children(updated)
         updated = _repair_componentized_ternary_branch_orphan_closing_tags(updated)
         updated = _repair_componentized_layout_main_wrapper_leaks(updated)
         updated = _repair_componentized_orphaned_parent_family_children(updated)
@@ -2275,6 +2290,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_orphan_block_comment_close(updated)
         # Last-resort: close unclosed JSX tags before ); at end of return blocks
         updated = _repair_jsx_return_unclosed_tags(updated)
+        updated = _strip_void_svg_closing_tags(updated)
         updated = _remove_componentized_orphan_closing_tag_lines(updated)
         updated = _repair_componentized_layout_main_wrapper_leaks(updated)
         updated = _repair_componentized_commented_destructured_props(updated)
@@ -5504,6 +5520,42 @@ def _wrap_sibling_svg_elements_in_fragments(source: str) -> str:
         return f"{match.group('prefix')}<>{match.group('first')}{match.group('siblings')}</>{match.group('suffix')}"
 
     return SIBLING_SVG_RE.sub(_repl, source)
+
+
+def _repair_componentized_logical_svg_sibling_conditions(source: str) -> str:
+    return LOGICAL_SVG_SIBLING_CONDITION_RE.sub(
+        lambda match: f"{{{match.group('expr')} (<>{match.group('first')}{match.group('siblings')}</>)}}",
+        source,
+    )
+
+
+def _repair_componentized_self_closing_component_children(source: str) -> str:
+    updated = source
+    for _ in range(6):
+        changed = False
+
+        def _replace(match: re.Match[str]) -> str:
+            nonlocal changed
+            inner = match.group("inner")
+            leading = inner.lstrip()
+            if "<" not in inner or not inner.strip() or not leading.startswith("<") or leading.startswith("</"):
+                return match.group(0)
+            changed = True
+            return f"<{match.group('tag')}{match.group('attrs')}>{inner}</{match.group('tag')}>"
+
+        repaired = COMPONENT_SELF_CLOSING_WITH_CHILDREN_RE.sub(_replace, updated)
+        if not changed:
+            return updated
+        updated = repaired
+
+    return updated
+
+
+def _repair_componentized_bare_jsx_array_map_expressions(source: str) -> str:
+    return BARE_JSX_ARRAY_MAP_EXPRESSION_RE.sub(
+        lambda match: f"{match.group('prefix')}{{{match.group('expr')}}}{match.group('suffix')}",
+        source,
+    )
 
 
 def _repair_componentized_css_data_uri_quote_bleed(source: str) -> str:

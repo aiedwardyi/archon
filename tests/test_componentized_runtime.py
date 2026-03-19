@@ -2107,12 +2107,12 @@ class ComponentizedRuntimeTests(unittest.TestCase):
                 re.MULTILINE,
             ),
         )
-        self.assertNotIn("</Sidebar>", normalized)
+        self.assertNotIn("</Dashboard>", normalized)
         self.assertNotIn("</TransactionForm>", normalized)
         self.assertRegex(
             normalized,
             re.compile(
-                r"<TransactionForm[\s\S]*?/\>\s*</div>\s*</div>\s*</div>\s*\);\s*}",
+                r"<TransactionForm[\s\S]*?/\>[\s\S]*?</Sidebar>\s*</div>\s*\);\s*}",
                 re.MULTILINE,
             ),
         )
@@ -2238,6 +2238,39 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             ),
         )
         self._assert_jsx_return_would_parse(normalized)
+
+    def test_normalize_componentized_file_repairs_project_649_self_closing_component_child_leak(self):
+        source_path = REPO_ROOT / "generated" / "649" / "v1" / "code" / "src" / "App.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/App.tsx", source)
+
+        self.assertIn("<ChartComponent onChipClick=", normalized)
+        self.assertIn("</ChartComponent>", normalized)
+        self.assertNotIn("<ChartComponent onChipClick={(action) => console.log(`Chart action: ${action}`)} />", normalized)
+        self.assertIn("<HoldingsTable onManageClick=", normalized)
+        self.assertIn("</HoldingsTable>", normalized)
+        self.assertNotIn("<HoldingsTable onManageClick={(asset) => openModal(`Managing ${asset} details...`)} />", normalized)
+
+    def test_normalize_componentized_file_repairs_project_650_logical_svg_sibling_condition(self):
+        source_path = REPO_ROOT / "generated" / "650" / "v1" / "code" / "src" / "App.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/App.tsx", source)
+
+        self.assertIn('{item === "Markets" && (<><path d="M3 3v18h18" /><path d="M18.7 8.3L12 15l-3.3-3.3L3 18" /></>)}', normalized)
+        self.assertIn('{item === "Orders" && (<><rect x="2" y="7" width="20" height="14" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></>)}', normalized)
+        self.assertNotRegex(normalized, re.compile(r'\{item === "Markets" && <path[\s\S]*?<path'))
+
+    def test_normalize_componentized_file_repairs_project_653_bare_jsx_array_map_expression(self):
+        source_path = REPO_ROOT / "generated" / "653" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/Dashboard.tsx", source)
+
+        self.assertIn("{/* Horizontal grid lines */}{[...Array(5)].map((_, i) => (", normalized)
+        self.assertNotIn("{/* Horizontal grid lines */}[...Array(5)].map((_, i) => (", normalized)
+        self.assertNotIn("</path>", normalized)
 
     def test_ensure_componentized_workspace_support_strips_main_entry_import_note_bleed(self):
         code_dir = _case_dir("componentized-runtime-main-entry-import-note-bleed")
