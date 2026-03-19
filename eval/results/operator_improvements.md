@@ -89,6 +89,15 @@ Use one section per experiment. Update this file before moving to the next arche
 - Notes: SVG fragment wrapping and void tag distinction fixed portfolio builds. Ecommerce builds have different failure patterns — likely needs ecommerce-specific investigation.
 - Next hypothesis: Investigate ecommerce-specific build failure patterns (CartDrawer, HashRouter issues).
 
+### Cycle 023 - 2026-03-19 09:00
+- Archetype: ecommerce (SVG void element fix + continued investigation)
+- Added SVG elements to VOID_JSX_ELEMENT_RE (circle, line, path, etc.)
+- Ecommerce: still 0/5 builds despite fix
+- Root cause: Gemini 2.5 Flash consistently produces minified single-line components for ecommerce (1000+ chars per line), plus CartProvider/Router context wrapping errors
+- This is a model-level quality issue specific to ecommerce's complexity (routing, cart state, multi-page)
+- Verdict: SVG void fix committed (helps other archetypes), ecommerce needs archetype-specific intervention
+- Next hypothesis: Simplify the ecommerce prompt to reduce routing/state complexity, or switch to a simpler ecommerce pattern without React Router.
+
 ### Cycle 002 - 2026-03-11 14:42
 - Archetype: saas_landing
 - Baseline average across 3 runs: 81.33
