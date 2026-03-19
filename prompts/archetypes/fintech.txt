@@ -71,6 +71,7 @@ STRUCTURAL REQUIREMENTS
 
 6. DATA DENSITY BELOW THE FOLD
 - Asset table with 6+ rows and columns for asset, price, change, holdings, value, signal.
+- Each asset row MUST include a mini sparkline SVG (30×12px or similar) showing a 7-point trend line next to the change column. This is a critical fintech differentiator.
 - Watchlist or order-book style side panel.
 - News/activity feed with 4+ timestamped items and source tags.
 - Include at least one unmistakably fintech-specific micro-surface below the fold: order book ladder, recent trades tape, analyst sentiment strip, or watchlist with sparklines.
@@ -108,3 +109,6 @@ SELF-CHECK BEFORE OUTPUT
 □ The page feels like a trading or market-monitoring product, not a general dashboard
 □ style.css only contains overrides, not a duplicate system
 □ No KPI, ticker, or table value can ever render as NaN, undefined, or blank during animation/update logic
+□ Every price, KPI value, delta, percentage, and table number uses font-family: 'JetBrains Mono' explicitly — NOT inherited from body
+□ Asset table rows have inline sparkline SVGs showing 7-point trend lines
+□ At least 2 panels have visible layered box-shadow (not flat borders only)
