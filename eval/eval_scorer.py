@@ -1,5 +1,5 @@
 """
-Vision-based design scoring using Gemini API.
+Vision-based design scoring using Gemini API or local Ollama.
 """
 
 import json
@@ -65,9 +65,10 @@ Output ONLY the JSON object. No markdown fences. No explanation outside the JSON
 
 
 class DesignScorer:
-    def __init__(self, genai_client, model: str = "gemini-2.5-flash"):
+    def __init__(self, genai_client, model: str = "gemini-2.5-flash", provider: dict = None):
         self.client = genai_client
         self.model = model
+        self.provider = provider  # {'type': 'ollama'|'gemini', 'provider': OllamaProvider|None}
 
     def _prepare_image(self, image_path: Path, max_bytes: int = 3_500_000, max_dimension: int = 7900) -> genai_types.Part:
         """Prepare an image as a Gemini API Part, resizing if needed."""
@@ -121,6 +122,66 @@ class DesignScorer:
         logger.info(f"Aggressively compressed to {len(compressed)} bytes")
         return genai_types.Part.from_bytes(data=compressed, mime_type="image/jpeg")
 
+    def _score_via_ollama(self, screenshot_path: Path, archetype: str) -> ScoringResult:
+        """Score using local Ollama vision model."""
+        ollama = self.provider["provider"]
+        rubric = build_rubric_text(archetype)
+
+        prompt = (
+            f"{SCORER_SYSTEM_PROMPT}\n\n"
+            f"{rubric}\n\n"
+            f"Score this screenshot for the '{archetype}' archetype. "
+            f"Output ONLY a JSON object with scores, issues, strengths, and specific_improvements."
+        )
+
+        raw_text = ollama.generate_with_image(prompt, screenshot_path, temperature=0.3)
+        return self._parse_score_response(raw_text)
+
+    def _parse_score_response(self, raw_text: str) -> ScoringResult:
+        """Parse JSON scoring response from either Gemini or Ollama."""
+        raw_text = raw_text.strip()
+        if raw_text.startswith("```"):
+            raw_text = raw_text.split("\n", 1)[1]
+            if raw_text.endswith("```"):
+                raw_text = raw_text[:-3]
+            raw_text = raw_text.strip()
+
+        try:
+            data = json.loads(raw_text)
+        except json.JSONDecodeError as e:
+            logger.warning(f"JSON parse failed, attempting recovery: {e}")
+            import re
+            score_pattern = re.compile(r'"(\w+)":\s*([\d.]+)')
+            matches = score_pattern.findall(raw_text)
+            score_keys = {d.name for d in DIMENSIONS}
+            extracted = {k: round(float(v)) for k, v in matches if k in score_keys}
+            if len(extracted) >= 4:
+                logger.info(f"Recovered {len(extracted)} scores from truncated JSON: {extracted}")
+                data = {"scores": extracted, "issues": [], "strengths": [], "specific_improvements": []}
+            else:
+                logger.error(f"Failed to parse scorer response: {e}\nRaw: {raw_text[:500]}")
+                return ScoringResult(
+                    scores={d.name: 0 for d in DIMENSIONS},
+                    weighted_total=0.0,
+                    issues=[f"Scorer parse error: {e}"],
+                    strengths=[],
+                    specific_improvements=[],
+                )
+
+        scores = data.get("scores", {})
+        weighted = compute_weighted_total(scores)
+
+        result = ScoringResult(
+            scores=scores,
+            weighted_total=weighted,
+            issues=data.get("issues", []),
+            strengths=data.get("strengths", []),
+            specific_improvements=data.get("specific_improvements", []),
+        )
+
+        logger.info(f"Score: {weighted}/100 — {scores}")
+        return result
+
     def score(
         self,
         screenshot_path: Path,
@@ -128,17 +189,12 @@ class DesignScorer:
         good_references: list[tuple[str, Path]] = None,
         bad_references: list[tuple[str, Path]] = None,
     ) -> ScoringResult:
-        """Score a screenshot using Gemini vision.
+        # Route to Ollama if provider is set
+        if self.provider and self.provider.get("type") == "ollama":
+            logger.info(f"Scoring via Ollama: {screenshot_path}")
+            return self._score_via_ollama(screenshot_path, archetype)
 
-        Args:
-            screenshot_path: Path to the generated app screenshot.
-            archetype: Archetype name (e.g., "dashboard", "game").
-            good_references: List of (label, path) tuples for good example images.
-            bad_references: List of (label, path) tuples for bad example images.
-
-        Returns:
-            ScoringResult with per-dimension scores and feedback.
-        """
+        # Legacy Gemini path (unchanged)
         contents = []
 
         contents.append(genai_types.Part.from_text(text="SCREENSHOT TO EVALUATE:"))
@@ -182,46 +238,4 @@ class DesignScorer:
         )
 
         raw_text = (getattr(response, "text", "") or "").strip()
-        # Strip markdown fences if present
-        if raw_text.startswith("```"):
-            raw_text = raw_text.split("\n", 1)[1]
-            if raw_text.endswith("```"):
-                raw_text = raw_text[:-3]
-            raw_text = raw_text.strip()
-
-        try:
-            data = json.loads(raw_text)
-        except json.JSONDecodeError as e:
-            # Try to recover truncated JSON by extracting scores with regex
-            logger.warning(f"JSON parse failed, attempting recovery: {e}")
-            import re
-            score_pattern = re.compile(r'"(\w+)":\s*([\d.]+)')
-            matches = score_pattern.findall(raw_text)
-            score_keys = {d.name for d in DIMENSIONS}
-            extracted = {k: round(float(v)) for k, v in matches if k in score_keys}
-            if len(extracted) >= 4:
-                logger.info(f"Recovered {len(extracted)} scores from truncated JSON: {extracted}")
-                data = {"scores": extracted, "issues": [], "strengths": [], "specific_improvements": []}
-            else:
-                logger.error(f"Failed to parse scorer response: {e}\nRaw: {raw_text[:500]}")
-                return ScoringResult(
-                    scores={d.name: 0 for d in DIMENSIONS},
-                    weighted_total=0.0,
-                    issues=[f"Scorer parse error: {e}"],
-                    strengths=[],
-                    specific_improvements=[],
-                )
-
-        scores = data.get("scores", {})
-        weighted = compute_weighted_total(scores)
-
-        result = ScoringResult(
-            scores=scores,
-            weighted_total=weighted,
-            issues=data.get("issues", []),
-            strengths=data.get("strengths", []),
-            specific_improvements=data.get("specific_improvements", []),
-        )
-
-        logger.info(f"Score: {weighted}/100 — {scores}")
-        return result
+        return self._parse_score_response(raw_text)

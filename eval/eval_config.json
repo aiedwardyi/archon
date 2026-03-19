@@ -28,5 +28,10 @@
   "improver_model": "gemini-2.5-flash",
   "max_reference_images": 4,
   "build_timeout_seconds": 600,
-  "poll_interval_seconds": 3.0
+  "poll_interval_seconds": 3.0,
+  "scorer_provider": "ollama",
+  "improver_provider": "ollama",
+  "local_scorer_model": "qwen2.5vl:7b",
+  "local_improver_model": "gemma3:12b",
+  "ollama_base_url": "http://localhost:11434"
 }

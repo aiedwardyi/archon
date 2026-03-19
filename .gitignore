@@ -92,3 +92,10 @@ test-results/
 # Eval loop runtime files
 *.pid
 *.stop
+
+# Backend log/pid files at repo root
+backend-*.log
+backend-*.pid
+http-test.*.log
+operator-loop.*.log
+operator-loop.pid

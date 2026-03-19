@@ -1,5 +1,6 @@
 """
-Gemini-based prompt rewriter — takes scoring results and rewrites archetype sections.
+Prompt rewriter — takes scoring results and rewrites archetype sections.
+Supports Gemini (cloud) and Ollama (local) backends.
 """
 
 import json
@@ -62,9 +63,10 @@ Output ONLY the rewritten section. No explanation. No markdown fences."""
 
 
 class PromptImprover:
-    def __init__(self, genai_client, model: str = "gemini-2.5-flash"):
+    def __init__(self, genai_client, model: str = "gemini-2.5-flash", provider: dict = None):
         self.client = genai_client
         self.model = model
+        self.provider = provider  # {'type': 'ollama'|'gemini', 'provider': OllamaProvider|None}
 
     def _prepare_image(self, image_path: Path, max_bytes: int = 3_500_000, max_dimension: int = 7900) -> genai_types.Part:
         """Prepare an image as a Gemini API Part, resizing if needed."""
@@ -106,6 +108,63 @@ class PromptImprover:
         img.save(buf, format="JPEG", quality=60)
         return genai_types.Part.from_bytes(data=buf.getvalue(), mime_type="image/jpeg")
 
+    def _improve_via_ollama(
+        self,
+        archetype: str,
+        current_prompt: str,
+        scores: dict,
+    ) -> str:
+        """Rewrite prompt using local Ollama text model (no vision)."""
+        ollama = self.provider["provider"]
+
+        dim_scores = scores.get("scores", {})
+        weak_dims = [d for d, s in dim_scores.items() if s <= 6]
+        strong_dims = [d for d, s in dim_scores.items() if s >= 8]
+
+        prompt = (
+            f"CURRENT ARCHETYPE PROMPT SECTION (for '{archetype}'):\n"
+            f"```\n{current_prompt}\n```\n\n"
+            f"SCORING RESULTS FROM LATEST BUILD:\n{json.dumps(scores, indent=2)}\n\n"
+            f"WEAK dimensions (score <= 6, MUST improve): {', '.join(weak_dims) if weak_dims else 'none'}\n"
+            f"STRONG dimensions (score >= 8, PRESERVE these): {', '.join(strong_dims) if strong_dims else 'none'}\n\n"
+            f"REWRITE the archetype prompt section to fix the weak dimensions and improve scores toward 90+.\n"
+            f"Make SURGICAL additions — do NOT remove instructions producing high scores.\n"
+            f"Output ONLY the rewritten section text, nothing else."
+        )
+
+        raw = ollama.generate_text(prompt, system=IMPROVER_SYSTEM_PROMPT, temperature=0.4)
+        return self._clean_improved_prompt(raw, current_prompt)
+
+    def _clean_improved_prompt(self, new_prompt: str, current_prompt: str) -> str:
+        """Strip fences, validate header, guard against truncation."""
+        new_prompt = new_prompt.strip()
+        if new_prompt.startswith("```"):
+            new_prompt = new_prompt.split("\n", 1)[1]
+            if new_prompt.endswith("```"):
+                new_prompt = new_prompt[:-3]
+            new_prompt = new_prompt.strip()
+
+        if "═" not in new_prompt:
+            logger.warning("Improved prompt missing header delimiters — prepending original header")
+            lines = current_prompt.split("\n")
+            header_lines = []
+            for line in lines:
+                header_lines.append(line)
+                if line.startswith("# ═") and len(header_lines) >= 3:
+                    break
+            header = "\n".join(header_lines)
+            new_prompt = header + "\n\n" + new_prompt
+
+        if len(new_prompt) < len(current_prompt) * 0.5:
+            logger.warning(
+                f"Improved prompt too short ({len(new_prompt)} chars vs {len(current_prompt)} original) "
+                f"— likely truncated. Keeping original prompt."
+            )
+            return current_prompt
+
+        logger.info(f"Improved prompt generated ({len(new_prompt)} chars)")
+        return new_prompt
+
     def improve(
         self,
         archetype: str,
@@ -114,18 +173,12 @@ class PromptImprover:
         screenshot_path: Path = None,
         good_references: list[tuple[str, Path]] = None,
     ) -> str:
-        """Rewrite an archetype prompt section to fix identified issues.
+        # Route to Ollama if provider is set
+        if self.provider and self.provider.get("type") == "ollama":
+            logger.info(f"Improving via Ollama for '{archetype}'")
+            return self._improve_via_ollama(archetype, current_prompt, scores)
 
-        Args:
-            archetype: Archetype name.
-            current_prompt: Current archetype section text from engineer.txt.
-            scores: Scoring results dict (from ScoringResult.to_dict()).
-            screenshot_path: Path to the screenshot that was scored.
-            good_references: List of (label, path) for good example images.
-
-        Returns:
-            Rewritten archetype section text.
-        """
+        # Legacy Gemini path (unchanged)
         contents = []
 
         contents.append(genai_types.Part.from_text(text=
@@ -188,33 +241,4 @@ class PromptImprover:
         )
 
         new_prompt = (getattr(response, "text", "") or "").strip()
-
-        # Strip markdown fences if the model wrapped them
-        if new_prompt.startswith("```"):
-            new_prompt = new_prompt.split("\n", 1)[1]
-            if new_prompt.endswith("```"):
-                new_prompt = new_prompt[:-3]
-            new_prompt = new_prompt.strip()
-
-        # Validate that it still has the header
-        if "═══" not in new_prompt:
-            logger.warning("Improved prompt missing header delimiters — prepending original header")
-            lines = current_prompt.split("\n")
-            header_lines = []
-            for line in lines:
-                header_lines.append(line)
-                if line.startswith("# ═") and len(header_lines) >= 3:
-                    break
-            header = "\n".join(header_lines)
-            new_prompt = header + "\n\n" + new_prompt
-
-        # Guard: if new prompt is less than 50% of original, it was truncated — keep original
-        if len(new_prompt) < len(current_prompt) * 0.5:
-            logger.warning(
-                f"Improved prompt too short ({len(new_prompt)} chars vs {len(current_prompt)} original) "
-                f"— likely truncated. Keeping original prompt."
-            )
-            return current_prompt
-
-        logger.info(f"Improved prompt generated ({len(new_prompt)} chars)")
-        return new_prompt
+        return self._clean_improved_prompt(new_prompt, current_prompt)

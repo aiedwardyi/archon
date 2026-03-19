@@ -28,8 +28,9 @@ from typing import Any
 
 from google.genai import types as genai_types
 
-# Ensure eval/ is on the path
+# Ensure eval/ and repo root are on the path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from api_client import BuilderAPI, BuildError
 from eval_improver import PromptImprover
@@ -37,6 +38,7 @@ from eval_runner import get_genai_client, load_config, save_json
 from eval_scorer import DesignScorer
 from prompt_parser import PromptParser
 from reference_loader import ReferenceLoader
+from utils.model_provider import create_scorer_provider, create_improver_provider
 from screenshotter import Screenshotter
 
 logging.basicConfig(
@@ -523,7 +525,8 @@ def edit_engineer_section(
     if representative is None:
         raise RuntimeError("No representative baseline run available")
 
-    improver = PromptImprover(client, model=config.get("improver_model", "gemini-2.5-flash"))
+    improver_provider = create_improver_provider(config, genai_client=client)
+    improver = PromptImprover(client, model=config.get("improver_model", "gemini-2.5-flash"), provider=improver_provider)
     scores_payload = {
         "scores": sample_set.average_scores,
         "weighted_total": sample_set.average_total,
@@ -683,7 +686,8 @@ async def run_cycle(args: argparse.Namespace) -> dict[str, Any]:
     viewport = config.get("screenshot_viewport", [1440, 900])
     screenshotter = Screenshotter(viewport_width=viewport[0], viewport_height=viewport[1])
     client = get_genai_client()
-    scorer = DesignScorer(client, model=config.get("scorer_model", "gemini-2.5-flash"))
+    scorer_provider = create_scorer_provider(config, genai_client=client)
+    scorer = DesignScorer(client, model=config.get("scorer_model", "gemini-2.5-flash"), provider=scorer_provider)
     refs = ReferenceLoader()
     stamp = cycle_timestamp()
 
