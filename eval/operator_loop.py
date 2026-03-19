@@ -392,6 +392,7 @@ async def run_sample_builds(
     runs: int,
     phase: str,
     stamp: str,
+    skip_image_gen: bool = False,
 ) -> SampleSet:
     prompt = config["test_prompts"][archetype]
     wait_seconds = config.get("screenshot_wait_seconds", 3.0)
@@ -408,6 +409,7 @@ async def run_sample_builds(
             name=project_name,
             description=prompt,
             timeout=build_timeout,
+            skip_image_gen=skip_image_gen,
         )
         preview_url = build_result["preview_url"]
 
@@ -455,6 +457,7 @@ async def choose_weakest_archetype(
     scorer: DesignScorer,
     refs: ReferenceLoader,
     stamp: str,
+    skip_image_gen: bool = False,
 ) -> str:
     current_scores = {
         name: read_latest_weighted_total(name, tracked_archetypes=tracked_archetypes)
@@ -474,6 +477,7 @@ async def choose_weakest_archetype(
                 runs=1,
                 phase="refresh",
                 stamp=stamp,
+                skip_image_gen=skip_image_gen,
             )
             refreshed[archetype] = sample.average_total
         current_scores = refreshed
@@ -691,6 +695,8 @@ async def run_cycle(args: argparse.Namespace) -> dict[str, Any]:
     refs = ReferenceLoader()
     stamp = cycle_timestamp()
 
+    skip_image_gen = getattr(args, "skip_image_gen", False)
+
     weakest = args.archetype
     if not weakest:
         weakest = await choose_weakest_archetype(
@@ -702,6 +708,7 @@ async def run_cycle(args: argparse.Namespace) -> dict[str, Any]:
             scorer=scorer,
             refs=refs,
             stamp=stamp,
+            skip_image_gen=skip_image_gen,
         )
 
     baseline = await run_sample_builds(
@@ -714,6 +721,7 @@ async def run_cycle(args: argparse.Namespace) -> dict[str, Any]:
         runs=args.baseline_runs,
         phase="baseline",
         stamp=stamp,
+        skip_image_gen=skip_image_gen,
     )
     weak_dimensions = pick_weak_dimensions(baseline)
     edit_target, edit_path = choose_edit_target(weakest, weak_dimensions)
@@ -776,6 +784,7 @@ async def run_cycle(args: argparse.Namespace) -> dict[str, Any]:
         runs=args.baseline_runs,
         phase="b_test",
         stamp=stamp,
+        skip_image_gen=skip_image_gen,
     )
 
     delta = round(b_test.average_total - baseline.average_total, 2)
@@ -850,6 +859,7 @@ def main() -> None:
     parser.add_argument("--max-cycles", type=int, default=1, help="0 means run indefinitely")
     parser.add_argument("--sleep-seconds", type=int, default=30)
     parser.add_argument("--stop-on-error", action="store_true")
+    parser.add_argument("--skip-image-gen", action="store_true", help="Skip Design Agent image generation (eval cost savings)")
     args = parser.parse_args()
 
     asyncio.run(run_forever(args))

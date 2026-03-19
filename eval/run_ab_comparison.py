@@ -372,6 +372,177 @@ def compare_results(label_a: str, label_b: str):
     print(f"Report saved to: {report_path}")
 
 
+def run_provider_ab(screenshot_paths: list[str]):
+    """Score the same screenshots with both Gemini and Ollama, compare results."""
+    from eval_scorer import DesignScorer
+    from scoring_rubric import DIMENSIONS
+    from utils.model_provider import create_scorer_provider
+
+    config = json.loads(CONFIG_PATH.read_text())
+    client = get_genai_client()
+
+    # Build both providers
+    gemini_provider = {"type": "gemini", "provider": None}
+    ollama_provider = create_scorer_provider({**config, "scorer_provider": "ollama"})
+
+    gemini_scorer = DesignScorer(client, model=config.get("scorer_model", "gemini-2.5-flash"), provider=gemini_provider)
+    ollama_scorer = DesignScorer(client, model=config.get("scorer_model", "gemini-2.5-flash"), provider=ollama_provider)
+
+    results = []
+    for screenshot_str in screenshot_paths:
+        screenshot_path = Path(screenshot_str).resolve()
+        if not screenshot_path.exists():
+            log.error(f"Screenshot not found: {screenshot_path}")
+            continue
+
+        # Infer archetype from parent directory name
+        archetype = screenshot_path.parent.name
+        if archetype in ("results", "eval"):
+            archetype = "dashboard"
+        log.info(f"\n{'='*60}")
+        log.info(f"Scoring: {screenshot_path.name} (archetype={archetype})")
+        log.info(f"{'='*60}")
+
+        entry = {"path": str(screenshot_path), "archetype": archetype}
+
+        # Score with Gemini
+        log.info("  Scoring with Gemini...")
+        try:
+            gemini_result = gemini_scorer.score(screenshot_path, archetype)
+            entry["gemini_total"] = gemini_result.weighted_total
+            entry["gemini_scores"] = gemini_result.scores
+            log.info(f"  Gemini: {gemini_result.weighted_total:.1f}")
+        except Exception as e:
+            log.error(f"  Gemini scoring failed: {e}")
+            entry["gemini_total"] = None
+            entry["gemini_scores"] = {}
+
+        # Score with Ollama
+        log.info("  Scoring with Ollama...")
+        try:
+            ollama_result = ollama_scorer.score(screenshot_path, archetype)
+            entry["ollama_total"] = ollama_result.weighted_total
+            entry["ollama_scores"] = ollama_result.scores
+            log.info(f"  Ollama: {ollama_result.weighted_total:.1f}")
+        except Exception as e:
+            log.error(f"  Ollama scoring failed: {e}")
+            entry["ollama_total"] = None
+            entry["ollama_scores"] = {}
+
+        # Compute delta
+        if entry["gemini_total"] is not None and entry["ollama_total"] is not None:
+            entry["delta"] = round(entry["ollama_total"] - entry["gemini_total"], 1)
+        else:
+            entry["delta"] = None
+
+        results.append(entry)
+
+    # Print comparison table
+    print(f"\n{'='*70}")
+    print("PROVIDER A/B COMPARISON: Gemini vs Ollama")
+    print(f"{'='*70}")
+    print(f"{'Archetype':<14} {'Gemini':>8} {'Ollama':>8} {'Delta':>8} {'Status':>10}")
+    print("-" * 52)
+
+    deltas = []
+    for r in results:
+        g = f"{r['gemini_total']:.1f}" if r["gemini_total"] is not None else "FAIL"
+        o = f"{r['ollama_total']:.1f}" if r["ollama_total"] is not None else "FAIL"
+        d = f"{r['delta']:+.1f}" if r["delta"] is not None else "-"
+        status = "PASS" if r["delta"] is not None and abs(r["delta"]) <= 15 else "FAIL"
+        if r["delta"] is not None:
+            deltas.append(r["delta"])
+        print(f"{r['archetype']:<14} {g:>8} {o:>8} {d:>8} {status:>10}")
+
+    if deltas:
+        avg_delta = sum(deltas) / len(deltas)
+        max_delta = max(abs(d) for d in deltas)
+        all_pass = all(abs(d) <= 15 for d in deltas)
+        bias = "Ollama higher" if avg_delta > 0 else "Ollama lower" if avg_delta < 0 else "neutral"
+        print("-" * 52)
+        print(f"{'AVG DELTA':<14} {'':>8} {'':>8} {avg_delta:>+8.1f}")
+        print(f"{'MAX |DELTA|':<14} {'':>8} {'':>8} {max_delta:>8.1f}")
+        print(f"\nBias direction: {bias}")
+        print(f"Overall: {'VALIDATED' if all_pass else 'NOT VALIDATED'} (threshold: +/-15 pts)")
+
+    # Per-dimension comparison
+    print(f"\n{'='*70}")
+    print("PER-DIMENSION AVERAGES")
+    print(f"{'='*70}")
+    print(f"{'Dimension':<22} {'Gemini':>8} {'Ollama':>8} {'Delta':>8}")
+    print("-" * 48)
+    for dim in DIMENSIONS:
+        g_vals = [r["gemini_scores"].get(dim.name, 0) for r in results if r["gemini_scores"]]
+        o_vals = [r["ollama_scores"].get(dim.name, 0) for r in results if r["ollama_scores"]]
+        g_avg = sum(g_vals) / len(g_vals) if g_vals else 0
+        o_avg = sum(o_vals) / len(o_vals) if o_vals else 0
+        print(f"{dim.name:<22} {g_avg:>8.1f} {o_avg:>8.1f} {o_avg - g_avg:>+8.1f}")
+
+    # Save markdown report
+    report_path = Path(__file__).parent / "results" / "ollama_ab_calibration.md"
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+
+    lines = [
+        "# Ollama A/B Calibration Results",
+        "",
+        f"**Date:** {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+        f"**Ollama model:** {config.get('local_scorer_model', 'qwen2.5vl:7b')}",
+        f"**Gemini model:** {config.get('scorer_model', 'gemini-2.5-flash')}",
+        f"**Threshold:** +/-15 pts per screenshot",
+        "",
+        "## Per-Screenshot Results",
+        "",
+        "| Archetype | Gemini | Ollama | Delta | Status |",
+        "|-----------|-------:|-------:|------:|--------|",
+    ]
+    for r in results:
+        g = f"{r['gemini_total']:.1f}" if r["gemini_total"] is not None else "FAIL"
+        o = f"{r['ollama_total']:.1f}" if r["ollama_total"] is not None else "FAIL"
+        d = f"{r['delta']:+.1f}" if r["delta"] is not None else "-"
+        status = "PASS" if r["delta"] is not None and abs(r["delta"]) <= 15 else "FAIL"
+        lines.append(f"| {r['archetype']} | {g} | {o} | {d} | {status} |")
+
+    if deltas:
+        lines.extend([
+            "",
+            f"**Average delta:** {avg_delta:+.1f}",
+            f"**Max |delta|:** {max_delta:.1f}",
+            f"**Bias direction:** {bias}",
+            f"**Overall validation:** {'PASS' if all_pass else 'FAIL'}",
+        ])
+
+    lines.extend([
+        "",
+        "## Per-Dimension Averages",
+        "",
+        "| Dimension | Gemini | Ollama | Delta |",
+        "|-----------|-------:|-------:|------:|",
+    ])
+    for dim in DIMENSIONS:
+        g_vals = [r["gemini_scores"].get(dim.name, 0) for r in results if r["gemini_scores"]]
+        o_vals = [r["ollama_scores"].get(dim.name, 0) for r in results if r["ollama_scores"]]
+        g_avg = sum(g_vals) / len(g_vals) if g_vals else 0
+        o_avg = sum(o_vals) / len(o_vals) if o_vals else 0
+        lines.append(f"| {dim.name} | {g_avg:.1f} | {o_avg:.1f} | {o_avg - g_avg:+.1f} |")
+
+    lines.extend([
+        "",
+        "## Interpretation",
+        "",
+        "- Delta = Ollama - Gemini (positive = Ollama scores higher)",
+        "- Per-screenshot |delta| <= 15 = PASS",
+        "- Consistent bias direction noted above",
+    ])
+
+    # Save raw JSON too
+    raw_path = report_path.with_suffix(".json")
+    raw_path.write_text(json.dumps(results, indent=2, default=str))
+
+    report_path.write_text("\n".join(lines))
+    print(f"\nReport saved to: {report_path}")
+    print(f"Raw data saved to: {raw_path}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="A/B eval comparison")
     sub = parser.add_subparsers(dest="command")
@@ -388,12 +559,18 @@ def main():
     cmp_p.add_argument("label_a", help="First label (shown as column A)")
     cmp_p.add_argument("label_b", help="Second label (shown as column B)")
 
+    # Provider A/B command
+    pab_p = sub.add_parser("provider-ab", help="Score existing screenshots with both Gemini and Ollama")
+    pab_p.add_argument("screenshots", nargs="+", help="Paths to screenshot PNG files")
+
     args = parser.parse_args()
 
     if args.command == "run":
         run_eval(args.label, args.archetypes, args.builds_per_archetype, args.score_runs)
     elif args.command == "compare":
         compare_results(args.label_a, args.label_b)
+    elif args.command == "provider-ab":
+        run_provider_ab(args.screenshots)
     else:
         parser.print_help()
 

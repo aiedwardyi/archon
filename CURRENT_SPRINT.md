@@ -1,5 +1,37 @@
 # Current Sprint
 
+## Eval Calibration — `fix/eval-ollama-calibration` (Mar 19, 2026)
+
+### Ollama A/B Calibration — NOT VALIDATED
+
+Scored 5 existing screenshots with both Gemini and Ollama (qwen2.5vl:7b):
+
+| Archetype | Gemini | Ollama | Delta | Status |
+|-----------|--------|--------|-------|--------|
+| Portfolio | 56.5 | 61.5 | +5.0 | PASS |
+| Dashboard | 62.0 | 87.0 | +25.0 | FAIL |
+| Ecommerce | 57.0 | 70.5 | +13.5 | PASS |
+| Fintech | 67.5 | 84.5 | +17.0 | FAIL |
+| Game | 41.5 | 69.0 | +27.5 | FAIL |
+
+Average bias: +17.6 pts. 3/5 exceeded ±15 threshold. Ollama inflates scores across all dimensions, especially overall_impression (+2.8), typography (+2.4), layout_precision (+2.4).
+
+**Decision:** Switched to Gemini scoring (`EVAL_SCORER_PROVIDER=gemini` in backend/.env). Ollama config preserved for switch-back after GPU dust cleaning. Ollama still usable for relative A/B comparisons within itself.
+
+**Fixes applied:** Ollama image resize 1920→1280px (fixed OOM 500s), retry logic with backoff, new `provider-ab` subcommand in `eval/run_ab_comparison.py`.
+
+### Dashboard Blank Preview — Root Cause Found
+
+Project 610: `DashboardLayout.tsx` has orphaned sidebar-user div outside `<aside>` — missing `</div>` on first sidebar-group. Vite build fails → no `dist/index.html` → preview returns placeholder → scorer gives 10/100.
+
+**Next:** Add runtime recovery rule to `componentized_runtime.py` for this JSX corruption pattern (Codex task).
+
+### Skip Image Gen — Implemented
+
+`--skip-image-gen` flag wired into `eval_loop.py` and `operator_loop.py`. Skips entire Design Agent block. Asset filler covers image gaps. Saves ~$0.05 + ~30s per build.
+
+---
+
 ## Branch Alignment — `eval/loops`
 
 ### March 19, 2026 — Eval Loop Quality Improvements (Complete)
@@ -44,6 +76,33 @@ Work on `eval/loops` branch — 17 commits pushed. Focused on componentized buil
 - Alpine.js → React state swap in `ecommerce.txt`
 
 **Next:** Offline open-source AI model integration.
+
+---
+
+## Branch — `feat/local-eval-models` (✅ Merged Mar 19, 2026)
+
+Local Ollama model support for eval scorer and improver. Enables 24/7 eval loops at zero API cost for scoring/improving.
+
+**What was done:**
+- `utils/model_provider.py` — NEW — `OllamaProvider` class + `create_scorer_provider()` + `create_improver_provider()` factory functions
+- `eval/eval_scorer.py` — UPDATED — `DesignScorer` accepts `provider` param, routes to `_score_via_ollama()` when type is ollama
+- `eval/eval_improver.py` — UPDATED — `PromptImprover` accepts `provider` param, routes to `_improve_via_ollama()` when type is ollama
+- `eval/operator_loop.py` — PATCHED — import + scorer/improver provider wiring
+- `eval/eval_config.json` — UPDATED — added scorer_provider, improver_provider, local model config fields
+- `.gitignore` — added patterns for temp log/pid files at repo root
+- Image resize (max 1920px) added to `OllamaProvider._resize_for_ollama()` to prevent vision model timeouts
+- Timeout bumped to 600s for Ollama vision requests
+
+**Config:** Set `EVAL_SCORER_PROVIDER=ollama` in `backend/.env` to use local models. Default `gemini` preserves backward compatibility.
+
+**Models:** qwen2.5vl:7b (scorer/vision), gemma3:12b (improver/text) on Home PC RTX 3080
+
+**Verified:** Ollama routing confirmed in logs. Build + screenshot + Ollama scoring completed successfully.
+
+**Still needed:**
+- A/B calibration: score 5 screenshots with both Gemini and Ollama, compare (within ±15 pts = good)
+- Dashboard blank preview investigation (scoring 10/100 — build completes but renders blank, NOT Ollama-related)
+- Skip image generation in eval mode (Option A from planning — zero cost, use asset filler only)
 
 ---
 
