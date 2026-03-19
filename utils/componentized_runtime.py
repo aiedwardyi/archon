@@ -5315,20 +5315,27 @@ def _repair_jsx_return_unclosed_tags(source: str) -> str:
     in_return = False
     return_tag_stack: list[str] = []
     return_indent = ""
+    # Stack of saved contexts for nested JSX blocks (e.g. .map(() => (...)))
+    saved_contexts: list[tuple[list[str], str]] = []
 
     for i, line in enumerate(lines):
         stripped = line.strip()
 
-        # Detect start of return (
-        if re.match(r"^\s*return\s*\(", stripped):
+        # Detect start of return ( or arrow function JSX ( => ( )
+        if re.match(r"^\s*return\s*\(", stripped) or (
+            in_return and re.search(r"=>\s*\(\s*$", stripped)
+        ):
+            if in_return:
+                # Save current context for nested JSX (e.g., .map callback)
+                saved_contexts.append((return_tag_stack, return_indent))
             in_return = True
             return_tag_stack = []
             return_indent = re.match(r"(\s*)", line).group(1)
             result_lines.append(line)
             continue
 
-        # Detect end of return block: line is just ); or  );
-        if in_return and re.match(r"^\s*\);?\s*$", stripped):
+        # Detect end of return block: line is just ); or )) or ))}
+        if in_return and re.match(r"^\s*\)+[;,}]?\s*$", stripped):
             # Insert missing closing tags before );
             if return_tag_stack:
                 # Determine indentation: use indent of the ); line + some offset
@@ -5337,7 +5344,11 @@ def _repair_jsx_return_unclosed_tags(source: str) -> str:
                 for tag in reversed(return_tag_stack):
                     result_lines.append(f"{close_indent}  </{tag}>")
                 return_tag_stack = []
-            in_return = False
+            # Restore saved context if we were in a nested JSX block
+            if saved_contexts:
+                return_tag_stack, return_indent = saved_contexts.pop()
+            else:
+                in_return = False
             result_lines.append(line)
             continue
 
