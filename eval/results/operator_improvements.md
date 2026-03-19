@@ -98,6 +98,15 @@ Use one section per experiment. Update this file before moving to the next arche
 - Verdict: SVG void fix committed (helps other archetypes), ecommerce needs archetype-specific intervention
 - Next hypothesis: Simplify the ecommerce prompt to reduce routing/state complexity, or switch to a simpler ecommerce pattern without React Router.
 
+### Cycle 024 - 2026-03-19 11:00
+- Archetype: fintech (self-check items reverted), ecommerce (Alpine→React swap tested)
+- Fintech with self-check items: 63.5 (WORSE than 71.0 baseline — reverted)
+- Ecommerce with Alpine→React swap: still 0/5 builds
+- .map() callback JSX repair: committed (fixes unclosed tags in array renders)
+- Verdict: ALL fintech prompt changes reverted. Ecommerce Alpine→React swap kept but doesn't fix builds.
+- Key insight: The ORIGINAL archetype prompts (written by Codex) are already well-tuned. ANY additions — even self-check items — regress quality. The only safe place for additions is engineer_componentized.txt (the base engineer prompt), not archetype-specific files.
+- Next hypothesis: Focus on build reliability (normalizer fixes) rather than prompt tuning. The normalizer improvements have been the most effective lever.
+
 ### Cycle 002 - 2026-03-11 14:42
 - Archetype: saas_landing
 - Baseline average across 3 runs: 81.33
