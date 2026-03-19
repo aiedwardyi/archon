@@ -81,6 +81,7 @@ flask_server.log
 
 # Temporary local artifacts
 tmp_*.log
+tmp_*.png
 tmp-*.log
 /frontend-consumer-*.png
 .tmp-*/

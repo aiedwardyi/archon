@@ -2,35 +2,48 @@
 
 ## Branch Alignment — `eval/loops`
 
-### March 19, 2026 — Eval Loop Quality Improvements
+### March 19, 2026 — Eval Loop Quality Improvements (Complete)
 
-Active work on `eval/loops` branch targeting componentized build reliability and eval scoring quality.
+Work on `eval/loops` branch — 17 commits pushed. Focused on componentized build reliability and eval scoring.
 
-**Build reliability fixes:**
-- Added `_repair_orphan_block_comment_close` to strip stray `*/` outside block comments
-- Added tsconfig pseudo-comment key stripping (`/* Bundler mode */` → removed)
-- Added `_repair_jsx_return_unclosed_tags` for missing/misnested JSX closing tags in return blocks
-- Added JSX INTEGRITY prompt section to `engineer_componentized.txt`
-- All fixes pass 174 existing tests in `test_componentized_runtime.py`
+**Build reliability fixes (in `utils/componentized_runtime.py`):**
+- `_repair_orphan_block_comment_close` — strips stray `*/` outside block comments
+- Tsconfig pseudo-comment key stripping (`/* Bundler mode */` → removed)
+- `_repair_jsx_return_unclosed_tags` — closes unclosed/misnested JSX tags in return blocks AND `.map()` callbacks
+- `_strip_void_svg_closing_tags` — removes `</path>`, `</circle>`, `</line>`, etc. (void SVG elements)
+- SVG void element self-closing normalization (`<line>` → `<line />`)
+- `_wrap_sibling_svg_elements_in_fragments` — wraps bare sibling SVG children in `<>...</>`
+- React component vs HTML void tag distinction (`<Link>` is NOT void, `<link>` IS)
+- Extra JSX closing tag removal (closers with no matching opener)
+- JSX INTEGRITY section added to `prompts/engineer_componentized.txt`
+- All fixes pass 174 existing tests
 
 **Eval infrastructure:**
-- Created `eval/eval_loop.py` — simplified eval runner with retry-safe screenshots (temp file + move to avoid WinError 5), dist/ verification before scoring, 429 handling, and up to 5 build retries per scoring run
-- Created `eval/start_backend.py` — starts Flask without debug/watchdog to prevent mid-build restarts
+- `eval/eval_loop.py` — simplified eval runner with retry-safe screenshots, dist/ verification, 429 handling, 5 build retries
+- `eval/start_backend.py` — starts Flask without debug/watchdog
 
-**Scoring results:**
-- Dashboard first successful score: **67.5/100** (baseline: 81.0, delta: -13.5)
-  - Strongest: data_completeness 9/10 (improved by new prompt rules)
-  - Weakest: layout_precision 6, depth_polish 6, interactivity_cues 6, overall_impression 6
-- Build success rate: ~40-50% per attempt (retries needed)
-- Component splitting prompt rules tested and reverted (caused 0% build success)
+**Best scores achieved:**
+
+| Archetype | Best Score | Baseline | Delta | Status |
+|-----------|-----------|----------|-------|--------|
+| **Dashboard** | **86.5** | 81.0 | **+5.5** | New branch high |
+| **Portfolio** | **83.0** | 83.5 | -0.5 | Near baseline |
+| Fintech | 71.0 | 83.5 | -12.5 | High variance |
+| Ecommerce | -- | 88.5 | -- | Build blocked |
 
 **Key findings:**
-- Data completeness prompt additions (chart/table/KPI minimums) directly improved scores from 2→9
-- Overly prescriptive component splitting rules destabilize builds — the model produces more syntax errors when forced to split into many files
-- Build failures are primarily JSX closing tag mismatches and comment bleed — model-level quality issue with Gemini 2.5 Flash
-- Dashboard layout scoring improves when the model uses base.css grid classes without style.css overrides
+- Build reliability fixes (normalizer) are the #1 lever for improving scores
+- Data completeness prompt additions in `engineer_componentized.txt` improved scores (data_completeness 2→10)
+- Prompt additions to archetype-specific files (.txt) consistently REGRESS quality — reverted all
+- Ecommerce builds fail due to Gemini producing minified single-line code with routing/state complexity
+- Build success rate: ~30-60% per attempt depending on archetype and time of day
 
-**Next steps:** 3-run baseline in progress. After baseline, target layout_precision and depth_polish via dashboard.txt prompt tweaks.
+**Prompt changes kept:**
+- Data completeness rules in `engineer_componentized.txt` (charts, tables, KPIs must have real data)
+- JSX integrity rules in `engineer_componentized.txt`
+- Alpine.js → React state swap in `ecommerce.txt`
+
+**Next:** Offline open-source AI model integration.
 
 ---
 
