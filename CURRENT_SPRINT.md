@@ -1,5 +1,37 @@
 # Current Sprint
 
+## Eval Calibration — `fix/eval-ollama-calibration` (Mar 19, 2026)
+
+### Ollama A/B Calibration — NOT VALIDATED
+
+Scored 5 existing screenshots with both Gemini and Ollama (qwen2.5vl:7b):
+
+| Archetype | Gemini | Ollama | Delta | Status |
+|-----------|--------|--------|-------|--------|
+| Portfolio | 56.5 | 61.5 | +5.0 | PASS |
+| Dashboard | 62.0 | 87.0 | +25.0 | FAIL |
+| Ecommerce | 57.0 | 70.5 | +13.5 | PASS |
+| Fintech | 67.5 | 84.5 | +17.0 | FAIL |
+| Game | 41.5 | 69.0 | +27.5 | FAIL |
+
+Average bias: +17.6 pts. 3/5 exceeded ±15 threshold. Ollama inflates scores across all dimensions, especially overall_impression (+2.8), typography (+2.4), layout_precision (+2.4).
+
+**Decision:** Switched to Gemini scoring (`EVAL_SCORER_PROVIDER=gemini` in backend/.env). Ollama config preserved for switch-back after GPU dust cleaning. Ollama still usable for relative A/B comparisons within itself.
+
+**Fixes applied:** Ollama image resize 1920→1280px (fixed OOM 500s), retry logic with backoff, new `provider-ab` subcommand in `eval/run_ab_comparison.py`.
+
+### Dashboard Blank Preview — Root Cause Found
+
+Project 610: `DashboardLayout.tsx` has orphaned sidebar-user div outside `<aside>` — missing `</div>` on first sidebar-group. Vite build fails → no `dist/index.html` → preview returns placeholder → scorer gives 10/100.
+
+**Next:** Add runtime recovery rule to `componentized_runtime.py` for this JSX corruption pattern (Codex task).
+
+### Skip Image Gen — Implemented
+
+`--skip-image-gen` flag wired into `eval_loop.py` and `operator_loop.py`. Skips entire Design Agent block. Asset filler covers image gaps. Saves ~$0.05 + ~30s per build.
+
+---
+
 ## Branch Alignment — `eval/loops`
 
 ### March 19, 2026 — Eval Loop Quality Improvements (Complete)
