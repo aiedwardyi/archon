@@ -2207,6 +2207,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _strip_componentized_inline_script_tags(updated)
         updated = _strip_componentized_alpine_jsx_directives(updated)
         updated = _normalize_componentized_void_jsx_elements(updated)
+        updated = _strip_void_svg_closing_tags(updated)
         updated = _wrap_sibling_svg_elements_in_fragments(updated)
         updated = _normalize_componentized_declaration_boundaries(updated)
         updated = _hoist_componentized_chart_helper_declarations(updated)
@@ -5179,6 +5180,20 @@ def _normalize_componentized_void_jsx_elements(source: str) -> str:
         lambda match: f"<{match.group('tag')}{match.group('attrs').rstrip()} />",
         source,
     )
+
+
+def _strip_void_svg_closing_tags(source: str) -> str:
+    """Remove closing tags for SVG elements that are always void/self-closing.
+
+    The LLM sometimes writes <path d="..." /></path> or <circle .../></circle>.
+    The closing tags are invalid and cause build errors.
+    """
+    SVG_VOID = ("circle", "ellipse", "line", "path", "polygon", "polyline", "rect", "stop", "use")
+    pattern = re.compile(
+        r"</(?:" + "|".join(SVG_VOID) + r")\s*>",
+        re.IGNORECASE,
+    )
+    return pattern.sub("", source)
 
 
 def _wrap_sibling_svg_elements_in_fragments(source: str) -> str:
