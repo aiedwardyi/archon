@@ -144,3 +144,5 @@ SELF-CHECK BEFORE OUTPUT
 □ The right rail carries two visually distinct subsections or one split module with real weight
 □ Page titles, support-rail labels, and row actions feel domain-specific rather than template-like
 □ style.css is ONLY overrides (≤80 lines)
+□ KPI grid is 4 columns at 1440px — not collapsed to 1 or 2 columns
+□ Chart and activity feed sit side by side via .grid-2col, not stacked vertically

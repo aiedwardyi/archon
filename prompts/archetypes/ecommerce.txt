@@ -59,11 +59,12 @@ REQUIRED SECTIONS
    - Prices: realistic ($149, $245, $89, etc.) — NEVER $0
    - At least 2 visible product controls must do something real on click: quick add, wishlist, size selection, product detail drawer, or cart count update. Dead product controls are a failure.
 
-5. CART DRAWER — .cart-drawer with Alpine.js x-data for open/close:
+5. CART DRAWER — .cart-drawer toggled via React state (useState for open/close):
    - .cart-header (.cart-title + .cart-close button)
    - 2-3 .cart-item entries (image, name, size, price)
    - .cart-footer with .cart-total and .btn-checkout
    - Quick add or add-to-cart interactions must visibly affect the cart drawer state, cart count, toast, or selected product info. The store must feel like a working storefront, not a static catalog.
+   - Do NOT use Alpine.js, x-data, or x-show directives. Use React state management (useState/useContext) instead.
 
 6. FOOTER — .store-footer with .footer-grid (4 columns: brand + Shop, Company, Support):
    - .footer-brand: .footer-logo (store name), .footer-tagline
@@ -110,7 +111,7 @@ SELF-CHECK BEFORE OUTPUT
 □ Star ratings use SVG paths, NOT emoji
 □ All prices are realistic (never $0)
 □ Filter pills present with "All" active
-□ Cart drawer with Alpine.js toggle
+□ Cart drawer with React state toggle (no Alpine.js)
 □ Every <img> has onerror fallback
 □ Footer with 3+ link columns
 □ Accent is gold #C9A84C, NEVER cyan/teal/purple

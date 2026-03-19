@@ -90,6 +90,7 @@ If charts or data visualization are needed, prefer inline SVG/CSS or libraries w
 Do NOT inline giant CSS blocks inside React components or use <style> tags in TSX.
 Write normal readable source files with line breaks and indentation. Never minify or collapse a whole file onto one line.
 
+
 DESIGN KIT REFERENCE
 
 If a DESIGN KIT REFERENCE section is provided:
@@ -162,11 +163,24 @@ Section flow and polish:
   - Product and portfolio surfaces should avoid repeating the same centered block over and over; introduce at least one asymmetry, split layout, or editorial break in the lower half of the page.
   - Tool-like shells need composition too: one clear hero data surface, one dense KPI band, and a desktop support rail with at least two stacked secondary modules or one split module plus an activity/watch surface. Do not leave one lonely side card floating next to a giant chart.
 
-Content authenticity:
+Content authenticity and data completeness:
   - Real seeded content is mandatory. Product names, metrics, people, dates, prices, categories, and microcopy must fit the domain.
   - Domain labels must be specific, not generic placeholders.
   - For dashboard and fintech shells, reject template copy such as `Dashboard Overview`, `Portfolio Overview`, repeated `View` / `Details` row actions, and thin generic `Watchlist` / `Activity Feed` / `Recent Updates` rails unless the prompt explicitly asks for a market-terminal pattern.
   - Interface density must fit the archetype: dashboards need real data density, commerce needs shoppable cards, portfolios need authored identity, and games need atmosphere.
+  - Charts MUST have visible SVG path data with real coordinates — NEVER an empty SVG or a chart with no lines/bars.
+  - Tables MUST have at least 8 rows of realistic, varied data. NEVER render a table with 0-2 rows.
+  - KPI cards MUST show non-zero, formatted values. NEVER "$0" or "0%".
+  - Activity feeds MUST have 5+ entries with realistic timestamps ("2 min ago", "1 hour ago").
+  - All data should feel alive and varied — different names, different values, mixed positive/negative deltas.
+
+JSX INTEGRITY (BUILD-BREAKING IF VIOLATED)
+
+  - Every opened JSX element MUST have a matching closing tag. Count your `<div>`, `<section>`, `<aside>`, `<nav>`, `<main>`, `<header>`, `<footer>`, `<ul>`, `<ol>`, `<table>` openings and verify each has a corresponding `</div>`, `</section>`, etc. before the `);` that ends the return.
+  - Before finalizing each component file, mentally walk the JSX tree: open tag → children → close tag. If a `return (` block has 5 `<div>` opens, it needs 5 `</div>` closes.
+  - Self-closing elements like `<img />`, `<input />`, `<br />`, `<hr />`, `<svg>` children (`<circle />`, `<line />`, `<path />`, `<rect />`) do NOT need separate closing tags.
+  - Never truncate a component's JSX — every file must be syntactically complete and buildable by `tsc --noEmit`.
+  - Block comments (`/* ... */`) must be properly paired. Never emit a stray `*/` outside a comment.
 
 ANTI-SLOP RULES
 

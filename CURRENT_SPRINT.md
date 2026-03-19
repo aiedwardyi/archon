@@ -1,8 +1,55 @@
 # Current Sprint
 
+## Branch Alignment — `eval/loops`
+
+### March 19, 2026 — Eval Loop Quality Improvements (Complete)
+
+Work on `eval/loops` branch — 17 commits pushed. Focused on componentized build reliability and eval scoring.
+
+**Build reliability fixes (in `utils/componentized_runtime.py`):**
+- `_repair_orphan_block_comment_close` — strips stray `*/` outside block comments
+- Tsconfig pseudo-comment key stripping (`/* Bundler mode */` → removed)
+- `_repair_jsx_return_unclosed_tags` — closes unclosed/misnested JSX tags in return blocks AND `.map()` callbacks
+- `_strip_void_svg_closing_tags` — removes `</path>`, `</circle>`, `</line>`, etc. (void SVG elements)
+- SVG void element self-closing normalization (`<line>` → `<line />`)
+- `_wrap_sibling_svg_elements_in_fragments` — wraps bare sibling SVG children in `<>...</>`
+- React component vs HTML void tag distinction (`<Link>` is NOT void, `<link>` IS)
+- Extra JSX closing tag removal (closers with no matching opener)
+- JSX INTEGRITY section added to `prompts/engineer_componentized.txt`
+- All fixes pass 174 existing tests
+
+**Eval infrastructure:**
+- `eval/eval_loop.py` — simplified eval runner with retry-safe screenshots, dist/ verification, 429 handling, 5 build retries
+- `eval/start_backend.py` — starts Flask without debug/watchdog
+
+**Best scores achieved:**
+
+| Archetype | Best Score | Baseline | Delta | Status |
+|-----------|-----------|----------|-------|--------|
+| **Dashboard** | **86.5** | 81.0 | **+5.5** | New branch high |
+| **Portfolio** | **83.0** | 83.5 | -0.5 | Near baseline |
+| Fintech | 71.0 | 83.5 | -12.5 | High variance |
+| Ecommerce | -- | 88.5 | -- | Build blocked |
+
+**Key findings:**
+- Build reliability fixes (normalizer) are the #1 lever for improving scores
+- Data completeness prompt additions in `engineer_componentized.txt` improved scores (data_completeness 2→10)
+- Prompt additions to archetype-specific files (.txt) consistently REGRESS quality — reverted all
+- Ecommerce builds fail due to Gemini producing minified single-line code with routing/state complexity
+- Build success rate: ~30-60% per attempt depending on archetype and time of day
+
+**Prompt changes kept:**
+- Data completeness rules in `engineer_componentized.txt` (charts, tables, KPIs must have real data)
+- JSX integrity rules in `engineer_componentized.txt`
+- Alpine.js → React state swap in `ecommerce.txt`
+
+**Next:** Offline open-source AI model integration.
+
+---
+
 ## Branch Alignment — `feat/componentized-multi-run-experiments`
 
-Short status update for the active branch:
+Short status update for the previous active branch:
 - March 18, 2026 frontend artifact QA checkpoint: enterprise + studio artifact surfaces now send bearer auth on the paths that were still missing it, so version-report downloads, publish actions, governance PDF view/download actions, project/version fetches, and studio pipeline chat/iterate requests no longer fail with silent 401/404 regressions. Consumer-side chat persistence was also tightened so it waits for a real execution/version before saving message history, which removes the noisy early `chat-messages` 404 path on fresh builds. Local verification passed across all three frontends (`frontend`, `frontend-studio`, `frontend-consumer` production builds all green), and live smoke checks confirmed enterprise/studio code downloads, report downloads, published-site opens, and PDF view/download paths working again.
 - March 18, 2026 preview/governance follow-up: legacy single-page preview/published HTML now inlines `style.css` / `script.js` references even when generated pages omit the older `./` prefix, which fixes the consumer preview 404 family for older builds like project `711`. Focused backend regression coverage landed in `backend/tests/test_artifact_surface_hardening.py`. The governance insights copy was also tightened in `agents/insights_agent.py` so food-and-drink projects using the `restaurant` archetype no longer emit obviously wrong advice like “Include the restaurant name, cuisine type...” for bakery-style prompts; the new test lives in `tests/test_insights_agent.py`.
 - March 18, 2026 logistics-runtime follow-up: `utils/componentized_runtime.py` now repairs three more componentized comment-corruption families that were still escaping the workspace recovery layer: unterminated same-line block comments after real code, orphan `*/` splits inside dotted identifiers such as `item. */ type`, and inline comments that swallow a following helper call like `data.push(` plus its loop-closing brace. Focused regression coverage landed in `tests/test_componentized_runtime.py`, and a replay of the previously broken logistics workspace from project `691` now builds successfully after runtime repair instead of failing in `MainContent.tsx` / `RightRail.tsx`.

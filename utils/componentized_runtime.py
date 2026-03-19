@@ -222,7 +222,8 @@ INLINE_COMPONENT_SCRIPT_TAG_RE = re.compile(
     re.IGNORECASE,
 )
 VOID_JSX_ELEMENT_RE = re.compile(
-    r"(?<![A-Za-z0-9_\"'])<(?P<tag>area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)\b(?P<attrs>[^<>]*?)(?<!/)>",
+    r"(?<![A-Za-z0-9_\"'])<(?P<tag>area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr"
+    r"|circle|ellipse|line|path|polygon|polyline|rect|stop|use)\b(?P<attrs>[^<>]*?)(?<!/)>",
     re.IGNORECASE,
 )
 JSX_TAG_TOKEN_RE = re.compile(r"</?(?P<tag>[A-Za-z][A-Za-z0-9.-]*)\b[^>]*?/?>")
@@ -2206,6 +2207,8 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _strip_componentized_inline_script_tags(updated)
         updated = _strip_componentized_alpine_jsx_directives(updated)
         updated = _normalize_componentized_void_jsx_elements(updated)
+        updated = _strip_void_svg_closing_tags(updated)
+        updated = _wrap_sibling_svg_elements_in_fragments(updated)
         updated = _normalize_componentized_declaration_boundaries(updated)
         updated = _hoist_componentized_chart_helper_declarations(updated)
         updated = _repair_componentized_comment_note_continuations(updated)
@@ -2238,6 +2241,10 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _remove_componentized_orphan_jsx_closing_brace_lines(updated)
         updated = _repair_componentized_missing_sibling_closing_tags(updated)
         updated = _remove_componentized_duplicate_closing_tag_lines(updated)
+        # Last-resort: strip orphan */ closers that survived all prior repairs
+        updated = _repair_orphan_block_comment_close(updated)
+        # Last-resort: close unclosed JSX tags before ); at end of return blocks
+        updated = _repair_jsx_return_unclosed_tags(updated)
 
     return updated
 
@@ -2427,6 +2434,11 @@ def _normalize_componentized_tsconfig(source: str) -> str:
 
     compiler_options = data.setdefault("compilerOptions", {})
     if isinstance(compiler_options, dict):
+        # Strip comment-like keys the LLM sometimes emits as pseudo-comments
+        # e.g. "/* Bundler mode */": "", "/* Linting */": ""
+        comment_keys = [k for k in compiler_options if k.startswith("/*") or k.startswith("//")]
+        for k in comment_keys:
+            del compiler_options[k]
         compiler_options["noUnusedLocals"] = False
         compiler_options["noUnusedParameters"] = False
         compiler_options.setdefault("allowImportingTsExtensions", True)
@@ -5170,6 +5182,42 @@ def _normalize_componentized_void_jsx_elements(source: str) -> str:
     )
 
 
+def _strip_void_svg_closing_tags(source: str) -> str:
+    """Remove closing tags for SVG elements that are always void/self-closing.
+
+    The LLM sometimes writes <path d="..." /></path> or <circle .../></circle>.
+    The closing tags are invalid and cause build errors.
+    """
+    SVG_VOID = ("circle", "ellipse", "line", "path", "polygon", "polyline", "rect", "stop", "use")
+    pattern = re.compile(
+        r"</(?:" + "|".join(SVG_VOID) + r")\s*>",
+        re.IGNORECASE,
+    )
+    return pattern.sub("", source)
+
+
+def _wrap_sibling_svg_elements_in_fragments(source: str) -> str:
+    """Wrap bare sibling SVG child elements in React fragments.
+
+    Fixes the common LLM pattern where icon objects have:
+      name: ( <path .../><circle .../> )
+    which needs to be:
+      name: ( <><path .../><circle .../></> )
+    """
+    SVG_CHILDREN = frozenset({"path", "circle", "rect", "line", "polyline", "polygon", "ellipse", "g", "text", "use"})
+    SIBLING_SVG_RE = re.compile(
+        r"(?P<prefix>\(\s*\n?\s*)"
+        r"(?P<first><(?:" + "|".join(SVG_CHILDREN) + r")\b[^>]*/>)"
+        r"(?P<siblings>(?:\s*<(?:" + "|".join(SVG_CHILDREN) + r")\b[^>]*/>)+)"
+        r"(?P<suffix>\s*\))",
+    )
+
+    def _repl(match: re.Match[str]) -> str:
+        return f"{match.group('prefix')}<>{match.group('first')}{match.group('siblings')}</>{match.group('suffix')}"
+
+    return SIBLING_SVG_RE.sub(_repl, source)
+
+
 def _repair_componentized_css_data_uri_quote_bleed(source: str) -> str:
     return CSS_DATA_URI_ESCAPED_QUOTE_BLEED_RE.sub(r"\\'", source)
 
@@ -5198,6 +5246,202 @@ def _repair_componentized_jsx_handler_comment_close_bleed(source: str) -> str:
         lambda match: f"{match.group('prefix')}\n",
         source,
     )
+
+
+def _repair_orphan_block_comment_close(source: str) -> str:
+    """Remove stray */ that appear outside any block comment on a line.
+
+    Common LLM output pattern:
+      if (x) { /* note */ } */    ← the trailing */ is orphaned
+      return value; */             ← stray */ after code
+    """
+    lines = source.splitlines()
+    updated = []
+    for line in lines:
+        # Walk the line tracking comment depth
+        i = 0
+        depth = 0
+        segments: list[str] = []
+        last = 0
+        while i < len(line):
+            if line[i:i+2] == "/*":
+                depth += 1
+                i += 2
+            elif line[i:i+2] == "*/":
+                if depth > 0:
+                    depth -= 1
+                    i += 2
+                else:
+                    # Orphan */ — strip it
+                    segments.append(line[last:i])
+                    last = i + 2
+                    i += 2
+            elif line[i] == '"' or line[i] == "'" or line[i] == '`':
+                # Skip string literals
+                quote = line[i]
+                i += 1
+                while i < len(line) and line[i] != quote:
+                    if line[i] == '\\':
+                        i += 1
+                    i += 1
+                if i < len(line):
+                    i += 1
+            elif line[i:i+2] == "//":
+                # Rest of line is a line comment — stop
+                break
+            else:
+                i += 1
+        if last > 0:
+            segments.append(line[last:])
+            cleaned = "".join(segments).rstrip()
+            updated.append(cleaned)
+        else:
+            updated.append(line)
+    result = "\n".join(updated)
+    if source.endswith("\n") and not result.endswith("\n"):
+        result += "\n"
+    return result
+
+
+def _repair_jsx_return_unclosed_tags(source: str) -> str:
+    """Close unclosed JSX tags before ); at end of return blocks.
+
+    Handles the common LLM pattern where a component's return has
+    opening tags like <div><div><div> but jumps to ); without closing them.
+    """
+    VOID_TAGS = frozenset({
+        "area", "base", "br", "col", "embed", "hr", "img", "input",
+        "link", "meta", "param", "source", "track", "wbr",
+        "circle", "line", "path", "rect", "ellipse", "polygon", "polyline", "stop", "use",
+    })
+
+    JSX_OPEN_RE = re.compile(
+        r"<(?P<tag>[A-Za-z][A-Za-z0-9.]*)(?:\s|>|$)"
+    )
+    JSX_CLOSE_RE = re.compile(
+        r"</(?P<tag>[A-Za-z][A-Za-z0-9.]*)>"
+    )
+    JSX_SELF_CLOSE_RE = re.compile(
+        r"<[A-Za-z][A-Za-z0-9.]*(?:\s[^>]*)?\s*/>"
+    )
+
+    lines = source.splitlines()
+    result_lines: list[str] = []
+    in_return = False
+    return_tag_stack: list[str] = []
+    return_indent = ""
+    # Stack of saved contexts for nested JSX blocks (e.g. .map(() => (...)))
+    saved_contexts: list[tuple[list[str], str]] = []
+
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+
+        # Detect start of return ( or arrow function JSX ( => ( )
+        if re.match(r"^\s*return\s*\(", stripped) or (
+            in_return and re.search(r"=>\s*\(\s*$", stripped)
+        ):
+            if in_return:
+                # Save current context for nested JSX (e.g., .map callback)
+                saved_contexts.append((return_tag_stack, return_indent))
+            in_return = True
+            return_tag_stack = []
+            return_indent = re.match(r"(\s*)", line).group(1)
+            result_lines.append(line)
+            continue
+
+        # Detect end of return block: line is just ); or )) or ))}
+        if in_return and re.match(r"^\s*\)+[;,}]?\s*$", stripped):
+            # Insert missing closing tags before );
+            if return_tag_stack:
+                # Determine indentation: use indent of the ); line + some offset
+                close_indent = re.match(r"(\s*)", line).group(1)
+                # Close tags in reverse order
+                for tag in reversed(return_tag_stack):
+                    result_lines.append(f"{close_indent}  </{tag}>")
+                return_tag_stack = []
+            # Restore saved context if we were in a nested JSX block
+            if saved_contexts:
+                return_tag_stack, return_indent = saved_contexts.pop()
+            else:
+                in_return = False
+            result_lines.append(line)
+            continue
+
+        if in_return:
+            # Track open and close tags in LEFT-TO-RIGHT order
+            clean_line = JSX_SELF_CLOSE_RE.sub(lambda m: " " * len(m.group()), stripped)
+            clean_line = re.sub(r"['\"`][^'\"`]*['\"`]", lambda m: " " * len(m.group()), clean_line)
+
+            # Collect all open and close events with their positions
+            events: list[tuple[int, str, str]] = []  # (pos, "open"|"close", tag)
+            for m in JSX_OPEN_RE.finditer(clean_line):
+                tag = m.group("tag")
+                # Only treat lowercase HTML tags as void — capitalized React
+                # components like <Link> are never void even if the lowercase
+                # HTML equivalent (<link>) is.
+                is_html_void = tag[0].islower() and tag.lower() in VOID_TAGS
+                if not is_html_void:
+                    # Check self-closing on this line
+                    tag_region = clean_line[m.start():]
+                    if re.search(rf"<{re.escape(tag)}[^>]*/\s*>", tag_region):
+                        continue
+                    events.append((m.start(), "open", tag))
+            for m in JSX_CLOSE_RE.finditer(clean_line):
+                events.append((m.start(), "close", m.group("tag")))
+
+            # Process left to right
+            events.sort(key=lambda e: e[0])
+            insert_before: list[str] = []
+            for _, event_type, tag in events:
+                if event_type == "open":
+                    return_tag_stack.append(tag)
+                else:
+                    # If closing tag doesn't match stack top, close intermediates first
+                    # (handles misnested tags like <div><header>...</header></div>
+                    #  becoming </header> before </div>)
+                    found_idx = -1
+                    for j in range(len(return_tag_stack) - 1, -1, -1):
+                        if return_tag_stack[j] == tag:
+                            found_idx = j
+                            break
+                    if found_idx >= 0 and found_idx < len(return_tag_stack) - 1:
+                        # Close everything above the matching tag
+                        indent = re.match(r"(\s*)", line).group(1)
+                        for k in range(len(return_tag_stack) - 1, found_idx, -1):
+                            insert_before.append(f"{indent}</{return_tag_stack[k]}>")
+                        del return_tag_stack[found_idx + 1:]
+
+                    if found_idx == -1:
+                        # Extra closer with no matching opener — mark for removal
+                        line = re.sub(
+                            rf"</{re.escape(tag)}>",
+                            "",
+                            line,
+                            count=1,
+                        )
+                        continue
+
+                    # Pop matching open tag from stack (search from top)
+                    for j in range(len(return_tag_stack) - 1, -1, -1):
+                        if return_tag_stack[j] == tag:
+                            del return_tag_stack[j]
+                            break
+
+            # Insert any misnest-repair closing tags before the current line
+            if insert_before:
+                result_lines.extend(insert_before)
+
+        # Remove lines that became empty after stripping extra closers
+        stripped_line = line.strip()
+        if in_return and not stripped_line:
+            # Skip blank lines created by removing extra closers only if they're truly empty
+            pass  # still append — blank lines are fine
+        result_lines.append(line)
+
+    result = "\n".join(result_lines)
+    if source.endswith("\n") and not result.endswith("\n"):
+        result += "\n"
+    return result
 
 
 def _normalize_componentized_preview_router(source: str) -> str:
