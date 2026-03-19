@@ -31,6 +31,7 @@ from utils.componentized_runtime import (
     collect_componentized_editable_files,
     collect_componentized_reverse_dependents,
     ensure_componentized_workspace_support,
+    _normalize_componentized_file,
     _repair_componentized_orphaned_parent_family_children,
     _normalize_run_on_natural_language_notes,
     collect_existing_code_context,
@@ -2092,6 +2093,151 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertNotIn("str = />", app_source)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_normalize_componentized_file_repairs_project_617_ternary_branch_orphan_closers(self):
+        source_path = REPO_ROOT / "generated" / "617" / "v1" / "code" / "src" / "App.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/App.tsx", source)
+
+        self.assertRegex(
+            normalized,
+            re.compile(
+                r"\)\s*:\s*\(\s*<Dashboard activities=\{activities\} />\s*\)\}",
+                re.MULTILINE,
+            ),
+        )
+        self.assertNotIn("</Sidebar>", normalized)
+        self.assertNotIn("</TransactionForm>", normalized)
+        self.assertRegex(
+            normalized,
+            re.compile(
+                r"<TransactionForm[\s\S]*?/\>\s*</div>\s*</div>\s*</div>\s*\);\s*}",
+                re.MULTILINE,
+            ),
+        )
+
+    def test_normalize_componentized_file_repairs_project_617_logical_and_branch_orphan_closers(self):
+        source_path = REPO_ROOT / "generated" / "617" / "v1" / "code" / "src" / "components" / "TransactionForm.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/TransactionForm.tsx", source)
+
+        self.assertEqual(normalized.count("</form>"), 1)
+        self.assertRegex(
+            normalized,
+            re.compile(
+                r"\{type !== 'transfer' && \(\s*<div className=\"form-group\">[\s\S]*?</div>\s*\)\}",
+                re.MULTILINE,
+            ),
+        )
+
+    def test_normalize_componentized_file_repairs_project_618_multi_param_arrow_bleed(self):
+        source_path = REPO_ROOT / "generated" / "618" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/Dashboard.tsx", source)
+
+        self.assertEqual(normalized.count("chartData.values.map((val, i) => `L${"), 2)
+        self.assertNotIn("= />", normalized)
+        self.assertIn("currentPrice,", normalized)
+        self.assertNotIn("/* currentPrice, */", normalized)
+        self.assertEqual(normalized.count("/*"), normalized.count("*/"))
+
+    def test_normalize_componentized_file_repairs_project_625_nested_kpi_branch_orphan_closer(self):
+        source_path = REPO_ROOT / "generated" / "625" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/Dashboard.tsx", source)
+
+        self.assertNotRegex(
+            normalized,
+            re.compile(
+                r"\)\s*:\s*\(\s*<span[\s\S]*?</span>\s*</div>\s*\)\}",
+                re.MULTILINE,
+            ),
+        )
+        self.assertRegex(
+            normalized,
+            re.compile(
+                r"\{kpi.label === 'Best Performer' \? \([\s\S]*?\)\}\s*<span className=\{`kpi-delta[\s\S]*?</span>\s*</div>",
+                re.MULTILINE,
+            ),
+        )
+        self.assertIn("            </div>\n          ))}", normalized)
+        self.assertEqual(normalized.count("<>"), normalized.count("</>"))
+
+    def test_normalize_componentized_file_repairs_project_626_layout_main_wrapper_leak(self):
+        source_path = REPO_ROOT / "generated" / "626" / "v1" / "code" / "src" / "components" / "DashboardLayout.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/DashboardLayout.tsx", source)
+
+        self.assertRegex(
+            normalized,
+            re.compile(r"</aside>\s*<main className=\"main-content\">", re.MULTILINE),
+        )
+        self.assertRegex(
+            normalized,
+            re.compile(r"</main>\s*</div>\s*\);\s*$", re.MULTILINE),
+        )
+        self._assert_jsx_return_would_parse(normalized)
+
+    def test_normalize_componentized_file_repairs_project_628_relational_operator_bleed(self):
+        source_path = REPO_ROOT / "generated" / "628" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/Dashboard.tsx", source)
+
+        self.assertIn("stroke={ticker.delta >= 0 ? 'var(--accent)' : 'var(--danger)'}", normalized)
+        self.assertNotIn("/>=", normalized)
+
+    def test_normalize_componentized_file_repairs_project_634_orphan_prose_comment_line(self):
+        source_path = REPO_ROOT / "generated" / "634" / "v1" / "code" / "src" / "components" / "ChartCard.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/ChartCard.tsx", source)
+
+        self.assertNotRegex(normalized, re.compile(r"(?m)^Box \(0-1000 for x, 0-300 for y\)"))
+        self.assertIn("/* Box (0-1000 for x, 0-300 for y)", normalized)
+        self.assertEqual(normalized.count("/*"), normalized.count("*/"))
+
+    def test_normalize_componentized_file_repairs_project_634_duplicate_kpi_label_prop_collision(self):
+        source_path = REPO_ROOT / "generated" / "634" / "v1" / "code" / "src" / "components" / "KpiCards.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/KpiCards.tsx", source)
+
+        self.assertIn("label,", normalized)
+        self.assertNotIn("/* label, */", normalized)
+        self.assertEqual(normalized.count("label="), 4)
+        self.assertNotIn('valueFormat="percentage" label="ETH"', normalized)
+
+    def test_normalize_componentized_file_repairs_project_639_split_svg_fill_attribute(self):
+        source_path = REPO_ROOT / "generated" / "639" / "v1" / "code" / "src" / "components" / "Chart.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/Chart.tsx", source)
+
+        self.assertIn('fill="var(--accent)"', normalized)
+        self.assertNotRegex(normalized, re.compile(r"(?m)^\s*var\(--accent\)\"\s+stroke="))
+        self.assertIn('stroke="var(--card-bg)"', normalized)
+        self.assertIn("onMouseLeave={handleMouseLeave}", normalized)
+
+    def test_normalize_componentized_file_repairs_project_640_missing_logical_branch_closer(self):
+        source_path = REPO_ROOT / "generated" / "640" / "v1" / "code" / "src" / "App.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/App.tsx", source)
+
+        self.assertRegex(
+            normalized,
+            re.compile(
+                r"\{tooltip && \(\s*<div[\s\S]*?\{tooltip.content\}\s*</div>\s*\)\}",
+                re.MULTILINE,
+            ),
+        )
+        self._assert_jsx_return_would_parse(normalized)
 
     def test_ensure_componentized_workspace_support_strips_main_entry_import_note_bleed(self):
         code_dir = _case_dir("componentized-runtime-main-entry-import-note-bleed")
