@@ -222,7 +222,8 @@ INLINE_COMPONENT_SCRIPT_TAG_RE = re.compile(
     re.IGNORECASE,
 )
 VOID_JSX_ELEMENT_RE = re.compile(
-    r"(?<![A-Za-z0-9_\"'])<(?P<tag>area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)\b(?P<attrs>[^<>]*?)(?<!/)>",
+    r"(?<![A-Za-z0-9_\"'])<(?P<tag>area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr"
+    r"|circle|ellipse|line|path|polygon|polyline|rect|stop|use)\b(?P<attrs>[^<>]*?)(?<!/)>",
     re.IGNORECASE,
 )
 JSX_TAG_TOKEN_RE = re.compile(r"</?(?P<tag>[A-Za-z][A-Za-z0-9.-]*)\b[^>]*?/?>")
