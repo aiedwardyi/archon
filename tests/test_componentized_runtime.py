@@ -2298,6 +2298,34 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertFalse(data["compilerOptions"]["noUnusedLocals"])
         self.assertFalse(data["compilerOptions"]["noUnusedParameters"])
 
+    def test_normalize_componentized_file_repairs_project_681_modal_branch_missing_wrapper_close(self):
+        source_path = REPO_ROOT / "generated" / "681" / "v1" / "code" / "src" / "App.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/App.tsx", source)
+
+        self.assertIn("{modalContent}\n          </div>\n        </div>\n      )}", normalized)
+
+    def test_normalize_componentized_file_repairs_project_683_inline_return_root_close_leak(self):
+        source_path = REPO_ROOT / "generated" / "683" / "v1" / "code" / "src" / "pages" / "DashboardPage.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/pages/DashboardPage.tsx", source)
+
+        self.assertRegex(normalized, r"return\s*\(\s*\n\s*<div className=\"dashboard-layout\">")
+        self.assertRegex(normalized, r"</div>\s*\n\s*\);")
+        self.assertNotIn("</div>  );", normalized)
+
+    def test_normalize_componentized_file_repairs_project_684_layout_root_close_before_main_comment_gap(self):
+        source_path = REPO_ROOT / "generated" / "684" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/Dashboard.tsx", source)
+
+        self.assertNotRegex(normalized, re.compile(r"</aside>\s*\n\s*</div>\s*\n\s*\{/\* Main Content \*/\}"))
+        self.assertIn("{/* Main Content */}", normalized)
+        self.assertIn("<main className=\"main-content\">", normalized)
+
     def test_normalize_componentized_file_repairs_inline_jsx_attribute_block_comment_bleed(self):
         source = """
 const View = () => (
@@ -2333,6 +2361,26 @@ const View = () => (
             (code_dir / "src" / "App.tsx").write_text("export default function App() { return <div />; }\n", encoding="utf-8")
             (code_dir / "node_modules" / "vite" / "bin").mkdir(parents=True)
             (code_dir / "node_modules" / "vite" / "bin" / "vite.js").write_text("console.log('vite');\n", encoding="utf-8")
+
+            result = ensure_componentized_workspace_support(code_dir)
+
+            self.assertIn("node_modules/.bin/vite.cmd", result["created_files"])
+            self.assertTrue((code_dir / "node_modules" / ".bin" / "vite.cmd").exists())
+            self.assertTrue((code_dir / "node_modules" / ".bin" / "vite").exists())
+
+    def test_ensure_componentized_workspace_support_precreates_vite_bin_shims_from_package_json(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            code_dir = Path(tmpdir)
+            (code_dir / "package.json").write_text(
+                (REPO_ROOT / "generated" / "682" / "v1" / "code" / "package.json").read_text(encoding="utf-8"),
+                encoding="utf-8",
+            )
+            (code_dir / "tsconfig.json").write_text(
+                '{"compilerOptions":{"jsx":"react-jsx"},"include":["src"]}\n',
+                encoding="utf-8",
+            )
+            (code_dir / "src").mkdir()
+            (code_dir / "src" / "App.tsx").write_text("export default function App() { return <div />; }\n", encoding="utf-8")
 
             result = ensure_componentized_workspace_support(code_dir)
 

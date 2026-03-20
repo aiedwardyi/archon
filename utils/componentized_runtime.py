@@ -2276,6 +2276,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_componentized_svg_namespace_protocol(updated)
         updated = _repair_componentized_split_svg_value_attributes(updated)
         updated = _repair_componentized_bare_jsx_array_map_expressions(updated)
+        updated = _repair_componentized_inline_jsx_return_boundaries(updated)
         updated = _repair_componentized_self_closing_component_orphan_closers(updated)
         updated = _repair_componentized_self_closing_component_children(updated)
         updated = _repair_componentized_ternary_branch_orphan_closing_tags(updated)
@@ -2298,6 +2299,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_componentized_self_closing_component_orphan_closers(updated)
         updated = _remove_componentized_orphan_jsx_closing_brace_lines(updated)
         updated = _repair_componentized_missing_sibling_closing_tags(updated)
+        updated = _repair_componentized_jsx_branch_missing_closers(updated)
         updated = _remove_componentized_duplicate_closing_tag_lines(updated)
         # Last-resort: strip orphan */ closers that survived all prior repairs
         updated = _repair_orphan_block_comment_close(updated)
@@ -2548,8 +2550,27 @@ def _sync_componentized_package_dependencies(code_dir: Path) -> list[str]:
 
 
 def _ensure_componentized_vite_bin_shims(code_dir: Path) -> list[str]:
+    package_json_path = code_dir / "package.json"
     vite_entry = code_dir / "node_modules" / "vite" / "bin" / "vite.js"
-    if not vite_entry.exists():
+    wants_vite = vite_entry.exists()
+
+    if package_json_path.exists():
+        try:
+            package_data = json.loads(package_json_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            package_data = None
+        if isinstance(package_data, dict):
+            scripts = package_data.get("scripts")
+            dependencies = package_data.get("dependencies")
+            dev_dependencies = package_data.get("devDependencies")
+            if isinstance(scripts, dict) and any("vite" in str(value) for value in scripts.values()):
+                wants_vite = True
+            if isinstance(dependencies, dict) and "vite" in dependencies:
+                wants_vite = True
+            if isinstance(dev_dependencies, dict) and "vite" in dev_dependencies:
+                wants_vite = True
+
+    if not wants_vite:
         return []
 
     bin_dir = code_dir / "node_modules" / ".bin"
@@ -5382,8 +5403,13 @@ def _remove_componentized_duplicate_closing_tag_lines(source: str) -> str:
         close_match = re.fullmatch(r"[ \t]*</(?P<tag>[A-Za-z][A-Za-z0-9.-]*)>\s*", line)
         if close_match:
             tag = close_match.group("tag")
+            indent = re.match(r"[ \t]*", line).group(0)
             previous_non_empty = next((existing for existing in reversed(repaired_lines) if existing.strip()), "")
-            if previous_non_empty and f"</{tag}>" in previous_non_empty:
+            previous_close_match = re.fullmatch(
+                rf"(?P<indent>[ \t]*)</{re.escape(tag)}>\s*",
+                previous_non_empty,
+            )
+            if previous_close_match and previous_close_match.group("indent") == indent:
                 changed = True
                 continue
 
@@ -5769,6 +5795,88 @@ def _repair_componentized_bare_jsx_array_map_expressions(source: str) -> str:
     )
 
 
+def _repair_componentized_inline_jsx_return_boundaries(source: str) -> str:
+    lines = source.splitlines()
+    if not lines:
+        return source
+
+    repaired_lines: list[str] = []
+    changed = False
+
+    for line in lines:
+        updated = line
+        leading_indent = re.match(r"[ \t]*", line).group(0)
+
+        start_match = re.match(r"^(?P<head>[ \t]*return\s*\()(?P<rest>\s*<.+)$", updated)
+        if start_match:
+            repaired_lines.append(start_match.group("head"))
+            updated = f"{leading_indent}  {start_match.group('rest').lstrip()}"
+            changed = True
+
+        end_match = re.match(r"^(?P<prefix>.*\S)(?P<space>\s+)(?P<suffix>\)+[;,}]?\s*)$", updated)
+        if end_match and "<" in end_match.group("prefix"):
+            repaired_lines.append(end_match.group("prefix").rstrip())
+            repaired_lines.append(f"{leading_indent}{end_match.group('suffix').strip()}")
+            changed = True
+            continue
+
+        repaired_lines.append(updated)
+
+    if not changed:
+        return source
+    return "\n".join(repaired_lines) + ("\n" if source.endswith("\n") else "")
+
+
+def _repair_componentized_jsx_branch_missing_closers(source: str) -> str:
+    lines = source.splitlines()
+    if not lines:
+        return source
+
+    void_tags = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
+    repaired_lines: list[str] = []
+    stack: list[tuple[str, int]] = []
+    changed = False
+
+    for line in lines:
+        stripped = line.strip()
+        branch_close_match = re.fullmatch(r"\)+\}\s*", stripped)
+        current_indent = len(re.match(r"[ \t]*", line).group(0))
+
+        if branch_close_match:
+            while stack and stack[-1][1] > current_indent:
+                tag, tag_indent = stack.pop()
+                repaired_lines.append(f"{' ' * tag_indent}</{tag}>")
+                changed = True
+            repaired_lines.append(line)
+            continue
+
+        close_match = JSX_LINE_CLOSE_TAG_RE.match(line)
+        if close_match:
+            current_tag = close_match.group("tag")
+            for reverse_index in range(len(stack) - 1, -1, -1):
+                if stack[reverse_index][0] == current_tag:
+                    del stack[reverse_index]
+                    break
+            repaired_lines.append(line)
+            continue
+
+        open_match = JSX_LINE_OPEN_TAG_RE.match(line)
+        repaired_lines.append(line)
+        if not open_match:
+            continue
+
+        current_tag = open_match.group("tag")
+        token = open_match.group(0)
+        rest = open_match.group("rest")
+        if token.endswith("/>") or current_tag.lower() in void_tags or f"</{current_tag}>" in rest:
+            continue
+        stack.append((current_tag, len(open_match.group("indent"))))
+
+    if not changed:
+        return source
+    return "\n".join(repaired_lines) + ("\n" if source.endswith("\n") else "")
+
+
 def _repair_componentized_inline_jsx_attribute_block_comments(source: str) -> str:
     return INLINE_JSX_ATTRIBUTE_BLOCK_COMMENT_RE.sub(
         lambda match: match.group("attr"),
@@ -6110,8 +6218,12 @@ def _repair_componentized_layout_main_wrapper_leaks(source: str) -> str:
             previous_index -= 1
 
         next_index = index + 1
-        while next_index < len(lines) and not lines[next_index].strip():
-            next_index += 1
+        while next_index < len(lines):
+            candidate = lines[next_index].strip()
+            if not candidate or re.fullmatch(r"\{/\*[\s\S]{0,200}?\*/\}", candidate):
+                next_index += 1
+                continue
+            break
 
         previous_line = lines[previous_index].strip() if previous_index >= 0 else ""
         next_line = lines[next_index].lstrip() if next_index < len(lines) else ""
