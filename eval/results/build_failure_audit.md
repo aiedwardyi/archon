@@ -48,7 +48,7 @@ Additional dashboard submissions during the audit hit long pipeline timeouts in 
 - Confirmed success in that batch: `691` produced `dist/index.html` and `status: success`
 - Confirmed failures in that batch: `692`, `693`, `694`, `695`
 - Measured dashboard success rate before the current repair pass: 1 / 5 (20%)
-- Current runtime suite after the new repairs: `201 passed`
+- Current runtime suite after the latest repair batches: `207 passed`
 
 ### Follow-Up Failures From Validation Batch `691-695`
 
@@ -67,7 +67,29 @@ Additional dashboard submissions during the audit hit long pipeline timeouts in 
 | SVG-to-HTML boundary leak inside chart markup | 1 | `694` | Added SVG/HTML boundary repair so sibling HTML starts only after an explicit `</svg>`, and tightened late return closers so they do not fire on ternary/logical `)}` boundaries. |
 | Inline icon prop SVG closer bleed plus nested SVG shape tags | 1 | `695` | Added icon-prop SVG closer repair, inline SVG shape self-closing repair, duplicate self-closing-slash cleanup, and robust cleanup of orphan closers for self-closed React components. |
 
+### Additional Manual-Build Failures Audited After `691-695`
+
+| Project ID | Error Type | File | Line | Pattern Description | Existing Repair Covers It? |
+|---|---|---|---|---|---|
+| 717 | Unexpected `/` | `src/components/common/Sidebar.tsx` | 28 | Standalone orphan `</svg>` lines leaked immediately before `icon={<svg ...>}` props on repeated `<SidebarItem>` calls, leaving invalid JSX at the prop boundary. | Partial: icon-prop SVG repairs handled leaked closers inside prop literals, but not free-standing `</svg>` lines immediately before the prop assignment. |
+| 729 | Expected `)` but found `Index` | `src/components/Dashboard.tsx` | 20 | A split camelCase identifier in executable code (`month Index< months.length`) broke the tooltip guard condition inside the chart hover handler. | No: existing split-identifier repairs were comment-focused and did not join bare camelCase identifiers before comparison operators. |
+| 729 | Unexpected `=` | `src/components/TransactionForm.tsx` | 3 | An interface field comment swallowed the closing `}` before `const TransactionForm`, leaving the comment and interface body open across the component declaration. | Partial: existing interface-comment bleed repair only restored the closing brace when the next declaration was another `interface` or `type`, not a `const` component. |
+
+### Follow-Up Corruption Families Added After Manual Build Verification
+
+| Pattern | Frequency | Representative Projects | Fix Applied |
+|---|---|---|---|
+| Orphan `</svg>` line before JSX prop literal | 1 | `717` | Added deterministic cleanup for standalone `</svg>` lines that bleed directly into `icon={<svg ...>}` prop assignments. |
+| Split camelCase identifier before comparison operator | 1 | `729` | Added a narrow identifier-join repair for lowercase+capital splits immediately before real comparison operators (for example `month Index<` → `monthIndex<`). |
+| Interface field comment swallow before `const` declaration | 1 | `729` | Extended the interface-field comment bleed repair so it also restores the closing brace before `const`/`let`/`var`/`function`/`export`/`class` declarations, not just `interface` and `type`. |
+
+### Manual Build Verification
+
+- Project `717`: after applying the current normalizer across the generated workspace, `npm.cmd run build` succeeded and produced `generated/717/v1/code/dist/index.html`.
+- Project `729`: after applying the current normalizer across the generated workspace, `npm.cmd run build` succeeded and produced `generated/729/v1/code/dist/index.html`.
+- These two samples were previously real failures (`717` from `last_preview_build.json`, `729` from the manual-build fallback batch), so they are strong evidence that the latest repairs are fixing real generated corruption rather than only synthetic tests.
+
 ### Pending Validation
 
-- Dashboard reliability has not been re-measured yet after the current repair batch.
+- Dashboard reliability has still not been re-measured with a fresh 5-run batch after the latest repair batches.
 - Next required step remains a fresh `python eval/eval_loop.py --archetype dashboard --runs 5 --skip-image-gen` validation pass with the backend running.

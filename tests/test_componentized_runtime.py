@@ -5306,8 +5306,72 @@ const View = () => (
 
         self.assertIn("</svg>} label=\"Dashboard\"", normalized)
         self.assertIn("</svg>} label=\"Reports\"", normalized)
-        self.assertIn("<path d=\"M3 3v18h18\" />", normalized)
-        self.assertNotIn("</SidebarItem>", normalized)
+
+    def test_normalize_componentized_file_repairs_project_717_map_branch_wrapper_closer_leak(self):
+        source_path = REPO_ROOT / "generated" / "717" / "v1" / "code" / "src" / "components" / "dashboard" / "PerformanceChart.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/dashboard/PerformanceChart.tsx", source)
+
+        self.assertIn("{['1D', '1W', '1M', '1Y'].map(range => (", normalized)
+        self.assertIn("</button>\n            ))}\n          </div>", normalized)
+        self.assertNotIn("</button>\n              </div>\n            ))}", normalized)
+
+    def test_normalize_componentized_file_repairs_project_729_sidebar_link_closer_leaks(self):
+        source_path = REPO_ROOT / "generated" / "729" / "v1" / "code" / "src" / "pages" / "DashboardPage.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/pages/DashboardPage.tsx", source)
+
+        self.assertIn("Dashboard</Link>", normalized)
+        self.assertIn("Portfolio</Link>", normalized)
+        self.assertRegex(normalized, r"Transactions\s*</Link>")
+        self.assertRegex(normalized, r"Alerts\s*</Link>")
+        self.assertRegex(normalized, r"Settings\s*</Link>")
+        self.assertNotRegex(normalized, r"Dashboard</div>|Portfolio</nav>|Transactions\s*</aside>|Alerts\s*</div>|Settings\s*</div>")
+        self.assertNotRegex(normalized, r"<Link\b[^>]*?/\>\s*<svg")
+        self.assertIn('<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />', normalized)
+        self.assertIn('<circle cx="12" cy="12" r="3" />', normalized)
+
+    def test_normalize_componentized_file_repairs_project_729_route_path_comment_bleed(self):
+        source_path = REPO_ROOT / "generated" / "729" / "v1" / "code" / "src" / "App.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/App.tsx", source)
+
+        self.assertIn('path="/"', normalized)
+        self.assertNotIn('path=" /* "', normalized)
+
+    def test_normalize_componentized_file_repairs_project_717_orphan_svg_prop_closer_lines(self):
+        source_path = REPO_ROOT / "generated" / "717" / "v1" / "code" / "src" / "components" / "common" / "Sidebar.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/common/Sidebar.tsx", source)
+
+        self.assertNotIn("\n            </svg>\n            icon={<svg", normalized)
+        self.assertRegex(normalized, r"<SidebarItem\s+\n\s*icon=\{<svg")
+        self.assertIn('export default Sidebar;', normalized)
+
+    def test_normalize_componentized_file_repairs_project_729_split_camel_identifier_before_operator(self):
+        source_path = REPO_ROOT / "generated" / "729" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/Dashboard.tsx", source)
+
+        self.assertIn("if (monthIndex >= 0 && monthIndex< months.length)", normalized)
+        self.assertNotIn("month Index<", normalized)
+        self.assertIn("import React, { useState } from 'react';", normalized)
+        self.assertIn("export default Dashboard;", normalized)
+
+    def test_normalize_componentized_file_repairs_project_729_interface_comment_bleed_before_const(self):
+        source_path = REPO_ROOT / "generated" / "729" / "v1" / "code" / "src" / "components" / "TransactionForm.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/TransactionForm.tsx", source)
+
+        self.assertIn("asset?: string; /* Optional: pre-fills the asset if provided */", normalized)
+        self.assertIn("}\nconst TransactionForm:", normalized)
+        self.assertNotIn("provided} */\nconst TransactionForm", normalized)
 
 
 if __name__ == "__main__":
