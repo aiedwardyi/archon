@@ -42,4 +42,32 @@ Additional dashboard submissions during the audit hit long pipeline timeouts in 
 
 ## Post-Fix
 
-Pending.
+### Current Checkpoint
+
+- Latest dashboard validation batch before this repair pass: projects `691-695`
+- Confirmed success in that batch: `691` produced `dist/index.html` and `status: success`
+- Confirmed failures in that batch: `692`, `693`, `694`, `695`
+- Measured dashboard success rate before the current repair pass: 1 / 5 (20%)
+- Current runtime suite after the new repairs: `201 passed`
+
+### Follow-Up Failures From Validation Batch `691-695`
+
+| Project ID | Error Type | File | Line | Pattern Description | Existing Repair Covers It? |
+|---|---|---|---|---|---|
+| 692 | Expected `";"` but found `"C"` | `src/components/Chart.tsx` | 40 | A block-comment label `/* Path points: */` is followed by a raw SVG path-notation prose line `M(x, y) C(...)`, which escapes into executable code before `const dataPoints`. | Partial: comment-note repairs existed, but they did not merge this single-line prose continuation back into the block comment. |
+| 693 | Expected identifier but found `","` | `src/components/Chart.tsx` | 18 | An inline block comment closes after `/* In a real app, this would trigger a specific */`, but the next prose continuation line starts with `function, e.g., ...` and carries the handler suffix `};`, leaving bare English prose in code. | Partial: inline comment repairs existed, but they did not absorb this continuation line and preserve the trailing `};` separately. |
+| 694 | `}` / `>` invalid in JSX element; unexpected `const` | `src/components/Dashboard.tsx` | 161-163 | Chart markup leaks from SVG into sibling HTML: the tooltip branch ends, `<div className="chart-actions">` starts before the surrounding `<svg>` is explicitly closed, and the component never exits JSX cleanly before the next `const Dashboard`. | Partial: JSX balancing existed, but it did not close SVG-at-HTML boundaries early enough to restore the component return boundary. |
+| 695 | Unexpected closing `SidebarItem` tag does not match opening `svg` / `path` | `src/App.tsx` | 28-31 | Inline sidebar icon props leak `</SidebarItem>}` where `</svg>}` should be, and one icon nests `<path>` inside `<path>` instead of self-closing the first SVG shape. | No: prior repairs did not handle icon-prop SVG closer bleed or inline SVG shape nesting inside prop literals. |
+
+### Follow-Up Corruption Families Added In This Repair Pass
+
+| Pattern | Frequency | Representative Projects | Fix Applied |
+|---|---|---|---|
+| Comment prose continuation after a closed block comment | 2 | `692`, `693` | Added deterministic comment-prose continuation repair and guarded the unterminated block-comment note repair so already-closed inline comments are not re-broken. |
+| SVG-to-HTML boundary leak inside chart markup | 1 | `694` | Added SVG/HTML boundary repair so sibling HTML starts only after an explicit `</svg>`, and tightened late return closers so they do not fire on ternary/logical `)}` boundaries. |
+| Inline icon prop SVG closer bleed plus nested SVG shape tags | 1 | `695` | Added icon-prop SVG closer repair, inline SVG shape self-closing repair, duplicate self-closing-slash cleanup, and robust cleanup of orphan closers for self-closed React components. |
+
+### Pending Validation
+
+- Dashboard reliability has not been re-measured yet after the current repair batch.
+- Next required step remains a fresh `python eval/eval_loop.py --archetype dashboard --runs 5 --skip-image-gen` validation pass with the backend running.

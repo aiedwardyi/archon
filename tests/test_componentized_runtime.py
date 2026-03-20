@@ -5206,6 +5206,109 @@ const View = () => (
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    def test_normalize_componentized_file_repairs_project_692_path_points_prose_line(self):
+        source = (
+            "import React, { useState } from 'react';\n"
+            "import Modal from './Modal';\n"
+            "interface TooltipData {\n"
+            "  date: string;\n"
+            "  value: string;\n"
+            "  x: number;\n"
+            "  y: number;\n"
+            "}\n"
+            "\n"
+            "const Chart: React.FC = () => {\n"
+            "  const [activePeriod, setActivePeriod] = useState('1M');\n"
+            "  const [showComparison, setShowComparison] = useState(false);\n"
+            "  const [showExportModal, setShowExportModal] = useState(false);\n"
+            "  const [tooltip, setTooltip] = useState<TooltipData | null>(null);\n"
+            "  // Mock data points for 12 months (Jan-Dec)\n"
+            "  // Values scaled to a 300 unit height, assuming max value around $130k and min around $90k\n"
+            "  /* Path points: */\n"
+            "M(x, y) C(x1, y1, x2, y2, x_end, y_end)\n"
+            "  const dataPoints = [\n"
+            "    { month: 'Jan', value: 100000, y: 200 },\n"
+            "  ];\n"
+            "  return <Modal isOpen={showExportModal} onClose={() => setShowExportModal(false)} title=\"Export\" />;\n"
+            "};\n"
+            "export default Chart;\n"
+        )
+
+        normalized = _normalize_componentized_file("src/components/Chart.tsx", source)
+
+        self.assertIn("/* Path points: M(x, y) C(x1, y1, x2, y2, x_end, y_end) */", normalized)
+        self.assertNotIn("\nM(x, y) C(x1, y1, x2, y2, x_end, y_end)\n", normalized)
+
+    def test_normalize_componentized_file_repairs_project_693_comment_prose_continuations(self):
+        source_path = REPO_ROOT / "generated" / "693" / "v1" / "code" / "src" / "components" / "Chart.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/Chart.tsx", source)
+
+        self.assertIn(
+            "/* SVG viewBox is 0 0 1000 300  // x-axis: 0 to 1000, y-axis: 0 to 300 (inverted for SVG)  // Data values range from 90,000 to 125,000 (max range = 35,000) */",
+            normalized,
+        )
+        self.assertIn(
+            "/* In a real app, this would trigger a specific function, e.g., open a modal, export data. */",
+            normalized,
+        )
+        self.assertIn("const valueRange = maxValue - minValue;", normalized)
+        self.assertNotIn("\nfunction, e.g., open a modal, export data.", normalized)
+
+    def test_normalize_componentized_file_repairs_project_694_svg_boundary_and_chart_wrapper(self):
+        source_path = REPO_ROOT / "generated" / "694" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/Dashboard.tsx", source)
+
+        self.assertIn("</svg>\n      <div className=\"chart-actions\">", normalized)
+        self.assertLess(normalized.find("</svg>"), normalized.find('<div className="chart-actions">'))
+
+    def test_normalize_componentized_file_repairs_project_695_inline_icon_svg_closer_bleeds(self):
+        source = (
+            "import React from 'react';\n"
+            "import Dashboard from './components/Dashboard';\n"
+            "interface SidebarItemProps {\n"
+            "  icon: React.ReactNode;\n"
+            "  label: string;\n"
+            "  isActive?: boolean;\n"
+            "}\n"
+            "\n"
+            "const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, isActive }) => (\n"
+            "  <div className={`sidebar-item ${isActive ? 'active' : ''}`}>\n"
+            "    {icon}\n"
+            "    <span>{label}</span>\n"
+            "  </div>\n"
+            ");\n"
+            "const App: React.FC = () => {\n"
+            "  return (\n"
+            "    <div className=\"dashboard-layout\">\n"
+            "      <aside className=\"sidebar\">\n"
+            "        <nav className=\"sidebar-nav\">\n"
+            "          <div className=\"sidebar-group\">\n"
+            "            <div className=\"sidebar-group-label\">Platform</div>\n"
+            "            <SidebarItem icon={<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"2\" strokeLinecap=\"round\" strokeLinejoin=\"round\"><path d=\"M3 3v18h18\"><path d=\"M18.7 8.3c-.4-.4-.9-.6-1.5-.6s-1.1.2-1.5.6L12 12l-2.7-2.7c-.4-.4-.9-.6-1.5-.6s-1.1.2-1.5.6l-3 3\"/></SidebarItem>} label=\"Dashboard\" isActive />\n"
+            "            <SidebarItem icon={<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"2\" strokeLinecap=\"round\" strokeLinejoin=\"round\"><path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M22 21v-2a4 4 0 0 0-3-3.87\"/><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"/></SidebarItem>} label=\"Reports\" />\n"
+            "          </div>\n"
+            "        </nav>\n"
+            "        <div className=\"content-area\">\n"
+            "          <Dashboard />\n"
+            "        </div>\n"
+            "      </aside>\n"
+            "    </div>\n"
+            "  );\n"
+            "};\n"
+            "export default App;\n"
+        )
+
+        normalized = _normalize_componentized_file("src/App.tsx", source)
+
+        self.assertIn("</svg>} label=\"Dashboard\"", normalized)
+        self.assertIn("</svg>} label=\"Reports\"", normalized)
+        self.assertIn("<path d=\"M3 3v18h18\" />", normalized)
+        self.assertNotIn("</SidebarItem>", normalized)
+
 
 if __name__ == "__main__":
     unittest.main()

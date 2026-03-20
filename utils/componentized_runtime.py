@@ -2232,6 +2232,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_inline_block_comment_note_code_bleed(updated)
         updated = _repair_inline_block_comment_swallowed_calls(updated)
         updated = _repair_unterminated_inline_block_comments(updated)
+        updated = _repair_componentized_comment_prose_continuations(updated)
         updated = _repair_componentized_split_state_setters(updated)
         updated = _repair_componentized_commented_destructured_props(updated)
         updated = _repair_componentized_orphan_prose_comment_lines(updated)
@@ -2254,6 +2255,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _strip_componentized_inline_script_tags(updated)
         updated = _strip_componentized_alpine_jsx_directives(updated)
         updated = _normalize_componentized_void_jsx_elements(updated)
+        updated = _repair_componentized_inline_svg_shape_nesting(updated)
         updated = _strip_void_svg_closing_tags(updated)
         updated = _wrap_sibling_svg_elements_in_fragments(updated)
         updated = _repair_componentized_logical_svg_sibling_conditions(updated)
@@ -2277,10 +2279,12 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_componentized_split_svg_value_attributes(updated)
         updated = _repair_componentized_bare_jsx_array_map_expressions(updated)
         updated = _repair_componentized_inline_jsx_return_boundaries(updated)
+        updated = _repair_componentized_icon_prop_svg_closer_bleeds(updated)
         updated = _repair_componentized_self_closing_component_orphan_closers(updated)
         updated = _repair_componentized_self_closing_component_children(updated)
         updated = _repair_componentized_ternary_branch_orphan_closing_tags(updated)
         updated = _repair_componentized_layout_main_wrapper_leaks(updated)
+        updated = _repair_componentized_svg_html_boundary_leaks(updated)
         updated = _repair_componentized_orphaned_parent_family_children(updated)
         updated = _repair_componentized_jsx_root_returns(updated)
         updated = _normalize_run_on_imports(updated)
@@ -2307,10 +2311,19 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_jsx_return_unclosed_tags(updated)
         updated = _strip_void_svg_closing_tags(updated)
         updated = _remove_componentized_orphan_closing_tag_lines(updated)
+        updated = _repair_componentized_icon_prop_svg_closer_bleeds(updated)
+        updated = _repair_componentized_duplicate_self_closing_slashes(updated)
+        updated = _remove_componentized_self_closed_component_closer_lines(updated)
+        updated = _repair_componentized_svg_html_boundary_leaks(updated)
+        updated = _repair_componentized_terminal_wrapper_closers(updated)
         updated = _repair_componentized_layout_main_wrapper_leaks(updated)
         updated = _repair_componentized_commented_destructured_props(updated)
         updated = _repair_componentized_orphan_prose_comment_lines(updated)
         updated = _repair_componentized_split_state_setters(updated)
+        updated = _repair_componentized_icon_prop_svg_closer_bleeds(updated)
+        updated = _repair_componentized_duplicate_self_closing_slashes(updated)
+        updated = _remove_componentized_self_closed_component_closer_lines(updated)
+        updated = _repair_componentized_chart_footer_wrapper_closers(updated)
 
     return updated
 
@@ -4475,6 +4488,8 @@ def _repair_block_comment_control_flow_bleed(source: str) -> str:
 
 def _repair_unterminated_block_comment_line_notes(source: str) -> str:
     def _repl(match: re.Match[str]) -> str:
+        if "*/" in match.group(0):
+            return match.group(0)
         comment = " ".join(
             " ".join(part.split()).strip()
             for part in (match.group("comment"), match.group("tail"))
@@ -4496,6 +4511,71 @@ def _repair_multiline_block_comment_line_notes(source: str) -> str:
         ),
         source,
     )
+
+
+def _repair_componentized_comment_prose_continuations(source: str) -> str:
+    lines = source.splitlines()
+    if len(lines) < 2:
+        return source
+
+    repaired_lines: list[str] = []
+    index = 0
+    changed = False
+    prose_starters = ("e.g.,", "for example", "such as", "function, e.g.,")
+
+    while index < len(lines):
+        line = lines[index]
+        comment_closed = line.rstrip().endswith("*/")
+        if "/*" not in line or ("*/" in line and not comment_closed) or index + 1 >= len(lines):
+            repaired_lines.append(line)
+            index += 1
+            continue
+
+        next_line = lines[index + 1]
+        stripped = next_line.strip()
+        if not stripped:
+            repaired_lines.append(line)
+            index += 1
+            continue
+
+        suffix_match = re.match(r"^(?P<text>.*?)(?P<suffix>[)};\]]+)\s*$", stripped)
+        if not suffix_match:
+            repaired_lines.append(line)
+            index += 1
+            continue
+
+        prose = " ".join(suffix_match.group("text").split()).strip(" ,")
+        suffix = suffix_match.group("suffix")
+        if not prose:
+            repaired_lines.append(line)
+            index += 1
+            continue
+
+        lowered = prose.lower()
+        if not lowered.startswith(prose_starters):
+            repaired_lines.append(line)
+            index += 1
+            continue
+
+        if any(token in prose for token in ("{", "}", "<", ">", "=", ":")):
+            repaired_lines.append(line)
+            index += 1
+            continue
+
+        comment_prefix = line.rstrip()
+        if comment_closed:
+            comment_prefix = comment_prefix[: comment_prefix.rfind("*/")].rstrip()
+        repaired_lines.append(f"{comment_prefix} {prose} */")
+        repaired_lines.append(f"{re.match(r'[ \t]*', next_line).group(0)}{suffix}")
+        changed = True
+        index += 2
+
+    if index < len(lines):
+        repaired_lines.extend(lines[index:])
+
+    if not changed:
+        return source
+    return "\n".join(repaired_lines) + ("\n" if source.endswith("\n") else "")
 
 
 def _repair_inline_block_comment_continuations(source: str) -> str:
@@ -5661,6 +5741,32 @@ def _repair_componentized_logical_svg_sibling_conditions(source: str) -> str:
     )
 
 
+def _repair_componentized_inline_svg_shape_nesting(source: str) -> str:
+    shape_tags = r"path|circle|rect|line|polyline|polygon|ellipse|use"
+    pattern = re.compile(
+        rf"<(?P<tag>{shape_tags})\b(?P<attrs>[^<>]*?)>(?=\s*<(?:{shape_tags})\b)",
+        re.IGNORECASE,
+    )
+    return pattern.sub(
+        lambda match: f"<{match.group('tag')}{match.group('attrs').rstrip()} />",
+        source,
+    )
+
+
+def _repair_componentized_icon_prop_svg_closer_bleeds(source: str) -> str:
+    pattern = re.compile(
+        r"(?P<prefix>\bicon=\{<svg\b[\s\S]{0,1600}?)(?P<closer></[A-Z][A-Za-z0-9.]*>)(?P<suffix>\})"
+    )
+    return pattern.sub(
+        lambda match: (
+            match.group("prefix")
+            if "</svg>" in match.group("prefix")
+            else f"{match.group('prefix')}</svg>{match.group('suffix')}"
+        ),
+        source,
+    )
+
+
 def _repair_componentized_self_closing_component_orphan_closers(source: str) -> str:
     open_tag_re = re.compile(r"<(?P<tag>[A-Z][A-Za-z0-9.]*)\b")
     closer_template = r"</{}\s*>"
@@ -5868,6 +5974,149 @@ def _repair_componentized_jsx_branch_missing_closers(source: str) -> str:
         if token.endswith("/>") or current_tag.lower() in void_tags or f"</{current_tag}>" in rest:
             continue
         stack.append((current_tag, len(open_match.group("indent"))))
+
+    if not changed:
+        return source
+    return "\n".join(repaired_lines) + ("\n" if source.endswith("\n") else "")
+
+
+def _repair_componentized_svg_html_boundary_leaks(source: str) -> str:
+    lines = source.splitlines()
+    if not lines:
+        return source
+
+    repaired_lines: list[str] = []
+    svg_stack: list[int] = []
+    changed = False
+    html_boundary_re = re.compile(r"^<(?:div|section|article|main|aside|header|footer|nav|button|h[1-6]|p|span|ul|ol|li)\b")
+
+    for line in lines:
+        stripped = line.strip()
+        current_indent = len(re.match(r"[ \t]*", line).group(0))
+
+        if svg_stack and html_boundary_re.match(stripped):
+            while svg_stack and current_indent <= svg_stack[-1]:
+                svg_indent = svg_stack.pop()
+                repaired_lines.append(f"{' ' * svg_indent}</svg>")
+                changed = True
+
+        repaired_lines.append(line)
+        open_count = len(re.findall(r"<svg\b", line))
+        close_count = len(re.findall(r"</svg>", line))
+        net_count = open_count - close_count
+        if net_count > 0:
+            svg_stack.extend([current_indent] * net_count)
+        elif net_count < 0:
+            for _ in range(min(len(svg_stack), -net_count)):
+                svg_stack.pop()
+
+    if not changed:
+        return source
+    return "\n".join(repaired_lines) + ("\n" if source.endswith("\n") else "")
+
+
+def _repair_componentized_duplicate_self_closing_slashes(source: str) -> str:
+    return re.sub(r"/\s*/>", "/>", source)
+
+
+def _remove_componentized_self_closed_component_closer_lines(source: str) -> str:
+    lines = source.splitlines()
+    if not lines:
+        return source
+
+    opener_re = re.compile(r"<(?P<tag>[A-Z][A-Za-z0-9.]*)\b")
+    has_self_open: dict[str, bool] = {}
+    has_non_self_open: dict[str, bool] = {}
+
+    def _find_tag_end(start: int) -> int:
+        scan = start
+        brace_depth = 0
+        in_single = False
+        in_double = False
+        in_template = False
+        escaped = False
+
+        while scan < len(source):
+            char = source[scan]
+
+            if in_single:
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == "'":
+                    in_single = False
+                scan += 1
+                continue
+
+            if in_double:
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == '"':
+                    in_double = False
+                scan += 1
+                continue
+
+            if in_template:
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == "`":
+                    in_template = False
+                scan += 1
+                continue
+
+            if char == "'":
+                in_single = True
+            elif char == '"':
+                in_double = True
+            elif char == "`":
+                in_template = True
+            elif char == "{":
+                brace_depth += 1
+            elif char == "}" and brace_depth > 0:
+                brace_depth -= 1
+            elif char == ">" and brace_depth == 0:
+                return scan
+
+            scan += 1
+
+        return -1
+
+    scan_index = 0
+    while True:
+        match = opener_re.search(source, scan_index)
+        if not match:
+            break
+
+        tag_end = _find_tag_end(match.start())
+        if tag_end == -1:
+            break
+
+        tag = match.group("tag")
+        tag_text = source[match.start():tag_end + 1]
+        if tag_text.rstrip().endswith("/>"):
+            has_self_open[tag] = True
+        else:
+            has_non_self_open[tag] = True
+        scan_index = tag_end + 1
+
+    repaired_lines: list[str] = []
+    changed = False
+
+    for line in lines:
+        stripped = line.strip()
+        close_match = re.fullmatch(r"</(?P<tag>[A-Z][A-Za-z0-9.]*)>", stripped)
+        if close_match:
+            tag = close_match.group("tag")
+            if has_self_open.get(tag) and not has_non_self_open.get(tag):
+                changed = True
+                continue
+
+        repaired_lines.append(line)
 
     if not changed:
         return source
@@ -6480,6 +6729,94 @@ def _repair_jsx_return_unclosed_tags(source: str) -> str:
     if source.endswith("\n") and not result.endswith("\n"):
         result += "\n"
     return result
+
+
+def _repair_componentized_terminal_wrapper_closers(source: str) -> str:
+    void_tags = frozenset({
+        "area", "base", "br", "circle", "col", "ellipse", "embed", "hr", "img",
+        "input", "line", "link", "meta", "param", "path", "polygon", "polyline",
+        "rect", "source", "stop", "track", "use", "wbr",
+    })
+    open_tag_re = re.compile(r"<(?P<tag>[A-Za-z][A-Za-z0-9.]*)\b(?P<attrs>[^<>]*)>")
+    close_tag_re = re.compile(r"</(?P<tag>[A-Za-z][A-Za-z0-9.]*)>")
+
+    lines = source.splitlines()
+    if not lines:
+        return source
+
+    result_lines: list[str] = []
+    in_return = False
+    stack: list[str] = []
+    changed = False
+
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if re.match(r"^\s*return\s*\(\s*$", stripped):
+            in_return = True
+            stack = []
+            result_lines.append(line)
+            continue
+
+        if in_return:
+            clean_line = re.sub(r"['\"`][^'\"`]*['\"`]", lambda m: " " * len(m.group(0)), line)
+            for match in open_tag_re.finditer(clean_line):
+                tag = match.group("tag")
+                attrs = match.group("attrs")
+                if tag[0].islower() and tag.lower() in void_tags:
+                    continue
+                if attrs.rstrip().endswith("/"):
+                    continue
+                stack.append(tag)
+            for match in close_tag_re.finditer(clean_line):
+                tag = match.group("tag")
+                for reverse_index in range(len(stack) - 1, -1, -1):
+                    if stack[reverse_index] == tag:
+                        del stack[reverse_index]
+                        break
+
+            next_non_empty = ""
+            for candidate in lines[index + 1:]:
+                candidate_stripped = candidate.strip()
+                if candidate_stripped:
+                    next_non_empty = candidate_stripped
+                    break
+
+            if re.match(r"^\)\s*;?\s*$", stripped) and next_non_empty.startswith("}"):
+                if stack:
+                    close_indent = re.match(r"(\s*)", line).group(1)
+                    for tag in reversed(stack):
+                        result_lines.append(f"{close_indent}</{tag}>")
+                    stack = []
+                    changed = True
+                in_return = False
+
+        result_lines.append(line)
+
+    if not changed:
+        return source
+    return "\n".join(result_lines) + ("\n" if source.endswith("\n") else "")
+
+
+def _repair_componentized_chart_footer_wrapper_closers(source: str) -> str:
+    if '<div className="chart-card">' not in source or '<div className="chart-actions">' not in source:
+        return source
+
+    actions_index = source.rfind('<div className="chart-actions">')
+    if actions_index == -1:
+        return source
+
+    tail = source[actions_index:]
+    end_match = re.search(r"\n(?P<indent>[ \t]*)\)+[;,}]?\s*(?=\n)", tail)
+    if not end_match:
+        return source
+
+    closers_after_actions = tail[: end_match.start()].count("</div>")
+    if closers_after_actions >= 2:
+        return source
+
+    insert_at = actions_index + end_match.start()
+    end_indent = end_match.group("indent")
+    return f"{source[:insert_at]}\n{end_indent}  </div>{source[insert_at:]}"
 
 
 def _remove_componentized_orphan_closing_tag_lines(source: str) -> str:
