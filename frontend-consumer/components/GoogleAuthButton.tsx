@@ -40,7 +40,7 @@ interface GoogleAuthButtonProps {
 
 const GOOGLE_CLIENT_ID =
   import.meta.env.VITE_GOOGLE_CLIENT_ID ||
-  '1094133324705-0dgm6o9cu0oud74l0im9l4ncsvlvknka.apps.googleusercontent.com';
+  '975672204403-a1tbslh4raerh7tlrdgepr19qlnvvlmk.apps.googleusercontent.com';
 
 let googleScriptPromise: Promise<void> | null = null;
 

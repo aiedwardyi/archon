@@ -70,7 +70,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 }
 
 const GOOGLE_CLIENT_ID =
-  "1094133324705-0dgm6o9cu0oud74l0im9l4ncsvlvknka.apps.googleusercontent.com";
+  "975672204403-a1tbslh4raerh7tlrdgepr19qlnvvlmk.apps.googleusercontent.com";
 
 const App = () => (
   <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>

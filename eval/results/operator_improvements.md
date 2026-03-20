@@ -334,3 +334,15 @@ Use one section per experiment. Update this file before moving to the next arche
 - Verdict: reverted
 - Notes: Branch feat/local-eval-models. Change reverted because delta did not exceed +1.0.
 - Next hypothesis: Try the other editable surface for this archetype or target the next-lowest dimension.
+
+### Cycle 027 - 2026-03-19 22:52
+- Archetype: dashboard
+- Baseline average across 3 runs: 10.0
+- Weakest dimensions: data_completeness, layout_precision
+- Exact change made: Updated dashboard.txt with one targeted instruction cluster for data_completeness, layout_precision.
+- File changed: C:/Users/mredw/Desktop/ai-dev-team/prompts/archetypes/dashboard.txt
+- Test average across 3 runs: 10.0
+- Delta: +0.00
+- Verdict: reverted
+- Notes: Branch main. Change reverted because delta did not exceed +1.0.
+- Next hypothesis: Try the other editable surface for this archetype or target the next-lowest dimension.

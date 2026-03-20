@@ -1,5 +1,15 @@
 # Current Sprint
 
+## Vertex AI + Google OAuth — ✅ Fixed Mar 19, 2026
+
+**Vertex AI 403:** Root cause was gcloud ADC quota project still set to `archon-489006`. Fix: `gcloud auth application-default set-quota-project mredwardyi-vertex`. Verified.
+
+**Google OAuth origin_mismatch:** Root cause was stale build artifact (old client ID in `frontend/dist`) + stale backend process (old `.env` cached at import time). Fix: rebuild frontend dist + restart Flask + restart Vite dev server. No code change needed — source was already correct. Codex identified root cause.
+
+**Branches merged:** `fix/eval-ollama-calibration` + `fix/dashboard-jsx-orphan-recovery` already in main (confirmed by Codex — `a97bd5b` and `4be55ed`).
+
+---
+
 ## Eval Calibration — `fix/eval-ollama-calibration` (Mar 19, 2026)
 
 ### Ollama A/B Calibration — NOT VALIDATED
