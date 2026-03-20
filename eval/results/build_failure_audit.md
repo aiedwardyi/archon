@@ -48,7 +48,7 @@ Additional dashboard submissions during the audit hit long pipeline timeouts in 
 - Confirmed success in that batch: `691` produced `dist/index.html` and `status: success`
 - Confirmed failures in that batch: `692`, `693`, `694`, `695`
 - Measured dashboard success rate before the current repair pass: 1 / 5 (20%)
-- Current runtime suite after the latest repair batches: `207 passed`
+- Current runtime suite after the latest repair batches: `211 passed`
 
 ### Follow-Up Failures From Validation Batch `691-695`
 
@@ -89,7 +89,37 @@ Additional dashboard submissions during the audit hit long pipeline timeouts in 
 - Project `729`: after applying the current normalizer across the generated workspace, `npm.cmd run build` succeeded and produced `generated/729/v1/code/dist/index.html`.
 - These two samples were previously real failures (`717` from `last_preview_build.json`, `729` from the manual-build fallback batch), so they are strong evidence that the latest repairs are fixing real generated corruption rather than only synthetic tests.
 
+### Timed-Out Validation Batch `738-742`
+
+- A later dashboard validation attempt generated projects `738-742` but the eval loop stalled before writing complete preview-build artifacts for `738`, `739`, `740`, and `742`.
+- Project `741` did complete end-to-end: `generated/741/v1/last_preview_build.json` reported `status: success`, `generated/741/v1/code/dist/index.html` exists, and `eval/results/eval_loop_20260320_205300/dashboard/result.json` recorded a real dashboard score of `69.0`.
+
+| Project ID | Error Type | File | Line | Pattern Description | Existing Repair Covers It? |
+|---|---|---|---|---|---|
+| 738 | Unterminated string literal | `src/components/PerformanceChart.tsx` | 97 | One-line chart action JSX split quoted literals across lines (`action === '\nexport'`, `handleChipClick('\nexport')`), omitted a closing `</svg>` before `Export CSV`, and dropped `</foreignObject></g>` before the tooltip branch close. | Partial: prior SVG/icon repairs existed, but they did not join split quoted literals or restore these dense one-line chart/tooltip closers. |
+| 739 | Unterminated regular expression | `src/components/PerformanceChart.tsx` | 99 | A `.map(... => (` branch leaked a wrapper closer before the mapped action button subtree finished, leaving `))}` attached to the wrong closing tag and breaking the JSX parse. | Partial: existing map-branch wrapper repair handled simpler one-line cases, but not this multiline branch stack. |
+| 740 | Unexpected `const` | `src/App.tsx` | 4 | An orphan `SVG,` line leaked above the icon comment block and left the top-level file in an invalid token stream before the first icon component declaration. | No: prior comment repairs did not drop stray `SVG,` import/comment bleed lines. |
+| 742 | Unterminated regular expression | `src/components/Sidebar.tsx` | 38 | Nested sidebar `.map(... => (` items closed the wrapper stack in the wrong order, so the item label block and the branch closer landed outside the active JSX subtree. | Partial: existing wrapper-closing repair handled direct sibling leaks, but not multiline nested map-item closers. |
+
+### Follow-Up Corruption Families Added After Timed-Out Batch `738-742`
+
+| Pattern | Frequency | Representative Projects | Fix Applied |
+|---|---|---|---|
+| Split quoted literals in dense JSX handlers/conditions | 1 | `738` | Added a deterministic quoted-literal join repair for line-split `'value'` / `"value"` tokens in comparisons, calls, and object-like argument lists. |
+| Dense inline SVG/text and tooltip closer loss | 1 | `738` | Added explicit repairs for missing `</svg>` before plain text inside inline icon buttons and missing `</foreignObject></g>` before tooltip branch closers. |
+| Multiline `.map(... => (` branch closer leakage | 2 | `739`, `742` | Added a stack-based multiline map-branch closer repair and re-ran it late in the chain so nested wrapper stacks are restored before final JSX balancing. |
+| Orphan `SVG,` import/comment bleed line | 1 | `740` | Added a narrow cleanup for standalone `SVG,` lines that leak directly into icon comment / icon component blocks. |
+| Non-idempotent chart footer closer recovery | 1 | `739` | Tightened the chart-footer wrapper closer repair to anchor on the last real branch terminator so re-normalizing an already-fixed file does not reintroduce malformed closers. |
+
+### Manual Build Verification After Timed-Out Batch `738-742`
+
+- Project `738`: after re-running the current normalizer across the generated workspace, `npm.cmd run build` succeeded and produced `generated/738/v1/code/dist/index.html`.
+- Project `739`: after re-running the current normalizer across the generated workspace, `npm.cmd run build` succeeded and produced `generated/739/v1/code/dist/index.html`.
+- Project `740`: after re-running the current normalizer across the generated workspace, `npm.cmd run build` succeeded and produced `generated/740/v1/code/dist/index.html`.
+- Project `742`: after re-running the current normalizer across the generated workspace, `npm.cmd run build` succeeded and produced `generated/742/v1/code/dist/index.html`.
+- Together with the scored success for `741`, this means all five projects from the `738-742` validation attempt now build successfully after the latest runtime repair batch, even though four of them timed out before the eval loop wrote complete preview metadata.
+
 ### Pending Validation
 
-- Dashboard reliability has still not been re-measured with a fresh 5-run batch after the latest repair batches.
+- Dashboard reliability has still not been re-measured with a fresh 5-run batch after the latest repair batches and the `738-742` follow-up fixes.
 - Next required step remains a fresh `python eval/eval_loop.py --archetype dashboard --runs 5 --skip-image-gen` validation pass with the backend running.

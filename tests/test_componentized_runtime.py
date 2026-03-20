@@ -5373,6 +5373,48 @@ const View = () => (
         self.assertIn("}\nconst TransactionForm:", normalized)
         self.assertNotIn("provided} */\nconst TransactionForm", normalized)
 
+    def test_normalize_componentized_file_repairs_project_738_split_quoted_literals(self):
+        source_path = REPO_ROOT / "generated" / "738" / "v1" / "code" / "src" / "components" / "PerformanceChart.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/PerformanceChart.tsx", source)
+
+        self.assertIn("action === 'export'", normalized)
+        self.assertIn("handleChipClick('export')", normalized)
+        self.assertIn("</svg>Export CSV</button>", normalized)
+        self.assertIn("</foreignObject></g>", normalized)
+        self.assertNotIn("action === '\nexport'", normalized)
+        self.assertNotIn("handleChipClick('\nexport')", normalized)
+
+    def test_normalize_componentized_file_repairs_project_739_multiline_map_button_closer(self):
+        source_path = REPO_ROOT / "generated" / "739" / "v1" / "code" / "src" / "components" / "PerformanceChart.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/PerformanceChart.tsx", source)
+
+        self.assertIn("</button>\n            ))}\n          </div>", normalized)
+        self.assertNotIn("</div>\n            ))}\n          </div>", normalized)
+
+    def test_normalize_componentized_file_repairs_project_740_orphan_svg_import_comment_line(self):
+        source_path = REPO_ROOT / "generated" / "740" / "v1" / "code" / "src" / "App.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/App.tsx", source)
+
+        self.assertNotIn("\nSVG,\n", normalized)
+        self.assertIn("/* Icons (simplified for embedding, normally in separate files) */", normalized)
+        self.assertIn("const DashboardIcon = () => <svg", normalized)
+
+    def test_normalize_componentized_file_repairs_project_742_multiline_map_item_closer(self):
+        source_path = REPO_ROOT / "generated" / "742" / "v1" / "code" / "src" / "components" / "Sidebar.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/Sidebar.tsx", source)
+
+        self.assertIn("<span>{item.label}</span>\n              </div>\n            ))}", normalized)
+        self.assertIn("            ))}\n          </div>\n        ))}\n      </nav>", normalized)
+        self.assertIn("      <div className=\"sidebar-user\">", normalized)
+
 
 if __name__ == "__main__":
     unittest.main()
