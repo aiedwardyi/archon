@@ -745,7 +745,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             index_css = (code_dir / "src" / "index.css").read_text(encoding="utf-8")
             self.assertNotIn("font-family: system-ui", index_css)
             self.assertIn("intentionally minimal", index_css)
-            self.assertIn('"build": "vite build"', (code_dir / "package.json").read_text(encoding="utf-8"))
+            self.assertIn('"build": "node ./node_modules/vite/bin/vite.js build"', (code_dir / "package.json").read_text(encoding="utf-8"))
             self.assertIn('"noUnusedLocals": false', (code_dir / "tsconfig.json").read_text(encoding="utf-8"))
             self.assertIn("tsconfig.json", result["created_files"])
         finally:
@@ -1554,7 +1554,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             package_json = (code_dir / "package.json").read_text(encoding="utf-8")
             self.assertIn('"type": "module"', package_json)
             self.assertNotIn("\\n", package_json)
-            self.assertIn('"build": "vite build"', package_json)
+            self.assertIn('"build": "node ./node_modules/vite/bin/vite.js build"', package_json)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
@@ -2368,7 +2368,7 @@ const View = () => (
             self.assertTrue((code_dir / "node_modules" / ".bin" / "vite.cmd").exists())
             self.assertTrue((code_dir / "node_modules" / ".bin" / "vite").exists())
 
-    def test_ensure_componentized_workspace_support_precreates_vite_bin_shims_from_package_json(self):
+    def test_ensure_componentized_workspace_support_rewrites_vite_scripts_without_precreating_node_modules(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             code_dir = Path(tmpdir)
             (code_dir / "package.json").write_text(
@@ -2384,9 +2384,12 @@ const View = () => (
 
             result = ensure_componentized_workspace_support(code_dir)
 
-            self.assertIn("node_modules/.bin/vite.cmd", result["created_files"])
-            self.assertTrue((code_dir / "node_modules" / ".bin" / "vite.cmd").exists())
-            self.assertTrue((code_dir / "node_modules" / ".bin" / "vite").exists())
+            package_json = (code_dir / "package.json").read_text(encoding="utf-8")
+            self.assertIn('"build": "node ./node_modules/vite/bin/vite.js build"', package_json)
+            self.assertIn('"dev": "node ./node_modules/vite/bin/vite.js"', package_json)
+            self.assertIn('"preview": "node ./node_modules/vite/bin/vite.js preview"', package_json)
+            self.assertFalse((code_dir / "node_modules").exists())
+            self.assertNotIn("node_modules/.bin/vite.cmd", result["created_files"])
 
     def test_ensure_componentized_workspace_support_strips_main_entry_import_note_bleed(self):
         code_dir = _case_dir("componentized-runtime-main-entry-import-note-bleed")

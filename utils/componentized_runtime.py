@@ -2366,11 +2366,27 @@ def _normalize_componentized_package_json(source: str) -> str:
 
     scripts = data.setdefault("scripts", {})
     if isinstance(scripts, dict):
+        vite_cli = "node ./node_modules/vite/bin/vite.js"
+
+        def _rewrite_vite_command(value: str, fallback: str) -> str:
+            command = str(value or "").strip()
+            if not command:
+                return fallback
+            if "tsc" in command:
+                return fallback
+            if vite_cli in command:
+                return command
+            if re.search(r"(?<![\w./-])vite(?![\w./-])", command):
+                return re.sub(r"(?<![\w./-])vite(?![\w./-])", vite_cli, command)
+            return command
+
         build_value = str(scripts.get("build") or "").strip()
-        if not build_value or "tsc" in build_value:
-            scripts["build"] = "vite build"
-        scripts.setdefault("dev", "vite")
-        scripts.setdefault("preview", "vite preview")
+        scripts["build"] = _rewrite_vite_command(build_value, f"{vite_cli} build")
+        scripts["dev"] = _rewrite_vite_command(str(scripts.get("dev") or "").strip(), vite_cli)
+        scripts["preview"] = _rewrite_vite_command(
+            str(scripts.get("preview") or "").strip(),
+            f"{vite_cli} preview",
+        )
 
     normalized = json.dumps(data, indent=2, ensure_ascii=False)
     return normalized + "\n"
@@ -2550,27 +2566,8 @@ def _sync_componentized_package_dependencies(code_dir: Path) -> list[str]:
 
 
 def _ensure_componentized_vite_bin_shims(code_dir: Path) -> list[str]:
-    package_json_path = code_dir / "package.json"
     vite_entry = code_dir / "node_modules" / "vite" / "bin" / "vite.js"
-    wants_vite = vite_entry.exists()
-
-    if package_json_path.exists():
-        try:
-            package_data = json.loads(package_json_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            package_data = None
-        if isinstance(package_data, dict):
-            scripts = package_data.get("scripts")
-            dependencies = package_data.get("dependencies")
-            dev_dependencies = package_data.get("devDependencies")
-            if isinstance(scripts, dict) and any("vite" in str(value) for value in scripts.values()):
-                wants_vite = True
-            if isinstance(dependencies, dict) and "vite" in dependencies:
-                wants_vite = True
-            if isinstance(dev_dependencies, dict) and "vite" in dev_dependencies:
-                wants_vite = True
-
-    if not wants_vite:
+    if not vite_entry.exists():
         return []
 
     bin_dir = code_dir / "node_modules" / ".bin"
