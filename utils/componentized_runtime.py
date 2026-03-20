@@ -345,6 +345,10 @@ COMMENTED_DESTRUCTURED_PROP_RE = re.compile(
     r"^(?P<indent>[ \t]*)/\*\s*(?P<name>[A-Za-z_$][\w$]*)\s*,?\s*\*/\s*$",
     re.MULTILINE,
 )
+SPLIT_STATE_SETTER_RE = re.compile(
+    r"(?P<prefix>\bset)\s*\n\s*(?P<rest>[A-Z][A-Za-z0-9_$]+)(?=\s*\()",
+    re.MULTILINE,
+)
 ORPHAN_PROSE_COMMENT_LINE_RE = re.compile(
     r"^(?P<indent>[ \t]*)(?P<prose>[A-Z][A-Za-z0-9$%/(),.:'` =+\-<>]{8,240}?)(?:\s*/\*\s*(?P<tail>[^\n]{1,240}?)\s*\*/)?\s*$",
     re.MULTILINE,
@@ -367,6 +371,10 @@ LOGICAL_SVG_SIBLING_CONDITION_RE = re.compile(
 )
 BARE_JSX_ARRAY_MAP_EXPRESSION_RE = re.compile(
     r"(?P<prefix>\{/\*[^*\n]{1,200}\*/\})(?P<expr>\[[^\n]{1,240}?\]\.map\([\s\S]{1,1600}?\)\))(?P<suffix>\})",
+    re.MULTILINE,
+)
+INLINE_JSX_ATTRIBUTE_BLOCK_COMMENT_RE = re.compile(
+    r"(?P<attr>\b[A-Za-z_:][-A-Za-z0-9_:.]*\s*=\s*(?:\{[^{}\n]*\}|\"[^\n\"]*\"|'[^\n']*'))\s*/\*[\s\S]{0,200}?(?=\s+[A-Za-z_:][-A-Za-z0-9_:.]*\s*=)",
     re.MULTILINE,
 )
 COMPONENTIZED_JSX_RETURN_RE = re.compile(
@@ -1557,6 +1565,7 @@ def ensure_componentized_workspace_support(
     synced_dependencies = _sync_componentized_package_dependencies(code_dir)
     if synced_dependencies:
         rewritten_files.append("package.json")
+    created_files.extend(_ensure_componentized_vite_bin_shims(code_dir))
 
     return {
         "created_files": created_files,
@@ -2223,6 +2232,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_inline_block_comment_note_code_bleed(updated)
         updated = _repair_inline_block_comment_swallowed_calls(updated)
         updated = _repair_unterminated_inline_block_comments(updated)
+        updated = _repair_componentized_split_state_setters(updated)
         updated = _repair_componentized_commented_destructured_props(updated)
         updated = _repair_componentized_orphan_prose_comment_lines(updated)
         updated = _normalize_run_on_inline_comments(updated)
@@ -2232,6 +2242,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_componentized_jsx_block_comment_bleed(updated)
         updated = _repair_componentized_jsx_text_comment_bleed(updated)
         updated = _repair_componentized_jsx_attribute_comment_bleed(updated)
+        updated = _repair_componentized_inline_jsx_attribute_block_comments(updated)
         updated = _repair_componentized_jsx_tag_comment_lines(updated)
         updated = _repair_componentized_jsx_text_comment_line_bleed(updated)
         updated = _repair_componentized_jsx_handler_comment_close_bleed(updated)
@@ -2265,6 +2276,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_componentized_svg_namespace_protocol(updated)
         updated = _repair_componentized_split_svg_value_attributes(updated)
         updated = _repair_componentized_bare_jsx_array_map_expressions(updated)
+        updated = _repair_componentized_self_closing_component_orphan_closers(updated)
         updated = _repair_componentized_self_closing_component_children(updated)
         updated = _repair_componentized_ternary_branch_orphan_closing_tags(updated)
         updated = _repair_componentized_layout_main_wrapper_leaks(updated)
@@ -2283,6 +2295,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_componentized_link_self_closing_children(updated)
         updated = _repair_componentized_bare_react_fragment_closers(updated)
         updated = _repair_componentized_inline_mismatched_closing_tags(updated)
+        updated = _repair_componentized_self_closing_component_orphan_closers(updated)
         updated = _remove_componentized_orphan_jsx_closing_brace_lines(updated)
         updated = _repair_componentized_missing_sibling_closing_tags(updated)
         updated = _remove_componentized_duplicate_closing_tag_lines(updated)
@@ -2295,6 +2308,7 @@ def _normalize_componentized_file(rel_path: str, source: str) -> str:
         updated = _repair_componentized_layout_main_wrapper_leaks(updated)
         updated = _repair_componentized_commented_destructured_props(updated)
         updated = _repair_componentized_orphan_prose_comment_lines(updated)
+        updated = _repair_componentized_split_state_setters(updated)
 
     return updated
 
@@ -2407,7 +2421,70 @@ def _repair_json_escape_noise(source: str) -> str:
     return repaired_source
 
 
+def _strip_json_comments(source: str) -> str:
+    repaired: list[str] = []
+    in_string = False
+    escaped = False
+    in_line_comment = False
+    in_block_comment = False
+    idx = 0
+
+    while idx < len(source):
+        char = source[idx]
+        next_char = source[idx + 1] if idx + 1 < len(source) else ""
+
+        if in_line_comment:
+            if char in "\r\n":
+                in_line_comment = False
+                repaired.append(char)
+            idx += 1
+            continue
+
+        if in_block_comment:
+            if char == "*" and next_char == "/":
+                in_block_comment = False
+                idx += 2
+                continue
+            if char in "\r\n":
+                repaired.append(char)
+            idx += 1
+            continue
+
+        if in_string:
+            repaired.append(char)
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            idx += 1
+            continue
+
+        if char == '"':
+            in_string = True
+            repaired.append(char)
+            idx += 1
+            continue
+
+        if char == "/" and next_char == "/":
+            in_line_comment = True
+            idx += 2
+            continue
+
+        if char == "/" and next_char == "*":
+            in_block_comment = True
+            idx += 2
+            continue
+
+        repaired.append(char)
+        idx += 1
+
+    return "".join(repaired)
+
+
 def _repair_json_leading_comma_noise(source: str) -> str:
+    source = re.sub(r'(?m)^[ \t]*,[ \t]*(?:(?:/\*.*\*/)|(?://.*))?$', "", source)
     return re.sub(r'(^[ \t]*),([ \t]*(?:"|\{|\[))', r"\1\2", source, flags=re.MULTILINE)
 
 
@@ -2470,9 +2547,41 @@ def _sync_componentized_package_dependencies(code_dir: Path) -> list[str]:
     return added
 
 
+def _ensure_componentized_vite_bin_shims(code_dir: Path) -> list[str]:
+    vite_entry = code_dir / "node_modules" / "vite" / "bin" / "vite.js"
+    if not vite_entry.exists():
+        return []
+
+    bin_dir = code_dir / "node_modules" / ".bin"
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    created: list[str] = []
+
+    vite_cmd = bin_dir / "vite.cmd"
+    if not vite_cmd.exists():
+        vite_cmd.write_text(
+            "@ECHO off\r\n"
+            "SETLOCAL\r\n"
+            "node \"%~dp0\\..\\vite\\bin\\vite.js\" %*\r\n",
+            encoding="utf-8",
+        )
+        created.append("node_modules/.bin/vite.cmd")
+
+    vite_sh = bin_dir / "vite"
+    if not vite_sh.exists():
+        vite_sh.write_text(
+            "#!/bin/sh\n"
+            "basedir=$(dirname \"$0\")\n"
+            "node \"$basedir/../vite/bin/vite.js\" \"$@\"\n",
+            encoding="utf-8",
+        )
+        created.append("node_modules/.bin/vite")
+
+    return created
+
+
 def _normalize_componentized_tsconfig(source: str) -> str:
     source = _repair_json_missing_property_commas(
-        _repair_json_leading_comma_noise(_repair_json_escape_noise(source))
+        _repair_json_leading_comma_noise(_strip_json_comments(_repair_json_escape_noise(source)))
     )
     try:
         data = json.loads(source)
@@ -5529,6 +5638,108 @@ def _repair_componentized_logical_svg_sibling_conditions(source: str) -> str:
     )
 
 
+def _repair_componentized_self_closing_component_orphan_closers(source: str) -> str:
+    open_tag_re = re.compile(r"<(?P<tag>[A-Z][A-Za-z0-9.]*)\b")
+    closer_template = r"</{}\s*>"
+    repaired: list[str] = []
+    cursor = 0
+    idx = 0
+    changed = False
+
+    def _find_tag_end(start_index: int) -> int:
+        brace_depth = 0
+        in_single = False
+        in_double = False
+        in_template = False
+        escaped = False
+        scan = start_index
+
+        while scan < len(source):
+            char = source[scan]
+            if in_single:
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == "'":
+                    in_single = False
+                scan += 1
+                continue
+
+            if in_double:
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == '"':
+                    in_double = False
+                scan += 1
+                continue
+
+            if in_template:
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == "`":
+                    in_template = False
+                scan += 1
+                continue
+
+            if char == "'":
+                in_single = True
+            elif char == '"':
+                in_double = True
+            elif char == "`":
+                in_template = True
+            elif char == "{":
+                brace_depth += 1
+            elif char == "}" and brace_depth > 0:
+                brace_depth -= 1
+            elif char == ">" and brace_depth == 0:
+                return scan
+
+            scan += 1
+
+        return -1
+
+    while True:
+        match = open_tag_re.search(source, idx)
+        if not match:
+            break
+
+        tag_end = _find_tag_end(match.start())
+        if tag_end == -1:
+            break
+
+        tag_text = source[match.start():tag_end + 1]
+        if not tag_text.rstrip().endswith("/>"):
+            idx = tag_end + 1
+            continue
+
+        whitespace_end = tag_end + 1
+        while whitespace_end < len(source) and source[whitespace_end].isspace():
+            whitespace_end += 1
+
+        closer_match = re.match(closer_template.format(re.escape(match.group("tag"))), source[whitespace_end:])
+        if not closer_match:
+            idx = tag_end + 1
+            continue
+
+        repaired.append(source[cursor:match.start()])
+        repaired.append(tag_text)
+        repaired.append(source[tag_end + 1:whitespace_end])
+        cursor = whitespace_end + closer_match.end()
+        idx = cursor
+        changed = True
+
+    if not changed:
+        return source
+
+    repaired.append(source[cursor:])
+    return "".join(repaired)
+
+
 def _repair_componentized_self_closing_component_children(source: str) -> str:
     updated = source
     for _ in range(6):
@@ -5554,6 +5765,13 @@ def _repair_componentized_self_closing_component_children(source: str) -> str:
 def _repair_componentized_bare_jsx_array_map_expressions(source: str) -> str:
     return BARE_JSX_ARRAY_MAP_EXPRESSION_RE.sub(
         lambda match: f"{match.group('prefix')}{{{match.group('expr')}}}{match.group('suffix')}",
+        source,
+    )
+
+
+def _repair_componentized_inline_jsx_attribute_block_comments(source: str) -> str:
+    return INLINE_JSX_ATTRIBUTE_BLOCK_COMMENT_RE.sub(
+        lambda match: match.group("attr"),
         source,
     )
 
@@ -5735,6 +5953,13 @@ def _repair_componentized_ternary_branch_orphan_closing_tags(source: str) -> str
 def _repair_componentized_commented_destructured_props(source: str) -> str:
     return COMMENTED_DESTRUCTURED_PROP_RE.sub(
         lambda match: f"{match.group('indent')}{match.group('name')},",
+        source,
+    )
+
+
+def _repair_componentized_split_state_setters(source: str) -> str:
+    return SPLIT_STATE_SETTER_RE.sub(
+        lambda match: f"{match.group('prefix')}{match.group('rest')}",
         source,
     )
 

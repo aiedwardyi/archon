@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -2271,6 +2273,72 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertIn("{/* Horizontal grid lines */}{[...Array(5)].map((_, i) => (", normalized)
         self.assertNotIn("{/* Horizontal grid lines */}[...Array(5)].map((_, i) => (", normalized)
         self.assertNotIn("</path>", normalized)
+
+    def test_normalize_componentized_file_repairs_project_672_split_state_setter_and_component_closer_leaks(self):
+        source_path = REPO_ROOT / "generated" / "672" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/Dashboard.tsx", source)
+
+        self.assertIn("setIsTransactionFormOpen(true)", normalized)
+        self.assertNotIn("set\nIsTransactionFormOpen(true)", normalized)
+        self.assertIn("<PortfolioSummary onAddHoldingClick={() => setIsTransactionFormOpen(true)}>", normalized)
+        self.assertNotIn("<PortfolioSummary onAddHoldingClick={() => setIsTransactionFormOpen(true)} />", normalized)
+        self.assertNotIn("</CryptoSearch>", normalized)
+        self.assertNotIn("</TransactionForm>", normalized)
+
+    def test_normalize_componentized_file_repairs_project_674_tsconfig_standalone_comma_noise(self):
+        source_path = REPO_ROOT / "generated" / "674" / "v1" / "code" / "tsconfig.json"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("tsconfig.json", source)
+
+        self.assertNotIn("\n    ,\n", normalized)
+        data = json.loads(normalized)
+        self.assertFalse(data["compilerOptions"]["noUnusedLocals"])
+        self.assertFalse(data["compilerOptions"]["noUnusedParameters"])
+
+    def test_normalize_componentized_file_repairs_inline_jsx_attribute_block_comment_bleed(self):
+        source = """
+const View = () => (
+  <text
+    key={`y-label-${index}`}
+    x={-10} /* Position slightly outside to the left                  y={y + 5}
+    textAnchor="start"
+    className="chart-axis-label"
+  >
+    ${value}k
+  </text>
+);
+""".lstrip()
+
+        normalized = _normalize_componentized_file("src/pages/DashboardPage.tsx", source)
+
+        self.assertIn("x={-10}", normalized)
+        self.assertIn("textAnchor=\"start\"", normalized)
+        self.assertNotIn("/* Position slightly outside to the left", normalized)
+
+    def test_ensure_componentized_workspace_support_restores_missing_vite_bin_shims(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            code_dir = Path(tmpdir)
+            (code_dir / "package.json").write_text(
+                (REPO_ROOT / "generated" / "675" / "v1" / "code" / "package.json").read_text(encoding="utf-8"),
+                encoding="utf-8",
+            )
+            (code_dir / "tsconfig.json").write_text(
+                '{"compilerOptions":{"jsx":"react-jsx"},"include":["src"]}\n',
+                encoding="utf-8",
+            )
+            (code_dir / "src").mkdir()
+            (code_dir / "src" / "App.tsx").write_text("export default function App() { return <div />; }\n", encoding="utf-8")
+            (code_dir / "node_modules" / "vite" / "bin").mkdir(parents=True)
+            (code_dir / "node_modules" / "vite" / "bin" / "vite.js").write_text("console.log('vite');\n", encoding="utf-8")
+
+            result = ensure_componentized_workspace_support(code_dir)
+
+            self.assertIn("node_modules/.bin/vite.cmd", result["created_files"])
+            self.assertTrue((code_dir / "node_modules" / ".bin" / "vite.cmd").exists())
+            self.assertTrue((code_dir / "node_modules" / ".bin" / "vite").exists())
 
     def test_ensure_componentized_workspace_support_strips_main_entry_import_note_bleed(self):
         code_dir = _case_dir("componentized-runtime-main-entry-import-note-bleed")
