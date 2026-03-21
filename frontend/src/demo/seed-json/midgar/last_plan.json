@@ -1,0 +1,526 @@
+{
+  "milestones": [
+    {
+      "name": "Milestone 1: Project Setup & Foundation",
+      "tasks": [
+        {
+          "id": "PLAN-1",
+          "description": "Initial Project Planning and Tech Stack Confirmation based on PRD.",
+          "depends_on": [],
+          "outputs": [
+            "Project Plan Document",
+            "Confirmed Tech Stack"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "BE-1",
+          "description": "Design database schema for characters, weapons, and map locations.",
+          "depends_on": [
+            "PLAN-1"
+          ],
+          "outputs": [
+            "Database Schema Document"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "BE-2",
+          "description": "Design API endpoints for retrieving character, weapon, and map data.",
+          "depends_on": [
+            "BE-1"
+          ],
+          "outputs": [
+            "API Specification Document"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "FE-1",
+          "description": "Set up the frontend project structure and basic build pipeline.",
+          "depends_on": [
+            "PLAN-1"
+          ],
+          "outputs": [
+            "Frontend Repository Initialized",
+            "Basic Build Config"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "FE-2",
+          "description": "Develop core design system elements and theming aligned with Final Fantasy 7 aesthetics.",
+          "depends_on": [
+            "FE-1"
+          ],
+          "outputs": [
+            "Design System Guidelines",
+            "Base CSS/Theming"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "DOC-1",
+          "description": "Create initial API documentation for backend endpoints.",
+          "depends_on": [
+            "BE-2"
+          ],
+          "outputs": [
+            "Initial API Documentation"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        }
+      ]
+    },
+    {
+      "name": "Milestone 2: Core Content Implementation (Characters & Weapons)",
+      "tasks": [
+        {
+          "id": "BE-3",
+          "description": "Implement backend API endpoints for character data retrieval.",
+          "depends_on": [
+            "BE-2"
+          ],
+          "outputs": [
+            "Character API Endpoints Implemented"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "BE-4",
+          "description": "Implement backend API endpoints for weapon data retrieval.",
+          "depends_on": [
+            "BE-2"
+          ],
+          "outputs": [
+            "Weapon API Endpoints Implemented"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "FE-3",
+          "description": "Develop the UI component for displaying detailed character profiles.",
+          "depends_on": [
+            "FE-1",
+            "FE-2"
+          ],
+          "outputs": [
+            "Character Profile UI Component"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "FE-4",
+          "description": "Develop the UI component for displaying the weapons list and details.",
+          "depends_on": [
+            "FE-1",
+            "FE-2"
+          ],
+          "outputs": [
+            "Weapons List UI Component"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "FE-5",
+          "description": "Integrate character and weapon data from backend APIs into their respective frontend components.",
+          "depends_on": [
+            "FE-3",
+            "FE-4",
+            "BE-3",
+            "BE-4"
+          ],
+          "outputs": [
+            "Character & Weapon Pages Populated"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "QA-1",
+          "description": "Validate accuracy and completeness of character and weapon data displayed on the site.",
+          "depends_on": [
+            "FE-5"
+          ],
+          "outputs": [
+            "Content Data Validation Report"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        }
+      ]
+    },
+    {
+      "name": "Milestone 3: Interactive Map & Search",
+      "tasks": [
+        {
+          "id": "BE-5",
+          "description": "Design and implement backend data structure and API for interactive map locations and details.",
+          "depends_on": [
+            "BE-1",
+            "BE-2"
+          ],
+          "outputs": [
+            "Map Data Schema",
+            "Map Data API Endpoints"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "FE-6",
+          "description": "Develop the interactive game map UI component with clickable locations and information overlays.",
+          "depends_on": [
+            "FE-1",
+            "FE-2",
+            "BE-5"
+          ],
+          "outputs": [
+            "Interactive Map UI Component"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "FE-7",
+          "description": "Implement frontend search functionality for characters and weapons.",
+          "depends_on": [
+            "FE-1",
+            "FE-2"
+          ],
+          "outputs": [
+            "Search UI Component"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "BE-6",
+          "description": "Implement backend API endpoint for searching across characters and weapons.",
+          "depends_on": [
+            "BE-3",
+            "BE-4",
+            "BE-5"
+          ],
+          "outputs": [
+            "Search API Endpoint Implemented"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "QA-2",
+          "description": "Test interactive map functionality and search accuracy.",
+          "depends_on": [
+            "FE-6",
+            "FE-7",
+            "BE-6"
+          ],
+          "outputs": [
+            "Map & Search Test Report"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        }
+      ]
+    },
+    {
+      "name": "Milestone 4: Build & Integrate Fan Page Site, Responsive Design & Polish",
+      "tasks": [
+        {
+          "id": "FE-SCAFFOLD-1",
+          "description": "Build the complete Final Fantasy 7 Fan Page Site as a single self-contained HTML file, integrating all core features.",
+          "depends_on": [
+            "FE-5",
+            "FE-6",
+            "FE-7",
+            "BE-6"
+          ],
+          "outputs": [
+            "Final Fantasy 7 Fan Page Site (HTML)"
+          ],
+          "execution_hint": "engineer",
+          "task_type": "scaffold",
+          "output_files": [
+            "src/index.html"
+          ],
+          "ui_archetype": "feed",
+          "archetype_rules": {
+            "required_blocks": [
+              "featured_card",
+              "card_grid",
+              "filter_tabs"
+            ],
+            "required_interactions": [
+              "search",
+              "filter"
+            ],
+            "avoid": [
+              "sidebar_nav",
+              "kpis"
+            ],
+            "layout_contract": {
+              "regions": [
+                "topbar",
+                "featured",
+                "card_grid"
+              ],
+              "sidebar": null,
+              "topbar": [
+                "search",
+                "filter_tabs"
+              ],
+              "main_grid": [
+                {
+                  "row": 1,
+                  "component": "featured_card",
+                  "count": null,
+                  "aspect_ratio": "16:5",
+                  "left": null,
+                  "right": null,
+                  "ratio": null
+                },
+                {
+                  "row": 2,
+                  "component": "card_grid",
+                  "count": 6,
+                  "aspect_ratio": null,
+                  "left": null,
+                  "right": null,
+                  "ratio": null
+                }
+              ],
+              "density": "comfortable"
+            },
+            "content_contract": {
+              "kpi_labels": [],
+              "table_columns": [
+                "title",
+                "author",
+                "date",
+                "tags"
+              ],
+              "seed_rows": 6,
+              "required_states": [
+                "loading",
+                "empty",
+                "search_results"
+              ]
+            }
+          }
+        },
+        {
+          "id": "FE-8",
+          "description": "Implement responsive layouts for optimal viewing on various devices (desktop, tablet, mobile).",
+          "depends_on": [
+            "FE-SCAFFOLD-1"
+          ],
+          "outputs": [
+            "Responsive CSS/JS"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "FE-9",
+          "description": "Conduct cross-browser compatibility testing to ensure consistent experience.",
+          "depends_on": [
+            "FE-SCAFFOLD-1",
+            "FE-8"
+          ],
+          "outputs": [
+            "Browser Compatibility Report"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "FE-10",
+          "description": "Implement accessibility enhancements (ARIA attributes, keyboard navigation) for improved usability.",
+          "depends_on": [
+            "FE-SCAFFOLD-1"
+          ],
+          "outputs": [
+            "Accessibility Audit Report"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "QA-3",
+          "description": "Perform comprehensive UI/UX review and bug fixing across all features.",
+          "depends_on": [
+            "FE-SCAFFOLD-1",
+            "FE-8",
+            "FE-9",
+            "FE-10"
+          ],
+          "outputs": [
+            "UI/UX Review Report",
+            "Bug Fixes Implemented"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        }
+      ]
+    },
+    {
+      "name": "Milestone 5: Deployment Preparation",
+      "tasks": [
+        {
+          "id": "DEVOPS-1",
+          "description": "Set up the hosting environment for the fan page site.",
+          "depends_on": [
+            "PLAN-1"
+          ],
+          "outputs": [
+            "Hosting Environment Configured"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "DEVOPS-2",
+          "description": "Configure CI/CD pipeline for automated testing and deployment.",
+          "depends_on": [
+            "DEVOPS-1",
+            "FE-SCAFFOLD-1"
+          ],
+          "outputs": [
+            "CI/CD Pipeline Configured"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "DOC-2",
+          "description": "Create a comprehensive deployment guide and maintenance instructions.",
+          "depends_on": [
+            "DEVOPS-2"
+          ],
+          "outputs": [
+            "Deployment Documentation"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        },
+        {
+          "id": "QA-4",
+          "description": "Conduct final User Acceptance Testing (UAT) and performance testing before launch.",
+          "depends_on": [
+            "FE-SCAFFOLD-1",
+            "DEVOPS-2"
+          ],
+          "outputs": [
+            "UAT Report",
+            "Performance Test Results"
+          ],
+          "execution_hint": "defer",
+          "task_type": null,
+          "output_files": null,
+          "ui_archetype": null,
+          "archetype_rules": null
+        }
+      ]
+    }
+  ],
+  "assumptions": [
+    "The client will provide all necessary images and content for characters and weapons.",
+    "The site will not require user authentication or accounts at launch.",
+    "The project will be developed within a standard web development timeline.",
+    "Specific details for character profiles, weapon stats, and map locations will be provided by the client.",
+    "A preferred platform for hosting the website will be identified and provisioned.",
+    "Clear design elements and style guidelines to match the Final Fantasy 7 theme will be provided or approved."
+  ],
+  "risks": [
+    "Delays in content provision (images, descriptions, map data) from the client could impact project timeline.",
+    "Scope creep from 'nice-to-have' features or additional content requests could jeopardize MVP delivery.",
+    "Performance issues with the interactive map on older devices or slow internet connections.",
+    "Difficulty in achieving the desired 'Final Fantasy 7 theme' without explicit design assets or detailed guidelines.",
+    "Technical challenges with cross-browser compatibility for complex interactive elements.",
+    "Unforeseen complexities in integrating backend APIs with frontend components, leading to delays.",
+    "Lack of clarity on specific details for character profiles or map interactions could lead to rework."
+  ]
+}
