@@ -74,6 +74,9 @@ export default function Demo() {
               This public deployment is intentionally static. It showcases the strongest benchmark-backed outputs and core
               product surfaces without exposing live build endpoints, model execution paths, or billable generation APIs.
             </p>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-cyan-100/80 sm:text-base">
+              This page is the public demo. It is a read-only showcase of outputs, artifact surfaces, and architecture signals.
+            </p>
 
             <div className="mt-8 grid gap-3 text-sm text-slate-300 sm:grid-cols-3">
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -109,12 +112,19 @@ export default function Demo() {
                 Watch Demo
                 <ArrowRight className="h-4 w-4" />
               </a>
+              <a
+                href="#generated-examples"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-400/25 bg-cyan-400/10 px-5 py-3 text-sm font-semibold text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-400/15"
+              >
+                Jump To Showcase
+                <ArrowRight className="h-4 w-4" />
+              </a>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-16 sm:px-10 lg:px-12">
+      <section id="generated-examples" className="mx-auto max-w-7xl px-6 py-16 sm:px-10 lg:px-12">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-cyan-300">Selected Generated Examples</p>
@@ -139,6 +149,17 @@ export default function Demo() {
                 <blockquote className="mt-5 border-l border-cyan-300/30 pl-4 text-sm italic leading-7 text-slate-400">
                   “{example.prompt}”
                 </blockquote>
+                <div className="mt-6">
+                  <a
+                    href={example.image}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:border-cyan-300/40 hover:bg-white/10"
+                  >
+                    Open Full Capture
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </div>
               </div>
             </article>
           ))}
