@@ -68,14 +68,14 @@ export default function Demo() {
               Public Read-Only Showcase
             </div>
             <h1 className="max-w-4xl text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl">
-              Archon turns prompts into versioned application executions with preview, eval, and governance artifacts.
+              Archon turns prompts into versioned product delivery.
             </h1>
             <p className="mt-6 max-w-3xl text-base leading-8 text-slate-300 sm:text-lg">
-              This public deployment is intentionally static. It showcases the strongest benchmark-backed outputs and core
-              product surfaces without exposing live build endpoints, model execution paths, or billable generation APIs.
+              Explore a read-only enterprise workspace with pipeline history, live preview, governance factsheets, publish
+              flows, and downloadable artifacts.
             </p>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-cyan-100/80 sm:text-base">
-              This page is the public overview. The seeded enterprise demo lives one click deeper and stays fully read-only.
+              This page is the public overview. The seeded enterprise demo lives one click deeper.
             </p>
 
             <div className="mt-8 grid gap-3 text-sm text-slate-300 sm:grid-cols-3">

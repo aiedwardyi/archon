@@ -196,6 +196,8 @@ $env:VITE_PUBLIC_DEMO_MODE = "true"
 npm run build
 ```
 
+Live public demo: [archon.works](https://archon.works)
+
 The repo includes [amplify.yml](amplify.yml) for a frontend-only Amplify deployment that serves the read-only showcase page and keeps backend/model execution paths private.
 
 ## Further Reading
