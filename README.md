@@ -5,227 +5,144 @@
 ![Flask](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 
-# Archon — AI Dev Team Platform
+# Archon
 
-> **Notice:** This repository contains proprietary software. All rights reserved. See [LICENSE](LICENSE) for terms. Unauthorized use, reproduction, or distribution is prohibited.
+> Open source under [Apache-2.0](LICENSE). Forks and pull requests are welcome.
 
-> Digital agencies spend 70% of their time rebuilding and re-explaining decisions to clients. Archon solves this by generating complete web apps with a full audit trail — every decision recorded, every version restorable, every build IBM Watson-certified. Agencies close clients faster and reduce revision cycles by showing exactly what was built, when, and why.
+Archon is a multi-agent application delivery platform that turns a prompt into a versioned execution with artifacts, live preview, evaluation, and governance surfaces. It is designed around traceability, recovery, scoring, and auditability rather than a single prompt-to-page interaction.
 
-A multi-agent platform that converts product ideas into auditable web applications
-with full version history. Built for digital agencies and enterprises delivering
-client apps to non-technical clients.
+## What Archon Demonstrates
 
-**What makes Archon different:**
-- **Claude Opus 4.6** powers the Build Agent — generates production-grade full-stack code from natural language
-- Every prompt creates a full artifact set: Brief + Plan + Code + live preview
-- Complete version history — every decision is auditable and reversible
-- Agencies can show clients exactly what was built and why, version by version
-- Business language UI — no developer jargon anywhere
-- Korean/English language support
-- **Claude Vision** scores design quality in the automated eval loop
-- IBM Watson governance — every build is scored, audited, and factsheet-certified
-
-**The MOAT:** The Versions page. Competitors show current state only.
-Archon shows complete decision history with artifacts and live preview per version.
-
-## Model-Agnostic AI Stack
-
-Archon reads better as an orchestration system than as a one-model demo.
-
-The repo already spans multiple providers and operating modes:
-
-- **Anthropic Claude** for premium code generation and showcase-quality builds
-- **Google Gemini / Vertex AI** for planning, eval scoring, design direction, and image workflows
-- **IBM Watson NLU** for governance, prompt analysis, audit framing, and enterprise-friendly scoring
-- **OpenAI** in legacy and adjacent agent paths
-- **Local Ollama** for lower-cost eval scoring and prompt-improvement loops during repeated tuning
-
-That is useful portfolio signal because the system is intentionally:
-
-- model-agnostic
-- able to mix premium and economical models
-- usable in both cloud and local-eval modes
-- stable at the artifact/version/governance layer even when provider choices change
-
-## Portfolio Framing
-
-Archon is now best understood as a systems-focused portfolio project rather than a claim that simple prompt-to-app shells are a lasting moat. The strongest work in this repo is the versioned artifact pipeline, runtime repair, eval loop, auditability, and iteration history, not just the prompt box itself.
-
-See [docs/PORTFOLIO_POSITIONING.md](docs/PORTFOLIO_POSITIONING.md) for the current positioning and "done enough to move on" standard.
-
-## Bulk Vs Showcase Runs
-
-The repo now supports a cleaner split between repeated eval work and final demo passes:
-
-- `bulk` profile for cheaper reliability work and iteration loops
-- `showcase` profile for a small number of premium hero demos
-
-Recommended usage:
-
-```powershell
-# Bulk reliability / cheaper eval iteration
-python eval/eval_loop.py --config eval_config.json --profile bulk --archetype dashboard --runs 5 --skip-image-gen
-
-# Premium showcase pass for a hero demo
-$env:ENGINEER_MODEL = "claude"
-$env:ENGINEER_CLAUDE_MODEL = "claude-opus-4-6"
-$env:DESIGN_IMAGE_MODEL = "imagen-4.0-ultra-generate-001"
-python eval/eval_loop.py --config eval_config.json --profile showcase --archetype game --runs 1
-```
-
-Practical recommendation:
-
-- keep bulk loops cheap
-- use premium code generation only for a few final demos
-- keep IBM Watson in the story because governance and auditability matter to enterprise audiences
-- do not rerun expensive showcases if the current README demos are already strong enough
-
----
+- versioned artifact pipeline: brief, plan, code, preview, and factsheet per execution
+- model-agnostic orchestration across Anthropic, Google, IBM, OpenAI, and local Ollama-backed workflows
+- live version history with preview, restore, and prompt lineage
+- runtime repair and build-recovery work for brittle generated React/TypeScript/Vite outputs
+- automated eval loops with vision-based scoring and benchmark-driven iteration
+- governance surface with model registry, quality scoring, and human-review gating
 
 ## Demo
 
 [![Archon Demo](docs/screenshots/demo-thumbnail.png)](https://youtu.be/ci8xDNnxJKQ)
 
-> Watch the full demo — from prompt to deployed app in under 5 minutes.
+> Walkthrough: prompt to generated app, version history, preview, and governed delivery flow.
 
 ## Standout Enterprise Surface
 
-The governance / factsheet view is one of the strongest portfolio surfaces in the repo because it immediately communicates auditability, model traceability, and enterprise delivery posture.
+The governance / factsheet screen is one of the strongest product surfaces in the repo because it immediately communicates auditability, traceability, and enterprise delivery posture.
 
 [![AI Governance — IBM Watson Factsheet](docs/screenshots/dashboard-governance.png)](docs/screenshots/dashboard-governance.png)
 
-This screen highlights:
+What it shows:
 
 - prompt quality scoring
 - build confidence scoring
 - model registry visibility across providers
 - human-review gating
-- a client-facing, professional printout/export story
+- a client-facing print/export surface
 
----
+## Selected Generated Examples
 
-## Generated Examples
-
-Every app is generated from a single prompt — no templates, no manual coding. Here are examples produced by the platform:
+These examples represent the strongest generated outputs currently included in the repository.
 
 ### Crypto Portfolio Dashboard
 > Prompt: *"Build a crypto portfolio tracker with real-time prices, holdings table, and activity feed"*
 
 ![Crypto Dashboard](docs/screenshots/dashboard-crypto.jpg)
 
-### Halo Fan Page — Concurrent Runtime Demo
+### Halo Fan Page
 > Prompt: *"Build a premium Halo fan page centered on Master Chief, Cortana, and the Arbiter. Include a cinematic hero, polished character dossiers, a legendary weapon showcase, and an explorable ringworld atlas."*
 
 [![Halo Fan Page 2026](docs/screenshots/game-halo-20260316-thumb.jpg)](docs/screenshots/game-halo-20260316-full.jpg)
-
-### Final Fantasy VIII Fan Page — Branch Benchmark
-> Prompt: *"Build a Final Fantasy VIII fan page with character profiles, weapons gallery, and world map"*
-
-[![FF8 Fan Page 2026](docs/screenshots/game-ff8-20260316-thumb.jpg)](docs/screenshots/game-ff8-20260316-full.jpg)
-
-### Metroid Fan Page
-> Prompt: *"Build a premium Metroid fan page centered on Samus Aran. Include a cinematic hero, a polished dossier, a power suit showcase, and an explorable Zebes world map."*
-
-[![Metroid Fan Page 2026](docs/screenshots/game-metroid-20260316-thumb.jpg)](docs/screenshots/game-metroid-20260316-full.jpg)
-
-### Pokemon Kanto Starters Fan Page
-> Prompt: *"Build a premium Pokemon fan page centered on Charizard, Blastoise, and Venusaur. Include a cinematic hero, polished character dossiers, a full evolution showcase, a Kanto region map, and a gym badge collection."*
-
-[![Pokemon Fan Page 2026](docs/screenshots/game-pokemon-20260316-thumb.jpg)](docs/screenshots/game-pokemon-20260316-full.jpg)
-
-### Legend of Zelda Fan Page
-> Prompt: *"Build a premium Legend of Zelda fan page centered on Link, Princess Zelda, and Ganondorf. Include a cinematic hero, polished character dossiers, a legendary gear showcase, and an explorable Hyrule world map."*
-
-[![Zelda Fan Page 2026](docs/screenshots/game-zelda-20260316-thumb.jpg)](docs/screenshots/game-zelda-20260316-full.jpg)
 
 ### SaaS Landing Page
 > Prompt: *"Build a landing page for an AI-powered writing assistant with features, pricing, and testimonials"*
 
 [![WriteFlow Landing](docs/screenshots/saas-writeflow-thumb.jpg)](docs/screenshots/saas-writeflow-full.jpg)
 
-### Developer Portfolio
-> Prompt: *"Build a creative developer portfolio with project showcase, skills section, and contact form"*
+More examples live in [docs/SHOWCASE_GALLERY.md](docs/SHOWCASE_GALLERY.md).
 
-[![Developer Portfolio](docs/screenshots/portfolio-developer-thumb.jpg)](docs/screenshots/portfolio-developer-full.jpg)
+## Core Product Surfaces
 
----
+### Versions And Live Preview
 
-## Screenshots
+[![Versions](docs/screenshots/dashboard-versions.png)](docs/screenshots/dashboard-versions.png)
 
-<details open>
-<summary><strong>Projects Dashboard</strong></summary>
+This is the most differentiated surface in the repo: execution lineage, preview refresh, prompt history, and restore behavior in one place.
 
-![Projects Dashboard](docs/screenshots/dashboard-projects.png)
-</details>
+### Multi-Agent Pipeline
 
-<details open>
-<summary><strong>Multi-Agent Pipeline</strong></summary>
+[![Pipeline](docs/screenshots/dashboard-pipeline.png)](docs/screenshots/dashboard-pipeline.png)
 
-![Pipeline](docs/screenshots/dashboard-pipeline.png)
-</details>
+The system persists the intermediate work, not just the final output.
 
-<details open>
-<summary><strong>Versions & Live Preview</strong></summary>
+### Governance Factsheet
 
-![Versions](docs/screenshots/dashboard-versions.png)
-</details>
+[![Governance](docs/screenshots/dashboard-governance.png)](docs/screenshots/dashboard-governance.png)
 
-<details open>
-<summary><strong>Artifacts — AI-Generated Brief</strong></summary>
+This is the strongest enterprise-facing proof point in the product.
 
-![Brief](docs/screenshots/dashboard-brief.png)
-</details>
+## Model-Agnostic Design
 
-<details open>
-<summary><strong>AI Governance — IBM Watson Factsheet</strong></summary>
+Archon is intentionally designed to route across providers rather than depend on a single model story.
 
-![Governance](docs/screenshots/dashboard-governance.png)
-</details>
+- **Anthropic Claude** for premium code generation and showcase-quality runs
+- **Google Gemini / Vertex AI** for planning, design direction, and image workflows
+- **IBM Watson NLU** for governance, prompt analysis, and audit framing
+- **OpenAI** in adjacent or legacy agent paths
+- **Local Ollama** for lower-cost repeated evaluation and prompt-improvement loops
 
-<details open>
-<summary><strong>Consumer Frontend — Prompt Interface</strong></summary>
+This design supports:
 
-![Consumer Landing](docs/screenshots/consumer-landing.png)
-</details>
+- provider abstraction
+- premium vs economical routing
+- cloud and local evaluation modes
+- stable artifact/governance layers even as model choices change
 
----
+## Operating Modes
+
+The repo separates cheap repeated iteration from premium final demos:
+
+- `bulk` profile for repeated eval and reliability work
+- `showcase` profile for a small number of premium hero builds
+
+```powershell
+# Bulk reliability pass
+python eval/eval_loop.py --config eval_config.json --profile bulk --archetype dashboard --runs 5 --skip-image-gen
+
+# Premium showcase pass
+$env:ENGINEER_MODEL = "claude"
+$env:ENGINEER_CLAUDE_MODEL = "claude-opus-4-6"
+$env:DESIGN_IMAGE_MODEL = "imagen-4.0-ultra-generate-001"
+python eval/eval_loop.py --config eval_config.json --profile showcase --archetype game --runs 1
+```
 
 ## Architecture
-```
-User Input (Chat Panel)
-    ↓
-Watson NLU Pre-Analyzer (IBM Watson NLU — sentiment routing, keyword extraction)
-    ↓
-Prompt History (context continuation)
-    ↓
-Requirements Agent (OpenAI GPT-4o)  → Brief artifact (versioned)
-    ↓
-Architecture Agent (Gemini 2.5 Flash)     → Build Plan artifact (versioned)
-    ↓
-Design Agent (GPT-4o-mini + DALL-E 3)   → Image assets (versioned, parallel generation)
-    ↓
-Build Agent (Claude Opus 4.6)            → Code files (versioned)
-    ↓
-Eval System (Claude Sonnet 4.6)          → Vision-based quality scoring (8 dimensions)
-    ↓
-Governance Agent (IBM Watson NLU)   → AI Factsheet (scored, versioned, exportable)
-    ↓
-Execution Result → Database + UI + Version Timeline + Live Preview
+
+```text
+User Prompt
+  -> NLU / prompt analysis
+  -> requirements artifact
+  -> plan artifact
+  -> design + image workflow
+  -> code generation
+  -> build / preview
+  -> eval scoring
+  -> governance factsheet
+  -> version timeline + restoreable execution
 ```
 
----
+The result is a system where each run has visible lineage instead of a single opaque output.
 
 ## Quick Start
 
 ### Prerequisites
+
 - Python 3.11+
 - Node.js 18+
-- OpenAI API key
-- Anthropic API key (Build Agent — Claude Opus 4.6)
-- Google Gemini API key (Architecture Agent)
-- IBM Watson API keys (STT, TTS, NLU — optional, degrades gracefully)
+- API keys for the providers you want to enable
 
-### 1. Clone and install
+### Install
+
 ```powershell
 git clone https://github.com/aiedwardyi/ai-dev-team
 cd ai-dev-team
@@ -243,325 +160,40 @@ npm install
 cd ..
 ```
 
-### 2. Set API keys (each session)
-```powershell
-$env:OPENAI_API_KEY = "sk-proj-..."
-$env:ANTHROPIC_API_KEY = "sk-ant-..."
-$env:GENAI_API_KEY = "your_gemini_key"
-$env:WATSON_TTS_URL = "https://..."
-$env:WATSON_TTS_APIKEY = "your_api_key"
-$env:WATSON_STT_URL = "https://..."
-$env:WATSON_STT_APIKEY = "your_api_key"
-$env:WATSON_NLU_URL = "https://..."
-$env:WATSON_NLU_APIKEY = "your_api_key"
-```
+### Run
 
-### 3. Start the servers
 ```powershell
-# Terminal 1 — Flask backend (port 5000)
+# Backend
 .\venv\Scripts\Activate
 python backend/app.py
 
-# Terminal 2 — Studio UI (port 3000)
+# Studio UI
 cd frontend-studio
 npm run dev
 
-# Terminal 3 — Consumer UI (port 3002)
-cd frontend-consumer
+# Consumer UI
+cd ../frontend-consumer
 npm run dev
 
-# Terminal 4 — Enterprise UI (port 8080)
-cd frontend
+# Enterprise UI
+cd ../frontend
 npm run dev
 ```
 
-### 4. Open the app
-```
-Studio UI:      http://localhost:3000
-Consumer UI:    http://localhost:3002
-Enterprise UI:  http://localhost:8080
-```
+Default local ports:
 
----
+- Studio UI: `http://localhost:3000`
+- Consumer UI: `http://localhost:3002`
+- Enterprise UI: `http://localhost:8080`
 
-## Frontends
+## Further Reading
 
-| Frontend | Port | Description |
-|----------|------|-------------|
-| `frontend-studio/` | 3000 | Studio UI — full admin dashboard, 10 screens, light + dark mode |
-| `frontend-consumer/` | 3002 | Consumer UI — chat-first interface, Versions page, Korean/English toggle |
-| `frontend/` | 8080 | Enterprise UI — Vite + React + shadcn/ui, 4-theme system, governance dashboard |
-
-All three connect to the same Flask backend on port 5000.
-
----
-
-## Project Structure
-```
-ai-dev-team/
-├── agents/
-│   ├── pm_agent.py           # Requirements Agent (OpenAI GPT-4o-mini)
-│   ├── planner_agent.py      # Architecture Agent (Gemini Flash)
-│   ├── design_agent.py       # Design Agent (GPT-4o-mini + DALL-E 3)
-│   ├── engineer_agent.py     # Build Agent (Claude Opus 4.6, Gemini fallback)
-│   ├── nlu_agent.py          # NLU Agent (IBM Watson — sentiment + keyword analysis)
-│   └── governance_agent.py   # Governance Agent (IBM Watson NLU — AI Factsheets + scoring)
-├── backend/
-│   ├── app.py                # Flask API (port 5000)
-│   ├── models.py             # SQLAlchemy models (Project, Execution, User)
-│   └── database.py           # DB init
-├── frontend-studio/          # Studio UI (port 3000)
-│   ├── components/
-│   └── pages/
-├── frontend-consumer/       # Consumer UI (port 3002)
-│   ├── pages/
-│   ├── i18n.ts               # Korean/English translations
-│   └── services/
-│       └── orchestrator.ts   # Backend API client
-├── frontend/                 # Enterprise UI (port 8080)
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── WelcomeBanner.tsx    # Dashboard header — Avg Prompt/Build scores
-│   │   │   ├── ArtifactsView.tsx    # Governance sub-tab + Factsheet viewer
-│   │   │   └── BuildDetailsCard.tsx # Per-build stats (credits, model, duration)
-│   │   └── pages/
-├── prompts/
-│   └── engineer.txt          # Build Agent system prompt
-├── schemas/
-├── scripts/
-│   └── safe_write.py         # Iteration scope enforcement
-├── eval/
-│   ├── eval_runner.py        # Automated build → screenshot → score → improve loop
-│   ├── eval_scorer.py        # Vision-based scoring (Claude Sonnet 4.6)
-│   ├── eval_improver.py      # Prompt improvement based on scoring feedback
-│   ├── archetype_benchmarks.json # Shared registry for legacy reference builds + Discovery ingest candidates
-│   ├── scoring_rubric.py     # 8-dimension quality rubric with archetype criteria
-│   ├── screenshotter.py      # Playwright full-page screenshot capture
-│   └── eval_config.json      # Eval loop configuration
-├── docs/
-│   └── screenshots/          # Curated showcase images
-├── ROADMAP.md
-└── CURRENT_SPRINT.md
-```
-
----
-
-## Reference Build Registry
-
-Legacy strong builds are tracked in [eval/archetype_benchmarks.json](eval/archetype_benchmarks.json).
-
-- The backend uses this registry as a local fallback reference source when Watson Discovery is unavailable or has no matching archetype result.
-- `scripts/ingest_best_builds.py` also reads the same registry, so there is one canonical place to manage benchmark builds.
-- Portable benchmark source files live under `eval/benchmark_builds/` and should be committed if you want them available on another machine.
-- Seeded starter projects and older README showcase examples can be promoted into the same registry; copy their `src/` files into `eval/benchmark_builds/<label>/src/` and add an entry.
-- To add another legacy example, add one entry with:
-  - `project_id`
-  - `version`
-  - `archetype`
-  - `benchmark_path`
-  - `priority` (higher wins for local fallback)
-  - `label`
-  - optional `published_slug` when the legacy example only exists under `published/<slug>/src/`
-  - optional `prompt_summary` for published-only examples without a factsheet
-  - optional `prompt_hints` if that legacy example should also bias vague prompts toward its archetype
-  - optional `notes` for reusable design traits shared across that archetype's best legacy examples
-  - optional `global_guidance: true` if the example should influence premium interaction/polish guidance across all archetypes, not just its own
-  - optional `notes`
-  - optional `eval_score`
-  - `discovery_ingest: true` only if you want that build included in Discovery ingestion
-
-The generated files must exist at `generated/<project_id>/v<version>/`.
-
-To import a new portable benchmark source:
-
-```powershell
-python scripts/import_benchmark.py --label legacy-my-example --project-id 123 --version 1 --archetype saas_landing --generated --prompt-hint "my prompt phrase"
-```
-
-Or from a published artifact:
-
-```powershell
-python scripts/import_benchmark.py --label legacy-my-published-example --project-id 999 --version 1 --archetype game --published-slug my-site-v1-abcd
-```
-
-The script copies the source into `eval/benchmark_builds/<label>/src/` and prints the registry JSON entry to paste into `eval/archetype_benchmarks.json`.
-
-At runtime, Archon uses the registry in two ways:
-- Highest-priority matching entry can provide full reference HTML/CSS when Discovery has no suitable result.
-- All `notes` for the selected archetype are merged into benchmark guidance, so shared traits like premium card motion, glow systems, or archive-style interactions can influence new builds even when the prompt targets a different franchise.
-- Entries marked `global_guidance: true` also contribute cross-archetype polish guidance, useful for strong interaction-heavy utilities that should raise the quality floor everywhere.
-
----
-
-## API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/health` | Health check |
-| GET | `/api/projects` | List all projects |
-| POST | `/api/projects` | Create project |
-| GET | `/api/projects/:id` | Get project + executions |
-| DELETE | `/api/projects/:id` | Delete project |
-| POST | `/api/projects/:id/iterate` | Run pipeline iteration |
-| GET | `/api/projects/:id/versions` | Full version history |
-| GET | `/api/projects/:id/versions/:v/files` | Get code files for a version |
-| GET | `/api/projects/:id/versions/:v/factsheet` | Get AI Factsheet for a version |
-| GET | `/api/projects/:id/head` | Get active head version |
-| POST | `/api/projects/:id/chat` | Send chat message (NLU pre-analysis + routing) |
-| GET | `/api/projects/:id/chat-history` | Get persisted chat messages |
-| POST | `/api/executions/:id/restore` | Restore version as active HEAD |
-| GET | `/api/execution-status` | Poll live execution status |
-| GET | `/api/preview/:project_id/:version` | Serve generated HTML preview |
-| POST | `/api/projects/:id/versions/:v/publish` | Publish version to shareable URL |
-| GET | `/api/dashboard/stats` | Avg prompt + build scores across all executions |
-| GET | `/api/credits/balance` | Current credit balance |
-| GET | `/api/prd` | Latest Brief artifact |
-| GET | `/api/plan` | Latest Build Plan artifact |
-| GET | `/api/code` | Latest execution result |
-| GET | `/api/assets/:pid/:version/:file` | Serve design assets |
-| POST | `/api/watson/stt` | Speech to text (IBM Watson) |
-| POST | `/api/watson/tts` | Text to speech (IBM Watson) |
-
----
-
-## Key Features
-
-| Feature | Description |
-|---------|-------------|
-| Versions Page (MOAT) | Timeline + split panel with live preview per version |
-| Iteration Mode | Surgical edits with scope enforcement, ancestor chain walk |
-| Design Assets | DALL-E 3 images, reused on iterations (no regeneration) |
-| Archetype Lock | App type locked after v1, prevents unintended mutations |
-| Korean/English | Full i18n support with KO/EN toggle across all UIs |
-| Chat Persistence | Messages saved to DB, survive refresh and machine changes |
-| One-Click Publish | Shareable hosted URL for any version |
-| Watson STT/TTS | Voice input and audio playback in enterprise UI |
-| Watson NLU | Pre-pipeline sentiment analysis — frustrated users routed to chat, not build |
-| Credit System | 1 credit = 2,500 tokens, usage shown per build and in navbar |
-| **AI Factsheets** | **Governance Agent scores every build (prompt quality + build confidence, 0–100)** |
-| **Model Registry** | **Factsheet logs every AI model used per version: OpenAI, Anthropic, Gemini, IBM Watson** |
-| **Human Review Flag** | **Auto-triggers when prompt or build score < 50** |
-| **Dashboard Governance** | **Enterprise header shows live Avg Prompt Score and Avg Build Score across all builds** |
-| **Quality Tier Badges** | **Every version card shows High / Good / Low Quality badge based on combined score** |
-| **Eval System** | **Automated build → screenshot → score → improve loop with vision-based quality assessment (8 dimensions, archetype-specific criteria)** |
-
----
-
-## Anthropic Claude Integration
-
-Claude is the core intelligence behind Archon's code generation and quality evaluation.
-
-**Build Agent — Claude Opus 4.6:**
-- Primary code generation engine — converts build plans into complete, deployable web applications
-- Streaming responses with 64K token output window for complex multi-file apps
-- Structured JSON output with 5-pass repair pipeline (handles edge cases in large code generation)
-- Retry logic with exponential backoff for rate limits and transient errors
-- Gemini 2.5 Flash available as automatic fallback
-
-**Design Eval Loop — Claude Vision (Sonnet):**
-- Automated design quality scoring — screenshots evaluated against 8 dimensions (hierarchy, typography, color, layout, polish, data completeness, interactivity, overall impression)
-- Reference-based comparison — good/bad example images provided for each archetype
-- Prompt rewriting — Claude analyzes scores and rewrites engineer prompts to fix identified issues
-- Rollback logic — reverts prompt changes that regress scores
-- Target: 90+/100 across all 32 archetypes
-
-**Why Claude:**
-- Opus 4.6 produces significantly higher-quality code output than alternatives — fewer generic templates, more domain-specific design decisions
-- Vision capabilities enable automated design evaluation without human reviewers
-- Streaming support keeps the pipeline responsive for long-running builds
-
----
-
-## IBM Watson Governance
-
-Archon includes an enterprise-grade AI governance layer powered by IBM Watson NLU.
-
-**How it works:**
-1. Every successful build triggers the Governance Agent automatically
-2. Watson NLU analyzes the original user prompt — returns a clarity/intent score (0–100)
-3. Build confidence is computed from output quality signals: files generated, archetype match, images, code length
-4. A structured AI Factsheet is saved per version — to disk and to the database
-
-**What's in a Factsheet:**
-- Prompt Quality Score (IBM Watson NLU)
-- Build Confidence Score (output quality signals)
-- Human Review Required flag (auto-triggered when either score < 50)
-- Model Registry — every AI model used: OpenAI (PM Agent), Anthropic Claude (Build), Google Gemini (Architecture), IBM Watson NLU (Governance)
-- Compliance flags: data_privacy, bias_check, content_moderation
-- Archetype, token usage, build duration
-
-**Dashboard integration:**
-The Enterprise dashboard header shows live averages across all builds:
-- Avg Prompt Score (purple Sparkles icon)
-- Avg Build Score (blue Shield icon)
-- Pre-governance builds show "—" (not zero)
-
-**Quality Tier system:**
-After every build, Archon computes a combined score from Prompt Quality + Build Confidence and assigns a Quality Tier:
-- **High Quality** (85–100) — build meets the quality standard, shown in blue on the Versions timeline
-- **Good Quality** (60–84) — solid build with room to improve, shown in green
-- **Low Quality** (0–59) — consider rebuilding with a more detailed prompt, shown in red
-
-The tier badge appears on every version card in the Versions timeline — so non-technical founders and agency owners can instantly see which versions are ready to present, without reading scores or technical details.
-
-A prominent banner also appears at the top of the Governance tab with plain-English messaging matched to each tier.
-
-**Resume/portfolio value:** Governed, auditable AI pipelines with IBM Watson scoring — rare even among senior IBM AI Engineers.
-
----
-
-## Roadmap Summary
-
-| Phase | Status | Description |
-|-------|--------|-------------|
-| 1–6.4 | ✅ | Core pipeline, UI, enterprise design |
-| 7A-7H | ✅ | Iterative pipeline, live preview, stability, output quality, chatbox |
-| 8.1 | ✅ | One-click publish |
-| 10.1-10.2 | ✅ | Watson STT/TTS |
-| 10.4 | ✅ | App type lock (archetype guardrail) |
-| 12.1 | ✅ | Domain personality upgrade (25 archetypes) |
-| 13 | ✅ | Chat persistence + user model |
-| 14 | ✅ | Iteration mode fixes |
-| 15 | ✅ | Consumer frontend v2 |
-| 15.4 | ✅ | Enterprise UI (frontend, shadcn/ui) |
-| 16.1 | ✅ | Bug fixes — chat persistence, JSON repair, build lock |
-| 16.2 | ✅ | Branding — hexagon logo + favicon across all UIs |
-| 16.3 | ✅ | Studio feature parity — sort, i18n, build details |
-| 16.4 | ✅ | Watson STT/TTS for Enterprise UI |
-| 17.1 | ✅ | Watson NLU pre-pipeline analyzer |
-| 17.2 | ✅ | Governance Agent — AI Factsheets + Watson NLU scoring |
-| 17.3 | ✅ | Dashboard governance metrics (Avg Prompt + Build scores) |
-| 17.4 | ✅ | Dual PDF export — Client PDF + Internal PDF |
-| 17.5 | ✅ | Delivery Readiness Gate — Quality Tier badges (High/Good/Low) on Versions timeline |
-| 16.5 | ✅ | Authentication — JWT, Google OAuth, blacklist logout, concurrent pipeline |
-| 18 | 🔴 | Unified auth + plan-based UI routing |
-| 8.3 | 🔴 | Client shareable read-only link |
-| 20.1 | ✅ | Visual reference input — attach images to guide AI builds |
-| 21 | ✅ | Build Insights — post-build prompt coaching to help users write better prompts |
-| — | ✅ | Light mode contrast fixes — Enterprise + Studio icon/text contrast in light mode |
-| 22 | 🔧 | Consumer frontend overhaul — audit complete, auth + versions + mobile rebuild in progress |
-
----
-
-### Phase 21 — Build Insights (Prompt Coaching)
-
-After every build, Archon analyzes the gap between what the user asked and what the platform expected, then surfaces 2–4 specific, actionable suggestions to improve the next prompt.
-
-**How it works:** The Governance Agent already scores prompt quality (Watson NLU) and build confidence. The new Insights Agent compares the user’s prompt against the planner’s quality targets — missing color schemes, unspecified sections, vague content — and generates targeted coaching.
-
-**Where it appears:**
-- **Consumer UI:** “Build Insights” card — friendly, educational tone for non-technical users
-- **Enterprise UI:** “Quality Recommendations” section in the Governance tab — professional framing for agencies
-- **PDF exports:** Intentionally excluded — insights are for the builder, not the client
-
-**Design principles:**
-- Max 3–4 suggestions per build (not overwhelming)
-- Specific and actionable (“Add a color palette like ‘dark theme with emerald accents’” not “Be more descriptive”)
-- Tied to real scoring data, not generic tips
-- Never blocking — informational only
-
----
+- [Engineering overview](docs/ENGINEERING_OVERVIEW.md)
+- [Showcase gallery](docs/SHOWCASE_GALLERY.md)
+- [Technical reference](docs/TECHNICAL_REFERENCE.md)
+- [Roadmap](ROADMAP.md)
+- [Current sprint](CURRENT_SPRINT.md)
 
 ## License
 
-Copyright (c) 2025-2026 Edward Yi. All rights reserved. See [LICENSE](LICENSE).
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).
