@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Sparkles, Shield, GitBranch, Clock } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePlatformStats, useDashboardStats } from "@/services/api";
+import { DEMO_MODE } from "@/demo/demoMode";
+import { getDemoViewerProfile } from "@/demo/demoData";
 
 interface WelcomeBannerProps {
   stats?: { total: number; running: number; completed: number; failed: number };
@@ -22,6 +24,10 @@ export const WelcomeBanner = ({ stats }: WelcomeBannerProps) => {
   const [userName, setUserName] = useState("there");
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      setBackendUp(true);
+      return;
+    }
     const checkHealth = async () => {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 3000);
@@ -41,6 +47,10 @@ export const WelcomeBanner = ({ stats }: WelcomeBannerProps) => {
   }, []);
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      setUserName(getDemoViewerProfile().name);
+      return;
+    }
     const loadUser = async () => {
       const getName = (name?: string, email?: string) => {
         const trimmedName = (name || "").trim();

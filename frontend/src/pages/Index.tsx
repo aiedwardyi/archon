@@ -23,6 +23,7 @@ import {
   fetchLogs,
   type ChatMessage,
 } from "@/services/api";
+import { DEMO_MODE } from "@/demo/demoMode";
 import { Search, Plus, Trash2, Mic, MicOff, Send, Volume2, VolumeX, Filter, Loader2, AlertCircle, X, Paperclip, ImageIcon } from "lucide-react";
 
 type AppTab = "projects" | "pipeline" | "versions" | "artifacts";
@@ -157,6 +158,22 @@ const Index = () => {
     prevPipelineStatusRef.current = null;
     if (!selectedProjectId) return;
     let cancelled = false;
+    if (DEMO_MODE) {
+      fetchVersions(selectedProjectId).then((versions) => {
+        if (cancelled || versions.length === 0) return;
+        const latest = versions[0];
+        setHistoricalStatus(latest.status?.toUpperCase() || "COMPLETED");
+        fetchLogs(selectedProjectId, latest.version).then((logStrings) => {
+          if (cancelled) return;
+          setHistoricalLogs(logStrings.map((msg, i) => ({
+            id: `hist-${i}`,
+            timestamp: 0,
+            message: msg,
+          })));
+        });
+      });
+      return () => { cancelled = true; };
+    }
     // On project switch, verify build is actually running — clear stuck state and update block status
     fetch(`http://localhost:5000/api/execution-status?project_id=${selectedProjectId}`)
       .then(r => r.json())
@@ -214,6 +231,7 @@ const Index = () => {
 
   // Auto-dismiss build-lock banner when blocking project finishes
   useEffect(() => {
+    if (DEMO_MODE) return;
     if (!globalBuildBlocked) return;
     const interval = setInterval(() => {
       fetch(`http://localhost:5000/api/execution-status?project_id=${blockingProjectId || selectedProjectId}`)
@@ -227,7 +245,7 @@ const Index = () => {
         .catch(() => {});
     }, 2000);
     return () => clearInterval(interval);
-  }, [globalBuildBlocked]);
+  }, [globalBuildBlocked, blockingProjectId, selectedProjectId]);
 
   // Save chat messages to sessionStorage whenever they change
   useEffect(() => {
@@ -442,6 +460,7 @@ const Index = () => {
   const API_BASE = "http://localhost:5000";
 
   const handleTts = async (msgId: string, text: string) => {
+    if (DEMO_MODE) return;
     if (ttsAudioRef.current) {
       ttsAudioRef.current.pause();
       ttsAudioRef.current = null;
@@ -740,6 +759,13 @@ const Index = () => {
                       </div>
                     )}
 
+                    {DEMO_MODE && (
+                      <div className="border border-cyan-500/20 rounded-md bg-cyan-500/5 px-4 py-2 text-xs text-cyan-100 flex items-center gap-2">
+                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-cyan-300 flex-shrink-0" />
+                        Public demo mode is seeded and read-only. Conversation, logs, versions, preview, publish, and governance browsing stay available.
+                      </div>
+                    )}
+
                     {/* Attached Image Thumbnails */}
                     {attachedFiles.length > 0 && (
                       <div className="flex gap-2 flex-wrap">
@@ -777,8 +803,9 @@ const Index = () => {
                         className="hidden"
                       />
                       <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="h-9 w-9 flex items-center justify-center border border-border rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => !DEMO_MODE && fileInputRef.current?.click()}
+                        disabled={DEMO_MODE}
+                        className={`h-9 w-9 flex items-center justify-center border border-border rounded-md transition-colors ${DEMO_MODE ? "text-muted-foreground opacity-50 cursor-not-allowed" : "text-muted-foreground hover:text-foreground"}`}
                         title="Attach reference images"
                       >
                         <Paperclip className="h-4 w-4" />
@@ -788,13 +815,13 @@ const Index = () => {
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                        placeholder={t("whatWouldYouLikeToBuild")}
-                        disabled={false}
+                        placeholder={DEMO_MODE ? "Read-only demo mode — browse the seeded conversation and artifacts." : t("whatWouldYouLikeToBuild")}
+                        disabled={DEMO_MODE}
                         className="flex-1 h-9 px-3 text-sm border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                       />
                       <button
                         onClick={handleMic}
-                        disabled={sending || micState === "processing"}
+                        disabled={DEMO_MODE || sending || micState === "processing"}
                         className={`h-9 w-9 flex items-center justify-center border border-border rounded-md transition-colors disabled:opacity-50 ${
                           micState === "recording"
                             ? "bg-destructive text-destructive-foreground animate-pulse border-destructive"
@@ -810,7 +837,7 @@ const Index = () => {
                           <Mic className="h-4 w-4" />
                         )}
                       </button>
-                      {isStuck && selectedProjectId && (
+                      {isStuck && selectedProjectId && !DEMO_MODE && (
                         <button
                           onClick={async () => {
                             try {
@@ -833,7 +860,7 @@ const Index = () => {
                       )}
                       <button
                         onClick={handleSend}
-                        disabled={!chatInput.trim()}
+                        disabled={DEMO_MODE || !chatInput.trim()}
                         className="h-9 px-3 flex items-center justify-center gap-1.5 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 text-sm font-medium"
                         title={t("send")}
                       >
@@ -905,7 +932,7 @@ const Index = () => {
                 </select>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={() => setShowNewProject(true)} className="h-8 px-3 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity flex items-center gap-1.5">
+                <button disabled={DEMO_MODE} onClick={() => !DEMO_MODE && setShowNewProject(true)} className={`h-8 px-3 text-xs font-medium rounded-md flex items-center gap-1.5 ${DEMO_MODE ? "bg-primary/60 text-primary-foreground opacity-70 cursor-not-allowed" : "bg-primary text-primary-foreground hover:opacity-90 transition-opacity"}`}>
                   <Plus className="h-3.5 w-3.5" /> {t("newProject")}
                 </button>
               </div>
@@ -918,7 +945,7 @@ const Index = () => {
                   <span className="ml-2 text-sm text-muted-foreground">Loading projects...</span>
                 </div>
               ) : (
-                <ProjectTable projects={searchQuery.trim() ? projects.filter(p => p.name.toLowerCase().includes(searchQuery.trim().toLowerCase())) : projects} onProjectSelect={(id) => { setSelectedProjectId(id); changeTab("pipeline"); }} />
+                <ProjectTable projects={searchQuery.trim() ? projects.filter(p => p.name.toLowerCase().includes(searchQuery.trim().toLowerCase())) : projects} onProjectSelect={(id) => { setSelectedProjectId(id); changeTab("pipeline"); }} readOnly={DEMO_MODE} />
               )}
               <ActivityFeed />
             </div>

@@ -14,10 +14,9 @@ import ForgotPassword from "./pages/ForgotPassword";
 import NotFound from "./pages/NotFound";
 import Demo from "./pages/Demo";
 import TokenHandler from "./TokenHandler";
+import { DEMO_MODE } from "@/demo/demoMode";
 
 const queryClient = new QueryClient();
-const DEMO_MODE = import.meta.env.VITE_PUBLIC_DEMO_MODE === "true";
-
 const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/demo"];
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -84,7 +83,13 @@ const AppShell = (
           <BrowserRouter>
             {DEMO_MODE ? (
               <Routes>
-                <Route path="*" element={<Demo />} />
+                <Route path="/" element={<Demo />} />
+                <Route path="/projects" element={<Index />} />
+                <Route path="/pipeline" element={<Index />} />
+                <Route path="/versions" element={<Index />} />
+                <Route path="/artifacts" element={<Index />} />
+                <Route path="/demo" element={<Demo />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             ) : (
               <>

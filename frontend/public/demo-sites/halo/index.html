@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Halo Ringworld Atlas</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #03060d;
+        --panel: #09111d;
+        --border: rgba(140, 170, 200, 0.18);
+        --text: #f5f7fb;
+        --muted: #9fb3ca;
+        --accent: #5be6ff;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Inter, system-ui, sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top, rgba(91, 230, 255, 0.18), transparent 36%),
+          linear-gradient(180deg, #040812 0%, #07101b 45%, #03060d 100%);
+      }
+
+      .shell {
+        width: min(1200px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 40px 0 56px;
+      }
+
+      .hero {
+        display: grid;
+        gap: 16px;
+        margin-bottom: 28px;
+      }
+
+      .eyebrow {
+        color: var(--accent);
+        font-size: 11px;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        font-weight: 700;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2.6rem, 6vw, 4.8rem);
+        line-height: 0.95;
+      }
+
+      .copy {
+        max-width: 760px;
+        color: var(--muted);
+        line-height: 1.8;
+      }
+
+      .card {
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        background: rgba(9, 17, 29, 0.84);
+        box-shadow: 0 38px 80px -44px rgba(0, 0, 0, 0.85);
+      }
+
+      .card img {
+        width: 100%;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div class="eyebrow">Seeded Showcase Preview</div>
+        <h1>Halo Ringworld Atlas</h1>
+        <p class="copy">
+          Read-only public demo surface for the game archetype. This page is intentionally static, but it is opened from the
+          real enterprise demo workspace through the same preview and publish controls shown in the product shell.
+        </p>
+      </section>
+      <section class="card">
+        <img src="/showcase/game-halo-full.jpg" alt="Halo Ringworld Atlas showcase capture" />
+      </section>
+    </main>
+  </body>
+</html>

@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { useTheme } from "./ThemeProvider";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { authService } from "@/lib/auth";
+import { DEMO_MODE } from "@/demo/demoMode";
+import { getDemoViewerProfile } from "@/demo/demoData";
 import { ProfileModal } from "./ProfileModal";
 import { SettingsModal } from "./SettingsModal";
 import { PricingModal } from "./PricingModal";
@@ -31,6 +33,11 @@ export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectNam
   const initials = userEmail === "..." ? "..." : userEmail.slice(0, 2).toUpperCase();
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      const viewer = getDemoViewerProfile();
+      setUserEmail(viewer.email);
+      return;
+    }
     const loadUser = () => {
       const params = new URLSearchParams(window.location.search);
       const urlToken = params.get("token");
@@ -59,6 +66,10 @@ export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectNam
   }, []);
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      setCreditsRemaining(getDemoViewerProfile().creditsRemaining);
+      return;
+    }
     fetch("http://localhost:5000/api/credits/balance")
       .then(r => r.json())
       .then(d => setCreditsRemaining(d.credits_remaining))
@@ -156,9 +167,9 @@ export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectNam
 
               {/* Menu items */}
               <div className="py-1">
-                <MenuItem icon={User} label={t("profile")} onClick={() => { setActiveModal("profile"); setOpen(false); }} />
-                <MenuItem icon={Settings} label={t("settings")} onClick={() => { setActiveModal("settings"); setOpen(false); }} />
-                <MenuItem icon={DollarSign} label={t("pricing")} onClick={() => { setActiveModal("pricing"); setOpen(false); }} />
+                <MenuItem icon={User} label={t("profile")} onClick={() => { if (!DEMO_MODE) { setActiveModal("profile"); } setOpen(false); }} disabled={DEMO_MODE} />
+                <MenuItem icon={Settings} label={t("settings")} onClick={() => { if (!DEMO_MODE) { setActiveModal("settings"); } setOpen(false); }} disabled={DEMO_MODE} />
+                <MenuItem icon={DollarSign} label={t("pricing")} onClick={() => { if (!DEMO_MODE) { setActiveModal("pricing"); } setOpen(false); }} disabled={DEMO_MODE} />
                 <MenuItem icon={BookOpen} label={t("documentation")} external />
               </div>
 
@@ -188,25 +199,14 @@ export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectNam
                 <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t("design")}</div>
                 <div className="grid grid-cols-2 gap-1">
                   <button
-                    onClick={() => { window.location.href = `http://localhost:8080${language === "ko" ? "?lang=ko" : ""}`; }}
-                    className="flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs rounded-md transition-colors bg-primary text-primary-foreground font-medium"
+                    disabled
+                    className="flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs rounded-md transition-colors bg-primary/70 text-primary-foreground font-medium opacity-70 cursor-not-allowed"
                   >
                     <Building2 className="h-3.5 w-3.5" /> {t("enterprise")}
                   </button>
                   <button
-                    onClick={() => {
-                      const tab = activeTab || 'projects';
-                      const params = new URLSearchParams();
-                      const token = localStorage.getItem("archon_token");
-                      if (token) params.set("token", token);
-                      params.set("switch", "1");
-                      if (selectedProjectId) params.set("pid", String(selectedProjectId));
-                      if (language === "ko") params.set("lang", "ko");
-                      const qs = params.toString() ? "?" + params.toString() : "";
-                      const path = tab === "projects" ? "" : tab;
-                      window.location.href = `http://localhost:3000/${path}${qs}`;
-                    }}
-                    className="flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs rounded-md transition-colors text-foreground hover:bg-secondary border border-border"
+                    disabled
+                    className="flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs rounded-md transition-colors text-muted-foreground border border-border opacity-60 cursor-not-allowed"
                   >
                     <Pencil className="h-3.5 w-3.5" /> {t("studio")}
                   </button>
@@ -223,7 +223,7 @@ export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectNam
 
               {/* Upgrade */}
               <div className="border-t border-border px-4 py-3">
-                <button className="w-full h-8 bg-primary text-primary-foreground text-xs font-semibold rounded-md flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity">
+                <button disabled={DEMO_MODE} className={`w-full h-8 text-xs font-semibold rounded-md flex items-center justify-center gap-1.5 ${DEMO_MODE ? "bg-primary/50 text-primary-foreground opacity-70 cursor-not-allowed" : "bg-primary text-primary-foreground hover:opacity-90 transition-opacity"}`}>
                   <Hexagon className="h-3.5 w-3.5" /> {t("upgradeToPro")}
                 </button>
               </div>
@@ -231,10 +231,17 @@ export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectNam
               {/* Sign out */}
               <div className="border-t border-border py-1">
                 <button
-                  onClick={() => { authService.logout(); window.location.href = "/login"; }}
-                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-destructive hover:bg-secondary transition-colors"
+                  onClick={() => {
+                    if (DEMO_MODE) {
+                      setOpen(false);
+                      return;
+                    }
+                    authService.logout();
+                    window.location.href = "/login";
+                  }}
+                  className={`w-full flex items-center gap-2.5 px-4 py-2 text-xs transition-colors ${DEMO_MODE ? "text-muted-foreground cursor-not-allowed" : "text-destructive hover:bg-secondary"}`}
                 >
-                  <LogOut className="h-3.5 w-3.5" /> {t("signOut")}
+                  <LogOut className="h-3.5 w-3.5" /> {DEMO_MODE ? "Read-only demo" : t("signOut")}
                 </button>
               </div>
             </div>
@@ -248,8 +255,8 @@ export const Navbar = ({ activeTab = "projects", onTabChange, selectedProjectNam
   );
 };
 
-const MenuItem = ({ icon: Icon, label, external, onClick }: { icon: typeof User; label: string; external?: boolean; onClick?: () => void }) => (
-  <button onClick={onClick} className="w-full flex items-center justify-between px-4 py-2 text-xs text-foreground hover:bg-secondary transition-colors">
+const MenuItem = ({ icon: Icon, label, external, onClick, disabled }: { icon: typeof User; label: string; external?: boolean; onClick?: () => void; disabled?: boolean }) => (
+  <button onClick={disabled ? undefined : onClick} disabled={disabled} className={`w-full flex items-center justify-between px-4 py-2 text-xs transition-colors ${disabled ? "text-muted-foreground cursor-not-allowed" : "text-foreground hover:bg-secondary"}`}>
     <span className="flex items-center gap-2.5">
       <Icon className="h-3.5 w-3.5 text-muted-foreground" /> {label}
     </span>

@@ -1,4 +1,20 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { DEMO_MODE } from "@/demo/demoMode";
+import {
+  getDemoActivity,
+  getDemoBuildDetails,
+  getDemoChatHistory,
+  getDemoCodeFiles,
+  getDemoDashboardStats,
+  getDemoExecutionStatus,
+  getDemoLogs,
+  getDemoPlan,
+  getDemoPlatformStats,
+  getDemoPrd,
+  getDemoProjectHead,
+  getDemoProjects,
+  getDemoVersions,
+} from "@/demo/demoData";
 
 const API_BASE = "http://localhost:5000/api";
 
@@ -40,6 +56,17 @@ function mapStatus(raw: string): Project["status"] {
 }
 
 export async function createProject(name: string, description: string): Promise<Project> {
+  if (DEMO_MODE) {
+    return {
+      id: Date.now(),
+      name,
+      description,
+      status: "Idle",
+      lastRun: "—",
+      versions: "v1",
+      created: "—",
+    };
+  }
   const res = await fetch(`${API_BASE}/projects`, {
     method: "POST",
     headers: getAuthHeaders(),
@@ -62,6 +89,17 @@ export async function createProject(name: string, description: string): Promise<
 }
 
 export async function fetchProjects(): Promise<Project[]> {
+  if (DEMO_MODE) {
+    return getDemoProjects().map((p) => ({
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      status: mapStatus(p.status),
+      lastRun: formatDate(p.updated_at),
+      versions: `v${p.version_count ?? 1}`,
+      created: formatDate(p.created_at),
+    }));
+  }
   const res = await fetch(`${API_BASE}/projects`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
@@ -78,6 +116,9 @@ export async function fetchProjects(): Promise<Project[]> {
 }
 
 export async function seedProjects(): Promise<{ seeded: boolean; projects?: Project[] }> {
+  if (DEMO_MODE) {
+    return { seeded: true, projects: await fetchProjects() };
+  }
   const res = await fetch(`${API_BASE}/seed`, {
     method: "POST",
     headers: getAuthHeaders(),
@@ -100,6 +141,17 @@ export function useProjects() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      fetchProjects()
+        .then((data) => {
+          setProjects(data);
+          setError(null);
+        })
+        .catch((e: any) => setError(e.message || "Failed to fetch projects"))
+        .finally(() => setLoading(false));
+      return;
+    }
+
     let cancelled = false;
 
     const load = async () => {
@@ -152,6 +204,7 @@ export interface PlatformStats {
 }
 
 export async function fetchPlatformStats(): Promise<PlatformStats | null> {
+  if (DEMO_MODE) return getDemoPlatformStats();
   try {
     const res = await fetch(`${API_BASE}/stats`, { headers: getAuthHeaders() });
     if (!res.ok) return null;
@@ -164,6 +217,10 @@ export function usePlatformStats(pollMs = 30000) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      setStats(getDemoPlatformStats());
+      return;
+    }
     let cancelled = false;
     const load = async () => {
       const data = await fetchPlatformStats();
@@ -186,6 +243,7 @@ export interface DashboardStats {
 }
 
 export async function fetchDashboardStats(): Promise<DashboardStats | null> {
+  if (DEMO_MODE) return getDemoDashboardStats();
   try {
     const res = await fetch(`${API_BASE}/dashboard/stats`, { headers: getAuthHeaders() });
     if (!res.ok) return null;
@@ -198,6 +256,10 @@ export function useDashboardStats(pollMs = 30000) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      setStats(getDemoDashboardStats());
+      return;
+    }
     let cancelled = false;
     const load = async () => {
       const data = await fetchDashboardStats();
@@ -222,6 +284,7 @@ export interface ActivityItem {
 }
 
 export async function fetchActivity(): Promise<ActivityItem[]> {
+  if (DEMO_MODE) return getDemoActivity();
   try {
     const token = localStorage.getItem("archon_token");
     const res = await fetch(`${API_BASE}/activity`, {
@@ -237,6 +300,10 @@ export function useActivity(pollMs = 10000) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      setItems(getDemoActivity());
+      return;
+    }
     let cancelled = false;
     const load = async () => {
       const data = await fetchActivity();
@@ -279,6 +346,7 @@ export interface BuildDetails {
 }
 
 export async function fetchBuildDetails(projectId: number, version: number): Promise<BuildDetails | null> {
+  if (DEMO_MODE) return getDemoBuildDetails(projectId, version);
   try {
     const versions = await fetchVersions(projectId);
     const v = versions.find((ver: any) => ver.version === version);
@@ -299,6 +367,7 @@ export async function fetchBuildDetails(projectId: number, version: number): Pro
 }
 
 export async function fetchVersions(projectId: number): Promise<Version[]> {
+  if (DEMO_MODE) return getDemoVersions(projectId) as Version[];
   const res = await fetch(`${API}/api/projects/${projectId}/versions`, { headers: getAuthHeaders() });
   if (!res.ok) return [];
   const data = await res.json();
@@ -306,6 +375,7 @@ export async function fetchVersions(projectId: number): Promise<Version[]> {
 }
 
 export async function fetchProjectHead(projectId: number): Promise<number | null> {
+  if (DEMO_MODE) return getDemoProjectHead(projectId);
   try {
     const res = await fetch(`${API}/api/projects/${projectId}/head`, { headers: getAuthHeaders() });
     if (!res.ok) return null;
@@ -315,6 +385,12 @@ export async function fetchProjectHead(projectId: number): Promise<number | null
 }
 
 export async function fetchLogs(projectId: number, version: number): Promise<string[]> {
+  if (DEMO_MODE) {
+    return getDemoLogs(projectId, version).map((entry) => {
+      const ts = new Date(entry.timestamp).toLocaleTimeString([], { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      return `${ts} ${entry.message}`;
+    });
+  }
   try {
     const res = await fetch(`${API}/api/projects/${projectId}/versions/${version}/logs`, { headers: getAuthHeaders() });
     if (!res.ok) return [];
@@ -324,6 +400,7 @@ export async function fetchLogs(projectId: number, version: number): Promise<str
 }
 
 export async function fetchPrd(projectId: number, version: number): Promise<any> {
+  if (DEMO_MODE) return getDemoPrd(projectId);
   try {
     const res = await fetch(`${API}/api/prd?project_id=${projectId}&version=${version}`, { headers: getAuthHeaders() });
     if (!res.ok) return null;
@@ -332,6 +409,7 @@ export async function fetchPrd(projectId: number, version: number): Promise<any>
 }
 
 export async function fetchPlan(projectId: number, version: number): Promise<any> {
+  if (DEMO_MODE) return getDemoPlan(projectId);
   try {
     const res = await fetch(`${API}/api/plan?project_id=${projectId}&version=${version}`, { headers: getAuthHeaders() });
     if (!res.ok) return null;
@@ -340,6 +418,7 @@ export async function fetchPlan(projectId: number, version: number): Promise<any
 }
 
 export async function fetchCodeFiles(projectId: number, version: number): Promise<Array<{filename: string; content: string; language: string}>> {
+  if (DEMO_MODE) return getDemoCodeFiles(projectId);
   try {
     const base = `${API}/api/projects/${projectId}/versions/${version}/files`;
     const res = await fetch(base, { headers: getAuthHeaders() });
@@ -383,6 +462,12 @@ export async function projectChat(
   projectId: number,
   message: string,
 ): Promise<{ response_type: "chat" | "build"; message?: string; nlu_result?: Record<string, any> }> {
+  if (DEMO_MODE) {
+    return {
+      response_type: "chat",
+      message: "Demo mode is read-only. Browse the seeded conversation, versions, and artifacts instead.",
+    };
+  }
   const res = await fetch(`${API_BASE}/projects/${projectId}/chat`, {
     method: "POST",
     headers: getAuthHeaders(),
@@ -400,6 +485,7 @@ export async function iterateProject(
   referenceImages?: File[],
   nluResult?: Record<string, any>,
 ): Promise<{ status: string; project_id: number; execution_id: number; version: number }> {
+  if (DEMO_MODE) throw new Error("Demo mode is read-only");
   let res: Response;
   if (referenceImages && referenceImages.length > 0) {
     const formData = new FormData();
@@ -431,6 +517,7 @@ export async function iterateProject(
 
 /** POST /api/execute-task — start first build (no prior version) */
 export async function executeTask(projectId: number): Promise<{ status: string; project_id: number; execution_id: number; version: number }> {
+  if (DEMO_MODE) throw new Error("Demo mode is read-only");
   const res = await fetch(`${API_BASE}/execute-task`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -445,6 +532,7 @@ export async function executeTask(projectId: number): Promise<{ status: string; 
 
 /** GET /api/execution-status — poll pipeline progress */
 export async function fetchExecutionStatus(projectId?: number | null): Promise<ExecutionStatus> {
+  if (DEMO_MODE) return getDemoExecutionStatus(projectId) as ExecutionStatus;
   const url = projectId
     ? `${API_BASE}/execution-status?project_id=${projectId}`
     : `${API_BASE}/execution-status`;
@@ -455,6 +543,7 @@ export async function fetchExecutionStatus(projectId?: number | null): Promise<E
 
 /** GET /api/projects/:id/chat-history — load persisted chat messages */
 export async function fetchChatHistory(projectId: number): Promise<ChatMessage[]> {
+  if (DEMO_MODE) return getDemoChatHistory(projectId);
   try {
     const res = await fetch(`${API}/api/projects/${projectId}/chat-history`, { headers: getAuthHeaders() });
     if (!res.ok) return [];
@@ -465,6 +554,7 @@ export async function fetchChatHistory(projectId: number): Promise<ChatMessage[]
 
 /** POST /api/projects/:id/chat-messages — persist chat messages to DB */
 export async function saveChatMessages(projectId: number, messages: ChatMessage[]): Promise<void> {
+  if (DEMO_MODE) return;
   try {
     await fetch(`${API}/api/projects/${projectId}/chat-messages`, {
       method: "POST",

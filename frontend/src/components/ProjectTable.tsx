@@ -20,6 +20,7 @@ interface Project {
 interface ProjectTableProps {
   projects: Project[];
   onProjectSelect?: (id: number) => void;
+  readOnly?: boolean;
 }
 
 type SortKey = "name" | "id" | "status" | "lastRun" | "versions" | "created";
@@ -34,7 +35,7 @@ const statusStyles: Record<ProjectStatus, { dot: string; text: string; bg: strin
   Idle: { dot: "bg-gray-400", text: "text-gray-500 dark:text-gray-400", bg: "bg-gray-50 dark:bg-gray-500/10" },
 };
 
-export const ProjectTable = ({ projects, onProjectSelect }: ProjectTableProps) => {
+export const ProjectTable = ({ projects, onProjectSelect, readOnly = false }: ProjectTableProps) => {
   const [selected, setSelected] = useState<Set<number>>(() => {
     try {
       const stored = sessionStorage.getItem(STORAGE_KEY);
@@ -97,7 +98,7 @@ export const ProjectTable = ({ projects, onProjectSelect }: ProjectTableProps) =
   return (
     <div className="border border-border rounded-md overflow-hidden bg-card">
       {/* Bulk Actions Bar */}
-      {selected.size > 0 && (
+      {selected.size > 0 && !readOnly && (
         <div className="px-4 py-2 bg-primary/5 border-b border-border flex items-center justify-between">
           <span className="text-xs font-medium text-foreground">{selected.size} {t("selected")}</span>
           <div className="flex items-center gap-2">
@@ -121,7 +122,8 @@ export const ProjectTable = ({ projects, onProjectSelect }: ProjectTableProps) =
             type="checkbox"
             checked={allSelected}
             ref={(el) => { if (el) el.indeterminate = someSelected; }}
-            onChange={toggleAll}
+            onChange={readOnly ? undefined : toggleAll}
+            disabled={readOnly}
             className="h-3.5 w-3.5 rounded border-border accent-primary cursor-pointer"
           />
         </div>
@@ -153,12 +155,13 @@ export const ProjectTable = ({ projects, onProjectSelect }: ProjectTableProps) =
             >
               <div
                 className="flex items-center justify-center h-full cursor-default py-2.5"
-                onClick={(e) => { e.stopPropagation(); toggle(p.id); }}
+                onClick={(e) => { e.stopPropagation(); if (!readOnly) toggle(p.id); }}
               >
                 <input
                   type="checkbox"
                   checked={isSelected}
                   onChange={() => {}}
+                  disabled={readOnly}
                   className="h-3.5 w-3.5 rounded border-border accent-primary cursor-pointer pointer-events-none"
                 />
               </div>
@@ -187,10 +190,10 @@ export const ProjectTable = ({ projects, onProjectSelect }: ProjectTableProps) =
               <div className="text-xs text-muted-foreground cursor-pointer py-2.5">{p.created}</div>
 
               <div className="flex items-center justify-end gap-1 py-2.5">
-                <button className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors" title="Download">
+                <button disabled={readOnly} className={`h-7 w-7 flex items-center justify-center rounded-md transition-colors ${readOnly ? "text-muted-foreground opacity-50 cursor-not-allowed" : "text-muted-foreground hover:text-foreground hover:bg-secondary"}`} title="Download">
                   <Download className="h-3.5 w-3.5" />
                 </button>
-                <button className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors" title="More">
+                <button disabled={readOnly} className={`h-7 w-7 flex items-center justify-center rounded-md transition-colors ${readOnly ? "text-muted-foreground opacity-50 cursor-not-allowed" : "text-muted-foreground hover:text-foreground hover:bg-secondary"}`} title="More">
                   <MoreHorizontal className="h-3.5 w-3.5" />
                 </button>
               </div>

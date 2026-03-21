@@ -7,6 +7,15 @@ import {
 } from "lucide-react";
 import { fetchVersions, fetchPrd, fetchPlan, fetchCodeFiles, fetchLogs } from "@/services/api";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { DEMO_MODE } from "@/demo/demoMode";
+import {
+  getDemoCodeDownloadUrl,
+  getDemoFactsheet,
+  getDemoFactsheetPdfUrl,
+  getDemoInsights,
+  getDemoPreviewUrl,
+  getDemoPublishedUrl,
+} from "@/demo/demoData";
 
 type ArtifactTab = "brief" | "plan" | "code" | "tasks" | "logs" | "preview" | "governance";
 
@@ -257,6 +266,13 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, ini
               onClick={async () => {
                 if (!projectId || !resolvedVersion) return;
                 setPublishState("loading");
+                if (DEMO_MODE) {
+                  const url = getDemoPublishedUrl(projectId);
+                  setPublishedUrl(url);
+                  setPublishState("done");
+                  window.open(url, "_blank", "noopener,noreferrer");
+                  return;
+                }
                 try {
                   const token = localStorage.getItem("archon_token");
                   const res = await fetch(`http://localhost:5000/api/projects/${projectId}/versions/${resolvedVersion}/publish`, {
@@ -282,9 +298,9 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, ini
             </button>
           )}
           <a
-            href={projectId ? `http://localhost:5000/api/projects/${projectId}/versions/${resolvedVersion}/download` : "#"}
-            download
-            className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5 no-underline"
+            href={projectId ? (DEMO_MODE ? getDemoCodeDownloadUrl(projectId) : `http://localhost:5000/api/projects/${projectId}/versions/${resolvedVersion}/download`) : "#"}
+            download={!DEMO_MODE}
+            className={`h-8 px-3 text-xs font-medium border border-border rounded-md flex items-center gap-1.5 no-underline ${projectId ? "text-foreground hover:bg-secondary transition-colors" : "text-muted-foreground opacity-50 pointer-events-none"}`}
           >
             <Download className="h-3.5 w-3.5" /> {t("downloadCode")}
           </a>
@@ -537,7 +553,7 @@ const PreviewTab = ({ device, onDeviceChange, projectId, version }: { device: "d
             <div className="ml-3 h-4 w-56 bg-secondary rounded-sm" />
           </div>
           <iframe
-            src={projectId && version ? `http://localhost:5000/api/preview/${projectId}/${version}` : ""}
+            src={projectId && version ? (DEMO_MODE ? getDemoPreviewUrl(projectId, version) : `http://localhost:5000/api/preview/${projectId}/${version}`) : ""}
             className="w-full flex-1 border-0"
           />
         </div>
@@ -548,7 +564,7 @@ const PreviewTab = ({ device, onDeviceChange, projectId, version }: { device: "d
           </div>
           <div className="mx-2 mb-2 rounded-2xl overflow-hidden border border-border flex-1">
             <iframe
-              src={projectId && version ? `http://localhost:5000/api/preview/${projectId}/${version}` : ""}
+              src={projectId && version ? (DEMO_MODE ? getDemoPreviewUrl(projectId, version) : `http://localhost:5000/api/preview/${projectId}/${version}`) : ""}
               className="w-full h-full border-0"
             />
           </div>
@@ -656,6 +672,20 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
 
   const handlePdf = async (type: "client" | "internal", action: "download" | "view") => {
     if (!projectId || !version) return;
+    if (DEMO_MODE) {
+      const url = getDemoFactsheetPdfUrl(projectId, type);
+      if (action === "view") {
+        window.open(url, "_blank", "noopener,noreferrer");
+        return;
+      }
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `archon-v${version}-${type}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      return;
+    }
     const token = localStorage.getItem("archon_token");
     const res = await fetch(
       `http://localhost:5000/api/projects/${projectId}/versions/${version}/factsheet/pdf?type=${type}`,
@@ -686,6 +716,16 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
     let cancelled = false;
     setLoading(true);
     setError(null);
+    if (DEMO_MODE) {
+      try {
+        setFactsheet(getDemoFactsheet(projectId) as Factsheet);
+        setLoading(false);
+      } catch {
+        setError(t("govFactsheetNotAvailable"));
+        setLoading(false);
+      }
+      return () => { cancelled = true; };
+    }
     (async () => {
       try {
         const token = localStorage.getItem("archon_token");
@@ -711,6 +751,10 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
     }
 
     let cancelled = false;
+    if (DEMO_MODE) {
+      setInsights(getDemoInsights(projectId));
+      return () => { cancelled = true; };
+    }
     (async () => {
       try {
         const token = localStorage.getItem("archon_token");

@@ -3,6 +3,8 @@ import { PanelLeftClose, PanelLeftOpen, Loader2 } from "lucide-react";
 import { CheckCircle2, XCircle, Download, RotateCcw, FileText, Blocks, Code2, Monitor, Smartphone, RefreshCw } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { fetchVersions } from "@/services/api";
+import { DEMO_MODE } from "@/demo/demoMode";
+import { getDemoFactsheetPdfUrl, getDemoPreviewUrl } from "@/demo/demoData";
 
 interface PromptTurn {
   role: string;
@@ -77,6 +79,7 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
   const { t } = useLanguage();
 
   const handleRestore = async (executionId: number) => {
+    if (DEMO_MODE) return;
     setRestoring(true);
     try {
       await fetch(`http://localhost:5000/api/executions/${executionId}/restore`, {
@@ -99,6 +102,51 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
   };
 
   const loadVersionData = async (projectId: number, cancelled: { value: boolean }) => {
+    if (DEMO_MODE) {
+      setIsProjectBuilding(false);
+      const raw = await fetchVersions(projectId);
+      if (cancelled.value) return;
+      const parentVersionByExecutionId = new Map(raw.map((v) => [Number(v.id), v.version]));
+      const mapped: Version[] = raw.map((v) => {
+        const userTurns = getUserTurns(v.prompt_history);
+        const basePrompt = userTurns[0] || "";
+        const latestRequest = userTurns[userTurns.length - 1] || "";
+        const lastUserMsg = latestRequest;
+        const fileCount = v.files_generated ?? 0;
+        const imageCount = v.images_generated ?? 0;
+        const parts: string[] = [];
+        if (fileCount > 0) parts.push(`${fileCount} code file${fileCount !== 1 ? "s" : ""}`);
+        if (imageCount > 0) parts.push(`${imageCount} image${imageCount !== 1 ? "s" : ""}`);
+        return {
+          id: v.version,
+          executionId: Number(v.id),
+          parentVersion: v.parent_execution_id != null ? parentVersionByExecutionId.get(Number(v.parent_execution_id)) : undefined,
+          label: "v" + v.version,
+          status: "completed",
+          description: lastUserMsg.length > 40 ? lastUserMsg.slice(0, 40) + "…" : lastUserMsg,
+          time: v.created_at ? new Date(v.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true }) : "",
+          filesChanged: fileCount,
+          prompt: lastUserMsg,
+          promptHistory: v.prompt_history,
+          basePrompt,
+          latestRequest,
+          lineageSummary: buildLineageSummary(userTurns),
+          refinementCount: Math.max(userTurns.length - 1, 0),
+          filesGenerated: fileCount,
+          qualityTier: v.quality_tier ?? null,
+          readinessScore: v.readiness_score ?? null,
+          buildSummary: parts.length > 0 ? parts.join(" · ") + " generated" : "Pipeline completed successfully.",
+        };
+      });
+      mapped.sort((a, b) => b.id - a.id);
+      setVersions(mapped);
+      if (mapped.length > 0 && (selectedVersion === null || !mapped.find((m) => m.id === selectedVersion))) {
+        onVersionSelect(mapped[0].id);
+      }
+      prevVersionCount.current = mapped.length;
+      setLoadingVersions(false);
+      return;
+    }
     try {
       const res = await fetch(`http://localhost:5000/api/execution-status?project_id=${projectId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('archon_token')}` }
@@ -196,6 +244,16 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
 
   const handleDownloadReport = async () => {
     if (!projectId || !version) return;
+    if (DEMO_MODE) {
+      const url = getDemoFactsheetPdfUrl(projectId, "client");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `archon-v${version.id}-client.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      return;
+    }
     try {
       const token = localStorage.getItem("archon_token");
       const res = await fetch(`http://localhost:5000/api/projects/${projectId}/versions/${version.id}/factsheet/pdf?type=client`, {
@@ -353,7 +411,7 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
             >
               <RefreshCw className="h-3.5 w-3.5" /> {t("refreshPreview")}
             </button>
-            {version && latestVersionId !== null && version.id !== latestVersionId && (
+            {!DEMO_MODE && version && latestVersionId !== null && version.id !== latestVersionId && (
               <button
                 onClick={() => handleRestore(version.executionId)}
                 disabled={restoring}
@@ -459,7 +517,7 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
                     <div className="ml-3 h-4 w-48 bg-secondary rounded-sm" />
                   </div>
                   <iframe
-                    src={`http://localhost:5000/api/preview/${projectId}/${selected}?k=${iframeKey}`}
+                    src={DEMO_MODE ? getDemoPreviewUrl(projectId, selected) : `http://localhost:5000/api/preview/${projectId}/${selected}?k=${iframeKey}`}
                     className="w-full flex-1 border-0"
                   />
                 </div>
@@ -471,7 +529,7 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
                     </div>
                     <div className="mx-2 mb-2 rounded-xl overflow-hidden border border-border flex-1">
                       <iframe
-                        src={`http://localhost:5000/api/preview/${projectId}/${selected}?k=${iframeKey}`}
+                        src={DEMO_MODE ? getDemoPreviewUrl(projectId, selected) : `http://localhost:5000/api/preview/${projectId}/${selected}?k=${iframeKey}`}
                         className="w-full h-full border-0"
                       />
                     </div>
