@@ -1,8 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { PanelLeftClose, PanelLeftOpen, Loader2 } from "lucide-react";
-import { CheckCircle2, XCircle, Download, RotateCcw, FileText, Blocks, Code2, Monitor, Smartphone } from "lucide-react";
+import { CheckCircle2, XCircle, Download, RotateCcw, FileText, Blocks, Code2, Monitor, Smartphone, RefreshCw } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { fetchVersions } from "@/services/api";
+
+interface PromptTurn {
+  role: string;
+  content: string;
+}
 
 interface Version {
   id: number;
@@ -14,11 +19,31 @@ interface Version {
   time: string;
   filesChanged: number;
   prompt?: string;
+  promptHistory?: PromptTurn[];
+  basePrompt?: string;
+  latestRequest?: string;
+  lineageSummary?: string;
+  refinementCount?: number;
   buildSummary?: string;
   filesGenerated?: number;
   qualityTier?: string | null;
   readinessScore?: number | null;
 }
+
+const getUserTurns = (promptHistory?: PromptTurn[]): string[] =>
+  (promptHistory || [])
+    .filter((turn) => turn.role === "user")
+    .map((turn) => turn.content.trim())
+    .filter(Boolean);
+
+const summarizeText = (value: string, maxLength = 56): string =>
+  value.length > maxLength ? `${value.slice(0, maxLength - 1)}...` : value;
+
+const buildLineageSummary = (turns: string[]): string => {
+  if (turns.length <= 1) return summarizeText(turns[0] || "");
+  const visibleTurns = turns.slice(-3).map((turn) => summarizeText(turn, 28));
+  return visibleTurns.join(" -> ");
+};
 
 const StatusIcon = ({ status }: { status: "completed" | "failed" }) =>
   status === "completed" ? (
@@ -100,7 +125,10 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
         raw.map((v) => [Number(v.id), v.version])
       );
       const mapped: Version[] = raw.map((v) => {
-        const lastUserMsg = v.prompt_history?.filter(m => m.role === "user").pop()?.content || "";
+        const userTurns = getUserTurns(v.prompt_history);
+        const basePrompt = userTurns[0] || "";
+        const latestRequest = userTurns[userTurns.length - 1] || "";
+        const lastUserMsg = latestRequest;
         const normalizedStatus = String(v.status || "").toLowerCase();
         const isSuccess = normalizedStatus === "success" || normalizedStatus === "completed";
         const isRunning = normalizedStatus === "running" || normalizedStatus === "in_progress" || normalizedStatus === "pending";
@@ -119,6 +147,11 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
           time: v.created_at ? new Date(v.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true }) : "",
           filesChanged: fileCount,
           prompt: lastUserMsg,
+          promptHistory: v.prompt_history,
+          basePrompt,
+          latestRequest,
+          lineageSummary: buildLineageSummary(userTurns),
+          refinementCount: Math.max(userTurns.length - 1, 0),
           filesGenerated: fileCount,
           qualityTier: v.quality_tier ?? null,
           readinessScore: v.readiness_score ?? null,
@@ -256,7 +289,15 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
                     <span className="text-[10px] text-muted-foreground ml-auto">{v.time}</span>
                   </div>
                   <p className="text-xs text-foreground mt-1.5 truncate leading-tight">{v.description}</p>
+                  {v.refinementCount ? (
+                    <p className="text-[11px] text-muted-foreground mt-1 leading-tight line-clamp-2">
+                      {v.lineageSummary}
+                    </p>
+                  ) : null}
                   <p className="text-[11px] text-muted-foreground mt-1">{v.filesChanged} {t("filesChanged")}</p>
+                  {typeof v.refinementCount === "number" && v.refinementCount > 0 && (
+                    <p className="text-[11px] text-muted-foreground mt-1">{t("refinementCount")}: {v.refinementCount}</p>
+                  )}
                   {typeof v.parentVersion === "number" && v.parentVersion < v.id - 1 && (
                     <p className="text-[11px] text-muted-foreground mt-1">↩ branched from v{v.parentVersion}</p>
                   )}
@@ -306,6 +347,12 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
             >
               <Download className="h-3.5 w-3.5" /> {t("downloadReport")}
             </button>
+            <button
+              onClick={() => setIframeKey((k) => k + 1)}
+              className="h-8 px-3 text-xs font-medium border border-border rounded-md text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5"
+            >
+              <RefreshCw className="h-3.5 w-3.5" /> {t("refreshPreview")}
+            </button>
             {version && latestVersionId !== null && version.id !== latestVersionId && (
               <button
                 onClick={() => handleRestore(version.executionId)}
@@ -320,12 +367,29 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
         </div>
 
         <div className="p-5 space-y-5">
-          {/* Prompt Section */}
+          {/* Prompt Lineage */}
           <div className="border-l-2 border-primary pl-4">
             <div className="text-[10px] font-bold text-primary uppercase tracking-wider mb-1">
-              {t("prompt")} {version.time}
+              {t("promptLineage")} {version.time}
             </div>
-            <p className="text-sm text-foreground">{version.prompt}</p>
+            <div className="space-y-2">
+              <div>
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{t("basePrompt")}</div>
+                <p className="text-sm text-foreground">{version.basePrompt || version.prompt}</p>
+              </div>
+              {version.refinementCount ? (
+                <div>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{t("latestRequest")}</div>
+                    <span className="text-[11px] text-muted-foreground">{t("refinementCount")}: {version.refinementCount}</span>
+                  </div>
+                  <p className="text-sm text-foreground">{version.latestRequest}</p>
+                </div>
+              ) : null}
+              {version.refinementCount ? (
+                <p className="text-xs text-muted-foreground">{version.lineageSummary}</p>
+              ) : null}
+            </div>
           </div>
 
           {/* What Was Built */}
@@ -414,6 +478,9 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
                   </div>
                 </div>
               )}
+            </div>
+            <div className="px-4 py-2 border-t border-border bg-secondary/20 text-[11px] text-muted-foreground">
+              {t("previewWarmupHint")}
             </div>
           </div>
         </div>

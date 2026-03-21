@@ -33,5 +33,24 @@
   "improver_provider": "ollama",
   "local_scorer_model": "qwen2.5vl:7b",
   "local_improver_model": "gemma3:12b",
-  "ollama_base_url": "http://localhost:11434"
+  "ollama_base_url": "http://localhost:11434",
+  "default_profile": "bulk",
+  "profiles": {
+    "bulk": {
+      "scorer_provider": "ollama",
+      "improver_provider": "ollama",
+      "build_timeout_seconds": 600,
+      "screenshot_wait_seconds": 3.0
+    },
+    "showcase": {
+      "extends": "bulk",
+      "scorer_provider": "gemini",
+      "improver_provider": "gemini",
+      "scorer_model": "gemini-2.5-flash",
+      "improver_model": "gemini-2.5-flash",
+      "build_timeout_seconds": 900,
+      "screenshot_wait_seconds": 5.0,
+      "archetypes": ["game", "saas_landing", "editor"]
+    }
+  }
 }

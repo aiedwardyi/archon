@@ -28,6 +28,58 @@ client apps to non-technical clients.
 **The MOAT:** The Versions page. Competitors show current state only.
 Archon shows complete decision history with artifacts and live preview per version.
 
+## Model-Agnostic AI Stack
+
+Archon reads better as an orchestration system than as a one-model demo.
+
+The repo already spans multiple providers and operating modes:
+
+- **Anthropic Claude** for premium code generation and showcase-quality builds
+- **Google Gemini / Vertex AI** for planning, eval scoring, design direction, and image workflows
+- **IBM Watson NLU** for governance, prompt analysis, audit framing, and enterprise-friendly scoring
+- **OpenAI** in legacy and adjacent agent paths
+- **Local Ollama** for lower-cost eval scoring and prompt-improvement loops during repeated tuning
+
+That is useful portfolio signal because the system is intentionally:
+
+- model-agnostic
+- able to mix premium and economical models
+- usable in both cloud and local-eval modes
+- stable at the artifact/version/governance layer even when provider choices change
+
+## Portfolio Framing
+
+Archon is now best understood as a systems-focused portfolio project rather than a claim that simple prompt-to-app shells are a lasting moat. The strongest work in this repo is the versioned artifact pipeline, runtime repair, eval loop, auditability, and iteration history, not just the prompt box itself.
+
+See [docs/PORTFOLIO_POSITIONING.md](docs/PORTFOLIO_POSITIONING.md) for the current positioning and "done enough to move on" standard.
+
+## Bulk Vs Showcase Runs
+
+The repo now supports a cleaner split between repeated eval work and final demo passes:
+
+- `bulk` profile for cheaper reliability work and iteration loops
+- `showcase` profile for a small number of premium hero demos
+
+Recommended usage:
+
+```powershell
+# Bulk reliability / cheaper eval iteration
+python eval/eval_loop.py --config eval_config.json --profile bulk --archetype dashboard --runs 5 --skip-image-gen
+
+# Premium showcase pass for a hero demo
+$env:ENGINEER_MODEL = "claude"
+$env:ENGINEER_CLAUDE_MODEL = "claude-opus-4-6"
+$env:DESIGN_IMAGE_MODEL = "imagen-4.0-ultra-generate-001"
+python eval/eval_loop.py --config eval_config.json --profile showcase --archetype game --runs 1
+```
+
+Practical recommendation:
+
+- keep bulk loops cheap
+- use premium code generation only for a few final demos
+- keep IBM Watson in the story because governance and auditability matter to enterprise audiences
+- do not rerun expensive showcases if the current README demos are already strong enough
+
 ---
 
 ## Demo
@@ -35,6 +87,20 @@ Archon shows complete decision history with artifacts and live preview per versi
 [![Archon Demo](docs/screenshots/demo-thumbnail.png)](https://youtu.be/ci8xDNnxJKQ)
 
 > Watch the full demo — from prompt to deployed app in under 5 minutes.
+
+## Standout Enterprise Surface
+
+The governance / factsheet view is one of the strongest portfolio surfaces in the repo because it immediately communicates auditability, model traceability, and enterprise delivery posture.
+
+[![AI Governance — IBM Watson Factsheet](docs/screenshots/dashboard-governance.png)](docs/screenshots/dashboard-governance.png)
+
+This screen highlights:
+
+- prompt quality scoring
+- build confidence scoring
+- model registry visibility across providers
+- human-review gating
+- a client-facing, professional printout/export story
 
 ---
 

@@ -678,7 +678,7 @@ def commit_win(paths: list[Path], archetype: str, baseline_avg: float, test_avg:
 async def run_cycle(args: argparse.Namespace) -> dict[str, Any]:
     branch = verify_branch(args.expected_branch)
     load_env_from_backend()
-    config = load_config(args.config)
+    config = load_config(args.config, profile=args.profile)
     if args.archetypes:
         config["archetypes"] = args.archetypes
     tracked_archetypes = resolve_tracked_archetypes(config, args.archetypes)
@@ -851,6 +851,7 @@ async def run_forever(args: argparse.Namespace) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Operator-style eval loop")
     parser.add_argument("--config", default="eval_config.json")
+    parser.add_argument("--profile", help="Named eval profile, for example 'bulk' or 'showcase'")
     parser.add_argument("--archetypes", nargs="+", default=list(DEFAULT_TRACKED_ARCHETYPES))
     parser.add_argument("--archetype", help="Force a specific archetype for this cycle")
     parser.add_argument("--baseline-runs", type=int, default=3)

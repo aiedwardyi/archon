@@ -1,6 +1,7 @@
 import base64
 import concurrent.futures
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any
@@ -10,6 +11,14 @@ from google.genai import types
 from utils.genai_retry import call_with_retry
 
 PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
+
+
+def _design_planning_model() -> str:
+    return os.getenv("DESIGN_TEXT_MODEL", "gemini-2.5-flash").strip() or "gemini-2.5-flash"
+
+
+def _design_image_model() -> str:
+    return os.getenv("DESIGN_IMAGE_MODEL", "imagen-4.0-ultra-generate-001").strip() or "imagen-4.0-ultra-generate-001"
 
 
 def _repair_json_array(raw: str) -> list:
@@ -38,7 +47,7 @@ def _generate_one(req, client, save_dir):
 
     def _call_imagen(prompt):
         result = client.models.generate_images(
-            model="imagen-4.0-ultra-generate-001",
+            model=_design_image_model(),
             prompt=prompt,
             config=types.GenerateImagesConfig(
                 numberOfImages=1,
@@ -147,7 +156,7 @@ class DesignAgent:
 
         def _call():
             return self.client.models.generate_content(
-                model="gemini-2.5-flash",
+                model=_design_planning_model(),
                 contents=contents,
                 config={
                     "response_mime_type": "application/json",
@@ -249,7 +258,7 @@ class DesignAgent:
 
         def _call():
             return self.client.models.generate_content(
-                model="gemini-2.5-flash",
+                model=_design_planning_model(),
                 contents=contents,
                 config={
                     "temperature": 0.5,
