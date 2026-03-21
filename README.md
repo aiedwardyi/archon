@@ -11,6 +11,8 @@
 
 Archon is a multi-agent application delivery platform that turns a prompt into a versioned execution with artifacts, live preview, evaluation, and governance surfaces. It is designed around traceability, recovery, scoring, and auditability rather than a single prompt-to-page interaction.
 
+[Live Demo](https://archon.works) • [Video Walkthrough](https://youtu.be/ci8xDNnxJKQ) • [Showcase Gallery](docs/SHOWCASE_GALLERY.md)
+
 ## What Archon Demonstrates
 
 - versioned artifact pipeline: brief, plan, code, preview, and factsheet per execution
@@ -195,8 +197,6 @@ cd frontend
 $env:VITE_PUBLIC_DEMO_MODE = "true"
 npm run build
 ```
-
-Live public demo: [archon.works](https://archon.works)
 
 The repo includes [amplify.yml](amplify.yml) for a frontend-only Amplify deployment that serves the read-only showcase page and keeps backend/model execution paths private.
 
