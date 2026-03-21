@@ -35,6 +35,74 @@
     "planner",
     "engineer"
   ],
+  "logs": [
+    {
+      "id": "log-1772186292000-1",
+      "timestamp": 1772186292000,
+      "message": "Starting pipeline...",
+      "type": "info"
+    },
+    {
+      "id": "log-1772186292000-2",
+      "timestamp": 1772186292000,
+      "message": "Requirements Agent: Analyzing your request...",
+      "type": "info"
+    },
+    {
+      "id": "log-1772186304000-3",
+      "timestamp": 1772186304000,
+      "message": "Requirements Agent: Brief created.",
+      "type": "info"
+    },
+    {
+      "id": "log-1772186304000-4",
+      "timestamp": 1772186304000,
+      "message": "Architecture Agent: Planning the build...",
+      "type": "info"
+    },
+    {
+      "id": "log-1772186369000-5",
+      "timestamp": 1772186369000,
+      "message": "Architecture Agent: Build plan ready.",
+      "type": "info"
+    },
+    {
+      "id": "log-1772186369000-6",
+      "timestamp": 1772186369000,
+      "message": "Design Agent: Generating visuals...",
+      "type": "info"
+    },
+    {
+      "id": "log-1772186507000-7",
+      "timestamp": 1772186507000,
+      "message": "Design Agent: 6 images ready.",
+      "type": "info"
+    },
+    {
+      "id": "log-1772186507000-8",
+      "timestamp": 1772186507000,
+      "message": "Build Agent: Writing your code...",
+      "type": "info"
+    },
+    {
+      "id": "log-1772186689000-9",
+      "timestamp": 1772186689000,
+      "message": "Build Agent: Created src/index.html",
+      "type": "info"
+    },
+    {
+      "id": "log-1772186689001-10",
+      "timestamp": 1772186689001,
+      "message": "Build Agent: Created src/style.css",
+      "type": "info"
+    },
+    {
+      "id": "log-1772186689002-11",
+      "timestamp": 1772186689002,
+      "message": "Build complete.",
+      "type": "info"
+    }
+  ],
   "_meta": {
     "produced_at": "2026-02-23T09:21:51.243380+00:00",
     "consumer_version": "v4"
