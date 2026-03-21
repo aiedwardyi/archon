@@ -760,8 +760,8 @@ const Index = () => {
                     )}
 
                     {DEMO_MODE && (
-                      <div className="border border-cyan-500/20 rounded-md bg-cyan-500/5 px-4 py-2 text-xs text-cyan-100 flex items-center gap-2">
-                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-cyan-300 flex-shrink-0" />
+                      <div className="border border-cyan-500/20 rounded-md bg-cyan-500/5 px-4 py-2 text-xs text-cyan-700 dark:text-cyan-100 flex items-center gap-2">
+                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-cyan-500 dark:bg-cyan-300 flex-shrink-0" />
                         Public demo mode is seeded and read-only. Conversation, logs, versions, preview, publish, and governance browsing stay available.
                       </div>
                     )}
