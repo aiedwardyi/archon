@@ -134,7 +134,7 @@ const projects: DemoProjectSeed[] = [
       {
         role: "assistant",
         content:
-          "Mapped to the game showcase family. The seeded enterprise demo keeps the retained brief, plan, code, preview, and governance artifacts for this completed run.",
+          "Got it — building a premium FF7 fan archive with cinematic hero art, character spotlights for Cloud, Barret, and Tifa, a weapons gallery, and an atmospheric Midgar world map. Kicking off the pipeline now.",
         timestamp: 1773054960000,
       },
     ],
@@ -193,7 +193,7 @@ const projects: DemoProjectSeed[] = [
       {
         role: "assistant",
         content:
-          "Using the seeded archive build as the read-only enterprise demo for search, filters, preview, code download, and governance review.",
+          "On it — creating an interactive FF7 database with search and filtering, animated character cards with modal details, and premium AI-generated art. Starting the build pipeline.",
         timestamp: 1773054960000,
       },
     ],
