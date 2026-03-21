@@ -267,7 +267,7 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, ini
                 if (!projectId || !resolvedVersion) return;
                 setPublishState("loading");
                 if (DEMO_MODE) {
-                  const url = getDemoPublishedUrl(projectId);
+                  const url = getDemoPublishedUrl(projectId, resolvedVersion);
                   setPublishedUrl(url);
                   setPublishState("done");
                   window.open(url, "_blank", "noopener,noreferrer");
@@ -298,7 +298,7 @@ export const ArtifactsView = ({ projectId, selectedVersion, onVersionSelect, ini
             </button>
           )}
           <a
-            href={projectId ? (DEMO_MODE ? getDemoCodeDownloadUrl(projectId) : `http://localhost:5000/api/projects/${projectId}/versions/${resolvedVersion}/download`) : "#"}
+            href={projectId ? (DEMO_MODE ? getDemoCodeDownloadUrl(projectId, resolvedVersion) : `http://localhost:5000/api/projects/${projectId}/versions/${resolvedVersion}/download`) : "#"}
             download={!DEMO_MODE}
             className={`h-8 px-3 text-xs font-medium border border-border rounded-md flex items-center gap-1.5 no-underline ${projectId ? "text-foreground hover:bg-secondary transition-colors" : "text-muted-foreground opacity-50 pointer-events-none"}`}
           >
@@ -673,7 +673,7 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
   const handlePdf = async (type: "client" | "internal", action: "download" | "view") => {
     if (!projectId || !version) return;
     if (DEMO_MODE) {
-      const url = getDemoFactsheetPdfUrl(projectId, type);
+      const url = getDemoFactsheetPdfUrl(projectId, version, type);
       if (action === "view") {
         window.open(url, "_blank", "noopener,noreferrer");
         return;
@@ -718,7 +718,7 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
     setError(null);
     if (DEMO_MODE) {
       try {
-        setFactsheet(getDemoFactsheet(projectId) as Factsheet);
+        setFactsheet(getDemoFactsheet(projectId, version) as Factsheet);
         setLoading(false);
       } catch {
         setError(t("govFactsheetNotAvailable"));
@@ -752,7 +752,7 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
 
     let cancelled = false;
     if (DEMO_MODE) {
-      setInsights(getDemoInsights(projectId));
+      setInsights(getDemoInsights(projectId, version));
       return () => { cancelled = true; };
     }
     (async () => {
@@ -940,6 +940,11 @@ const GovernanceTab = ({ projectId, version }: { projectId: number | null; versi
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="border border-border rounded-md p-5">
+        <h2 className="text-sm font-bold text-foreground mb-2">Prompt Summary</h2>
+        <p className="text-sm text-muted-foreground leading-relaxed">{factsheet.prompt_summary || "—"}</p>
       </div>
 
       {/* Scoring */}

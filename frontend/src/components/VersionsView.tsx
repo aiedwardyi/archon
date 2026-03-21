@@ -245,7 +245,7 @@ export const VersionsView = ({ projectId, selectedVersion, onVersionSelect, onAr
   const handleDownloadReport = async () => {
     if (!projectId || !version) return;
     if (DEMO_MODE) {
-      const url = getDemoFactsheetPdfUrl(projectId, "client");
+      const url = getDemoFactsheetPdfUrl(projectId, version.id, "client");
       const a = document.createElement("a");
       a.href = url;
       a.download = `archon-v${version.id}-client.pdf`;

@@ -400,7 +400,7 @@ export async function fetchLogs(projectId: number, version: number): Promise<str
 }
 
 export async function fetchPrd(projectId: number, version: number): Promise<any> {
-  if (DEMO_MODE) return getDemoPrd(projectId);
+  if (DEMO_MODE) return getDemoPrd(projectId, version);
   try {
     const res = await fetch(`${API}/api/prd?project_id=${projectId}&version=${version}`, { headers: getAuthHeaders() });
     if (!res.ok) return null;
@@ -409,7 +409,7 @@ export async function fetchPrd(projectId: number, version: number): Promise<any>
 }
 
 export async function fetchPlan(projectId: number, version: number): Promise<any> {
-  if (DEMO_MODE) return getDemoPlan(projectId);
+  if (DEMO_MODE) return getDemoPlan(projectId, version);
   try {
     const res = await fetch(`${API}/api/plan?project_id=${projectId}&version=${version}`, { headers: getAuthHeaders() });
     if (!res.ok) return null;
@@ -418,7 +418,7 @@ export async function fetchPlan(projectId: number, version: number): Promise<any
 }
 
 export async function fetchCodeFiles(projectId: number, version: number): Promise<Array<{filename: string; content: string; language: string}>> {
-  if (DEMO_MODE) return getDemoCodeFiles(projectId);
+  if (DEMO_MODE) return getDemoCodeFiles(projectId, version);
   try {
     const base = `${API}/api/projects/${projectId}/versions/${version}/files`;
     const res = await fetch(base, { headers: getAuthHeaders() });

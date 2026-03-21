@@ -11,7 +11,30 @@ type DemoVersionSeed = {
   modelUsed: string;
   qualityTier: string;
   readinessScore: number;
+  previewPath?: string;
+  publishedPath?: string;
+  codeZipPath?: string;
+  clientPdfPath?: string;
+  internalPdfPath?: string;
 };
+
+type DemoBriefSeed = {
+  title: string;
+  overview: string;
+  goals: string[];
+  mvp: string[];
+  users: string[];
+};
+
+type DemoPlanSeed = {
+  milestones: Array<{
+    name: string;
+    tasks: Array<{ id: string; description: string }>;
+  }>;
+};
+
+type DemoCodeFileSeed = { filename: string; language: string; content: string };
+type DemoInsightSeed = { category: string; suggestion: string; priority: string };
 
 type DemoFactsheet = {
   factsheet_version: string;
@@ -56,24 +79,13 @@ type DemoProjectSeed = {
   codeZipPath: string;
   clientPdfPath: string;
   internalPdfPath: string;
-  brief: {
-    title: string;
-    overview: string;
-    goals: string[];
-    mvp: string[];
-    users: string[];
-  };
-  plan: {
-    milestones: Array<{
-      name: string;
-      tasks: Array<{ id: string; description: string }>;
-    }>;
-  };
-  files: Array<{ filename: string; language: string; content: string }>;
+  brief: DemoBriefSeed;
+  plan: DemoPlanSeed;
+  files: DemoCodeFileSeed[];
   versions: DemoVersionSeed[];
   chat: Array<{ role: "user" | "assistant"; content: string; timestamp: number }>;
   factsheet: DemoFactsheet;
-  insights: Array<{ category: string; suggestion: string; priority: string }>;
+  insights: DemoInsightSeed[];
 };
 
 const baseRegistry = [
@@ -92,8 +104,8 @@ const projects: DemoProjectSeed[] = [
     createdAt: "2026-03-20T20:55:00Z",
     updatedAt: "2026-03-20T21:34:04Z",
     latestVersion: 12,
-    previewPath: "/demo-sites/dashboard/",
-    publishedPath: "/demo-sites/dashboard/",
+    previewPath: "/demo-sites/dashboard/index.html",
+    publishedPath: "/demo-sites/dashboard/index.html",
     codeZipPath: "/demo-assets/zips/dashboard-code.zip",
     clientPdfPath: "/demo-assets/pdfs/dashboard-client.pdf",
     internalPdfPath: "/demo-assets/pdfs/dashboard-internal.pdf",
@@ -234,8 +246,8 @@ const projects: DemoProjectSeed[] = [
     createdAt: "2026-03-19T22:18:00Z",
     updatedAt: "2026-03-20T03:44:00Z",
     latestVersion: 4,
-    previewPath: "/demo-sites/halo/",
-    publishedPath: "/demo-sites/halo/",
+    previewPath: "/demo-sites/halo/index.html",
+    publishedPath: "/demo-sites/halo/index.html",
     codeZipPath: "/demo-assets/zips/halo-code.zip",
     clientPdfPath: "/demo-assets/pdfs/halo-client.pdf",
     internalPdfPath: "/demo-assets/pdfs/halo-internal.pdf",
@@ -331,8 +343,8 @@ const projects: DemoProjectSeed[] = [
     createdAt: "2026-03-19T17:08:00Z",
     updatedAt: "2026-03-19T17:41:00Z",
     latestVersion: 7,
-    previewPath: "/demo-sites/writeflow/",
-    publishedPath: "/demo-sites/writeflow/",
+    previewPath: "/demo-sites/writeflow/index.html",
+    publishedPath: "/demo-sites/writeflow/index.html",
     codeZipPath: "/demo-assets/zips/writeflow-code.zip",
     clientPdfPath: "/demo-assets/pdfs/writeflow-client.pdf",
     internalPdfPath: "/demo-assets/pdfs/writeflow-internal.pdf",
@@ -438,6 +450,166 @@ function selectedVersion(projectId: number, version?: number | null) {
   return getDemoVersions(projectId).find((entry) => entry.version === version) ?? latestVersion(projectId);
 }
 
+function versionMeta(projectId: number, version?: number | null) {
+  const project = ensureProject(projectId);
+  const versionEntry = project.versions.find((entry) => entry.version === version) ?? project.versions.reduce((best, current) => {
+    if (!best) return current;
+    return current.version > best.version ? current : best;
+  }, project.versions[0]);
+  return { project, versionEntry };
+}
+
+function getUserTurns(projectId: number, version?: number | null) {
+  return (versionMeta(projectId, version).versionEntry?.promptHistory ?? [])
+    .filter((turn) => turn.role === "user")
+    .map((turn) => turn.content.trim())
+    .filter(Boolean);
+}
+
+function selectedPrompt(projectId: number, version?: number | null) {
+  const turns = getUserTurns(projectId, version);
+  return {
+    basePrompt: turns[0] ?? "",
+    latestRequest: turns[turns.length - 1] ?? "",
+    refinementCount: Math.max(turns.length - 1, 0),
+  };
+}
+
+function titleCasePrompt(prompt: string) {
+  if (!prompt) return "Selected prompt refinement";
+  const trimmed = prompt.replace(/\.$/, "");
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
+function withRefinement(base: string, prompt: string, refinementCount: number) {
+  if (!prompt || refinementCount === 0) return base;
+  return `${base} Selected iteration focus: ${titleCasePrompt(prompt)}.`;
+}
+
+function getDemoBriefSeed(projectId: number, version?: number | null): DemoBriefSeed {
+  const { project } = versionMeta(projectId, version);
+  const prompt = selectedPrompt(projectId, version);
+  const latestRequest = prompt.latestRequest || prompt.basePrompt;
+  const refinementCount = prompt.refinementCount;
+  const promptContext = [
+    prompt.basePrompt ? `Base prompt: ${prompt.basePrompt}.` : "",
+    refinementCount > 0 && latestRequest ? `Accepted refinement for this version: ${latestRequest}.` : "",
+  ].filter(Boolean).join(" ");
+  return {
+    title: project.brief.title,
+    overview: [project.brief.overview, promptContext].filter(Boolean).join(" "),
+    goals: refinementCount > 0
+      ? [...project.brief.goals, `Honor the accepted refinement for this version: ${titleCasePrompt(latestRequest)}.`]
+      : [...project.brief.goals],
+    mvp: refinementCount > 0
+      ? [...project.brief.mvp, `Accepted iteration outcome: ${titleCasePrompt(latestRequest)}.`]
+      : [...project.brief.mvp],
+    users: [...project.brief.users],
+  };
+}
+
+function getDemoPlanSeed(projectId: number, version?: number | null): DemoPlanSeed {
+  const { project } = versionMeta(projectId, version);
+  const prompt = selectedPrompt(projectId, version);
+  const latestRequest = prompt.latestRequest || prompt.basePrompt;
+  const refinementCount = prompt.refinementCount;
+  const milestones = project.plan.milestones.map((milestone) => ({
+    name: milestone.name,
+    tasks: milestone.tasks.map((task) => ({ ...task })),
+  }));
+  if (refinementCount > 0) {
+    milestones.push({
+      name: `Iteration refinement for v${versionMeta(projectId, version).versionEntry.version}`,
+      tasks: [
+        {
+          id: "ITER-1",
+          description: `Apply the accepted refinement request: ${titleCasePrompt(latestRequest)}.`,
+        },
+        {
+          id: "ITER-2",
+          description: "Re-evaluate the preview, retained artifacts, and factsheet outputs against the refined prompt.",
+        },
+      ],
+    });
+  }
+  return { milestones };
+}
+
+function annotateCodeFileContent(content: string, language: string, versionNumber: number, latestRequest: string, refinementCount: number) {
+  if (!latestRequest || refinementCount === 0) return content;
+  const note = `Version v${versionNumber} accepted request: ${titleCasePrompt(latestRequest)}.`;
+  if (language === "tsx" || language === "ts" || language === "js" || language === "jsx") {
+    return `// ${note}\n${content}`;
+  }
+  if (language === "css" || language === "scss") {
+    return `/* ${note} */\n${content}`;
+  }
+  if (language === "html") {
+    return `<!-- ${note} -->\n${content}`;
+  }
+  return `${note}\n${content}`;
+}
+
+function getDemoCodeFileSeeds(projectId: number, version?: number | null): DemoCodeFileSeed[] {
+  const { project, versionEntry } = versionMeta(projectId, version);
+  const prompt = selectedPrompt(projectId, version);
+  return project.files.map((file) => ({
+    ...file,
+    content: annotateCodeFileContent(file.content, file.language, versionEntry.version, prompt.latestRequest || prompt.basePrompt, prompt.refinementCount),
+  }));
+}
+
+function getDemoFactsheetSeed(projectId: number, version?: number | null): DemoFactsheet {
+  const { project, versionEntry } = versionMeta(projectId, version);
+  const prompt = selectedPrompt(projectId, version);
+  const baseFactsheet = project.factsheet;
+  return {
+    ...baseFactsheet,
+    generated_at: versionEntry.createdAt,
+    project: {
+      id: project.id,
+      name: project.name,
+      version: versionEntry.version,
+      execution_id: versionEntry.executionId,
+    },
+    prompt_summary: prompt.latestRequest || prompt.basePrompt || baseFactsheet.prompt_summary,
+    pipeline: {
+      ...baseFactsheet.pipeline,
+      duration_seconds: versionEntry.durationSeconds,
+    },
+    model_registry: [
+      ...baseRegistry,
+      { agent_role: "Build Agent", model: versionEntry.modelUsed, provider: versionEntry.modelUsed.includes("Claude") ? "Anthropic" : "Google" },
+    ],
+    outputs: {
+      files_generated: versionEntry.filesGenerated,
+      images_generated: versionEntry.imagesGenerated,
+    },
+    readiness: {
+      combined_score: versionEntry.readinessScore,
+      quality_tier: versionEntry.qualityTier,
+    },
+    quality_indicators: [
+      { indicator: "Code generated", status: "pass", value: `${versionEntry.filesGenerated} files` },
+      { indicator: "Prompt lineage", status: "pass", value: `${Math.max(prompt.refinementCount + 1, 1)} user turns` },
+    ],
+  };
+}
+
+function getDemoInsightSeeds(projectId: number, version?: number | null): DemoInsightSeed[] {
+  const { project, versionEntry } = versionMeta(projectId, version);
+  const prompt = selectedPrompt(projectId, version);
+  const insights = project.insights.map((insight) => ({ ...insight }));
+  if (prompt.refinementCount > 0 && prompt.latestRequest) {
+    insights.unshift({
+      category: "clarity",
+      suggestion: `Version v${versionEntry.version} accepted this refinement: ${titleCasePrompt(prompt.latestRequest)}.`,
+      priority: "high",
+    });
+  }
+  return insights;
+}
+
 function formatDuration(durationSeconds?: number | null) {
   if (durationSeconds == null) return "—";
   const mins = Math.floor(durationSeconds / 60);
@@ -490,25 +662,25 @@ export function getDemoLogs(projectId: number, version?: number | null) {
   ];
 }
 
-export function getDemoPrd(projectId: number) {
-  const project = ensureProject(projectId);
+export function getDemoPrd(projectId: number, version?: number | null) {
+  const brief = getDemoBriefSeed(projectId, version);
   return {
     prd: {
-      document_title: project.brief.title,
-      overview: project.brief.overview,
-      goals: project.brief.goals,
-      core_features_mvp: project.brief.mvp,
-      target_users: project.brief.users,
+      document_title: brief.title,
+      overview: brief.overview,
+      goals: brief.goals,
+      core_features_mvp: brief.mvp,
+      target_users: brief.users,
     },
   };
 }
 
-export function getDemoPlan(projectId: number) {
-  return { milestones: ensureProject(projectId).plan.milestones };
+export function getDemoPlan(projectId: number, version?: number | null) {
+  return { milestones: getDemoPlanSeed(projectId, version).milestones };
 }
 
-export function getDemoCodeFiles(projectId: number) {
-  return ensureProject(projectId).files;
+export function getDemoCodeFiles(projectId: number, version?: number | null) {
+  return getDemoCodeFileSeeds(projectId, version);
 }
 
 export function getDemoActivity() {
@@ -552,12 +724,12 @@ export function getDemoChatHistory(projectId: number) {
   return ensureProject(projectId).chat;
 }
 
-export function getDemoFactsheet(projectId: number) {
-  return ensureProject(projectId).factsheet;
+export function getDemoFactsheet(projectId: number, version?: number | null) {
+  return getDemoFactsheetSeed(projectId, version);
 }
 
-export function getDemoInsights(projectId: number) {
-  return ensureProject(projectId).insights;
+export function getDemoInsights(projectId: number, version?: number | null) {
+  return getDemoInsightSeeds(projectId, version);
 }
 
 export function getDemoBuildDetails(projectId: number, version?: number | null) {
@@ -570,21 +742,25 @@ export function getDemoBuildDetails(projectId: number, version?: number | null) 
   };
 }
 
-export function getDemoPreviewUrl(projectId: number, _version?: number | null) {
-  return ensureProject(projectId).previewPath;
+export function getDemoPreviewUrl(projectId: number, version?: number | null) {
+  const { project, versionEntry } = versionMeta(projectId, version);
+  return versionEntry.previewPath || project.previewPath;
 }
 
-export function getDemoPublishedUrl(projectId: number) {
-  return ensureProject(projectId).publishedPath;
+export function getDemoPublishedUrl(projectId: number, version?: number | null) {
+  const { project, versionEntry } = versionMeta(projectId, version);
+  return versionEntry.publishedPath || project.publishedPath;
 }
 
-export function getDemoCodeDownloadUrl(projectId: number) {
-  return ensureProject(projectId).codeZipPath;
+export function getDemoCodeDownloadUrl(projectId: number, version?: number | null) {
+  const { project, versionEntry } = versionMeta(projectId, version);
+  return versionEntry.codeZipPath || project.codeZipPath;
 }
 
-export function getDemoFactsheetPdfUrl(projectId: number, type: "client" | "internal") {
-  const project = ensureProject(projectId);
-  return type === "client" ? project.clientPdfPath : project.internalPdfPath;
+export function getDemoFactsheetPdfUrl(projectId: number, version: number | null | undefined, type: "client" | "internal") {
+  const { project, versionEntry } = versionMeta(projectId, version);
+  if (type === "client") return versionEntry.clientPdfPath || project.clientPdfPath;
+  return versionEntry.internalPdfPath || project.internalPdfPath;
 }
 
 export function getDemoViewerProfile() {
