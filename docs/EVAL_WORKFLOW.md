@@ -1,6 +1,6 @@
-# Eval Loop Operator Runbook
+# Internal Eval Loop Operator Runbook
 
-This workflow is the authoritative runbook for manual eval optimization. It uses the repo's existing control points and does not add a wrapper script around the loop.
+This workflow is the internal contributor runbook for manual eval optimization. It uses the repo's existing control points and does not add a wrapper script around the loop.
 
 ## Mission
 

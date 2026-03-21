@@ -1,4 +1,4 @@
-# External Benchmark Directions
+# Internal External Benchmark Directions
 
 This document maps each major archetype to a small set of external product references that set a strong visual and product-quality bar.
 

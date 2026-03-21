@@ -75,11 +75,11 @@ This is the most differentiated surface in the repo: execution lineage, preview 
 
 The system persists the intermediate work, not just the final output.
 
-### Governance Factsheet
+### Artifact Viewer
 
-[![Governance](docs/screenshots/dashboard-governance.png)](docs/screenshots/dashboard-governance.png)
+[![Brief](docs/screenshots/dashboard-brief.png)](docs/screenshots/dashboard-brief.png)
 
-This is the strongest enterprise-facing proof point in the product.
+Artifacts remain visible and versioned, which makes the pipeline easier to inspect, review, and restore.
 
 ## Model-Agnostic Design
 
