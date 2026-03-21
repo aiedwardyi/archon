@@ -12,11 +12,13 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import NotFound from "./pages/NotFound";
+import Demo from "./pages/Demo";
 import TokenHandler from "./TokenHandler";
 
 const queryClient = new QueryClient();
+const DEMO_MODE = import.meta.env.VITE_PUBLIC_DEMO_MODE === "true";
 
-const PUBLIC_PATHS = ["/login", "/register", "/forgot-password"];
+const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/demo"];
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -72,35 +74,49 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 const GOOGLE_CLIENT_ID =
   "975672204403-a1tbslh4raerh7tlrdgepr19qlnvvlmk.apps.googleusercontent.com";
 
-const App = () => (
-  <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <LanguageProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <TokenHandler />
-              <AuthGuard>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/projects" element={<Index />} />
-                  <Route path="/pipeline" element={<Index />} />
-                  <Route path="/versions" element={<Index />} />
-                  <Route path="/artifacts" element={<Index />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/forgot-password" element={<ForgotPassword />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </AuthGuard>
-            </BrowserRouter>
-          </TooltipProvider>
-        </LanguageProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
-  </GoogleOAuthProvider>
+const AppShell = (
+  <QueryClientProvider client={queryClient}>
+    <ThemeProvider>
+      <LanguageProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            {DEMO_MODE ? (
+              <Routes>
+                <Route path="*" element={<Demo />} />
+              </Routes>
+            ) : (
+              <>
+                <TokenHandler />
+                <AuthGuard>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/projects" element={<Index />} />
+                    <Route path="/pipeline" element={<Index />} />
+                    <Route path="/versions" element={<Index />} />
+                    <Route path="/artifacts" element={<Index />} />
+                    <Route path="/demo" element={<Demo />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </AuthGuard>
+              </>
+            )}
+          </BrowserRouter>
+        </TooltipProvider>
+      </LanguageProvider>
+    </ThemeProvider>
+  </QueryClientProvider>
 );
+
+const App = () =>
+  DEMO_MODE ? (
+    AppShell
+  ) : (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>{AppShell}</GoogleOAuthProvider>
+  );
 
 export default App;

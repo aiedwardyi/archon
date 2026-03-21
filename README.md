@@ -186,6 +186,18 @@ Default local ports:
 - Consumer UI: `http://localhost:3002`
 - Enterprise UI: `http://localhost:8080`
 
+## Public Demo Deployment
+
+For a safe public portfolio deployment, build the frontend in static demo mode instead of exposing the live builder:
+
+```powershell
+cd frontend
+$env:VITE_PUBLIC_DEMO_MODE = "true"
+npm run build
+```
+
+The repo includes [amplify.yml](amplify.yml) for a frontend-only Amplify deployment that serves the read-only showcase page and keeps backend/model execution paths private.
+
 ## Further Reading
 
 - [Engineering overview](docs/ENGINEERING_OVERVIEW.md)
