@@ -220,6 +220,14 @@ _ENGINEER_MAX_RETRIES = 5
 _IMG_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
 
+def _engineer_gemini_model() -> str:
+    return os.getenv("ENGINEER_GEMINI_MODEL", "gemini-2.5-flash").strip() or "gemini-2.5-flash"
+
+
+def _engineer_claude_model() -> str:
+    return os.getenv("ENGINEER_CLAUDE_MODEL", "claude-opus-4-6").strip() or "claude-opus-4-6"
+
+
 def _load_reference_images(kit_archetype: str) -> list[tuple[str, bytes, str]]:
     """Load reference images for an archetype.
     Returns list of (filename, raw_bytes, mime_type)."""
@@ -451,7 +459,7 @@ def _run_claude(contents: str, ref_images: list[tuple[str, bytes, str]] | None =
             raw = ""
             usage = None
             with client.messages.stream(
-                model="claude-opus-4-6",
+                model=_engineer_claude_model(),
                 max_tokens=64000,
                 messages=[{"role": "user", "content": message_content}],
             ) as stream:
@@ -519,7 +527,7 @@ def _run_gemini(client: genai.Client, contents: str, ref_images: list[tuple[str,
                 gemini_contents = parts
 
             response = client.models.generate_content(
-                model="gemini-2.5-flash",
+                model=_engineer_gemini_model(),
                 contents=gemini_contents,
                 config={
                     "response_mime_type": "application/json",

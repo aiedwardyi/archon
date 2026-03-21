@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from api_client import BuilderAPI, BuildError
+from profile_utils import apply_profile
 
 logging.basicConfig(
     level=logging.INFO,
@@ -54,6 +55,12 @@ BASELINES = {
     "form": 75.0,
     "game": 88.0,
 }
+
+
+def load_config(config_path: str = "eval_config.json", profile: str | None = None) -> dict:
+    config_file = Path(__file__).resolve().parent / config_path
+    with open(config_file, encoding="utf-8") as f:
+        return apply_profile(json.load(f), profile_name=profile)
 
 
 def get_genai_client():
@@ -247,20 +254,22 @@ async def run_single(api, archetype: str, prompt: str, build_timeout: int = 600,
     }
 
 
-async def eval_archetype(archetype: str, runs: int = 3, build_timeout: int = 600, skip_image_gen: bool = False) -> dict:
+async def eval_archetype(archetype: str, *, config: dict, runs: int = 3, build_timeout: int = 600, skip_image_gen: bool = False) -> dict:
     """Run N builds of an archetype, score each, return averaged results."""
-    prompt = PROMPTS.get(archetype)
+    prompt = (config.get("test_prompts") or {}).get(archetype, PROMPTS.get(archetype))
     if not prompt:
         logger.error(f"No prompt for archetype '{archetype}'")
         return {"archetype": archetype, "error": "no prompt"}
 
-    api = BuilderAPI(base_url="http://localhost:5000")
+    api = BuilderAPI(base_url=config.get("backend_url", "http://localhost:5000"))
     client = get_genai_client()
 
     from eval_scorer import DesignScorer
     from reference_loader import ReferenceLoader
+    from utils.model_provider import create_scorer_provider
 
-    scorer = DesignScorer(client, model="gemini-2.5-flash")
+    scorer_provider = create_scorer_provider(config, genai_client=client)
+    scorer = DesignScorer(client, model=config.get("scorer_model", "gemini-2.5-flash"), provider=scorer_provider)
     refs_loader = ReferenceLoader()
 
     all_scores = []
@@ -334,6 +343,8 @@ async def eval_archetype(archetype: str, runs: int = 3, build_timeout: int = 600
 
 async def main():
     parser = argparse.ArgumentParser(description="Simple eval loop")
+    parser.add_argument("--config", default="eval_config.json", help="Config file path")
+    parser.add_argument("--profile", help="Named eval profile, for example 'bulk' or 'showcase'")
     parser.add_argument("--archetype", "-a", nargs="+", default=["dashboard"],
                         help="Archetype(s) to eval")
     parser.add_argument("--runs", "-r", type=int, default=3,
@@ -344,9 +355,10 @@ async def main():
                         help="Skip Design Agent image generation (saves ~$0.05 + ~30s per build)")
     args = parser.parse_args()
 
+    config = load_config(args.config, profile=args.profile)
     all_summaries = {}
     for arch in args.archetype:
-        summary = await eval_archetype(arch, runs=args.runs, build_timeout=args.timeout, skip_image_gen=args.skip_image_gen)
+        summary = await eval_archetype(arch, config=config, runs=args.runs, build_timeout=args.timeout, skip_image_gen=args.skip_image_gen)
         all_summaries[arch] = summary
 
     # Print final table

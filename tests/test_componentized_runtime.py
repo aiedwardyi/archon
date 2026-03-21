@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -31,6 +33,7 @@ from utils.componentized_runtime import (
     collect_componentized_editable_files,
     collect_componentized_reverse_dependents,
     ensure_componentized_workspace_support,
+    _normalize_componentized_file,
     _repair_componentized_orphaned_parent_family_children,
     _normalize_run_on_natural_language_notes,
     collect_existing_code_context,
@@ -742,7 +745,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             index_css = (code_dir / "src" / "index.css").read_text(encoding="utf-8")
             self.assertNotIn("font-family: system-ui", index_css)
             self.assertIn("intentionally minimal", index_css)
-            self.assertIn('"build": "vite build"', (code_dir / "package.json").read_text(encoding="utf-8"))
+            self.assertIn('"build": "node ./node_modules/vite/bin/vite.js build"', (code_dir / "package.json").read_text(encoding="utf-8"))
             self.assertIn('"noUnusedLocals": false', (code_dir / "tsconfig.json").read_text(encoding="utf-8"))
             self.assertIn("tsconfig.json", result["created_files"])
         finally:
@@ -1551,7 +1554,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             package_json = (code_dir / "package.json").read_text(encoding="utf-8")
             self.assertIn('"type": "module"', package_json)
             self.assertNotIn("\\n", package_json)
-            self.assertIn('"build": "vite build"', package_json)
+            self.assertIn('"build": "node ./node_modules/vite/bin/vite.js build"', package_json)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
@@ -2092,6 +2095,301 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertNotIn("str = />", app_source)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_normalize_componentized_file_repairs_project_617_ternary_branch_orphan_closers(self):
+        source_path = REPO_ROOT / "generated" / "617" / "v1" / "code" / "src" / "App.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/App.tsx", source)
+
+        self.assertRegex(
+            normalized,
+            re.compile(
+                r"\)\s*:\s*\(\s*<Dashboard activities=\{activities\} />\s*\)\}",
+                re.MULTILINE,
+            ),
+        )
+        self.assertNotIn("</Dashboard>", normalized)
+        self.assertNotIn("</TransactionForm>", normalized)
+        self.assertRegex(
+            normalized,
+            re.compile(
+                r"<TransactionForm[\s\S]*?/\>[\s\S]*?</Sidebar>\s*</div>\s*\);\s*}",
+                re.MULTILINE,
+            ),
+        )
+
+    def test_normalize_componentized_file_repairs_project_617_logical_and_branch_orphan_closers(self):
+        source_path = REPO_ROOT / "generated" / "617" / "v1" / "code" / "src" / "components" / "TransactionForm.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/TransactionForm.tsx", source)
+
+        self.assertEqual(normalized.count("</form>"), 1)
+        self.assertRegex(
+            normalized,
+            re.compile(
+                r"\{type !== 'transfer' && \(\s*<div className=\"form-group\">[\s\S]*?</div>\s*\)\}",
+                re.MULTILINE,
+            ),
+        )
+
+    def test_normalize_componentized_file_repairs_project_618_multi_param_arrow_bleed(self):
+        source_path = REPO_ROOT / "generated" / "618" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/Dashboard.tsx", source)
+
+        self.assertEqual(normalized.count("chartData.values.map((val, i) => `L${"), 2)
+        self.assertNotIn("= />", normalized)
+        self.assertIn("currentPrice,", normalized)
+        self.assertNotIn("/* currentPrice, */", normalized)
+        self.assertEqual(normalized.count("/*"), normalized.count("*/"))
+
+    def test_normalize_componentized_file_repairs_project_625_nested_kpi_branch_orphan_closer(self):
+        source_path = REPO_ROOT / "generated" / "625" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/Dashboard.tsx", source)
+
+        self.assertNotRegex(
+            normalized,
+            re.compile(
+                r"\)\s*:\s*\(\s*<span[\s\S]*?</span>\s*</div>\s*\)\}",
+                re.MULTILINE,
+            ),
+        )
+        self.assertRegex(
+            normalized,
+            re.compile(
+                r"\{kpi.label === 'Best Performer' \? \([\s\S]*?\)\}\s*<span className=\{`kpi-delta[\s\S]*?</span>\s*</div>",
+                re.MULTILINE,
+            ),
+        )
+        self.assertIn("            </div>\n          ))}", normalized)
+        self.assertEqual(normalized.count("<>"), normalized.count("</>"))
+
+    def test_normalize_componentized_file_repairs_project_626_layout_main_wrapper_leak(self):
+        source_path = REPO_ROOT / "generated" / "626" / "v1" / "code" / "src" / "components" / "DashboardLayout.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/DashboardLayout.tsx", source)
+
+        self.assertRegex(
+            normalized,
+            re.compile(r"</aside>\s*<main className=\"main-content\">", re.MULTILINE),
+        )
+        self.assertRegex(
+            normalized,
+            re.compile(r"</main>\s*</div>\s*\);\s*$", re.MULTILINE),
+        )
+        self._assert_jsx_return_would_parse(normalized)
+
+    def test_normalize_componentized_file_repairs_project_628_relational_operator_bleed(self):
+        source_path = REPO_ROOT / "generated" / "628" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/Dashboard.tsx", source)
+
+        self.assertIn("stroke={ticker.delta >= 0 ? 'var(--accent)' : 'var(--danger)'}", normalized)
+        self.assertNotIn("/>=", normalized)
+
+    def test_normalize_componentized_file_repairs_project_634_orphan_prose_comment_line(self):
+        source_path = REPO_ROOT / "generated" / "634" / "v1" / "code" / "src" / "components" / "ChartCard.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/ChartCard.tsx", source)
+
+        self.assertNotRegex(normalized, re.compile(r"(?m)^Box \(0-1000 for x, 0-300 for y\)"))
+        self.assertIn("/* Box (0-1000 for x, 0-300 for y)", normalized)
+        self.assertEqual(normalized.count("/*"), normalized.count("*/"))
+
+    def test_normalize_componentized_file_repairs_project_634_duplicate_kpi_label_prop_collision(self):
+        source_path = REPO_ROOT / "generated" / "634" / "v1" / "code" / "src" / "components" / "KpiCards.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/KpiCards.tsx", source)
+
+        self.assertIn("label,", normalized)
+        self.assertNotIn("/* label, */", normalized)
+        self.assertEqual(normalized.count("label="), 4)
+        self.assertNotIn('valueFormat="percentage" label="ETH"', normalized)
+
+    def test_normalize_componentized_file_repairs_project_639_split_svg_fill_attribute(self):
+        source_path = REPO_ROOT / "generated" / "639" / "v1" / "code" / "src" / "components" / "Chart.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/Chart.tsx", source)
+
+        self.assertIn('fill="var(--accent)"', normalized)
+        self.assertNotRegex(normalized, re.compile(r"(?m)^\s*var\(--accent\)\"\s+stroke="))
+        self.assertIn('stroke="var(--card-bg)"', normalized)
+        self.assertIn("onMouseLeave={handleMouseLeave}", normalized)
+
+    def test_normalize_componentized_file_repairs_project_640_missing_logical_branch_closer(self):
+        source_path = REPO_ROOT / "generated" / "640" / "v1" / "code" / "src" / "App.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/App.tsx", source)
+
+        self.assertRegex(
+            normalized,
+            re.compile(
+                r"\{tooltip && \(\s*<div[\s\S]*?\{tooltip.content\}\s*</div>\s*\)\}",
+                re.MULTILINE,
+            ),
+        )
+        self._assert_jsx_return_would_parse(normalized)
+
+    def test_normalize_componentized_file_repairs_project_649_self_closing_component_child_leak(self):
+        source_path = REPO_ROOT / "generated" / "649" / "v1" / "code" / "src" / "App.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/App.tsx", source)
+
+        self.assertIn("<ChartComponent onChipClick=", normalized)
+        self.assertIn("</ChartComponent>", normalized)
+        self.assertNotIn("<ChartComponent onChipClick={(action) => console.log(`Chart action: ${action}`)} />", normalized)
+        self.assertIn("<HoldingsTable onManageClick=", normalized)
+        self.assertIn("</HoldingsTable>", normalized)
+        self.assertNotIn("<HoldingsTable onManageClick={(asset) => openModal(`Managing ${asset} details...`)} />", normalized)
+
+    def test_normalize_componentized_file_repairs_project_650_logical_svg_sibling_condition(self):
+        source_path = REPO_ROOT / "generated" / "650" / "v1" / "code" / "src" / "App.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/App.tsx", source)
+
+        self.assertIn('{item === "Markets" && (<><path d="M3 3v18h18" /><path d="M18.7 8.3L12 15l-3.3-3.3L3 18" /></>)}', normalized)
+        self.assertIn('{item === "Orders" && (<><rect x="2" y="7" width="20" height="14" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></>)}', normalized)
+        self.assertNotRegex(normalized, re.compile(r'\{item === "Markets" && <path[\s\S]*?<path'))
+
+    def test_normalize_componentized_file_repairs_project_653_bare_jsx_array_map_expression(self):
+        source_path = REPO_ROOT / "generated" / "653" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/Dashboard.tsx", source)
+
+        self.assertIn("{/* Horizontal grid lines */}{[...Array(5)].map((_, i) => (", normalized)
+        self.assertNotIn("{/* Horizontal grid lines */}[...Array(5)].map((_, i) => (", normalized)
+        self.assertNotIn("</path>", normalized)
+
+    def test_normalize_componentized_file_repairs_project_672_split_state_setter_and_component_closer_leaks(self):
+        source_path = REPO_ROOT / "generated" / "672" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/Dashboard.tsx", source)
+
+        self.assertIn("setIsTransactionFormOpen(true)", normalized)
+        self.assertNotIn("set\nIsTransactionFormOpen(true)", normalized)
+        self.assertIn("<PortfolioSummary onAddHoldingClick={() => setIsTransactionFormOpen(true)}>", normalized)
+        self.assertNotIn("<PortfolioSummary onAddHoldingClick={() => setIsTransactionFormOpen(true)} />", normalized)
+        self.assertNotIn("</CryptoSearch>", normalized)
+        self.assertNotIn("</TransactionForm>", normalized)
+
+    def test_normalize_componentized_file_repairs_project_674_tsconfig_standalone_comma_noise(self):
+        source_path = REPO_ROOT / "generated" / "674" / "v1" / "code" / "tsconfig.json"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("tsconfig.json", source)
+
+        self.assertNotIn("\n    ,\n", normalized)
+        data = json.loads(normalized)
+        self.assertFalse(data["compilerOptions"]["noUnusedLocals"])
+        self.assertFalse(data["compilerOptions"]["noUnusedParameters"])
+
+    def test_normalize_componentized_file_repairs_project_681_modal_branch_missing_wrapper_close(self):
+        source_path = REPO_ROOT / "generated" / "681" / "v1" / "code" / "src" / "App.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/App.tsx", source)
+
+        self.assertIn("{modalContent}\n          </div>\n        </div>\n      )}", normalized)
+
+    def test_normalize_componentized_file_repairs_project_683_inline_return_root_close_leak(self):
+        source_path = REPO_ROOT / "generated" / "683" / "v1" / "code" / "src" / "pages" / "DashboardPage.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/pages/DashboardPage.tsx", source)
+
+        self.assertRegex(normalized, r"return\s*\(\s*\n\s*<div className=\"dashboard-layout\">")
+        self.assertRegex(normalized, r"</div>\s*\n\s*\);")
+        self.assertNotIn("</div>  );", normalized)
+
+    def test_normalize_componentized_file_repairs_project_684_layout_root_close_before_main_comment_gap(self):
+        source_path = REPO_ROOT / "generated" / "684" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/Dashboard.tsx", source)
+
+        self.assertNotRegex(normalized, re.compile(r"</aside>\s*\n\s*</div>\s*\n\s*\{/\* Main Content \*/\}"))
+        self.assertIn("{/* Main Content */}", normalized)
+        self.assertIn("<main className=\"main-content\">", normalized)
+
+    def test_normalize_componentized_file_repairs_inline_jsx_attribute_block_comment_bleed(self):
+        source = """
+const View = () => (
+  <text
+    key={`y-label-${index}`}
+    x={-10} /* Position slightly outside to the left                  y={y + 5}
+    textAnchor="start"
+    className="chart-axis-label"
+  >
+    ${value}k
+  </text>
+);
+""".lstrip()
+
+        normalized = _normalize_componentized_file("src/pages/DashboardPage.tsx", source)
+
+        self.assertIn("x={-10}", normalized)
+        self.assertIn("textAnchor=\"start\"", normalized)
+        self.assertNotIn("/* Position slightly outside to the left", normalized)
+
+    def test_ensure_componentized_workspace_support_restores_missing_vite_bin_shims(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            code_dir = Path(tmpdir)
+            (code_dir / "package.json").write_text(
+                (REPO_ROOT / "generated" / "675" / "v1" / "code" / "package.json").read_text(encoding="utf-8"),
+                encoding="utf-8",
+            )
+            (code_dir / "tsconfig.json").write_text(
+                '{"compilerOptions":{"jsx":"react-jsx"},"include":["src"]}\n',
+                encoding="utf-8",
+            )
+            (code_dir / "src").mkdir()
+            (code_dir / "src" / "App.tsx").write_text("export default function App() { return <div />; }\n", encoding="utf-8")
+            (code_dir / "node_modules" / "vite" / "bin").mkdir(parents=True)
+            (code_dir / "node_modules" / "vite" / "bin" / "vite.js").write_text("console.log('vite');\n", encoding="utf-8")
+
+            result = ensure_componentized_workspace_support(code_dir)
+
+            self.assertIn("node_modules/.bin/vite.cmd", result["created_files"])
+            self.assertTrue((code_dir / "node_modules" / ".bin" / "vite.cmd").exists())
+            self.assertTrue((code_dir / "node_modules" / ".bin" / "vite").exists())
+
+    def test_ensure_componentized_workspace_support_rewrites_vite_scripts_without_precreating_node_modules(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            code_dir = Path(tmpdir)
+            (code_dir / "package.json").write_text(
+                (REPO_ROOT / "generated" / "682" / "v1" / "code" / "package.json").read_text(encoding="utf-8"),
+                encoding="utf-8",
+            )
+            (code_dir / "tsconfig.json").write_text(
+                '{"compilerOptions":{"jsx":"react-jsx"},"include":["src"]}\n',
+                encoding="utf-8",
+            )
+            (code_dir / "src").mkdir()
+            (code_dir / "src" / "App.tsx").write_text("export default function App() { return <div />; }\n", encoding="utf-8")
+
+            result = ensure_componentized_workspace_support(code_dir)
+
+            package_json = (code_dir / "package.json").read_text(encoding="utf-8")
+            self.assertIn('"build": "node ./node_modules/vite/bin/vite.js build"', package_json)
+            self.assertIn('"dev": "node ./node_modules/vite/bin/vite.js"', package_json)
+            self.assertIn('"preview": "node ./node_modules/vite/bin/vite.js preview"', package_json)
+            self.assertFalse((code_dir / "node_modules").exists())
+            self.assertNotIn("node_modules/.bin/vite.cmd", result["created_files"])
 
     def test_ensure_componentized_workspace_support_strips_main_entry_import_note_bleed(self):
         code_dir = _case_dir("componentized-runtime-main-entry-import-note-bleed")
@@ -4907,6 +5205,215 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertEqual(source.count("</button>"), 1)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_normalize_componentized_file_repairs_project_692_path_points_prose_line(self):
+        source = (
+            "import React, { useState } from 'react';\n"
+            "import Modal from './Modal';\n"
+            "interface TooltipData {\n"
+            "  date: string;\n"
+            "  value: string;\n"
+            "  x: number;\n"
+            "  y: number;\n"
+            "}\n"
+            "\n"
+            "const Chart: React.FC = () => {\n"
+            "  const [activePeriod, setActivePeriod] = useState('1M');\n"
+            "  const [showComparison, setShowComparison] = useState(false);\n"
+            "  const [showExportModal, setShowExportModal] = useState(false);\n"
+            "  const [tooltip, setTooltip] = useState<TooltipData | null>(null);\n"
+            "  // Mock data points for 12 months (Jan-Dec)\n"
+            "  // Values scaled to a 300 unit height, assuming max value around $130k and min around $90k\n"
+            "  /* Path points: */\n"
+            "M(x, y) C(x1, y1, x2, y2, x_end, y_end)\n"
+            "  const dataPoints = [\n"
+            "    { month: 'Jan', value: 100000, y: 200 },\n"
+            "  ];\n"
+            "  return <Modal isOpen={showExportModal} onClose={() => setShowExportModal(false)} title=\"Export\" />;\n"
+            "};\n"
+            "export default Chart;\n"
+        )
+
+        normalized = _normalize_componentized_file("src/components/Chart.tsx", source)
+
+        self.assertIn("/* Path points: M(x, y) C(x1, y1, x2, y2, x_end, y_end) */", normalized)
+        self.assertNotIn("\nM(x, y) C(x1, y1, x2, y2, x_end, y_end)\n", normalized)
+
+    def test_normalize_componentized_file_repairs_project_693_comment_prose_continuations(self):
+        source_path = REPO_ROOT / "generated" / "693" / "v1" / "code" / "src" / "components" / "Chart.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/Chart.tsx", source)
+
+        self.assertIn(
+            "/* SVG viewBox is 0 0 1000 300  // x-axis: 0 to 1000, y-axis: 0 to 300 (inverted for SVG)  // Data values range from 90,000 to 125,000 (max range = 35,000) */",
+            normalized,
+        )
+        self.assertIn(
+            "/* In a real app, this would trigger a specific function, e.g., open a modal, export data. */",
+            normalized,
+        )
+        self.assertIn("const valueRange = maxValue - minValue;", normalized)
+        self.assertNotIn("\nfunction, e.g., open a modal, export data.", normalized)
+
+    def test_normalize_componentized_file_repairs_project_694_svg_boundary_and_chart_wrapper(self):
+        source_path = REPO_ROOT / "generated" / "694" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/Dashboard.tsx", source)
+
+        self.assertIn("</svg>\n      <div className=\"chart-actions\">", normalized)
+        self.assertLess(normalized.find("</svg>"), normalized.find('<div className="chart-actions">'))
+
+    def test_normalize_componentized_file_repairs_project_695_inline_icon_svg_closer_bleeds(self):
+        source = (
+            "import React from 'react';\n"
+            "import Dashboard from './components/Dashboard';\n"
+            "interface SidebarItemProps {\n"
+            "  icon: React.ReactNode;\n"
+            "  label: string;\n"
+            "  isActive?: boolean;\n"
+            "}\n"
+            "\n"
+            "const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, isActive }) => (\n"
+            "  <div className={`sidebar-item ${isActive ? 'active' : ''}`}>\n"
+            "    {icon}\n"
+            "    <span>{label}</span>\n"
+            "  </div>\n"
+            ");\n"
+            "const App: React.FC = () => {\n"
+            "  return (\n"
+            "    <div className=\"dashboard-layout\">\n"
+            "      <aside className=\"sidebar\">\n"
+            "        <nav className=\"sidebar-nav\">\n"
+            "          <div className=\"sidebar-group\">\n"
+            "            <div className=\"sidebar-group-label\">Platform</div>\n"
+            "            <SidebarItem icon={<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"2\" strokeLinecap=\"round\" strokeLinejoin=\"round\"><path d=\"M3 3v18h18\"><path d=\"M18.7 8.3c-.4-.4-.9-.6-1.5-.6s-1.1.2-1.5.6L12 12l-2.7-2.7c-.4-.4-.9-.6-1.5-.6s-1.1.2-1.5.6l-3 3\"/></SidebarItem>} label=\"Dashboard\" isActive />\n"
+            "            <SidebarItem icon={<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"2\" strokeLinecap=\"round\" strokeLinejoin=\"round\"><path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M22 21v-2a4 4 0 0 0-3-3.87\"/><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"/></SidebarItem>} label=\"Reports\" />\n"
+            "          </div>\n"
+            "        </nav>\n"
+            "        <div className=\"content-area\">\n"
+            "          <Dashboard />\n"
+            "        </div>\n"
+            "      </aside>\n"
+            "    </div>\n"
+            "  );\n"
+            "};\n"
+            "export default App;\n"
+        )
+
+        normalized = _normalize_componentized_file("src/App.tsx", source)
+
+        self.assertIn("</svg>} label=\"Dashboard\"", normalized)
+        self.assertIn("</svg>} label=\"Reports\"", normalized)
+
+    def test_normalize_componentized_file_repairs_project_717_map_branch_wrapper_closer_leak(self):
+        source_path = REPO_ROOT / "generated" / "717" / "v1" / "code" / "src" / "components" / "dashboard" / "PerformanceChart.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/dashboard/PerformanceChart.tsx", source)
+
+        self.assertIn("{['1D', '1W', '1M', '1Y'].map(range => (", normalized)
+        self.assertIn("</button>\n            ))}\n          </div>", normalized)
+        self.assertNotIn("</button>\n              </div>\n            ))}", normalized)
+
+    def test_normalize_componentized_file_repairs_project_729_sidebar_link_closer_leaks(self):
+        source_path = REPO_ROOT / "generated" / "729" / "v1" / "code" / "src" / "pages" / "DashboardPage.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/pages/DashboardPage.tsx", source)
+
+        self.assertIn("Dashboard</Link>", normalized)
+        self.assertIn("Portfolio</Link>", normalized)
+        self.assertRegex(normalized, r"Transactions\s*</Link>")
+        self.assertRegex(normalized, r"Alerts\s*</Link>")
+        self.assertRegex(normalized, r"Settings\s*</Link>")
+        self.assertNotRegex(normalized, r"Dashboard</div>|Portfolio</nav>|Transactions\s*</aside>|Alerts\s*</div>|Settings\s*</div>")
+        self.assertNotRegex(normalized, r"<Link\b[^>]*?/\>\s*<svg")
+        self.assertIn('<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />', normalized)
+        self.assertIn('<circle cx="12" cy="12" r="3" />', normalized)
+
+    def test_normalize_componentized_file_repairs_project_729_route_path_comment_bleed(self):
+        source_path = REPO_ROOT / "generated" / "729" / "v1" / "code" / "src" / "App.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/App.tsx", source)
+
+        self.assertIn('path="/"', normalized)
+        self.assertNotIn('path=" /* "', normalized)
+
+    def test_normalize_componentized_file_repairs_project_717_orphan_svg_prop_closer_lines(self):
+        source_path = REPO_ROOT / "generated" / "717" / "v1" / "code" / "src" / "components" / "common" / "Sidebar.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/common/Sidebar.tsx", source)
+
+        self.assertNotIn("\n            </svg>\n            icon={<svg", normalized)
+        self.assertRegex(normalized, r"<SidebarItem\s+\n\s*icon=\{<svg")
+        self.assertIn('export default Sidebar;', normalized)
+
+    def test_normalize_componentized_file_repairs_project_729_split_camel_identifier_before_operator(self):
+        source_path = REPO_ROOT / "generated" / "729" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/Dashboard.tsx", source)
+
+        self.assertIn("if (monthIndex >= 0 && monthIndex< months.length)", normalized)
+        self.assertNotIn("month Index<", normalized)
+        self.assertIn("import React, { useState } from 'react';", normalized)
+        self.assertIn("export default Dashboard;", normalized)
+
+    def test_normalize_componentized_file_repairs_project_729_interface_comment_bleed_before_const(self):
+        source_path = REPO_ROOT / "generated" / "729" / "v1" / "code" / "src" / "components" / "TransactionForm.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/TransactionForm.tsx", source)
+
+        self.assertIn("asset?: string; /* Optional: pre-fills the asset if provided */", normalized)
+        self.assertIn("}\nconst TransactionForm:", normalized)
+        self.assertNotIn("provided} */\nconst TransactionForm", normalized)
+
+    def test_normalize_componentized_file_repairs_project_738_split_quoted_literals(self):
+        source_path = REPO_ROOT / "generated" / "738" / "v1" / "code" / "src" / "components" / "PerformanceChart.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/PerformanceChart.tsx", source)
+
+        self.assertIn("action === 'export'", normalized)
+        self.assertIn("handleChipClick('export')", normalized)
+        self.assertIn("</svg>Export CSV</button>", normalized)
+        self.assertIn("</foreignObject></g>", normalized)
+        self.assertNotIn("action === '\nexport'", normalized)
+        self.assertNotIn("handleChipClick('\nexport')", normalized)
+
+    def test_normalize_componentized_file_repairs_project_739_multiline_map_button_closer(self):
+        source_path = REPO_ROOT / "generated" / "739" / "v1" / "code" / "src" / "components" / "PerformanceChart.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/PerformanceChart.tsx", source)
+
+        self.assertIn("</button>\n            ))}\n          </div>", normalized)
+        self.assertNotIn("</div>\n            ))}\n          </div>", normalized)
+
+    def test_normalize_componentized_file_repairs_project_740_orphan_svg_import_comment_line(self):
+        source_path = REPO_ROOT / "generated" / "740" / "v1" / "code" / "src" / "App.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/App.tsx", source)
+
+        self.assertNotIn("\nSVG,\n", normalized)
+        self.assertIn("/* Icons (simplified for embedding, normally in separate files) */", normalized)
+        self.assertIn("const DashboardIcon = () => <svg", normalized)
+
+    def test_normalize_componentized_file_repairs_project_742_multiline_map_item_closer(self):
+        source_path = REPO_ROOT / "generated" / "742" / "v1" / "code" / "src" / "components" / "Sidebar.tsx"
+        source = source_path.read_text(encoding="utf-8")
+
+        normalized = _normalize_componentized_file("src/components/Sidebar.tsx", source)
+
+        self.assertIn("<span>{item.label}</span>\n              </div>\n            ))}", normalized)
+        self.assertIn("            ))}\n          </div>\n        ))}\n      </nav>", normalized)
+        self.assertIn("      <div className=\"sidebar-user\">", normalized)
 
 
 if __name__ == "__main__":

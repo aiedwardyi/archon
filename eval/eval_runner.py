@@ -27,6 +27,8 @@ from prompt_parser import PromptParser
 from reference_loader import ReferenceLoader
 from scoring_rubric import ScoringResult
 from report_generator import generate_iteration_report, generate_final_report
+from profile_utils import apply_profile
+from utils.model_provider import create_improver_provider, create_scorer_provider
 
 # Configure logging
 logging.basicConfig(
@@ -39,11 +41,11 @@ logger = logging.getLogger("eval_runner")
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
 
 
-def load_config(config_path: str = "eval_config.json") -> dict:
+def load_config(config_path: str = "eval_config.json", profile: str | None = None) -> dict:
     """Load eval configuration."""
     p = Path(__file__).resolve().parent / config_path
     with open(p, encoding="utf-8") as f:
-        return json.load(f)
+        return apply_profile(json.load(f), profile_name=profile)
 
 
 def save_json(data: dict, path: Path) -> None:
@@ -98,8 +100,10 @@ async def run_eval_loop(config: dict = None):
 
     # Initialize Gemini client + scorers
     client = get_genai_client()
-    scorer = DesignScorer(client, model=config.get("scorer_model", "gemini-2.5-flash"))
-    improver = PromptImprover(client, model=config.get("improver_model", "gemini-2.5-flash"))
+    scorer_provider = create_scorer_provider(config, genai_client=client)
+    improver_provider = create_improver_provider(config, genai_client=client)
+    scorer = DesignScorer(client, model=config.get("scorer_model", "gemini-2.5-flash"), provider=scorer_provider)
+    improver = PromptImprover(client, model=config.get("improver_model", "gemini-2.5-flash"), provider=improver_provider)
 
     archetypes = config.get("archetypes", ["dashboard"])
     test_prompts = config.get("test_prompts", {})
@@ -391,6 +395,7 @@ def _any_significant_improvement(
 def main():
     parser = argparse.ArgumentParser(description="Automated Design Eval Loop")
     parser.add_argument("--config", default="eval_config.json", help="Config file path")
+    parser.add_argument("--profile", help="Named eval profile, for example 'bulk' or 'showcase'")
     parser.add_argument("--archetypes", nargs="+", help="Override archetypes to eval")
     parser.add_argument("--max-iterations", type=int, help="Override max iterations")
     parser.add_argument("--target-score", type=float, help="Override target score")
@@ -398,7 +403,7 @@ def main():
     parser.add_argument("--score-only", action="store_true", help="Score only, skip prompt improvement")
     args = parser.parse_args()
 
-    config = load_config(args.config)
+    config = load_config(args.config, profile=args.profile)
 
     # Apply CLI overrides
     if args.archetypes:

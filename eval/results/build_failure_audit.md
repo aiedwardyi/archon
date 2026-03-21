@@ -1,0 +1,125 @@
+# Componentized Build Failure Audit
+
+## Phase 1
+
+### Pre-Fix Build Success Rate
+
+- Sample: 10 fresh dashboard builds with usable `last_preview_build.json` results
+- Successful preview builds: 2 / 10
+- Failed preview builds: 8 / 10
+- Pre-fix success rate: 20%
+- Successful projects in this sample: `623`, `632`
+
+Additional dashboard submissions during the audit hit long pipeline timeouts in `pm` and did not produce `last_preview_build.json`; those were excluded from the 10-build preview-success calculation because the failure family could not be classified from Vite output.
+
+### Failure Table
+
+| Project ID | Error Type | File | Line | Pattern Description | Existing Repair Covers It? |
+|---|---|---|---|---|---|
+| 625 | Unterminated regular expression | `src/components/Dashboard.tsx` | 219 | Ternary branch inside `kpis.map()` leaks an orphan `</div>` after the false branch value span, closing the card early and leaving the later delta span outside the JSX subtree. | Partial: similar to ternary orphan-closer repair, but current rule misses nested map/KPI branch shape. |
+| 626 | Expected `)` but found `className` | `src/components/DashboardLayout.tsx` | 67 | Sidebar user block closes `</div></div></aside></div>` before `<main>`, leaving `<main className="main-content">` outside the active return tree. | Partial: related to orphaned parent-family/sidebar recovery, but current recovery does not re-home the leaked `<main>` sibling. |
+| 628 | Unexpected `>=` | `src/components/Dashboard.tsx` | 211 | JSX attribute comparison is corrupted into `stroke={ticker.delta />= 0 ? ...}`; the `/>` splice turns a numeric comparison into malformed JSX syntax. | No: current arrow/handler repairs target `= />`, not `/>=` inside attribute expressions. |
+| 634 | Expected `)` but found `for` | `src/components/ChartCard.tsx` | 11 | Multi-line prose note escapes a block comment and leaves a raw `Box (0-1000 for x...)` line in code before `const monthlyData`, breaking parsing. Build log also shows a duplicate `label` JSX prop in `src/components/KpiCards.tsx`. | Partial: comment-bleed repairs exist, but they do not absorb this free-standing prose line or the duplicate JSX prop. |
+| 635 | Expected `)` but found `className` | `src/components/DashboardLayout.tsx` | 64 | Same family as `626`: sidebar footer closes the wrapper stack too early, then `<main>` starts after stray closers. | Partial: same gap as `626`. |
+| 636 | Expected `)` but found `className` | `src/components/DashboardLayout.tsx` | 66 | Same family as `626`/`635`: leaked sidebar/user wrapper closers eject `<main>` from the return block. | Partial: same gap as `626`. |
+| 639 | Expected `>` but found `(` | `src/components/Chart.tsx` | 37 | A multiline `<circle>` element loses the `fill=` attribute key, leaving a bare `var(--accent)"` token on the next line and collapsing the remainder of the SVG/tooltip JSX onto one malformed line. | No: current JSX/comment repairs do not restore missing attribute keys in split multiline SVG elements. |
+| 640 | Invalid `}` in JSX element; expected `)` before `style` | `src/App.tsx` | 159 | Tooltip conditional drops the opening wrapper for `{tooltip && (...)}` and leaves a raw closing `)}` immediately before the next sibling `<div style=...>`. | Partial: related to JSX branch/root balancing, but current cleanup does not reconstruct this orphan conditional close pattern. |
+
+### Corruption Families Found
+
+| Pattern | Frequency | Representative Projects | Fix Needed |
+|---|---|---|---|
+| Nested JSX branch leaks orphan closing tags inside mapped KPI/dashboard cards | 2 | `625`, `640` | Strengthen structural branch repair so leaked `</div>` or `)}` closers are removed or rebalanced before JSX root balancing. |
+| Sidebar/footer wrapper closes early and ejects `<main>` outside the return tree | 3 | `626`, `635`, `636` | Generalize parent-family/sibling repair to restore `<main>` under the layout root after premature `</aside></div>` leaks. |
+| JSX attribute/operator splice corruption | 1 | `628` | Add deterministic repair for `/>=` corruption inside attribute expressions. |
+| Comment/prose bleed into executable code plus duplicate JSX prop emission | 1 | `634` | Extend comment-note normalization to swallow raw prose continuation lines and add a duplicate-JSX-prop cleanup for repeated `label=` style collisions. |
+| Multiline SVG element loses attribute key and collapses following JSX | 1 | `639` | Add structural repair for split SVG attributes where a line begins with a raw CSS/token value instead of `fill=` / another attribute name. |
+
+### Notes
+
+- The first attempt to use `python eval/eval_loop.py --archetype dashboard --runs 10 --skip-image-gen` generated fresh dashboard projects but stalled in the screenshot/score layer. Phase 1 was completed from the generated workspace artifacts plus a direct build-only audit loop against the same backend.
+- Sampled failure projects used for the 10-build pre-fix rate: `623`, `625`, `626`, `628`, `632`, `634`, `635`, `636`, `639`, `640`.
+
+## Post-Fix
+
+### Current Checkpoint
+
+- Latest dashboard validation batch before this repair pass: projects `691-695`
+- Confirmed success in that batch: `691` produced `dist/index.html` and `status: success`
+- Confirmed failures in that batch: `692`, `693`, `694`, `695`
+- Measured dashboard success rate before the current repair pass: 1 / 5 (20%)
+- Current runtime suite after the latest repair batches: `211 passed`
+
+### Follow-Up Failures From Validation Batch `691-695`
+
+| Project ID | Error Type | File | Line | Pattern Description | Existing Repair Covers It? |
+|---|---|---|---|---|---|
+| 692 | Expected `";"` but found `"C"` | `src/components/Chart.tsx` | 40 | A block-comment label `/* Path points: */` is followed by a raw SVG path-notation prose line `M(x, y) C(...)`, which escapes into executable code before `const dataPoints`. | Partial: comment-note repairs existed, but they did not merge this single-line prose continuation back into the block comment. |
+| 693 | Expected identifier but found `","` | `src/components/Chart.tsx` | 18 | An inline block comment closes after `/* In a real app, this would trigger a specific */`, but the next prose continuation line starts with `function, e.g., ...` and carries the handler suffix `};`, leaving bare English prose in code. | Partial: inline comment repairs existed, but they did not absorb this continuation line and preserve the trailing `};` separately. |
+| 694 | `}` / `>` invalid in JSX element; unexpected `const` | `src/components/Dashboard.tsx` | 161-163 | Chart markup leaks from SVG into sibling HTML: the tooltip branch ends, `<div className="chart-actions">` starts before the surrounding `<svg>` is explicitly closed, and the component never exits JSX cleanly before the next `const Dashboard`. | Partial: JSX balancing existed, but it did not close SVG-at-HTML boundaries early enough to restore the component return boundary. |
+| 695 | Unexpected closing `SidebarItem` tag does not match opening `svg` / `path` | `src/App.tsx` | 28-31 | Inline sidebar icon props leak `</SidebarItem>}` where `</svg>}` should be, and one icon nests `<path>` inside `<path>` instead of self-closing the first SVG shape. | No: prior repairs did not handle icon-prop SVG closer bleed or inline SVG shape nesting inside prop literals. |
+
+### Follow-Up Corruption Families Added In This Repair Pass
+
+| Pattern | Frequency | Representative Projects | Fix Applied |
+|---|---|---|---|
+| Comment prose continuation after a closed block comment | 2 | `692`, `693` | Added deterministic comment-prose continuation repair and guarded the unterminated block-comment note repair so already-closed inline comments are not re-broken. |
+| SVG-to-HTML boundary leak inside chart markup | 1 | `694` | Added SVG/HTML boundary repair so sibling HTML starts only after an explicit `</svg>`, and tightened late return closers so they do not fire on ternary/logical `)}` boundaries. |
+| Inline icon prop SVG closer bleed plus nested SVG shape tags | 1 | `695` | Added icon-prop SVG closer repair, inline SVG shape self-closing repair, duplicate self-closing-slash cleanup, and robust cleanup of orphan closers for self-closed React components. |
+
+### Additional Manual-Build Failures Audited After `691-695`
+
+| Project ID | Error Type | File | Line | Pattern Description | Existing Repair Covers It? |
+|---|---|---|---|---|---|
+| 717 | Unexpected `/` | `src/components/common/Sidebar.tsx` | 28 | Standalone orphan `</svg>` lines leaked immediately before `icon={<svg ...>}` props on repeated `<SidebarItem>` calls, leaving invalid JSX at the prop boundary. | Partial: icon-prop SVG repairs handled leaked closers inside prop literals, but not free-standing `</svg>` lines immediately before the prop assignment. |
+| 729 | Expected `)` but found `Index` | `src/components/Dashboard.tsx` | 20 | A split camelCase identifier in executable code (`month Index< months.length`) broke the tooltip guard condition inside the chart hover handler. | No: existing split-identifier repairs were comment-focused and did not join bare camelCase identifiers before comparison operators. |
+| 729 | Unexpected `=` | `src/components/TransactionForm.tsx` | 3 | An interface field comment swallowed the closing `}` before `const TransactionForm`, leaving the comment and interface body open across the component declaration. | Partial: existing interface-comment bleed repair only restored the closing brace when the next declaration was another `interface` or `type`, not a `const` component. |
+
+### Follow-Up Corruption Families Added After Manual Build Verification
+
+| Pattern | Frequency | Representative Projects | Fix Applied |
+|---|---|---|---|
+| Orphan `</svg>` line before JSX prop literal | 1 | `717` | Added deterministic cleanup for standalone `</svg>` lines that bleed directly into `icon={<svg ...>}` prop assignments. |
+| Split camelCase identifier before comparison operator | 1 | `729` | Added a narrow identifier-join repair for lowercase+capital splits immediately before real comparison operators (for example `month Index<` → `monthIndex<`). |
+| Interface field comment swallow before `const` declaration | 1 | `729` | Extended the interface-field comment bleed repair so it also restores the closing brace before `const`/`let`/`var`/`function`/`export`/`class` declarations, not just `interface` and `type`. |
+
+### Manual Build Verification
+
+- Project `717`: after applying the current normalizer across the generated workspace, `npm.cmd run build` succeeded and produced `generated/717/v1/code/dist/index.html`.
+- Project `729`: after applying the current normalizer across the generated workspace, `npm.cmd run build` succeeded and produced `generated/729/v1/code/dist/index.html`.
+- These two samples were previously real failures (`717` from `last_preview_build.json`, `729` from the manual-build fallback batch), so they are strong evidence that the latest repairs are fixing real generated corruption rather than only synthetic tests.
+
+### Timed-Out Validation Batch `738-742`
+
+- A later dashboard validation attempt generated projects `738-742` but the eval loop stalled before writing complete preview-build artifacts for `738`, `739`, `740`, and `742`.
+- Project `741` did complete end-to-end: `generated/741/v1/last_preview_build.json` reported `status: success`, `generated/741/v1/code/dist/index.html` exists, and `eval/results/eval_loop_20260320_205300/dashboard/result.json` recorded a real dashboard score of `69.0`.
+
+| Project ID | Error Type | File | Line | Pattern Description | Existing Repair Covers It? |
+|---|---|---|---|---|---|
+| 738 | Unterminated string literal | `src/components/PerformanceChart.tsx` | 97 | One-line chart action JSX split quoted literals across lines (`action === '\nexport'`, `handleChipClick('\nexport')`), omitted a closing `</svg>` before `Export CSV`, and dropped `</foreignObject></g>` before the tooltip branch close. | Partial: prior SVG/icon repairs existed, but they did not join split quoted literals or restore these dense one-line chart/tooltip closers. |
+| 739 | Unterminated regular expression | `src/components/PerformanceChart.tsx` | 99 | A `.map(... => (` branch leaked a wrapper closer before the mapped action button subtree finished, leaving `))}` attached to the wrong closing tag and breaking the JSX parse. | Partial: existing map-branch wrapper repair handled simpler one-line cases, but not this multiline branch stack. |
+| 740 | Unexpected `const` | `src/App.tsx` | 4 | An orphan `SVG,` line leaked above the icon comment block and left the top-level file in an invalid token stream before the first icon component declaration. | No: prior comment repairs did not drop stray `SVG,` import/comment bleed lines. |
+| 742 | Unterminated regular expression | `src/components/Sidebar.tsx` | 38 | Nested sidebar `.map(... => (` items closed the wrapper stack in the wrong order, so the item label block and the branch closer landed outside the active JSX subtree. | Partial: existing wrapper-closing repair handled direct sibling leaks, but not multiline nested map-item closers. |
+
+### Follow-Up Corruption Families Added After Timed-Out Batch `738-742`
+
+| Pattern | Frequency | Representative Projects | Fix Applied |
+|---|---|---|---|
+| Split quoted literals in dense JSX handlers/conditions | 1 | `738` | Added a deterministic quoted-literal join repair for line-split `'value'` / `"value"` tokens in comparisons, calls, and object-like argument lists. |
+| Dense inline SVG/text and tooltip closer loss | 1 | `738` | Added explicit repairs for missing `</svg>` before plain text inside inline icon buttons and missing `</foreignObject></g>` before tooltip branch closers. |
+| Multiline `.map(... => (` branch closer leakage | 2 | `739`, `742` | Added a stack-based multiline map-branch closer repair and re-ran it late in the chain so nested wrapper stacks are restored before final JSX balancing. |
+| Orphan `SVG,` import/comment bleed line | 1 | `740` | Added a narrow cleanup for standalone `SVG,` lines that leak directly into icon comment / icon component blocks. |
+| Non-idempotent chart footer closer recovery | 1 | `739` | Tightened the chart-footer wrapper closer repair to anchor on the last real branch terminator so re-normalizing an already-fixed file does not reintroduce malformed closers. |
+
+### Manual Build Verification After Timed-Out Batch `738-742`
+
+- Project `738`: after re-running the current normalizer across the generated workspace, `npm.cmd run build` succeeded and produced `generated/738/v1/code/dist/index.html`.
+- Project `739`: after re-running the current normalizer across the generated workspace, `npm.cmd run build` succeeded and produced `generated/739/v1/code/dist/index.html`.
+- Project `740`: after re-running the current normalizer across the generated workspace, `npm.cmd run build` succeeded and produced `generated/740/v1/code/dist/index.html`.
+- Project `742`: after re-running the current normalizer across the generated workspace, `npm.cmd run build` succeeded and produced `generated/742/v1/code/dist/index.html`.
+- Together with the scored success for `741`, this means all five projects from the `738-742` validation attempt now build successfully after the latest runtime repair batch, even though four of them timed out before the eval loop wrote complete preview metadata.
+
+### Pending Validation
+
+- Dashboard reliability has still not been re-measured with a fresh 5-run batch after the latest repair batches and the `738-742` follow-up fixes.
+- Next required step remains a fresh `python eval/eval_loop.py --archetype dashboard --runs 5 --skip-image-gen` validation pass with the backend running.
