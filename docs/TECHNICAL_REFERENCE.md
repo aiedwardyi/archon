@@ -15,7 +15,7 @@ All three connect to the Flask backend on port `5000`.
 ## Project Structure
 
 ```text
-ai-dev-team/
+archon/
 ├── agents/
 ├── backend/
 ├── frontend-studio/

@@ -12,7 +12,9 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DB_PATH = ROOT / "ai-dev-team.db"
+sys.path.insert(0, str(ROOT))
+from backend.db_paths import DB_PATH
+
 GENERATED_DIR = ROOT / "generated"
 PUBLISHED_DIR = ROOT / "published"
 BENCHMARKS_PATH = ROOT / "eval" / "archetype_benchmarks.json"

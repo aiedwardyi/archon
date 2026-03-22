@@ -70,7 +70,7 @@ Use `eval/archetype_benchmarks.json` as the single registry for reference builds
 Run these commands in order before doing anything else:
 
 ```powershell
-cd C:\Users\mredw\Desktop\ai-dev-team
+cd C:\Users\mredw\Desktop\archon
 git branch --show-current
 git checkout eval/loops
 git branch --show-current

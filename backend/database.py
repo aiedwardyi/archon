@@ -9,10 +9,11 @@ Usage:
     python database.py
 """
 import sqlite3
-from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-DB_PATH = REPO_ROOT / "ai-dev-team.db"
+try:
+    from db_paths import DB_PATH
+except ImportError:
+    from backend.db_paths import DB_PATH
 
 
 def column_exists(cursor, table: str, column: str) -> bool:

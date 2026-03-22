@@ -10,6 +10,8 @@ env/
 *.egg-info/
 
 # Database
+archon.db
+archon.db-journal
 ai-dev-team.db
 ai-dev-team.db-journal
 *.db

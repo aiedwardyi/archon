@@ -146,8 +146,8 @@ The result is a system where each run has visible lineage instead of a single op
 ### Install
 
 ```powershell
-git clone https://github.com/aiedwardyi/ai-dev-team
-cd ai-dev-team
+git clone https://github.com/aiedwardyi/archon
+cd archon
 
 python -m venv venv
 .\venv\Scripts\Activate

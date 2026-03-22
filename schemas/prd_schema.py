@@ -34,7 +34,7 @@ class PRD(BaseModel):
 
 class PRDArtifact(BaseModel):
     """
-    Wrapper for PRD that matches ai-dev-team artifact pattern.
+    Wrapper for PRD that matches the Archon artifact pattern.
     """
     kind: str = Field(default="prd_artifact")
     agent_role: str = Field(default="pm")

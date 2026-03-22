@@ -1,5 +1,5 @@
 ﻿"""
-Database models for AI Dev Team system.
+Database models for the Archon system.
 
 Tables:
 - User: Account model (Phase 13 foundation)
@@ -9,7 +9,11 @@ Tables:
 from datetime import datetime, timezone
 from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime, Text, Boolean, ForeignKey, text
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
-from pathlib import Path
+
+try:
+    from db_paths import DB_PATH
+except ImportError:
+    from backend.db_paths import DB_PATH
 
 Base = declarative_base()
 
@@ -204,8 +208,6 @@ def get_next_version(session, project_id: int) -> int:
 
 
 # Database setup
-REPO_ROOT = Path(__file__).resolve().parent.parent
-DB_PATH = REPO_ROOT / "ai-dev-team.db"
 DATABASE_URL = f"sqlite:///{DB_PATH}"
 
 engine = create_engine(DATABASE_URL, echo=False)

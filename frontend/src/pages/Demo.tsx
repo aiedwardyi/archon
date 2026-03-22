@@ -49,7 +49,7 @@ const examples: DemoProject[] = [
   },
 ];
 
-const repoUrl = "https://github.com/aiedwardyi/ai-dev-team";
+const repoUrl = "https://github.com/aiedwardyi/archon";
 const videoUrl = "https://youtu.be/ci8xDNnxJKQ";
 
 export default function Demo() {
