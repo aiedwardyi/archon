@@ -130,7 +130,7 @@ User Prompt
   -> build / preview
   -> eval scoring
   -> governance factsheet
-  -> version timeline + restoreable execution
+  -> version timeline + restorable execution
 ```
 
 The result is a system where each run has visible lineage instead of a single opaque output.
@@ -145,41 +145,35 @@ The result is a system where each run has visible lineage instead of a single op
 
 ### Install
 
-```powershell
+```bash
 git clone https://github.com/aiedwardyi/archon
 cd archon
 
 python -m venv venv
-.\venv\Scripts\Activate
+source venv/bin/activate   # Windows: .\venv\Scripts\Activate
 pip install -r requirements.txt
 
-cd frontend-studio
-npm install
-cd ../frontend-consumer
-npm install
-cd ../frontend
-npm install
+cd frontend-studio && npm install
+cd ../frontend-consumer && npm install
+cd ../frontend && npm install
 cd ..
 ```
 
 ### Run
 
-```powershell
+```bash
 # Backend
-.\venv\Scripts\Activate
+source venv/bin/activate   # Windows: .\venv\Scripts\Activate
 python backend/app.py
 
 # Studio UI
-cd frontend-studio
-npm run dev
+cd frontend-studio && npm run dev
 
-# Consumer UI
-cd ../frontend-consumer
-npm run dev
+# Consumer UI (separate terminal)
+cd frontend-consumer && npm run dev
 
-# Enterprise UI
-cd ../frontend
-npm run dev
+# Enterprise UI (separate terminal)
+cd frontend && npm run dev
 ```
 
 Default local ports:
@@ -206,7 +200,7 @@ The repo includes [amplify.yml](amplify.yml) for a frontend-only Amplify deploym
 - [Showcase gallery](docs/SHOWCASE_GALLERY.md)
 - [Technical reference](docs/TECHNICAL_REFERENCE.md)
 - [Roadmap](ROADMAP.md)
-- [Current sprint](CURRENT_SPRINT.md)
+
 
 ## License
 

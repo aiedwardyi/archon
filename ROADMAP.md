@@ -12,7 +12,7 @@ and enterprises delivering client apps to non-technical clients.
 - Agencies can show clients exactly what was built and why, version by version
 - Business language UI — no developer jargon anywhere
 
-**The MOAT:** The Versions page. Lovable/v0 show current state only.
+**Key differentiator:** The Versions page. Lovable/v0 show current state only.
 Archon shows complete decision history with artifacts and live preview per version.
 
 ---
