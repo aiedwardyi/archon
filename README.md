@@ -149,38 +149,49 @@ The result is a system where each run has visible lineage instead of a single op
 git clone https://github.com/aiedwardyi/archon
 cd archon
 
+# Python backend
 python -m venv venv
-source venv/bin/activate   # Windows: .\venv\Scripts\Activate
-pip install -r requirements.txt
+source venv/bin/activate            # Windows (PowerShell): .\venv\Scripts\Activate
+pip install -r backend/requirements.txt
 
-cd frontend-studio && npm install
-cd ../frontend-consumer && npm install
-cd ../frontend && npm install
-cd ..
+# Frontends (each has its own node_modules)
+(cd frontend         && npm install)
+(cd frontend-studio  && npm install)
+(cd frontend-consumer && npm install)
 ```
+
+### Configure
+
+Copy the example env file and add your keys:
+
+```bash
+cp backend/.env.example backend/.env
+# then edit backend/.env and fill in at minimum:
+#   JWT_SECRET_KEY        (generate: python -c "import secrets; print(secrets.token_urlsafe(32))")
+#   ANTHROPIC_API_KEY     (for live code generation)
+# GOOGLE_CLIENT_ID / Gemini / Watson keys are optional but unlock more surfaces.
+```
+
+For a dependency-free smoke test, set `OFFLINE_MODE=true` in `backend/.env` — the pipeline runs with built-in scaffolding instead of live model calls.
 
 ### Run
 
+Each service needs its own terminal. Reactivate the venv in every new shell.
+
 ```bash
-# Backend
-source venv/bin/activate   # Windows: .\venv\Scripts\Activate
+# Terminal 1 — backend (http://localhost:5000)
+source venv/bin/activate            # Windows: .\venv\Scripts\Activate
 python backend/app.py
 
-# Studio UI
+# Terminal 2 — Studio UI        (http://localhost:3000)
 cd frontend-studio && npm run dev
 
-# Consumer UI (separate terminal)
+# Terminal 3 — Consumer UI      (http://localhost:3002)
 cd frontend-consumer && npm run dev
 
-# Enterprise UI (separate terminal)
+# Terminal 4 — Enterprise UI    (http://localhost:8080)
 cd frontend && npm run dev
 ```
-
-Default local ports:
-
-- Studio UI: `http://localhost:3000`
-- Consumer UI: `http://localhost:3002`
-- Enterprise UI: `http://localhost:8080`
 
 ## Public Demo Deployment
 

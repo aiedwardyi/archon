@@ -1,4 +1,4 @@
-﻿# Python
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -9,76 +9,66 @@ venv/
 env/
 *.egg-info/
 
-# Database
-archon.db
-archon.db-journal
-ai-dev-team.db
-ai-dev-team.db-journal
-*.db
-*.db-journal
-
-# IDEs
-.vscode/
-.idea/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Artifacts (legacy path)
-apps/offline-vite-react/public/generated/
-apps/offline-vite-react/public/last_*.json
-apps/offline-vite-react/public/*.ndjson
-
-# Generated output (active)
-generated/*
-!generated/.gitkeep
-
-# Published apps (user-generated, not source code)
-published/
-
-# Generated artifacts (user-generated, not source code)
-generated/
-
-# Committed seed demos
-!backend/seed_data/
-!backend/seed_data/**
-
-# Runtime data — never commit these
-generated/
-published/
-artifacts/
-
 # Node
 node_modules/
 dist/
 pnpm-lock.yaml
 
-# Environment variables (never commit)
+# Environment variables
 .env
+
+# Databases
+*.db
+*.db-journal
+
+# IDEs / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
 
 # Claude Code
 .claude/
 CLAUDE.md
 
-# Vite
+# Vite / Next
 .vite/
-
-# Next.js auto-generated
 frontend-studio/next-env.d.ts
 
-# Eval loop artifacts (generated during scoring runs)
+# Runtime / generated artifacts (never commit)
+generated/
+!generated/.gitkeep
+published/
+artifacts/
+
+# Legacy artifact path
+apps/offline-vite-react/public/generated/
+apps/offline-vite-react/public/last_*.json
+apps/offline-vite-react/public/*.ndjson
+
+# Seed demos (keep committed)
+!backend/seed_data/
+!backend/seed_data/**
+
+# Eval loop
 eval/results/*
 !eval/results/operator_improvements.md
 eval/.reference_cache/
 eval/backups/
 eval/FAILURES_LOG.md
 
-# Runtime logs
-flask_server.log
+# Logs / pids
 *.log
+*.pid
+*.stop
+backend-*.log
+backend-*.pid
+http-test.*.log
+operator-loop.*.log
+operator-loop.pid
+flask_server.log
 
-# Archetype examples (reference images at root, not prompt archetypes)
+# Archetype examples (reference images at root)
 /archetypes/
 
 # Temporary local artifacts
@@ -90,14 +80,3 @@ tmp-*.log
 .tmp-*.*
 .tmp_*.*
 test-results/
-
-# Eval loop runtime files
-*.pid
-*.stop
-
-# Backend log/pid files at repo root
-backend-*.log
-backend-*.pid
-http-test.*.log
-operator-loop.*.log
-operator-loop.pid
