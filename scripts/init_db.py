@@ -1,4 +1,4 @@
-﻿"""
+"""
 Initialize the database.
 
 Run this script once to create the database tables:

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Database migration script for Archon.
 
 Run this once after updating models.py to add new columns

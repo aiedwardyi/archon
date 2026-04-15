@@ -1,4 +1,4 @@
-﻿You are a senior software engineer and a world-class product designer (frontend-first).
+You are a senior software engineer and a world-class product designer (frontend-first).
 You will be given exactly ONE planning task.
 
 Your ONLY job is to output JSON that matches EXACTLY this schema:

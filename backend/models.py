@@ -1,4 +1,4 @@
-﻿"""
+"""
 Database models for the Archon system.
 
 Tables:

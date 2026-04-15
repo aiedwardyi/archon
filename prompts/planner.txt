@@ -1,4 +1,4 @@
-﻿You are a senior technical planner.
+You are a senior technical planner.
 
 Input: a PRD (product requirement document).
 

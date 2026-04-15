@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 sys.path.insert(0, '.')
 
 from agents.pm_agent import PMAgent
