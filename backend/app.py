@@ -1,4 +1,4 @@
-﻿from dotenv import load_dotenv
+from dotenv import load_dotenv
 from pathlib import Path
 load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env")
 
@@ -220,6 +220,36 @@ def get_max_queued_pipelines() -> int:
 
 def utcnow_naive() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def _rmtree_windows_safe(path: Path) -> None:
+    """shutil.rmtree that survives npm-locked / read-only files on Windows."""
+    import errno, shutil as _shutil, stat as _stat
+    if not path.exists():
+        return
+
+    def _on_error(func, p, exc_info):
+        exc = exc_info[1]
+        if isinstance(exc, FileNotFoundError):
+            return
+        try:
+            os.chmod(p, _stat.S_IWRITE)
+            func(p)
+            return
+        except Exception:
+            pass
+        for _ in range(5):
+            time.sleep(0.3)
+            try:
+                func(p)
+                return
+            except FileNotFoundError:
+                return
+            except PermissionError:
+                continue
+        # Swallow — deletion best-effort; DB row is already gone.
+
+    _shutil.rmtree(path, onerror=_on_error)
 
 
 def get_execution_heartbeat_interval_seconds() -> int:
@@ -4992,11 +5022,7 @@ def delete_project(project_id: int):
         session.commit()
         # Clean up generated files on disk
         project_dir = PUBLIC_DIR / str(project_id)
-        try:
-            import shutil as _shutil
-            _shutil.rmtree(project_dir)
-        except FileNotFoundError:
-            pass
+        _rmtree_windows_safe(project_dir)
         return jsonify({"message": "Project deleted"}), 200
     finally:
         session.close()
@@ -7315,7 +7341,7 @@ if __name__ == "__main__":
     print(f"Flask server starting...")
     print(f"REPO_ROOT: {REPO_ROOT}")
     print(f"PUBLIC_DIR: {PUBLIC_DIR}")
-    print(f"CORS enabled for: http://localhost:5173, http://localhost:3000")
+    print("CORS enabled for: http://localhost:{5173,3000,3001,3002,8080}")
     app.run(debug=True, port=5000)
 
 

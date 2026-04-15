@@ -845,6 +845,8 @@ def build_componentized_preview(
                 cwd=code_dir,
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 timeout=timeout_seconds,
                 env=env,
                 check=False,
@@ -853,11 +855,58 @@ def build_componentized_preview(
                 {
                     "command": command,
                     "returncode": completed.returncode,
-                    "stdout": completed.stdout[-12_000:],
-                    "stderr": completed.stderr[-12_000:],
+                    "stdout": (completed.stdout or "")[-12_000:],
+                    "stderr": (completed.stderr or "")[-12_000:],
                 }
             )
             if completed.returncode != 0:
+                # npm/cli#4828: platform-specific optional deps (e.g. @rollup/rollup-win32-x64-msvc)
+                # sometimes fail to install. Canonical fix: wipe node_modules + lockfile, reinstall.
+                combined_output = (completed.stderr or "") + (completed.stdout or "")
+                if command[:3] == [npm_cmd, "run", "build"] and "@rollup/rollup-" in combined_output and "MODULE_NOT_FOUND" in combined_output:
+                    import shutil as _shutil_np
+                    try:
+                        _shutil_np.rmtree(code_dir / "node_modules", ignore_errors=True)
+                        (code_dir / "package-lock.json").unlink(missing_ok=True)
+                    except Exception:
+                        pass
+                    reinstall = subprocess.run(
+                        [npm_cmd, "install"],
+                        cwd=code_dir,
+                        capture_output=True,
+                        text=True,
+                        encoding="utf-8",
+                        errors="replace",
+                        timeout=timeout_seconds,
+                        env=env,
+                        check=False,
+                    )
+                    logs.append({
+                        "command": [npm_cmd, "install", "(rollup-native recovery)"],
+                        "returncode": reinstall.returncode,
+                        "stdout": (reinstall.stdout or "")[-12_000:],
+                        "stderr": (reinstall.stderr or "")[-12_000:],
+                    })
+                    if reinstall.returncode == 0:
+                        retry = subprocess.run(
+                            command,
+                            cwd=code_dir,
+                            capture_output=True,
+                            text=True,
+                            encoding="utf-8",
+                            errors="replace",
+                            timeout=timeout_seconds,
+                            env=env,
+                            check=False,
+                        )
+                        logs.append({
+                            "command": command,
+                            "returncode": retry.returncode,
+                            "stdout": (retry.stdout or "")[-12_000:],
+                            "stderr": (retry.stderr or "")[-12_000:],
+                        })
+                        if retry.returncode == 0:
+                            continue
                 if install_required and command[:2] == [npm_cmd, "install"] and "ERESOLVE" in (completed.stderr or ""):
                     retry_command = [npm_cmd, "install", "--legacy-peer-deps"]
                     retry = subprocess.run(
@@ -865,6 +914,8 @@ def build_componentized_preview(
                         cwd=code_dir,
                         capture_output=True,
                         text=True,
+                        encoding="utf-8",
+                        errors="replace",
                         timeout=timeout_seconds,
                         env=env,
                         check=False,
@@ -873,8 +924,8 @@ def build_componentized_preview(
                         {
                             "command": retry_command,
                             "returncode": retry.returncode,
-                            "stdout": retry.stdout[-12_000:],
-                            "stderr": retry.stderr[-12_000:],
+                            "stdout": (retry.stdout or "")[-12_000:],
+                            "stderr": (retry.stderr or "")[-12_000:],
                         }
                     )
                     if retry.returncode == 0:
@@ -889,6 +940,8 @@ def build_componentized_preview(
                         cwd=code_dir,
                         capture_output=True,
                         text=True,
+                        encoding="utf-8",
+                        errors="replace",
                         timeout=timeout_seconds,
                         env=env,
                         check=False,
@@ -897,8 +950,8 @@ def build_componentized_preview(
                         {
                             "command": reinstall_command,
                             "returncode": reinstall.returncode,
-                            "stdout": reinstall.stdout[-12_000:],
-                            "stderr": reinstall.stderr[-12_000:],
+                            "stdout": (reinstall.stdout or "")[-12_000:],
+                            "stderr": (reinstall.stderr or "")[-12_000:],
                         }
                     )
                     if reinstall.returncode == 0:
@@ -907,6 +960,8 @@ def build_componentized_preview(
                             cwd=code_dir,
                             capture_output=True,
                             text=True,
+                            encoding="utf-8",
+                            errors="replace",
                             timeout=timeout_seconds,
                             env=env,
                             check=False,
@@ -915,8 +970,8 @@ def build_componentized_preview(
                             {
                                 "command": command,
                                 "returncode": retry.returncode,
-                                "stdout": retry.stdout[-12_000:],
-                                "stderr": retry.stderr[-12_000:],
+                                "stdout": (retry.stdout or "")[-12_000:],
+                                "stderr": (retry.stderr or "")[-12_000:],
                             }
                         )
                         if retry.returncode == 0:
@@ -928,6 +983,8 @@ def build_componentized_preview(
                         cwd=code_dir,
                         capture_output=True,
                         text=True,
+                        encoding="utf-8",
+                        errors="replace",
                         timeout=timeout_seconds,
                         env=env,
                         check=False,
@@ -936,8 +993,8 @@ def build_componentized_preview(
                         {
                             "command": retry_command,
                             "returncode": retry.returncode,
-                            "stdout": retry.stdout[-12_000:],
-                            "stderr": retry.stderr[-12_000:],
+                            "stdout": (retry.stdout or "")[-12_000:],
+                            "stderr": (retry.stderr or "")[-12_000:],
                         }
                     )
                     if retry.returncode == 0:
@@ -4606,7 +4663,8 @@ def _repair_componentized_comment_prose_continuations(source: str) -> str:
         if comment_closed:
             comment_prefix = comment_prefix[: comment_prefix.rfind("*/")].rstrip()
         repaired_lines.append(f"{comment_prefix} {prose} */")
-        repaired_lines.append(f"{re.match(r'[ \t]*', next_line).group(0)}{suffix}")
+        leading_ws = re.match(r"[ \t]*", next_line).group(0)
+        repaired_lines.append(f"{leading_ws}{suffix}")
         changed = True
         index += 2
 
