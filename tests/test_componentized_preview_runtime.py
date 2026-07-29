@@ -34,7 +34,7 @@ class ComponentizedPreviewRuntimeTests(unittest.TestCase):
             )
             captured_envs: list[dict[str, str]] = []
 
-            def fake_run(command, cwd, capture_output, text, timeout, env, check):
+            def fake_run(command, cwd, capture_output, text, timeout, env, check, **kwargs):
                 captured_envs.append(env)
                 if command[-2:] == ["run", "build"]:
                     dist_dir = code_dir / "dist"

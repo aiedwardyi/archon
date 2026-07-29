@@ -3,10 +3,11 @@ Verification tests for 6 bug fixes + Imagen label fix.
 Uses Playwright against live servers: Flask (5000), Enterprise (8080), Studio (3000).
 """
 
+__test__ = False
+
 import asyncio
 import re
 import httpx
-from playwright.async_api import async_playwright
 
 FLASK = "http://localhost:5000"
 ENTERPRISE = "http://localhost:8080"
@@ -249,6 +250,8 @@ async def test_bonus_imagen_label(page):
 
 
 async def main():
+    from playwright.async_api import async_playwright
+
     await register_test_user()
 
     async with async_playwright() as p:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import json
 import re
 import shutil
@@ -59,6 +60,15 @@ from utils.componentized_quality import (
 
 TMP_ROOT = REPO_ROOT / ".tmp-tests"
 TMP_ROOT.mkdir(parents=True, exist_ok=True)
+GENERATED_FIXTURE_IDS = {
+    "617", "618", "625", "626", "628", "634", "639", "640", "649", "650",
+    "653", "672", "674", "675", "681", "682", "683", "684", "693", "694",
+    "717", "729", "738", "739", "740", "742",
+}
+GENERATED_FIXTURES_AVAILABLE = all(
+    (REPO_ROOT / "generated" / fixture_id / "v1" / "code").exists()
+    for fixture_id in GENERATED_FIXTURE_IDS
+)
 
 
 def _case_dir(name: str) -> Path:
@@ -69,6 +79,11 @@ def _case_dir(name: str) -> Path:
 
 
 class ComponentizedRuntimeTests(unittest.TestCase):
+    def setUp(self) -> None:
+        method = getattr(type(self), self._testMethodName)
+        if 'REPO_ROOT / "generated"' in inspect.getsource(method) and not GENERATED_FIXTURES_AVAILABLE:
+            self.skipTest("requires local generated regression artifacts")
+
     def _assert_jsx_return_would_parse(self, source: str) -> None:
         match = re.search(r"return\s*\((?P<body>[\s\S]*?)\);\s*", source)
         self.assertIsNotNone(match, "expected a JSX return block")

@@ -144,6 +144,7 @@ def test_engineer_agent_skips_reference_images_when_internal_iteration_disables_
 
     monkeypatch.setattr(engineer_agent, "_run_gemini", _fake_run_gemini)
     monkeypatch.setenv("ENGINEER_MODEL", "gemini")
+    monkeypatch.setenv("OFFLINE_MODE", "false")
 
     agent = EngineerAgent(client=object())
     agent.run(
@@ -170,6 +171,7 @@ def test_engineer_agent_keeps_reference_images_when_iteration_explicitly_allows_
 
     monkeypatch.setattr(engineer_agent, "_run_gemini", _fake_run_gemini)
     monkeypatch.setenv("ENGINEER_MODEL", "gemini")
+    monkeypatch.setenv("OFFLINE_MODE", "false")
 
     agent = EngineerAgent(client=object())
     agent.run(
