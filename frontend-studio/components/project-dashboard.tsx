@@ -40,11 +40,11 @@ export function ProjectDashboard() {
   const router = useRouter()
   const { t, language } = useLanguage()
 
-  const getAuthHeaders = () => {
+  const getAuthHeaders = (): Record<string, string> => {
     const token = localStorage.getItem("archon_token")
-    return token
-      ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
-      : { "Content-Type": "application/json" }
+    const headers: Record<string, string> = { "Content-Type": "application/json" }
+    if (token) headers.Authorization = `Bearer ${token}`
+    return headers
   }
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
