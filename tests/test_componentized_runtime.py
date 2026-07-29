@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -530,6 +531,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
 
     def test_build_componentized_preview_reinstalls_missing_safe_dependency_after_build_failure(self):
         code_dir = _case_dir("componentized-runtime-missing-safe-dependency")
+        npm_cmd = "npm.cmd" if os.name == "nt" else "npm"
         try:
             (code_dir / "src").mkdir(parents=True)
             (code_dir / "node_modules").mkdir(parents=True)
@@ -543,19 +545,19 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             calls: list[list[str]] = []
             responses = [
                 subprocess.CompletedProcess(
-                    args=["npm.cmd", "run", "build"],
+                    args=[npm_cmd, "run", "build"],
                     returncode=1,
                     stdout="",
                     stderr='[vite]: Rollup failed to resolve import "react-feather" from "src/components/Sidebar.tsx".',
                 ),
                 subprocess.CompletedProcess(
-                    args=["npm.cmd", "install"],
+                    args=[npm_cmd, "install"],
                     returncode=0,
                     stdout="installed",
                     stderr="",
                 ),
                 subprocess.CompletedProcess(
-                    args=["npm.cmd", "run", "build"],
+                    args=[npm_cmd, "run", "build"],
                     returncode=0,
                     stdout="built",
                     stderr="",
@@ -573,9 +575,9 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             self.assertEqual(
                 calls,
                 [
-                    ["npm.cmd", "run", "build"],
-                    ["npm.cmd", "install"],
-                    ["npm.cmd", "run", "build"],
+                    [npm_cmd, "run", "build"],
+                    [npm_cmd, "install"],
+                    [npm_cmd, "run", "build"],
                 ],
             )
         finally:

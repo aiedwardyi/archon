@@ -3180,6 +3180,27 @@ def build_componentized_scaffold_seed_context() -> str:
 
 
 def rewrite_seed_version(version_dir: Path, original_project_id: int, new_project_id: int):
+    def rewrite_json_paths(value):
+        if isinstance(value, dict):
+            return {key: rewrite_json_paths(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [rewrite_json_paths(item) for item in value]
+        if not isinstance(value, str):
+            return value
+
+        normalized = value.replace("\\", "/")
+        if normalized.startswith(("http://", "https://")):
+            return value
+        marker = f"/generated/{new_project_id}/v1/"
+        relative_marker = marker.lstrip("/")
+        if marker in normalized:
+            relative_path = normalized.split(marker, 1)[1]
+        elif normalized.startswith(relative_marker):
+            relative_path = normalized[len(relative_marker):]
+        else:
+            return value
+        return str(version_dir / Path(relative_path))
+
     original_windows_prefix = str(Path("generated") / str(original_project_id) / "v1").replace("/", "\\") + "\\"
     new_windows_prefix = str(Path("generated") / str(new_project_id) / "v1").replace("/", "\\") + "\\"
     original_windows_text_prefix = original_windows_prefix.replace("\\", "\\\\")
@@ -3204,6 +3225,15 @@ def rewrite_seed_version(version_dir: Path, original_project_id: int, new_projec
         updated = content
         for old, new in replacements.items():
             updated = updated.replace(old, new)
+        if path.suffix.lower() == ".json":
+            try:
+                payload = json.loads(updated)
+            except json.JSONDecodeError:
+                pass
+            else:
+                rewritten_payload = rewrite_json_paths(payload)
+                if rewritten_payload != payload:
+                    updated = json.dumps(rewritten_payload, indent=2, ensure_ascii=False) + "\n"
         if updated != content:
             path.write_text(updated, encoding="utf-8")
 
