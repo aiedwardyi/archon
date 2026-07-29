@@ -3180,7 +3180,7 @@ def build_componentized_scaffold_seed_context() -> str:
 
 
 def rewrite_seed_version(version_dir: Path, original_project_id: int, new_project_id: int):
-    def rewrite_json_paths(value):
+    def rewrite_json_paths(value: Any) -> Any:
         if isinstance(value, dict):
             return {key: rewrite_json_paths(item) for key, item in value.items()}
         if isinstance(value, list):
