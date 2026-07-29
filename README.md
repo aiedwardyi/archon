@@ -1,3 +1,5 @@
+[![CI](https://github.com/aiedwardyi/archon/actions/workflows/ci.yml/badge.svg)](https://github.com/aiedwardyi/archon/actions/workflows/ci.yml)
+
 ![Claude Opus 4.6](https://img.shields.io/badge/Claude_Opus_4.6-Anthropic-cc785c?style=for-the-badge&logo=anthropic&logoColor=white)
 ![IBM Watson](https://img.shields.io/badge/IBM_Watson_NLU-IBM-054ADA?style=for-the-badge&logo=ibm&logoColor=white)
 ![Gemini](https://img.shields.io/badge/Gemini_2.5_Flash-Google-4285F4?style=for-the-badge&logo=google&logoColor=white)
@@ -32,7 +34,7 @@ Archon is a multi-agent application delivery platform that turns a prompt into a
 
 The governance / factsheet screen is one of the strongest product surfaces in the repo because it immediately communicates auditability, traceability, and enterprise delivery posture.
 
-[![AI Governance — IBM Watson Factsheet](docs/screenshots/dashboard-governance.png)](docs/screenshots/dashboard-governance.png)
+[![AI Governance - IBM Watson Factsheet](docs/screenshots/dashboard-governance.png)](docs/screenshots/dashboard-governance.png)
 
 What it shows:
 
@@ -140,8 +142,8 @@ The result is a system where each run has visible lineage instead of a single op
 ### Prerequisites
 
 - Python 3.11+
-- Node.js 18+
-- API keys for the providers you want to enable
+- Node.js 20.9+ (Node.js 22 recommended)
+- npm 10+
 
 ### Install
 
@@ -151,46 +153,62 @@ cd archon
 
 # Python backend
 python -m venv venv
-source venv/bin/activate            # Windows (PowerShell): .\venv\Scripts\Activate
+source venv/bin/activate            # macOS/Linux
+# Windows PowerShell: .\venv\Scripts\Activate.ps1
 pip install -r backend/requirements.txt
 
 # Frontends (each has its own node_modules)
-(cd frontend         && npm install)
-(cd frontend-studio  && npm install)
-(cd frontend-consumer && npm install)
+npm --prefix frontend ci
+npm --prefix frontend-studio ci
+npm --prefix frontend-consumer ci
 ```
 
 ### Configure
 
-Copy the example env file and add your keys:
+Copy the example environment file:
 
 ```bash
 cp backend/.env.example backend/.env
-# then edit backend/.env and fill in at minimum:
-#   JWT_SECRET_KEY        (generate: python -c "import secrets; print(secrets.token_urlsafe(32))")
-#   ANTHROPIC_API_KEY     (for live code generation)
-# GOOGLE_CLIENT_ID / Gemini / Watson keys are optional but unlock more surfaces.
+# Windows PowerShell: Copy-Item backend/.env.example backend/.env
 ```
 
-For a dependency-free smoke test, set `OFFLINE_MODE=true` in `backend/.env` — the pipeline runs with built-in scaffolding instead of live model calls.
+The example defaults to `OFFLINE_MODE=true`. This provider-free path creates a PRD, plan, buildable React workspace, and live preview without API credentials. The generated workspace installs its own npm dependencies during the first build.
+
+For live generation, set `OFFLINE_MODE=false` and configure Gemini through either `GENAI_API_KEY` or Vertex AI with `VERTEX_AI_PROJECT` and `VERTEX_AI_LOCATION`. Gemini or Vertex is required for requirements and planning. The Engineer Agent also defaults to Gemini.
+
+To use Claude for engineering, add `ANTHROPIC_API_KEY` and set `ENGINEER_MODEL=claude`. Google OAuth and IBM Watson integrations remain optional.
 
 ### Run
 
-Each service needs its own terminal. Reactivate the venv in every new shell.
+Start the backend, then run one or more UI surfaces. Each service needs its own terminal.
+
+- Studio on port 3000: developer workspace and pipeline artifacts
+- Consumer on port 3002: prompt-first application builder
+- Enterprise on port 8080: governance, factsheets, and audit history
 
 ```bash
-# Terminal 1 — backend (http://localhost:5000)
-source venv/bin/activate            # Windows: .\venv\Scripts\Activate
+# Terminal 1: backend (http://localhost:5000)
+source venv/bin/activate            # macOS/Linux
+# Windows PowerShell: .\venv\Scripts\Activate.ps1
 python backend/app.py
 
-# Terminal 2 — Studio UI        (http://localhost:3000)
-cd frontend-studio && npm run dev
+# Terminal 2: Studio UI (http://localhost:3000)
+npm --prefix frontend-studio run dev
 
-# Terminal 3 — Consumer UI      (http://localhost:3002)
-cd frontend-consumer && npm run dev
+# Terminal 3: Consumer UI (http://localhost:3002)
+npm --prefix frontend-consumer run dev
 
-# Terminal 4 — Enterprise UI    (http://localhost:8080)
-cd frontend && npm run dev
+# Terminal 4: Enterprise UI (http://localhost:8080)
+npm --prefix frontend run dev
+```
+
+### Verify
+
+```bash
+python -m pytest -q
+npm --prefix frontend run build
+npm --prefix frontend-studio run build
+npm --prefix frontend-consumer run build
 ```
 
 ## Public Demo Deployment
