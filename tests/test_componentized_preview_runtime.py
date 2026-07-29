@@ -36,6 +36,7 @@ class ComponentizedPreviewRuntimeTests(unittest.TestCase):
 
             def fake_run(
                 command: list[str],
+                *,
                 cwd: Path,
                 capture_output: bool,
                 text: bool,

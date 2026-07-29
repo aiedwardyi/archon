@@ -20,4 +20,10 @@ def resolve_db_path() -> Path:
     return PRIMARY_DB_PATH
 
 
-DB_PATH = resolve_db_path()
+def prepare_db_path() -> Path:
+    path = resolve_db_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+DB_PATH = prepare_db_path()

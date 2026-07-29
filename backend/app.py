@@ -78,6 +78,12 @@ from utils.componentized_quality import (
 nlu_agent = NLUAgent()
 discovery_client = DiscoveryClient()
 
+
+def analyze_prompt_nlu(text: str) -> dict:
+    if is_offline_mode():
+        return NLUAgent.fallback_analysis()
+    return nlu_agent.analyze(text)
+
 app = Flask(__name__)
 
 CORS(app, origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:8080"])
@@ -3264,6 +3270,7 @@ def update_seed_factsheet(version_dir: Path, project: Project, execution: Execut
 
 
 CODE_BROWSER_EXCLUDED_DIRS = {"node_modules", "dist", ".npm-cache", "__pycache__", ".pytest_cache"}
+ITERATION_WORKSPACE_EXCLUDED_DIRS = CODE_BROWSER_EXCLUDED_DIRS | {".git", ".vite"}
 CODE_BROWSER_TEXT_EXTENSIONS = {
     ".ts", ".tsx", ".js", ".jsx", ".mjs",
     ".py", ".html", ".css", ".scss", ".sass", ".less",
@@ -3292,6 +3299,19 @@ CODE_BROWSER_BINARY_EXTENSIONS = {
     ".mp3", ".wav", ".ogg", ".mp4", ".mov", ".zip", ".gz",
 }
 GENERATED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
+
+
+def seed_iteration_workspace(ancestor_version_dir: Path, version_dir: Path) -> bool:
+    source_dir = ancestor_version_dir / "code"
+    if not source_dir.exists():
+        return False
+    shutil.copytree(
+        source_dir,
+        version_dir / "code",
+        dirs_exist_ok=True,
+        ignore=shutil.ignore_patterns(*ITERATION_WORKSPACE_EXCLUDED_DIRS),
+    )
+    return True
 
 
 def _relative_parts(path: Path, base: Path) -> tuple[str, ...]:
@@ -3371,7 +3391,7 @@ def normalize_factsheet_metrics(project_id: int, version: int, factsheet: Dict[s
 
     try:
         from agents.governance_agent import GovernanceAgent
-        build_score = GovernanceAgent()._score_build(
+        build_score = GovernanceAgent(enable_nlu=False)._score_build(
             files_generated=files_generated,
             images_generated=images_generated,
             duration_seconds=duration_seconds,
@@ -3757,6 +3777,9 @@ def run_full_pipeline_async(
                 hops += 1
         finally:
             session_check.close()
+
+        if is_iteration and ancestor_version_dir and seed_iteration_workspace(ancestor_version_dir, version_dir):
+            add_log("Build Agent: Seeded the new version from its ancestor workspace.", project_id=project_id)
 
         add_log("Starting pipeline...", project_id=project_id)
         add_log("Requirements Agent: Analyzing your request...", project_id=project_id)
@@ -4779,7 +4802,7 @@ def run_full_pipeline_async(
         # Governance Agent — generate AI Factsheet
         try:
             from agents.governance_agent import GovernanceAgent
-            gov_agent = GovernanceAgent()
+            gov_agent = GovernanceAgent(enable_nlu=not offline_mode)
 
             result_data = read_json_file(version_dir / "last_execution_result.json") or {}
             files_count = result_data.get("outputs", {}).get("files_generated", 0) or count_code_browser_files(code_dir)
@@ -5344,7 +5367,7 @@ def iterate_project(project_id: int):
             print("[NLU] Using provided analysis from /chat")
             print(f"[NLU] Full analysis: {nlu_result}")
         else:
-            nlu_result = nlu_agent.analyze(prompt)
+            nlu_result = analyze_prompt_nlu(prompt)
             print(f"[NLU] Full analysis: {nlu_result}")
 
         current_head = (
@@ -5617,7 +5640,7 @@ def execute_task():
         session.refresh(execution)
         attach_execution_to_state(project_id, execution.id)
 
-        nlu_result = nlu_agent.analyze(task_description)
+        nlu_result = analyze_prompt_nlu(task_description)
         print(f"[NLU] Full analysis: {nlu_result}")
 
         skip_image_gen = coerce_bool(req_data.get("skip_image_gen"))
@@ -6360,7 +6383,7 @@ def project_chat(project_id: int):
         sys.path.insert(0, str(REPO_ROOT))
 
         # NLU pre-analysis — frustrated sentiment short-circuits to chat
-        nlu_result = nlu_agent.analyze(data["message"])
+        nlu_result = analyze_prompt_nlu(data["message"])
         print(f"[NLU] Full analysis: {nlu_result}")
         print(f"[NLU] sentiment={nlu_result['sentiment']} score={nlu_result['sentiment_score']:.2f} domain={nlu_result['domain']} keywords={nlu_result['keywords']}")
         if nlu_result["frustrated"]:
@@ -6386,12 +6409,15 @@ def project_chat(project_id: int):
         project_context = (project_context or "") + nlu_context_str
 
         from agents.pm_agent import PMAgent, fallback_classify_intent
-        pm = PMAgent()
-        try:
-            intent = pm.classify_intent(data["message"], project_context=project_context)
-        except Exception as classify_error:
-            print(f"Chat classify error: {classify_error}")
+        if is_offline_mode():
             intent = fallback_classify_intent(data["message"], project_context=project_context)
+        else:
+            pm = PMAgent()
+            try:
+                intent = pm.classify_intent(data["message"], project_context=project_context)
+            except Exception as classify_error:
+                print(f"Chat classify error: {classify_error}")
+                intent = fallback_classify_intent(data["message"], project_context=project_context)
         if intent.get("type") == "chat":
             return jsonify({"response_type": "chat", "message": intent["message"]}), 200
         return jsonify({"response_type": "build", "nlu_result": nlu_result}), 200

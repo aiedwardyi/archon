@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import os
+import tempfile
 import unittest
+from pathlib import Path
 from unittest import mock
 
 from backend import db_paths
@@ -57,6 +59,15 @@ class OfflinePipelineTests(unittest.TestCase):
     def test_database_path_resolves_relative_override_from_repo(self):
         with mock.patch.dict(os.environ, {"DATABASE_PATH": "data/archon.db"}):
             self.assertEqual(db_paths.resolve_db_path(), db_paths.REPO_ROOT / "data/archon.db")
+
+    def test_prepare_database_path_creates_parent_directory(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            configured = Path(tmpdir) / "nested" / "archon.db"
+            with mock.patch.dict(os.environ, {"DATABASE_PATH": str(configured)}):
+                resolved = db_paths.prepare_db_path()
+
+            self.assertEqual(resolved, configured)
+            self.assertTrue(configured.parent.is_dir())
 
 
 if __name__ == "__main__":

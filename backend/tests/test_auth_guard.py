@@ -233,7 +233,7 @@ def test_forgot_password_can_expose_reset_token_explicitly(client, monkeypatch, 
 def test_forgot_password_hides_reset_token_outside_local_environment(client, monkeypatch):
     monkeypatch.setenv("ARCHON_EXPOSE_RESET_TOKEN", "true")
     monkeypatch.setenv("FLASK_ENV", "production")
-    monkeypatch.setitem(app.config, "TESTING", False)
+    monkeypatch.setitem(app.config, "TESTING", value=False)
     email = "reset-production@archon-test.com"
 
     register_resp = client.post(

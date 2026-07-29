@@ -27,6 +27,7 @@ from backend.app import (
     select_componentized_build_repair_scope,
     select_componentized_content_fix_scope,
     select_componentized_refinement_scope,
+    seed_iteration_workspace,
     validate_componentized_contract_outputs,
 )
 from utils.componentized_runtime import (
@@ -4621,6 +4622,28 @@ const View = () => (
             self.assertIn("src/index.css", scope)
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
+
+    def test_seed_iteration_workspace_copies_source_without_runtime_directories(self):
+        root_dir = _case_dir("componentized-iteration-workspace-seed")
+        try:
+            ancestor_dir = root_dir / "v1"
+            version_dir = root_dir / "v2"
+            (ancestor_dir / "code" / "src").mkdir(parents=True)
+            (ancestor_dir / "code" / "src" / "App.tsx").write_text(
+                "export default function App() { return <main />; }\n",
+                encoding="utf-8",
+            )
+            (ancestor_dir / "code" / "node_modules" / "pkg").mkdir(parents=True)
+            (ancestor_dir / "code" / "dist").mkdir()
+
+            copied = seed_iteration_workspace(ancestor_dir, version_dir)
+
+            self.assertTrue(copied)
+            self.assertTrue((version_dir / "code" / "src" / "App.tsx").exists())
+            self.assertFalse((version_dir / "code" / "node_modules").exists())
+            self.assertFalse((version_dir / "code" / "dist").exists())
+        finally:
+            shutil.rmtree(root_dir, ignore_errors=True)
 
     def test_select_componentized_refinement_scope_includes_base_css_for_visual_polish(self):
         code_dir = _case_dir("componentized-quality-refinement-scope")

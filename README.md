@@ -172,7 +172,7 @@ cp backend/.env.example backend/.env
 # Windows PowerShell: Copy-Item backend/.env.example backend/.env
 ```
 
-The example defaults to `OFFLINE_MODE=true`. This provider-free path creates a PRD, plan, buildable React workspace, and live preview without API credentials. The generated workspace installs its own npm dependencies during the first build.
+The example defaults to `OFFLINE_MODE=true`. This provider-free path creates a PRD, plan, buildable React workspace, and live preview without API credentials. It suppresses configured provider calls, including Watson analysis. The generated workspace installs its own npm dependencies during the first build.
 
 For live generation, set `OFFLINE_MODE=false` and configure Gemini through either `GENAI_API_KEY` or Vertex AI with `VERTEX_AI_PROJECT` and `VERTEX_AI_LOCATION`. Gemini or Vertex is required for requirements and planning. The Engineer Agent also defaults to Gemini.
 
