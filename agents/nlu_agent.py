@@ -25,8 +25,9 @@ class NLUAgent:
             )
             self.nlu.set_service_url(url)
 
-    def analyze(self, text: str) -> dict:
-        fallback = {
+    @staticmethod
+    def fallback_analysis() -> dict:
+        return {
             "sentiment": "neutral",
             "sentiment_score": 0.0,
             "keywords": [],
@@ -37,6 +38,9 @@ class NLUAgent:
             "frustrated": False,
             "prompt_richness": "sparse",
         }
+
+    def analyze(self, text: str) -> dict:
+        fallback = self.fallback_analysis()
         if not self.enabled:
             return fallback
         # Watson NLU requires at least 50 chars

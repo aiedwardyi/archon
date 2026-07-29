@@ -116,9 +116,10 @@ def test_seed_endpoint_copies_and_rewrites_seed_projects(client):
                 assert f'"execution_id": {execution.id}' in factsheet
 
                 result_data = json.loads((version_dir / "last_execution_result.json").read_text(encoding="utf-8"))
-                expected_fragment = str(Path("generated") / str(project.id) / "v1")
                 for write in result_data["outputs"]["writes"]:
-                    assert expected_fragment in write["path"]
+                    write_path = Path(write["path"])
+                    assert write_path.is_absolute()
+                    assert version_dir in write_path.parents
         finally:
             db.close()
 

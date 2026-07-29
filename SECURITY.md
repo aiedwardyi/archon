@@ -72,7 +72,7 @@ This platform generates and executes code. Important security considerations:
 
 ### Known Security Considerations
 
-1. **Development Mode Password Reset**: The `/api/auth/forgot-password` endpoint returns the reset token in the response for development. This must be removed in production and replaced with email delivery.
+1. **Development Mode Password Reset**: Reset tokens are hidden by default. Local and test environments can expose them with `ARCHON_EXPOSE_RESET_TOKEN=true`. This repository does not include email delivery, so production deployments must add a mail transport before enabling password reset.
 
 2. **Default JWT Secret**: The default JWT secret (`archon-dev-secret-change-in-prod`) MUST be changed in production.
 

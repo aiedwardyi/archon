@@ -9,13 +9,16 @@ from typing import Optional
 
 class GovernanceAgent:
 
-    def __init__(self):
+    def __init__(self, *, enable_nlu: bool = True):
+        self.nlu = None
+        if not enable_nlu:
+            return
         # Reuse NLUAgent for prompt scoring
         try:
             from agents.nlu_agent import NLUAgent
             self.nlu = NLUAgent()
         except Exception:
-            self.nlu = None
+            pass
 
     def _score_prompt(self, prompt: str) -> dict:
         """
@@ -264,6 +267,8 @@ class GovernanceAgent:
         if not model_name:
             return "Unknown"
         m = model_name.lower()
+        if "local" in m or "deterministic" in m:
+            return "Local"
         if "claude" in m:
             return "Anthropic"
         if "gemini" in m or "flash" in m:

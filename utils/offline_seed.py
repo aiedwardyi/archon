@@ -1,70 +1,129 @@
 from __future__ import annotations
-from typing import Dict, Any
+
+import os
+import re
+from datetime import datetime, timezone
+from typing import Any, Dict
+
+from schemas.plan_schema import Milestone, Plan, QualityTarget, Task
+from schemas.prd_schema import PRD, PRDArtifact
+
+
+_ARCHETYPE_HINTS = (
+    ("dashboard", ("dashboard", "analytics", "report", "metrics")),
+    ("ecommerce", ("shop", "store", "commerce", "catalog")),
+    ("portfolio", ("portfolio", "resume", "showcase")),
+    ("kanban", ("kanban", "task", "project board")),
+    ("chat", ("chat", "messaging", "assistant")),
+    ("form", ("form", "survey", "application form")),
+)
+
+
+def is_offline_mode() -> bool:
+    return os.getenv("OFFLINE_MODE", "").strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def _offline_archetype(idea: str) -> str:
+    normalized = idea.lower()
+    for archetype, hints in _ARCHETYPE_HINTS:
+        if any(re.search(rf"\b{re.escape(hint)}\b", normalized) for hint in hints):
+            return archetype
+    return "landing"
+
+
+def _offline_title(idea: str) -> str:
+    normalized = " ".join(idea.split())
+    lowered = normalized.lower()
+    for prefix in ("build a ", "build an ", "create a ", "create an ", "make a ", "make an "):
+        if lowered.startswith(prefix):
+            normalized = normalized[len(prefix):]
+            break
+    title = normalized.split(" with ", 1)[0].split(" that ", 1)[0].strip(" .")
+    if not title:
+        return "Archon Offline Project"
+    return title[:1].upper() + title[1:72]
+
+
+def build_offline_prd_artifact(idea: str) -> PRDArtifact:
+    title = _offline_title(idea)
+    archetype = _offline_archetype(idea)
+    return PRDArtifact(
+        prd=PRD(
+            document_title=title,
+            detected_intent=idea.strip(),
+            archetype_hint=archetype,
+            primary_user_action="Explore the generated application preview",
+            visual_direction="Clean product interface with strong hierarchy, restrained color, and responsive spacing",
+            tone_keywords=["clear", "focused", "responsive"],
+            prompt_quality_score=50,
+            overview=f"A provider-free preview scaffold for: {idea.strip()}",
+            goals=["Produce a buildable application", "Demonstrate the complete local pipeline"],
+            non_goals=["Production model output", "External image generation"],
+            target_users=["Project owners", "Contributors"],
+            core_features_mvp=["Responsive layout", "Visible pipeline status", "Buildable React workspace"],
+            nice_to_have_features=["Live provider-backed generation"],
+            user_stories=[
+                "As a contributor, I can verify the pipeline without provider credentials.",
+                "As a project owner, I can open a generated preview after one local run.",
+            ],
+            acceptance_criteria=[
+                "The generated workspace builds successfully.",
+                "The preview route returns the generated application.",
+            ],
+            technical_stack_recommendation=["React", "TypeScript", "Vite"],
+            payments_security_compliance=["No external data is transmitted in offline mode"],
+            assumptions=["Node.js dependencies are available during the first generated build"],
+            open_questions=[],
+            regenerate_images=False,
+        ),
+        created_at=datetime.now(timezone.utc).isoformat(),
+    )
+
+
+def build_offline_plan(idea: str, locked_ui_archetype: str | None = None) -> Plan:
+    archetype = locked_ui_archetype or _offline_archetype(idea)
+    return Plan(
+        milestones=[
+            Milestone(
+                name="Generate local preview",
+                tasks=[
+                    Task(
+                        id="OFFLINE-1",
+                        description=f"Build a complete React application scaffold for: {idea.strip()}",
+                        outputs=["Buildable Vite, React, and TypeScript workspace"],
+                        execution_hint="engineer",
+                        task_type="scaffold",
+                        scaffold_mode="componentized_app",
+                        output_files=["package.json", "index.html", "src/main.tsx", "src/App.tsx"],
+                        ui_archetype=archetype,
+                        render_path="C",
+                        quality_target=QualityTarget(
+                            visual_style="Focused application shell with clear hierarchy and polished responsive spacing",
+                            key_sections=["status header", "pipeline stages", "next steps"],
+                            must_have_content=["provider-free status", "successful pipeline stages"],
+                            interactivity=[],
+                            avoid=["empty screen", "remote assets"],
+                        ),
+                    )
+                ],
+            )
+        ],
+        assumptions=["Provider calls are disabled"],
+        risks=["The deterministic scaffold does not interpret the brief like a live model"],
+    )
+
 
 def offline_prd_from_idea(idea: str) -> str:
-    idea = idea.strip()
-    return f"""# PRD (OFFLINE STUB)
+    artifact = build_offline_prd_artifact(idea)
+    prd = artifact.prd
+    return (
+        f"# {prd.document_title}\n\n"
+        f"## Overview\n{prd.overview}\n\n"
+        "## Goals\n"
+        + "\n".join(f"- {goal}" for goal in prd.goals)
+        + "\n"
+    )
 
-## Idea
-{idea}
-
-## Goal
-Create a simple, presentable MVP that matches the idea and can be deployed.
-
-## Users
-- Visitors
-- Potential customers
-
-## Key pages
-- Home / Landing
-- Product/Services
-- About
-- Contact
-
-## MVP features
-- Responsive layout
-- Clear CTA
-- Basic content sections
-- Simple contact form (frontend-only or placeholder)
-
-## Non-goals (for MVP)
-- Payments
-- Auth
-- Admin dashboards
-"""
 
 def offline_plan_dict_for_idea(idea: str) -> Dict[str, Any]:
-    # Minimal plan that passes typical Plan schema patterns:
-    # one milestone with one scaffold task.
-    return {
-        "milestones": [
-            {
-                "name": "Milestone 1: Scaffold MVP",
-                "tasks": [
-                    {
-                        "id": "OFFLINE-1",
-                        "description": f"Scaffold a minimal project for: {idea.strip()}",
-                        "depends_on": [],
-                        "outputs": [
-                            "Project scaffold",
-                            "Basic README",
-                            "Basic config files"
-                        ],
-                        "execution_hint": "engineer",
-                        "task_type": "scaffold",
-                        "output_files": [
-                            "README.md",
-                            ".gitignore"
-                        ],
-                    }
-                ],
-            }
-        ],
-        "assumptions": [
-            "Offline stub used (no API calls).",
-            "We will refine requirements when quota is available."
-        ],
-        "risks": [
-            "Stub plan may not match final product direction until online planning runs."
-        ],
-    }
+    return build_offline_plan(idea).model_dump()

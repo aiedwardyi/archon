@@ -3,7 +3,7 @@ JWT Authentication routes for Archon.
 Phase 16.5 — register, login, forgot-password, reset-password, /me
 """
 import os
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, current_app, request, jsonify
 from flask_jwt_extended import (
     JWTManager, create_access_token, jwt_required, get_jwt_identity, get_jwt
 )
@@ -19,6 +19,21 @@ auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+
+
+def _reset_token_response_enabled() -> bool:
+    local_environment = current_app.testing or os.getenv("FLASK_ENV", "").strip().lower() in {
+        "development",
+        "testing",
+    }
+    flag_enabled = os.getenv("ARCHON_EXPOSE_RESET_TOKEN", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "y",
+        "on",
+    }
+    return local_environment and flag_enabled
 
 
 def claim_guest_project_for_user(db, project_id: int, user_id: int):
@@ -246,12 +261,10 @@ def forgot_password():
             user.reset_token = token
             user.reset_token_expires = datetime.now(timezone.utc) + timedelta(hours=1)
             db.commit()
-            # In production: send email. For now, return token in response (dev mode)
-            print(f"[DEV] Password reset token for {email}: {token}")
-            return jsonify({
-                "message": "If that email exists, a reset link has been sent.",
-                "_dev_token": token,  # Remove in production
-            }), 200
+            response = {"message": "If that email exists, a reset link has been sent."}
+            if _reset_token_response_enabled():
+                response["_dev_token"] = token
+            return jsonify(response), 200
         return jsonify({"message": "If that email exists, a reset link has been sent."}), 200
     finally:
         db.close()

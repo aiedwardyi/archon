@@ -14,7 +14,7 @@ import warnings
 import re
 import mimetypes
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, TypeAlias
 import threading
 import time
 from datetime import datetime, timedelta, timezone
@@ -46,6 +46,7 @@ from utils.design_families import (
     resolve_componentized_design_family,
 )
 from utils.offline_engineer_scaffold import build_vite_react_ts_scaffold
+from utils.offline_seed import build_offline_plan, build_offline_prd_artifact, is_offline_mode
 from utils.componentized_runtime import (
     build_componentized_preview,
     collect_componentized_direct_dependencies,
@@ -76,6 +77,12 @@ from utils.componentized_quality import (
 )
 nlu_agent = NLUAgent()
 discovery_client = DiscoveryClient()
+
+
+def analyze_prompt_nlu(text: str) -> dict:
+    if is_offline_mode():
+        return NLUAgent.fallback_analysis()
+    return nlu_agent.analyze(text)
 
 app = Flask(__name__)
 
@@ -3178,7 +3185,31 @@ def build_componentized_scaffold_seed_context() -> str:
     return "\n\n".join(lines)
 
 
+JsonValue: TypeAlias = str | int | float | bool | None | list["JsonValue"] | dict[str, "JsonValue"]
+
+
 def rewrite_seed_version(version_dir: Path, original_project_id: int, new_project_id: int):
+    def rewrite_json_paths(value: JsonValue) -> JsonValue:
+        if isinstance(value, dict):
+            return {key: rewrite_json_paths(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [rewrite_json_paths(item) for item in value]
+        if not isinstance(value, str):
+            return value
+
+        normalized = value.replace("\\", "/")
+        if normalized.startswith(("http://", "https://")):
+            return value
+        marker = f"/generated/{new_project_id}/v1/"
+        relative_marker = marker.lstrip("/")
+        if marker in normalized:
+            relative_path = normalized.split(marker, 1)[1]
+        elif normalized.startswith(relative_marker):
+            relative_path = normalized[len(relative_marker):]
+        else:
+            return value
+        return str(version_dir / Path(relative_path))
+
     original_windows_prefix = str(Path("generated") / str(original_project_id) / "v1").replace("/", "\\") + "\\"
     new_windows_prefix = str(Path("generated") / str(new_project_id) / "v1").replace("/", "\\") + "\\"
     original_windows_text_prefix = original_windows_prefix.replace("\\", "\\\\")
@@ -3203,6 +3234,15 @@ def rewrite_seed_version(version_dir: Path, original_project_id: int, new_projec
         updated = content
         for old, new in replacements.items():
             updated = updated.replace(old, new)
+        if path.suffix.lower() == ".json":
+            try:
+                payload = json.loads(updated)
+            except json.JSONDecodeError:
+                pass
+            else:
+                rewritten_payload = rewrite_json_paths(payload)
+                if rewritten_payload != payload:
+                    updated = json.dumps(rewritten_payload, indent=2, ensure_ascii=False) + "\n"
         if updated != content:
             path.write_text(updated, encoding="utf-8")
 
@@ -3233,6 +3273,7 @@ def update_seed_factsheet(version_dir: Path, project: Project, execution: Execut
 
 
 CODE_BROWSER_EXCLUDED_DIRS = {"node_modules", "dist", ".npm-cache", "__pycache__", ".pytest_cache"}
+ITERATION_WORKSPACE_EXCLUDED_DIRS = CODE_BROWSER_EXCLUDED_DIRS | {".git", ".vite"}
 CODE_BROWSER_TEXT_EXTENSIONS = {
     ".ts", ".tsx", ".js", ".jsx", ".mjs",
     ".py", ".html", ".css", ".scss", ".sass", ".less",
@@ -3261,6 +3302,19 @@ CODE_BROWSER_BINARY_EXTENSIONS = {
     ".mp3", ".wav", ".ogg", ".mp4", ".mov", ".zip", ".gz",
 }
 GENERATED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
+
+
+def seed_iteration_workspace(ancestor_version_dir: Path, version_dir: Path) -> bool:
+    source_dir = ancestor_version_dir / "code"
+    if not source_dir.exists():
+        return False
+    shutil.copytree(
+        source_dir,
+        version_dir / "code",
+        dirs_exist_ok=True,
+        ignore=shutil.ignore_patterns(*ITERATION_WORKSPACE_EXCLUDED_DIRS),
+    )
+    return True
 
 
 def _relative_parts(path: Path, base: Path) -> tuple[str, ...]:
@@ -3340,7 +3394,7 @@ def normalize_factsheet_metrics(project_id: int, version: int, factsheet: Dict[s
 
     try:
         from agents.governance_agent import GovernanceAgent
-        build_score = GovernanceAgent()._score_build(
+        build_score = GovernanceAgent(enable_nlu=False)._score_build(
             files_generated=files_generated,
             images_generated=images_generated,
             duration_seconds=duration_seconds,
@@ -3628,6 +3682,25 @@ def run_full_pipeline_async(
     skip_image_gen: bool = False,
 ):
     state = get_project_state(project_id)
+    offline_mode = is_offline_mode()
+    skip_image_gen = skip_image_gen or offline_mode
+    if offline_mode:
+        execution_model = "Deterministic Local Scaffold"
+        models_used = {
+            "Requirements Agent": "Deterministic Local Seed",
+            "Architecture Agent": "Deterministic Local Plan",
+            "Build Agent": "Deterministic Local Scaffold",
+        }
+        agent_sequence = ["pm", "planner", "engineer"]
+    else:
+        execution_model = "Claude Opus 4.6"
+        models_used = {
+            "Requirements Agent": "Gemini 2.5 Flash",
+            "Architecture Agent": "Gemini 2.5 Flash",
+            "Design Agent": "Imagen 4.0 Ultra + Gemini 2.5 Flash",
+            "Build Agent": "Gemini 2.5 Flash",
+        }
+        agent_sequence = ["pm", "planner", "design", "engineer"]
 
     sys.path.insert(0, str(REPO_ROOT))
 
@@ -3657,7 +3730,7 @@ def run_full_pipeline_async(
                     project = session.get(Project, execution.project_id)
                     if project:
                         locked_ui_archetype = project.locked_ui_archetype
-        if not locked_ui_archetype:
+        if not locked_ui_archetype and not offline_mode:
             benchmark_match = suggest_reference_archetype(task_description)
             if benchmark_match and benchmark_match.get("archetype"):
                 locked_ui_archetype = benchmark_match["archetype"]
@@ -3708,11 +3781,12 @@ def run_full_pipeline_async(
         finally:
             session_check.close()
 
+        if is_iteration and ancestor_version_dir and seed_iteration_workspace(ancestor_version_dir, version_dir):
+            add_log("Build Agent: Seeded the new version from its ancestor workspace.", project_id=project_id)
+
         add_log("Starting pipeline...", project_id=project_id)
         add_log("Requirements Agent: Analyzing your request...", project_id=project_id)
         sys.path.insert(0, str(REPO_ROOT))
-        from agents.pm_agent import PMAgent
-        pm_agent = PMAgent()
 
         nlu_context = nlu_context or {
             "keywords": [],
@@ -3756,7 +3830,12 @@ def run_full_pipeline_async(
                 f"{title_note}"
             )
 
-        prd_artifact = pm_agent.generate_prd(context_input)
+        if offline_mode:
+            prd_artifact = build_offline_prd_artifact(task_description)
+        else:
+            from agents.pm_agent import PMAgent
+
+            prd_artifact = PMAgent().generate_prd(context_input)
 
         prd_dict = prd_artifact.model_dump()
         prd_dict["_agent_sequence"] = ["pm"]
@@ -3767,19 +3846,26 @@ def run_full_pipeline_async(
 
         add_log("Architecture Agent: Planning the build...", project_id=project_id)
 
-        from agents.planner_agent import PlannerAgent
-        from utils.genai_client import get_genai_client
+        genai_client = None
+        if offline_mode:
+            plan = build_offline_plan(
+                task_description,
+                locked_ui_archetype=locked_ui_archetype,
+            )
+        else:
+            from agents.planner_agent import PlannerAgent
+            from utils.genai_client import get_genai_client
 
-        genai_client = get_genai_client()
-        planner = PlannerAgent(genai_client)
-        plan = planner.run_from_prd_artifact(
-            version_dir / "last_prd.json",
-            locked_ui_archetype=locked_ui_archetype,
-            is_iteration=is_iteration,
-            reference_images=reference_images or [],
-            project_context=context_input,
-            nlu_context=nlu_context,
-        )
+            genai_client = get_genai_client()
+            planner = PlannerAgent(genai_client)
+            plan = planner.run_from_prd_artifact(
+                version_dir / "last_prd.json",
+                locked_ui_archetype=locked_ui_archetype,
+                is_iteration=is_iteration,
+                reference_images=reference_images or [],
+                project_context=context_input,
+                nlu_context=nlu_context,
+            )
 
         plan_dict = {
             "kind": "plan_artifact",
@@ -3819,8 +3905,8 @@ def run_full_pipeline_async(
 
         design_assets = []
         if skip_image_gen:
-            add_log("Design Agent: Skipped (skip_image_gen=True, eval mode).", project_id=project_id)
-            print("Design Agent: skipped (eval mode)")
+            add_log("Design Agent: Skipped.", project_id=project_id)
+            print("Design Agent: skipped")
 
         previous_visual_direction = ""
         if not skip_image_gen and ancestor_version_dir:
@@ -3924,7 +4010,7 @@ def run_full_pipeline_async(
         # Query Watson Discovery for best archetype-matched build (initial build only)
         reference_code = None
         benchmark_guidance = ""
-        if not is_iteration:
+        if not is_iteration and not offline_mode:
             detected_archetype = get_plan_ui_archetype(plan) or locked_ui_archetype
             engineer_kit_archetype = DESIGN_KIT_ALIASES.get(engineer_task.ui_archetype, engineer_task.ui_archetype)
             if detected_archetype:
@@ -4051,7 +4137,7 @@ def run_full_pipeline_async(
             iteration_feature_inventory=iteration_feature_inventory,
         )
 
-        if componentized_mode and not is_iteration:
+        if componentized_mode and not is_iteration and not offline_mode:
             contract_validation = validate_componentized_contract_outputs(
                 result.files,
                 ui_archetype=engineer_task.ui_archetype,
@@ -4326,7 +4412,7 @@ def run_full_pipeline_async(
                                 project_id=project_id,
                             )
 
-            if preview_build.get("status") == "success":
+            if preview_build.get("status") == "success" and not offline_mode:
                 density_audit = evaluate_componentized_density(
                     version_dir / "code",
                     ui_archetype=engineer_task.ui_archetype,
@@ -4606,17 +4692,18 @@ def run_full_pipeline_async(
         state["result_ready"] = True
 
         filled_assets_count = 0
-        try:
-            filled_assets_count = fill_missing_assets(
-                project_id=project_id,
-                version=version,
-                archetype=effective_archetype,
-            )
-            print(
-                f"Asset filler: filled {filled_assets_count} missing images from library"
-            )
-        except Exception as asset_fill_err:
-            print(f"Asset filler failed (non-fatal): {asset_fill_err}")
+        if not offline_mode:
+            try:
+                filled_assets_count = fill_missing_assets(
+                    project_id=project_id,
+                    version=version,
+                    archetype=effective_archetype,
+                )
+                print(
+                    f"Asset filler: filled {filled_assets_count} missing images from library"
+                )
+            except Exception as asset_fill_err:
+                print(f"Asset filler failed (non-fatal): {asset_fill_err}")
 
         code_dir = version_dir / "code"
         if code_dir.exists():
@@ -4689,7 +4776,7 @@ def run_full_pipeline_async(
                 execution.plan_path = str(version_dir / "last_plan.json")
                 # Build metrics
                 execution.duration_seconds = round(time.time() - pipeline_start_time, 2)
-                execution.model_used = "Claude Opus 4.6"
+                execution.model_used = execution_model
                 if hasattr(result, "usage") and result.usage:
                     input_tokens = getattr(result.usage, "input_tokens", 0) or 0
                     output_tokens = getattr(result.usage, "output_tokens", 0) or 0
@@ -4718,7 +4805,7 @@ def run_full_pipeline_async(
         # Governance Agent — generate AI Factsheet
         try:
             from agents.governance_agent import GovernanceAgent
-            gov_agent = GovernanceAgent()
+            gov_agent = GovernanceAgent(enable_nlu=not offline_mode)
 
             result_data = read_json_file(version_dir / "last_execution_result.json") or {}
             files_count = result_data.get("outputs", {}).get("files_generated", 0) or count_code_browser_files(code_dir)
@@ -4734,19 +4821,14 @@ def run_full_pipeline_async(
                 execution_id=execution_id,
                 prompt=prompt_text,
                 ui_archetype=project.locked_ui_archetype if project else None,
-                models_used={
-                    "Requirements Agent": "Gemini 2.5 Flash",
-                    "Architecture Agent": "Gemini 2.5 Flash",
-                    "Design Agent": "Imagen 4.0 Ultra + Gemini 2.5 Flash",
-                    "Build Agent": "Gemini 2.5 Flash",
-                },
+                models_used=models_used,
                 tokens_used=exec_for_gov.tokens_used if exec_for_gov else None,
                 estimated_cost=exec_for_gov.estimated_cost if exec_for_gov else None,
                 credits_used=exec_for_gov.credits_used if exec_for_gov else None,
                 duration_seconds=exec_for_gov.duration_seconds if exec_for_gov else None,
                 files_generated=files_count,
                 images_generated=images_count,
-                agent_sequence=["pm", "planner", "design", "engineer"],
+                agent_sequence=agent_sequence,
                 status="success",
             )
 
@@ -5288,7 +5370,7 @@ def iterate_project(project_id: int):
             print("[NLU] Using provided analysis from /chat")
             print(f"[NLU] Full analysis: {nlu_result}")
         else:
-            nlu_result = nlu_agent.analyze(prompt)
+            nlu_result = analyze_prompt_nlu(prompt)
             print(f"[NLU] Full analysis: {nlu_result}")
 
         current_head = (
@@ -5561,7 +5643,7 @@ def execute_task():
         session.refresh(execution)
         attach_execution_to_state(project_id, execution.id)
 
-        nlu_result = nlu_agent.analyze(task_description)
+        nlu_result = analyze_prompt_nlu(task_description)
         print(f"[NLU] Full analysis: {nlu_result}")
 
         skip_image_gen = coerce_bool(req_data.get("skip_image_gen"))
@@ -6304,7 +6386,7 @@ def project_chat(project_id: int):
         sys.path.insert(0, str(REPO_ROOT))
 
         # NLU pre-analysis — frustrated sentiment short-circuits to chat
-        nlu_result = nlu_agent.analyze(data["message"])
+        nlu_result = analyze_prompt_nlu(data["message"])
         print(f"[NLU] Full analysis: {nlu_result}")
         print(f"[NLU] sentiment={nlu_result['sentiment']} score={nlu_result['sentiment_score']:.2f} domain={nlu_result['domain']} keywords={nlu_result['keywords']}")
         if nlu_result["frustrated"]:
@@ -6330,12 +6412,15 @@ def project_chat(project_id: int):
         project_context = (project_context or "") + nlu_context_str
 
         from agents.pm_agent import PMAgent, fallback_classify_intent
-        pm = PMAgent()
-        try:
-            intent = pm.classify_intent(data["message"], project_context=project_context)
-        except Exception as classify_error:
-            print(f"Chat classify error: {classify_error}")
+        if is_offline_mode():
             intent = fallback_classify_intent(data["message"], project_context=project_context)
+        else:
+            pm = PMAgent()
+            try:
+                intent = pm.classify_intent(data["message"], project_context=project_context)
+            except Exception as classify_error:
+                print(f"Chat classify error: {classify_error}")
+                intent = fallback_classify_intent(data["message"], project_context=project_context)
         if intent.get("type") == "chat":
             return jsonify({"response_type": "chat", "message": intent["message"]}), 200
         return jsonify({"response_type": "build", "nlu_result": nlu_result}), 200
