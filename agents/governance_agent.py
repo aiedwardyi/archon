@@ -264,6 +264,8 @@ class GovernanceAgent:
         if not model_name:
             return "Unknown"
         m = model_name.lower()
+        if "local" in m or "deterministic" in m:
+            return "Local"
         if "claude" in m:
             return "Anthropic"
         if "gemini" in m or "flash" in m:

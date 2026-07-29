@@ -3661,6 +3661,23 @@ def run_full_pipeline_async(
     state = get_project_state(project_id)
     offline_mode = is_offline_mode()
     skip_image_gen = skip_image_gen or offline_mode
+    if offline_mode:
+        execution_model = "Deterministic Local Scaffold"
+        models_used = {
+            "Requirements Agent": "Deterministic Local Seed",
+            "Architecture Agent": "Deterministic Local Plan",
+            "Build Agent": "Deterministic Local Scaffold",
+        }
+        agent_sequence = ["pm", "planner", "engineer"]
+    else:
+        execution_model = "Claude Opus 4.6"
+        models_used = {
+            "Requirements Agent": "Gemini 2.5 Flash",
+            "Architecture Agent": "Gemini 2.5 Flash",
+            "Design Agent": "Imagen 4.0 Ultra + Gemini 2.5 Flash",
+            "Build Agent": "Gemini 2.5 Flash",
+        }
+        agent_sequence = ["pm", "planner", "design", "engineer"]
 
     sys.path.insert(0, str(REPO_ROOT))
 
@@ -4733,7 +4750,7 @@ def run_full_pipeline_async(
                 execution.plan_path = str(version_dir / "last_plan.json")
                 # Build metrics
                 execution.duration_seconds = round(time.time() - pipeline_start_time, 2)
-                execution.model_used = "Claude Opus 4.6"
+                execution.model_used = execution_model
                 if hasattr(result, "usage") and result.usage:
                     input_tokens = getattr(result.usage, "input_tokens", 0) or 0
                     output_tokens = getattr(result.usage, "output_tokens", 0) or 0
@@ -4778,19 +4795,14 @@ def run_full_pipeline_async(
                 execution_id=execution_id,
                 prompt=prompt_text,
                 ui_archetype=project.locked_ui_archetype if project else None,
-                models_used={
-                    "Requirements Agent": "Gemini 2.5 Flash",
-                    "Architecture Agent": "Gemini 2.5 Flash",
-                    "Design Agent": "Imagen 4.0 Ultra + Gemini 2.5 Flash",
-                    "Build Agent": "Gemini 2.5 Flash",
-                },
+                models_used=models_used,
                 tokens_used=exec_for_gov.tokens_used if exec_for_gov else None,
                 estimated_cost=exec_for_gov.estimated_cost if exec_for_gov else None,
                 credits_used=exec_for_gov.credits_used if exec_for_gov else None,
                 duration_seconds=exec_for_gov.duration_seconds if exec_for_gov else None,
                 files_generated=files_count,
                 images_generated=images_count,
-                agent_sequence=["pm", "planner", "design", "engineer"],
+                agent_sequence=agent_sequence,
                 status="success",
             )
 

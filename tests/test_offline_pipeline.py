@@ -27,6 +27,20 @@ class OfflinePipelineTests(unittest.TestCase):
         self.assertIsInstance(plan, Plan)
         self.assertEqual(plan.milestones[0].tasks[0].scaffold_mode, "componentized_app")
         self.assertEqual(plan.milestones[0].tasks[0].ui_archetype, "dashboard")
+        self.assertEqual(prd.prd.prompt_quality_score, 50)
+
+    def test_offline_archetype_matches_complete_words(self):
+        cases = {
+            "Build a SaaS platform": "landing",
+            "Build an application for managing invoices": "landing",
+            "Build an application form for grant requests": "form",
+            "Build a sales dashboard": "dashboard",
+        }
+
+        for idea, expected in cases.items():
+            with self.subTest(idea=idea):
+                plan = build_offline_plan(idea)
+                self.assertEqual(plan.milestones[0].tasks[0].ui_archetype, expected)
 
     def test_root_scaffold_contains_build_contract(self):
         files = build_vite_react_ts_scaffold(app_dir="").files

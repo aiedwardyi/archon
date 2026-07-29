@@ -205,9 +205,10 @@ def test_forgot_password_hides_reset_token_by_default(client, monkeypatch):
         db.close()
 
 
-def test_forgot_password_can_expose_reset_token_explicitly(client, monkeypatch):
-    monkeypatch.setenv("ARCHON_EXPOSE_RESET_TOKEN", "true")
-    email = "reset-visible@archon-test.com"
+@pytest.mark.parametrize("flag_value", ["true", "y", "on"])
+def test_forgot_password_can_expose_reset_token_explicitly(client, monkeypatch, flag_value):
+    monkeypatch.setenv("ARCHON_EXPOSE_RESET_TOKEN", flag_value)
+    email = f"reset-visible-{flag_value}@archon-test.com"
 
     register_resp = client.post(
         "/api/auth/register",
@@ -218,6 +219,32 @@ def test_forgot_password_can_expose_reset_token_explicitly(client, monkeypatch):
     reset_resp = client.post("/api/auth/forgot-password", json={"email": email})
     assert reset_resp.status_code == 200
     assert reset_resp.get_json()["_dev_token"]
+
+    db = get_session()
+    try:
+        user = db.query(User).filter(User.email == email).first()
+        if user:
+            db.delete(user)
+            db.commit()
+    finally:
+        db.close()
+
+
+def test_forgot_password_hides_reset_token_outside_local_environment(client, monkeypatch):
+    monkeypatch.setenv("ARCHON_EXPOSE_RESET_TOKEN", "true")
+    monkeypatch.setenv("FLASK_ENV", "production")
+    monkeypatch.setitem(app.config, "TESTING", False)
+    email = "reset-production@archon-test.com"
+
+    register_resp = client.post(
+        "/api/auth/register",
+        json={"email": email, "password": TEST_PASSWORD, "name": "Reset Production"},
+    )
+    assert register_resp.status_code == 201
+
+    reset_resp = client.post("/api/auth/forgot-password", json={"email": email})
+    assert reset_resp.status_code == 200
+    assert "_dev_token" not in reset_resp.get_json()
 
     db = get_session()
     try:

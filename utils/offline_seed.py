@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from datetime import datetime, timezone
 from typing import Any, Dict
 
@@ -14,7 +15,7 @@ _ARCHETYPE_HINTS = (
     ("portfolio", ("portfolio", "resume", "showcase")),
     ("kanban", ("kanban", "task", "project board")),
     ("chat", ("chat", "messaging", "assistant")),
-    ("form", ("form", "survey", "application")),
+    ("form", ("form", "survey", "application form")),
 )
 
 
@@ -25,7 +26,7 @@ def is_offline_mode() -> bool:
 def _offline_archetype(idea: str) -> str:
     normalized = idea.lower()
     for archetype, hints in _ARCHETYPE_HINTS:
-        if any(hint in normalized for hint in hints):
+        if any(re.search(rf"\b{re.escape(hint)}\b", normalized) for hint in hints):
             return archetype
     return "landing"
 
@@ -54,7 +55,7 @@ def build_offline_prd_artifact(idea: str) -> PRDArtifact:
             primary_user_action="Explore the generated application preview",
             visual_direction="Clean product interface with strong hierarchy, restrained color, and responsive spacing",
             tone_keywords=["clear", "focused", "responsive"],
-            prompt_quality_score=min(100, max(40, len(idea.strip()))),
+            prompt_quality_score=50,
             overview=f"A provider-free preview scaffold for: {idea.strip()}",
             goals=["Produce a buildable application", "Demonstrate the complete local pipeline"],
             non_goals=["Production model output", "External image generation"],

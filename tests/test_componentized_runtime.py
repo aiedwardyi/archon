@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import inspect
 import json
 import os
 import re
@@ -70,6 +69,10 @@ GENERATED_FIXTURES_AVAILABLE = all(
     (REPO_ROOT / "generated" / fixture_id / "v1" / "code").exists()
     for fixture_id in GENERATED_FIXTURE_IDS
 )
+_requires_generated_fixtures = unittest.skipUnless(
+    GENERATED_FIXTURES_AVAILABLE,
+    "requires local generated regression artifacts",
+)
 
 
 def _case_dir(name: str) -> Path:
@@ -80,11 +83,6 @@ def _case_dir(name: str) -> Path:
 
 
 class ComponentizedRuntimeTests(unittest.TestCase):
-    def setUp(self) -> None:
-        method = getattr(type(self), self._testMethodName)
-        if 'REPO_ROOT / "generated"' in inspect.getsource(method) and not GENERATED_FIXTURES_AVAILABLE:
-            self.skipTest("requires local generated regression artifacts")
-
     def _assert_jsx_return_would_parse(self, source: str) -> None:
         match = re.search(r"return\s*\((?P<body>[\s\S]*?)\);\s*", source)
         self.assertIsNotNone(match, "expected a JSX return block")
@@ -2113,6 +2111,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         finally:
             shutil.rmtree(code_dir, ignore_errors=True)
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_617_ternary_branch_orphan_closers(self):
         source_path = REPO_ROOT / "generated" / "617" / "v1" / "code" / "src" / "App.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -2136,6 +2135,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             ),
         )
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_617_logical_and_branch_orphan_closers(self):
         source_path = REPO_ROOT / "generated" / "617" / "v1" / "code" / "src" / "components" / "TransactionForm.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -2151,6 +2151,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
             ),
         )
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_618_multi_param_arrow_bleed(self):
         source_path = REPO_ROOT / "generated" / "618" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -2163,6 +2164,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertNotIn("/* currentPrice, */", normalized)
         self.assertEqual(normalized.count("/*"), normalized.count("*/"))
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_625_nested_kpi_branch_orphan_closer(self):
         source_path = REPO_ROOT / "generated" / "625" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -2186,6 +2188,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertIn("            </div>\n          ))}", normalized)
         self.assertEqual(normalized.count("<>"), normalized.count("</>"))
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_626_layout_main_wrapper_leak(self):
         source_path = REPO_ROOT / "generated" / "626" / "v1" / "code" / "src" / "components" / "DashboardLayout.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -2202,6 +2205,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         )
         self._assert_jsx_return_would_parse(normalized)
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_628_relational_operator_bleed(self):
         source_path = REPO_ROOT / "generated" / "628" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -2211,6 +2215,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertIn("stroke={ticker.delta >= 0 ? 'var(--accent)' : 'var(--danger)'}", normalized)
         self.assertNotIn("/>=", normalized)
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_634_orphan_prose_comment_line(self):
         source_path = REPO_ROOT / "generated" / "634" / "v1" / "code" / "src" / "components" / "ChartCard.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -2221,6 +2226,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertIn("/* Box (0-1000 for x, 0-300 for y)", normalized)
         self.assertEqual(normalized.count("/*"), normalized.count("*/"))
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_634_duplicate_kpi_label_prop_collision(self):
         source_path = REPO_ROOT / "generated" / "634" / "v1" / "code" / "src" / "components" / "KpiCards.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -2232,6 +2238,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertEqual(normalized.count("label="), 4)
         self.assertNotIn('valueFormat="percentage" label="ETH"', normalized)
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_639_split_svg_fill_attribute(self):
         source_path = REPO_ROOT / "generated" / "639" / "v1" / "code" / "src" / "components" / "Chart.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -2243,6 +2250,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertIn('stroke="var(--card-bg)"', normalized)
         self.assertIn("onMouseLeave={handleMouseLeave}", normalized)
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_640_missing_logical_branch_closer(self):
         source_path = REPO_ROOT / "generated" / "640" / "v1" / "code" / "src" / "App.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -2258,6 +2266,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         )
         self._assert_jsx_return_would_parse(normalized)
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_649_self_closing_component_child_leak(self):
         source_path = REPO_ROOT / "generated" / "649" / "v1" / "code" / "src" / "App.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -2271,6 +2280,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertIn("</HoldingsTable>", normalized)
         self.assertNotIn("<HoldingsTable onManageClick={(asset) => openModal(`Managing ${asset} details...`)} />", normalized)
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_650_logical_svg_sibling_condition(self):
         source_path = REPO_ROOT / "generated" / "650" / "v1" / "code" / "src" / "App.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -2281,6 +2291,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertIn('{item === "Orders" && (<><rect x="2" y="7" width="20" height="14" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></>)}', normalized)
         self.assertNotRegex(normalized, re.compile(r'\{item === "Markets" && <path[\s\S]*?<path'))
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_653_bare_jsx_array_map_expression(self):
         source_path = REPO_ROOT / "generated" / "653" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -2291,6 +2302,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertNotIn("{/* Horizontal grid lines */}[...Array(5)].map((_, i) => (", normalized)
         self.assertNotIn("</path>", normalized)
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_672_split_state_setter_and_component_closer_leaks(self):
         source_path = REPO_ROOT / "generated" / "672" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -2304,6 +2316,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertNotIn("</CryptoSearch>", normalized)
         self.assertNotIn("</TransactionForm>", normalized)
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_674_tsconfig_standalone_comma_noise(self):
         source_path = REPO_ROOT / "generated" / "674" / "v1" / "code" / "tsconfig.json"
         source = source_path.read_text(encoding="utf-8")
@@ -2315,6 +2328,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertFalse(data["compilerOptions"]["noUnusedLocals"])
         self.assertFalse(data["compilerOptions"]["noUnusedParameters"])
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_681_modal_branch_missing_wrapper_close(self):
         source_path = REPO_ROOT / "generated" / "681" / "v1" / "code" / "src" / "App.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -2323,6 +2337,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
 
         self.assertIn("{modalContent}\n          </div>\n        </div>\n      )}", normalized)
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_683_inline_return_root_close_leak(self):
         source_path = REPO_ROOT / "generated" / "683" / "v1" / "code" / "src" / "pages" / "DashboardPage.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -2333,6 +2348,7 @@ class ComponentizedRuntimeTests(unittest.TestCase):
         self.assertRegex(normalized, r"</div>\s*\n\s*\);")
         self.assertNotIn("</div>  );", normalized)
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_684_layout_root_close_before_main_comment_gap(self):
         source_path = REPO_ROOT / "generated" / "684" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -2363,6 +2379,7 @@ const View = () => (
         self.assertIn("textAnchor=\"start\"", normalized)
         self.assertNotIn("/* Position slightly outside to the left", normalized)
 
+    @_requires_generated_fixtures
     def test_ensure_componentized_workspace_support_restores_missing_vite_bin_shims(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             code_dir = Path(tmpdir)
@@ -2385,6 +2402,7 @@ const View = () => (
             self.assertTrue((code_dir / "node_modules" / ".bin" / "vite.cmd").exists())
             self.assertTrue((code_dir / "node_modules" / ".bin" / "vite").exists())
 
+    @_requires_generated_fixtures
     def test_ensure_componentized_workspace_support_rewrites_vite_scripts_without_precreating_node_modules(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             code_dir = Path(tmpdir)
@@ -5256,6 +5274,7 @@ const View = () => (
         self.assertIn("/* Path points: M(x, y) C(x1, y1, x2, y2, x_end, y_end) */", normalized)
         self.assertNotIn("\nM(x, y) C(x1, y1, x2, y2, x_end, y_end)\n", normalized)
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_693_comment_prose_continuations(self):
         source_path = REPO_ROOT / "generated" / "693" / "v1" / "code" / "src" / "components" / "Chart.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -5273,6 +5292,7 @@ const View = () => (
         self.assertIn("const valueRange = maxValue - minValue;", normalized)
         self.assertNotIn("\nfunction, e.g., open a modal, export data.", normalized)
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_694_svg_boundary_and_chart_wrapper(self):
         source_path = REPO_ROOT / "generated" / "694" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -5324,6 +5344,7 @@ const View = () => (
         self.assertIn("</svg>} label=\"Dashboard\"", normalized)
         self.assertIn("</svg>} label=\"Reports\"", normalized)
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_717_map_branch_wrapper_closer_leak(self):
         source_path = REPO_ROOT / "generated" / "717" / "v1" / "code" / "src" / "components" / "dashboard" / "PerformanceChart.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -5334,6 +5355,7 @@ const View = () => (
         self.assertIn("</button>\n            ))}\n          </div>", normalized)
         self.assertNotIn("</button>\n              </div>\n            ))}", normalized)
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_729_sidebar_link_closer_leaks(self):
         source_path = REPO_ROOT / "generated" / "729" / "v1" / "code" / "src" / "pages" / "DashboardPage.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -5350,6 +5372,7 @@ const View = () => (
         self.assertIn('<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />', normalized)
         self.assertIn('<circle cx="12" cy="12" r="3" />', normalized)
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_729_route_path_comment_bleed(self):
         source_path = REPO_ROOT / "generated" / "729" / "v1" / "code" / "src" / "App.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -5359,6 +5382,7 @@ const View = () => (
         self.assertIn('path="/"', normalized)
         self.assertNotIn('path=" /* "', normalized)
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_717_orphan_svg_prop_closer_lines(self):
         source_path = REPO_ROOT / "generated" / "717" / "v1" / "code" / "src" / "components" / "common" / "Sidebar.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -5369,6 +5393,7 @@ const View = () => (
         self.assertRegex(normalized, r"<SidebarItem\s+\n\s*icon=\{<svg")
         self.assertIn('export default Sidebar;', normalized)
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_729_split_camel_identifier_before_operator(self):
         source_path = REPO_ROOT / "generated" / "729" / "v1" / "code" / "src" / "components" / "Dashboard.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -5380,6 +5405,7 @@ const View = () => (
         self.assertIn("import React, { useState } from 'react';", normalized)
         self.assertIn("export default Dashboard;", normalized)
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_729_interface_comment_bleed_before_const(self):
         source_path = REPO_ROOT / "generated" / "729" / "v1" / "code" / "src" / "components" / "TransactionForm.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -5390,6 +5416,7 @@ const View = () => (
         self.assertIn("}\nconst TransactionForm:", normalized)
         self.assertNotIn("provided} */\nconst TransactionForm", normalized)
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_738_split_quoted_literals(self):
         source_path = REPO_ROOT / "generated" / "738" / "v1" / "code" / "src" / "components" / "PerformanceChart.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -5403,6 +5430,7 @@ const View = () => (
         self.assertNotIn("action === '\nexport'", normalized)
         self.assertNotIn("handleChipClick('\nexport')", normalized)
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_739_multiline_map_button_closer(self):
         source_path = REPO_ROOT / "generated" / "739" / "v1" / "code" / "src" / "components" / "PerformanceChart.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -5412,6 +5440,7 @@ const View = () => (
         self.assertIn("</button>\n            ))}\n          </div>", normalized)
         self.assertNotIn("</div>\n            ))}\n          </div>", normalized)
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_740_orphan_svg_import_comment_line(self):
         source_path = REPO_ROOT / "generated" / "740" / "v1" / "code" / "src" / "App.tsx"
         source = source_path.read_text(encoding="utf-8")
@@ -5422,6 +5451,7 @@ const View = () => (
         self.assertIn("/* Icons (simplified for embedding, normally in separate files) */", normalized)
         self.assertIn("const DashboardIcon = () => <svg", normalized)
 
+    @_requires_generated_fixtures
     def test_normalize_componentized_file_repairs_project_742_multiline_map_item_closer(self):
         source_path = REPO_ROOT / "generated" / "742" / "v1" / "code" / "src" / "components" / "Sidebar.tsx"
         source = source_path.read_text(encoding="utf-8")
