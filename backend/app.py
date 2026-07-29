@@ -14,7 +14,7 @@ import warnings
 import re
 import mimetypes
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, TypeAlias
 import threading
 import time
 from datetime import datetime, timedelta, timezone
@@ -3185,8 +3185,11 @@ def build_componentized_scaffold_seed_context() -> str:
     return "\n\n".join(lines)
 
 
+JsonValue: TypeAlias = str | int | float | bool | None | list["JsonValue"] | dict[str, "JsonValue"]
+
+
 def rewrite_seed_version(version_dir: Path, original_project_id: int, new_project_id: int):
-    def rewrite_json_paths(value: Any) -> Any:
+    def rewrite_json_paths(value: JsonValue) -> JsonValue:
         if isinstance(value, dict):
             return {key: rewrite_json_paths(item) for key, item in value.items()}
         if isinstance(value, list):
