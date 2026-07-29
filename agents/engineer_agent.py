@@ -25,6 +25,7 @@ from utils.design_families import (
     should_apply_componentized_global_family_layer,
 )
 from utils.offline_engineer_scaffold import build_vite_react_ts_scaffold
+from utils.offline_seed import is_offline_mode
 from utils.reference_build_registry import get_style_family_context
 
 PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
@@ -92,18 +93,18 @@ DOMAIN_OVERLAY_CONTRACTS: dict[str, tuple[str, ...]] = {
 }
 
 def _is_offline_mode() -> bool:
-    return os.getenv("OFFLINE_MODE", "").strip().lower() in {"1", "true", "yes", "y", "on"}
+    return is_offline_mode()
 
 
 def _build_offline_engineering_result(task_id: str) -> EngineeringResult:
-    scaffold = build_vite_react_ts_scaffold(app_dir="apps/offline-vite-react")
+    scaffold = build_vite_react_ts_scaffold(app_dir="")
     files = [
         FileArtifact(path=path, content=content)
         for path, content in sorted(scaffold.files.items())
     ]
     return EngineeringResult(
         task_id=task_id,
-        summary="OFFLINE: Generated deterministic Vite + React + TypeScript scaffold in apps/offline-vite-react/",
+        summary="Generated a deterministic Vite, React, and TypeScript workspace without model calls.",
         files=files,
     )
 

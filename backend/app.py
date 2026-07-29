@@ -46,6 +46,7 @@ from utils.design_families import (
     resolve_componentized_design_family,
 )
 from utils.offline_engineer_scaffold import build_vite_react_ts_scaffold
+from utils.offline_seed import build_offline_plan, build_offline_prd_artifact, is_offline_mode
 from utils.componentized_runtime import (
     build_componentized_preview,
     collect_componentized_direct_dependencies,
@@ -3628,6 +3629,8 @@ def run_full_pipeline_async(
     skip_image_gen: bool = False,
 ):
     state = get_project_state(project_id)
+    offline_mode = is_offline_mode()
+    skip_image_gen = skip_image_gen or offline_mode
 
     sys.path.insert(0, str(REPO_ROOT))
 
@@ -3657,7 +3660,7 @@ def run_full_pipeline_async(
                     project = session.get(Project, execution.project_id)
                     if project:
                         locked_ui_archetype = project.locked_ui_archetype
-        if not locked_ui_archetype:
+        if not locked_ui_archetype and not offline_mode:
             benchmark_match = suggest_reference_archetype(task_description)
             if benchmark_match and benchmark_match.get("archetype"):
                 locked_ui_archetype = benchmark_match["archetype"]
@@ -3711,8 +3714,6 @@ def run_full_pipeline_async(
         add_log("Starting pipeline...", project_id=project_id)
         add_log("Requirements Agent: Analyzing your request...", project_id=project_id)
         sys.path.insert(0, str(REPO_ROOT))
-        from agents.pm_agent import PMAgent
-        pm_agent = PMAgent()
 
         nlu_context = nlu_context or {
             "keywords": [],
@@ -3756,7 +3757,12 @@ def run_full_pipeline_async(
                 f"{title_note}"
             )
 
-        prd_artifact = pm_agent.generate_prd(context_input)
+        if offline_mode:
+            prd_artifact = build_offline_prd_artifact(task_description)
+        else:
+            from agents.pm_agent import PMAgent
+
+            prd_artifact = PMAgent().generate_prd(context_input)
 
         prd_dict = prd_artifact.model_dump()
         prd_dict["_agent_sequence"] = ["pm"]
@@ -3767,19 +3773,26 @@ def run_full_pipeline_async(
 
         add_log("Architecture Agent: Planning the build...", project_id=project_id)
 
-        from agents.planner_agent import PlannerAgent
-        from utils.genai_client import get_genai_client
+        genai_client = None
+        if offline_mode:
+            plan = build_offline_plan(
+                task_description,
+                locked_ui_archetype=locked_ui_archetype,
+            )
+        else:
+            from agents.planner_agent import PlannerAgent
+            from utils.genai_client import get_genai_client
 
-        genai_client = get_genai_client()
-        planner = PlannerAgent(genai_client)
-        plan = planner.run_from_prd_artifact(
-            version_dir / "last_prd.json",
-            locked_ui_archetype=locked_ui_archetype,
-            is_iteration=is_iteration,
-            reference_images=reference_images or [],
-            project_context=context_input,
-            nlu_context=nlu_context,
-        )
+            genai_client = get_genai_client()
+            planner = PlannerAgent(genai_client)
+            plan = planner.run_from_prd_artifact(
+                version_dir / "last_prd.json",
+                locked_ui_archetype=locked_ui_archetype,
+                is_iteration=is_iteration,
+                reference_images=reference_images or [],
+                project_context=context_input,
+                nlu_context=nlu_context,
+            )
 
         plan_dict = {
             "kind": "plan_artifact",
@@ -3819,8 +3832,8 @@ def run_full_pipeline_async(
 
         design_assets = []
         if skip_image_gen:
-            add_log("Design Agent: Skipped (skip_image_gen=True, eval mode).", project_id=project_id)
-            print("Design Agent: skipped (eval mode)")
+            add_log("Design Agent: Skipped.", project_id=project_id)
+            print("Design Agent: skipped")
 
         previous_visual_direction = ""
         if not skip_image_gen and ancestor_version_dir:
@@ -3924,7 +3937,7 @@ def run_full_pipeline_async(
         # Query Watson Discovery for best archetype-matched build (initial build only)
         reference_code = None
         benchmark_guidance = ""
-        if not is_iteration:
+        if not is_iteration and not offline_mode:
             detected_archetype = get_plan_ui_archetype(plan) or locked_ui_archetype
             engineer_kit_archetype = DESIGN_KIT_ALIASES.get(engineer_task.ui_archetype, engineer_task.ui_archetype)
             if detected_archetype:
@@ -4051,7 +4064,7 @@ def run_full_pipeline_async(
             iteration_feature_inventory=iteration_feature_inventory,
         )
 
-        if componentized_mode and not is_iteration:
+        if componentized_mode and not is_iteration and not offline_mode:
             contract_validation = validate_componentized_contract_outputs(
                 result.files,
                 ui_archetype=engineer_task.ui_archetype,
@@ -4326,7 +4339,7 @@ def run_full_pipeline_async(
                                 project_id=project_id,
                             )
 
-            if preview_build.get("status") == "success":
+            if preview_build.get("status") == "success" and not offline_mode:
                 density_audit = evaluate_componentized_density(
                     version_dir / "code",
                     ui_archetype=engineer_task.ui_archetype,
@@ -4606,17 +4619,18 @@ def run_full_pipeline_async(
         state["result_ready"] = True
 
         filled_assets_count = 0
-        try:
-            filled_assets_count = fill_missing_assets(
-                project_id=project_id,
-                version=version,
-                archetype=effective_archetype,
-            )
-            print(
-                f"Asset filler: filled {filled_assets_count} missing images from library"
-            )
-        except Exception as asset_fill_err:
-            print(f"Asset filler failed (non-fatal): {asset_fill_err}")
+        if not offline_mode:
+            try:
+                filled_assets_count = fill_missing_assets(
+                    project_id=project_id,
+                    version=version,
+                    archetype=effective_archetype,
+                )
+                print(
+                    f"Asset filler: filled {filled_assets_count} missing images from library"
+                )
+            except Exception as asset_fill_err:
+                print(f"Asset filler failed (non-fatal): {asset_fill_err}")
 
         code_dir = version_dir / "code"
         if code_dir.exists():
