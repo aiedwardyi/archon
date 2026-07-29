@@ -19,6 +19,7 @@ TEST_PASSWORD = "testpass123"
 @pytest.fixture(scope="module")
 def client():
     app.config["TESTING"] = True
+    app.config["JWT_SECRET_KEY"] = "archon-test-secret-key-at-least-32-bytes"
     with app.test_client() as c:
         yield c
 
@@ -175,5 +176,54 @@ def test_register_claims_guest_project_and_executions(client):
         db.delete(project)
         db.delete(user)
         db.commit()
+    finally:
+        db.close()
+
+
+def test_forgot_password_hides_reset_token_by_default(client, monkeypatch):
+    monkeypatch.delenv("ARCHON_EXPOSE_RESET_TOKEN", raising=False)
+    email = "reset-hidden@archon-test.com"
+
+    register_resp = client.post(
+        "/api/auth/register",
+        json={"email": email, "password": TEST_PASSWORD, "name": "Reset Hidden"},
+    )
+    assert register_resp.status_code == 201
+
+    reset_resp = client.post("/api/auth/forgot-password", json={"email": email})
+    assert reset_resp.status_code == 200
+    assert "_dev_token" not in reset_resp.get_json()
+
+    db = get_session()
+    try:
+        user = db.query(User).filter(User.email == email).first()
+        assert user is not None
+        assert user.reset_token
+        db.delete(user)
+        db.commit()
+    finally:
+        db.close()
+
+
+def test_forgot_password_can_expose_reset_token_explicitly(client, monkeypatch):
+    monkeypatch.setenv("ARCHON_EXPOSE_RESET_TOKEN", "true")
+    email = "reset-visible@archon-test.com"
+
+    register_resp = client.post(
+        "/api/auth/register",
+        json={"email": email, "password": TEST_PASSWORD, "name": "Reset Visible"},
+    )
+    assert register_resp.status_code == 201
+
+    reset_resp = client.post("/api/auth/forgot-password", json={"email": email})
+    assert reset_resp.status_code == 200
+    assert reset_resp.get_json()["_dev_token"]
+
+    db = get_session()
+    try:
+        user = db.query(User).filter(User.email == email).first()
+        if user:
+            db.delete(user)
+            db.commit()
     finally:
         db.close()

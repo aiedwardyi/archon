@@ -246,12 +246,10 @@ def forgot_password():
             user.reset_token = token
             user.reset_token_expires = datetime.now(timezone.utc) + timedelta(hours=1)
             db.commit()
-            # In production: send email. For now, return token in response (dev mode)
-            print(f"[DEV] Password reset token for {email}: {token}")
-            return jsonify({
-                "message": "If that email exists, a reset link has been sent.",
-                "_dev_token": token,  # Remove in production
-            }), 200
+            response = {"message": "If that email exists, a reset link has been sent."}
+            if os.getenv("ARCHON_EXPOSE_RESET_TOKEN", "").strip().lower() in {"1", "true", "yes"}:
+                response["_dev_token"] = token
+            return jsonify(response), 200
         return jsonify({"message": "If that email exists, a reset link has been sent."}), 200
     finally:
         db.close()
